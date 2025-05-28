@@ -5,7 +5,7 @@ FROM node:20-alpine AS base
 ARG PROJECT_NAME=MyProject
 
 # Métadonnées de l'image
-LABEL maintainer="${PROJECT_NAME} Team <admin@${PROJECT_NAME,,}.fr>"
+LABEL maintainer="${PROJECT_NAME} Team <admin@example.com>"
 LABEL version="1.0"
 LABEL description="${PROJECT_NAME} Task Manager - Interface de gestion des tâches Redis JSON"
 
