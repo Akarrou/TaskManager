@@ -16,6 +16,10 @@ class TaskManager {
   async init() {
     this.setupEventListeners();
     this.setupAutoRefresh();
+    
+    // Écouter les événements UX
+    this.setupUXIntegration();
+    
     await this.loadTasks();
     this.updateConnectionStatus();
   }
@@ -177,6 +181,12 @@ class TaskManager {
     this.showLoading(true);
 
     try {
+      // Afficher notification de chargement
+      const loadingId = window.notifications?.loading(
+        'Chargement',
+        'Récupération des tâches en cours...'
+      );
+
       // Charger les tâches et les statistiques en parallèle
       const [tasks, index] = await Promise.all([
         api.getAllTasks(),
@@ -187,8 +197,38 @@ class TaskManager {
       this.updateStatistics(index);
       this.applyFilters();
       this.updateConnectionStatus();
+
+      // Fermer notification de chargement et afficher succès
+      if (loadingId) {
+        window.notifications?.dismiss(loadingId);
+        
+        // Ne pas afficher de notification de succès pour le chargement initial silencieux
+        if (this.tasks.length > 0 && window.performance.now() > 10000) {
+          window.notifications?.success(
+            'Tâches chargées',
+            `${this.tasks.length} tâche(s) récupérée(s) avec succès`
+          );
+        }
+      }
+
     } catch (error) {
       console.error("Erreur lors du chargement des tâches:", error);
+      
+      // Notification d'erreur avec possibilité de retry
+      window.notifications?.error(
+        'Erreur de chargement',
+        'Impossible de charger les tâches du serveur',
+        {
+          actions: [
+            {
+              label: 'Réessayer',
+              handler: () => this.loadTasks(),
+              className: 'bg-blue-500 hover:bg-blue-600 text-white'
+            }
+          ]
+        }
+      );
+      
       this.showError("Erreur lors du chargement des tâches");
     } finally {
       this.showLoading(false);
@@ -424,15 +464,15 @@ class TaskManager {
 
   // Mise à jour du statut de connexion
   async updateConnectionStatus() {
-    const statusElement = document.getElementById("connection-status");
-    const isConnected = await api.testConnection();
-
-    if (isConnected) {
-      statusElement.innerHTML =
-        '<i class="fas fa-circle text-green-500"></i> Connecté à la base de données';
-    } else {
-      statusElement.innerHTML =
-        '<i class="fas fa-circle text-red-500"></i> Déconnecté (Mode démo)';
+    try {
+      const response = await fetch('/api/health');
+      if (response.ok) {
+        // La connexion est OK, le UX enhancer s'en occupe
+        return;
+      }
+    } catch (error) {
+      // Laisser le UX enhancer gérer les erreurs de connexion
+      console.log('Connexion check handled by UX enhancer');
     }
   }
 
@@ -452,35 +492,32 @@ class TaskManager {
 
   // Affichage des messages d'erreur
   showError(message) {
-    this.showNotification(message, "error");
+    // Utiliser le nouveau système de notifications
+    window.notifications?.error('Erreur', message);
   }
 
   // Affichage des messages de succès
   showSuccessMessage(message) {
-    this.showNotification(message, "success");
+    // Utiliser le nouveau système de notifications
+    window.notifications?.success('Succès', message);
   }
 
   // Système de notifications
   showNotification(message, type = "info") {
-    const notification = document.createElement("div");
-    const bgColor =
-      type === "error"
-        ? "bg-red-500"
-        : type === "success"
-        ? "bg-green-500"
-        : "bg-blue-500";
-
-    notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-opacity`;
-    notification.textContent = message;
-
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-      notification.style.opacity = "0";
-      setTimeout(() => {
-        document.body.removeChild(notification);
-      }, 300);
-    }, 3000);
+    // Utiliser le nouveau système de notifications
+    switch(type) {
+      case 'success':
+        window.notifications?.success('Information', message);
+        break;
+      case 'error':
+        window.notifications?.error('Erreur', message);
+        break;
+      case 'warning':
+        window.notifications?.warning('Attention', message);
+        break;
+      default:
+        window.notifications?.info('Information', message);
+    }
   }
 
   // Méthode pour activer/désactiver tous les statuts
@@ -613,6 +650,38 @@ class TaskManager {
           }
         }
       }
+    });
+  }
+
+  // ===== NOUVELLES MÉTHODES UX =====
+  
+  // Intégration avec les systèmes UX
+  setupUXIntegration() {
+    // Écouter l'événement refresh demandé par l'UX enhancer
+    window.addEventListener('refresh-requested', () => {
+      this.loadTasks();
+    });
+
+    // Notification de bienvenue après le chargement initial
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        if (window.notifications && this.tasks.length === 0) {
+          window.notifications.info(
+            'Bienvenue !',
+            'Créez votre première tâche pour commencer',
+            {
+              onClick: () => this.redirectToCreate(),
+              actions: [
+                {
+                  label: 'Créer une tâche',
+                  handler: () => this.redirectToCreate(),
+                  className: 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                }
+              ]
+            }
+          );
+        }
+      }, 2000);
     });
   }
 }

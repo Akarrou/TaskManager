@@ -445,6 +445,272 @@
           transform: none;
         }
       }
+
+      /* ===== SYSTÈME DE NOTIFICATIONS MODERNISÉ ===== */
+      
+      .notification-toast {
+        max-width: 400px;
+        min-width: 320px;
+      }
+      
+      .notification-toast.show {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      
+      .notification-toast.hide {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      
+      .notification-success {
+        border-left-color: var(--success-text);
+      }
+      
+      .notification-success .notification-icon {
+        background: linear-gradient(135deg, #10b981, #059669);
+      }
+      
+      .notification-error {
+        border-left-color: var(--error-text);
+      }
+      
+      .notification-error .notification-icon {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+      }
+      
+      .notification-warning {
+        border-left-color: #f59e0b;
+      }
+      
+      .notification-warning .notification-icon {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+      }
+      
+      .notification-info {
+        border-left-color: #3b82f6;
+      }
+      
+      .notification-info .notification-icon {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+      }
+      
+      .notification-progress {
+        transform-origin: left;
+        animation: progressBar linear;
+      }
+      
+      @keyframes progressBar {
+        from {
+          transform: scaleX(1);
+        }
+        to {
+          transform: scaleX(0);
+        }
+      }
+
+      /* ===== FLOATING ACTION BUTTON (FAB) ===== */
+      
+      #fab-main:hover + #fab-menu,
+      #fab-menu:hover {
+        opacity: 1;
+        visibility: visible;
+        transform: scale(1);
+      }
+      
+      .fab-button {
+        transition: all var(--transition-normal);
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .fab-button::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+      }
+      
+      .fab-button:active::before {
+        width: 300px;
+        height: 300px;
+      }
+
+      /* ===== INDICATEURS DE CONNEXION ===== */
+      
+      .connection-online #connection-dot {
+        background-color: #10b981;
+        animation: none;
+      }
+      
+      .connection-offline #connection-dot {
+        background-color: #ef4444;
+        animation: pulse 2s infinite;
+      }
+      
+      .connection-loading #connection-dot {
+        background-color: #f59e0b;
+        animation: pulse 1s infinite;
+      }
+
+      /* ===== BREADCRUMBS MODERNISÉS ===== */
+      
+      #breadcrumb-container.show {
+        display: block;
+        animation: slideInLeft 0.3s ease-out;
+      }
+      
+      @keyframes slideInLeft {
+        from {
+          opacity: 0;
+          transform: translateX(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      /* ===== ÉTATS DE CHARGEMENT ENRICHIS ===== */
+      
+      .loading-skeleton {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+      }
+      
+      .loading-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+
+      /* ===== AMÉLIORATIONS POUR LES CARTES DE TÂCHES ===== */
+      
+      .task-card-enhanced {
+        transition: all var(--transition-normal);
+        position: relative;
+      }
+      
+      .task-card-enhanced::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05));
+        opacity: 0;
+        transition: opacity var(--transition-normal);
+        pointer-events: none;
+      }
+      
+      .task-card-enhanced:hover::after {
+        opacity: 1;
+      }
+      
+      .task-priority-indicator {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 4px;
+        height: 100%;
+        border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+      }
+      
+      .priority-high {
+        background: linear-gradient(180deg, #ef4444, #dc2626);
+      }
+      
+      .priority-medium {
+        background: linear-gradient(180deg, #f59e0b, #d97706);
+      }
+      
+      .priority-low {
+        background: linear-gradient(180deg, #10b981, #059669);
+      }
+
+      /* ===== TOOLTIPS MODERNISÉS ===== */
+      
+      .tooltip {
+        position: relative;
+        display: inline-block;
+      }
+      
+      .tooltip .tooltip-text {
+        visibility: hidden;
+        width: max-content;
+        max-width: 200px;
+        background: rgba(31, 41, 55, 0.95);
+        color: white;
+        text-align: center;
+        padding: 8px 12px;
+        border-radius: var(--radius-md);
+        position: absolute;
+        z-index: 1000;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity var(--transition-normal), transform var(--transition-normal);
+        font-size: 12px;
+        font-weight: 500;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      
+      .tooltip .tooltip-text::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: rgba(31, 41, 55, 0.95) transparent transparent transparent;
+      }
+      
+      .tooltip:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+        transform: translateX(-50%) translateY(-4px);
+      }
+
+      /* ===== ANIMATIONS SPÉCIFIQUES MOBILES ===== */
+      
+      @media (max-width: 768px) {
+        .notification-toast {
+          min-width: 280px;
+          max-width: calc(100vw - 2rem);
+        }
+        
+        #quick-actions-fab {
+          bottom: 4rem;
+          right: 1rem;
+        }
+        
+        #fab-main {
+          width: 56px;
+          height: 56px;
+        }
+        
+        #fab-menu button {
+          width: 48px;
+          height: 48px;
+        }
+        
+        .stats-card {
+          transform: none !important;
+        }
+        
+        .card-modern:hover {
+          transform: none;
+        }
+      }
     </style>
   </head>
   <body class="bg-agro-light min-h-screen">
@@ -765,6 +1031,103 @@
       </div>
     </main>
 
+    <!-- Système de notifications modernisé -->
+    <div id="notification-container" class="fixed top-4 right-4 z-50 space-y-3 max-w-sm">
+      <!-- Les notifications seront ajoutées ici dynamiquement -->
+    </div>
+
+    <!-- Toast notification template (hidden) -->
+    <template id="notification-template">
+      <div class="notification-toast transform translate-x-full opacity-0 transition-all duration-300 ease-out">
+        <div class="card-modern p-4 border-l-4 shadow-lg backdrop-blur-lg">
+          <div class="flex items-start space-x-3">
+            <div class="notification-icon flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center">
+              <i class="notification-icon-class text-white text-sm"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <h4 class="notification-title text-sm font-semibold text-primary"></h4>
+                <button class="notification-close text-gray-400 hover:text-gray-600 transition-colors">
+                  <i class="fas fa-times text-xs"></i>
+                </button>
+              </div>
+              <p class="notification-message text-sm text-secondary mt-1"></p>
+              <div class="notification-actions mt-3 flex space-x-2 hidden">
+                <!-- Action buttons will be added here -->
+              </div>
+            </div>
+          </div>
+          <div class="notification-progress absolute bottom-0 left-0 h-1 bg-white/20 transition-all duration-300 ease-linear"></div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Système de breadcrumbs modernisé -->
+    <div id="breadcrumb-container" class="fixed top-20 left-4 z-40 hidden">
+      <nav class="card-modern px-4 py-2 backdrop-blur-lg bg-white/90">
+        <ol class="flex items-center space-x-2 text-sm">
+          <li class="flex items-center">
+            <a href="/" class="text-tertiary hover:text-primary transition-colors">
+              <i class="fas fa-home mr-1"></i>Accueil
+            </a>
+          </li>
+          <li class="flex items-center" id="breadcrumb-current">
+            <i class="fas fa-chevron-right text-gray-300 mx-2"></i>
+            <span class="text-primary font-medium" id="breadcrumb-current-text">Dashboard</span>
+          </li>
+        </ol>
+      </nav>
+    </div>
+
+    <!-- Indicateur de connexion amélioré -->
+    <div id="connection-indicator" class="fixed bottom-4 left-4 z-40">
+      <div class="card-modern px-3 py-2 backdrop-blur-lg bg-white/90 border border-white/50">
+        <div class="flex items-center space-x-2 text-sm">
+          <div id="connection-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+          <span id="connection-text" class="text-tertiary font-medium">Connexion...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions Floating Button -->
+    <div id="quick-actions-fab" class="fixed bottom-6 right-6 z-40">
+      <div class="relative">
+        <!-- Main FAB Button -->
+        <button
+          id="fab-main"
+          class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
+          title="Actions rapides"
+        >
+          <i class="fas fa-plus text-white text-xl transition-transform duration-300 group-hover:rotate-45"></i>
+        </button>
+        
+        <!-- Quick Action Buttons -->
+        <div id="fab-menu" class="absolute bottom-16 right-0 space-y-3 opacity-0 invisible transition-all duration-300 transform scale-90">
+          <button
+            id="fab-new-task"
+            class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
+            title="Nouvelle tâche (Ctrl+N)"
+          >
+            <i class="fas fa-tasks text-white transition-transform duration-300 group-hover:scale-110"></i>
+          </button>
+          <button
+            id="fab-refresh"
+            class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
+            title="Actualiser (Ctrl+R)"
+          >
+            <i class="fas fa-sync-alt text-white transition-transform duration-300 group-hover:rotate-180"></i>
+          </button>
+          <button
+            id="fab-search"
+            class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
+            title="Rechercher (/)"
+          >
+            <i class="fas fa-search text-white transition-transform duration-300 group-hover:scale-110"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal d'aide pour raccourcis clavier -->
     <div id="help-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
       <div class="flex items-center justify-center min-h-screen p-4">
@@ -816,6 +1179,8 @@
     </div>
 
     <!-- Scripts -->
+    <script src="js/notifications.js"></script>
+    <script src="js/ux-enhancements.js"></script>
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
     <script src="js/app.js"></script>
