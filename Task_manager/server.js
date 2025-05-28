@@ -24,6 +24,72 @@ const redisClient = redis.createClient({
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Routes HTML avec injection du PROJECT_NAME (AVANT express.static)
+// Route pour injecter la configuration du projet dans les pages HTML
+app.get("/", (req, res) => {
+  console.log(`📄 Route '/' appelée - PROJECT_NAME: ${PROJECT_NAME}`);
+  const fs = require("fs");
+  let html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
+  
+  // Injecter la variable PROJECT_NAME
+  console.log(`🔧 Remplacement: window.PROJECT_NAME = "${PROJECT_NAME}";`);
+  html = html.replace(
+    'window.PROJECT_NAME = window.PROJECT_NAME || "MyProject";',
+    `window.PROJECT_NAME = "${PROJECT_NAME}";`
+  );
+  
+  // Remplacer le placeholder dans le HTML si présent
+  html = html.replace(/__PROJECT_NAME_H1_PLACEHOLDER__/g, PROJECT_NAME);
+  
+  res.send(html);
+});
+
+app.get("/edit.html", (req, res) => {
+  console.log(`📄 Route '/edit.html' appelée - PROJECT_NAME: ${PROJECT_NAME}`);
+  const fs = require("fs");
+  let html = fs.readFileSync(path.join(__dirname, "edit.html"), "utf8");
+  
+  // Injecter la variable PROJECT_NAME
+  html = html.replace(
+    'window.PROJECT_NAME = window.PROJECT_NAME || "MyProject";',
+    `window.PROJECT_NAME = "${PROJECT_NAME}";`
+  );
+  
+  // Remplacer le placeholder dans le HTML si présent
+  html = html.replace(/__PROJECT_NAME_H1_PLACEHOLDER__/g, PROJECT_NAME);
+  
+  res.send(html);
+});
+
+// Route générale pour tous les fichiers HTML avec injection du PROJECT_NAME
+app.get("*.html", (req, res) => {
+  console.log(`📄 Route générale '*.html' appelée pour ${req.path} - PROJECT_NAME: ${PROJECT_NAME}`);
+  const fs = require("fs");
+  const filePath = path.join(__dirname, req.path);
+  
+  // Vérifier si le fichier existe
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: "Fichier non trouvé" });
+  }
+  
+  let html = fs.readFileSync(filePath, "utf8");
+  
+  // Injecter la variable PROJECT_NAME
+  html = html.replace(
+    'window.PROJECT_NAME = window.PROJECT_NAME || "MyProject";',
+    `window.PROJECT_NAME = "${PROJECT_NAME}";`
+  );
+  
+  // Remplacer tous les placeholders dans le HTML
+  html = html.replace(/__PROJECT_NAME_H1_PLACEHOLDER__/g, PROJECT_NAME);
+  html = html.replace(/__PROJECT_NAME__/g, PROJECT_NAME);
+  html = html.replace(/__PROJECT_FULL_NAME__/g, PROJECT_FULL_NAME);
+  
+  res.send(html);
+});
+
+// Middleware pour les fichiers statiques (APRÈS les routes HTML)
 app.use(express.static(path.join(__dirname)));
 
 // Connexion Redis avec gestion d'erreurs
@@ -370,33 +436,6 @@ async function updateTasksIndex() {
     console.error("Erreur lors de la mise à jour de l'index:", error);
   }
 }
-
-// Route pour injecter la configuration du projet dans les pages HTML
-app.get("/", (req, res) => {
-  const fs = require("fs");
-  let html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
-  
-  // Injecter la variable PROJECT_NAME
-  html = html.replace(
-    'window.PROJECT_NAME = window.PROJECT_NAME || "MyProject";',
-    `window.PROJECT_NAME = "${PROJECT_NAME}";`
-  );
-  
-  res.send(html);
-});
-
-app.get("/edit.html", (req, res) => {
-  const fs = require("fs");
-  let html = fs.readFileSync(path.join(__dirname, "edit.html"), "utf8");
-  
-  // Injecter la variable PROJECT_NAME
-  html = html.replace(
-    'window.PROJECT_NAME = window.PROJECT_NAME || "MyProject";',
-    `window.PROJECT_NAME = "${PROJECT_NAME}";`
-  );
-  
-  res.send(html);
-});
 
 // Gestion des erreurs 404
 app.use((req, res) => {

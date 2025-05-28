@@ -28,7 +28,7 @@ services:
         - PROJECT_NAME=${PROJECT_NAME:-MyProject}
     container_name: ${PROJECT_NAME:-myproject}-task-manager
     ports:
-      - "3001:3001"
+      - "3002:3001"
     environment:
       - PORT=3001
       - PROJECT_NAME=${PROJECT_NAME:-MyProject}
