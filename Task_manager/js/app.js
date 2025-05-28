@@ -46,6 +46,11 @@ class TaskManager {
           e.preventDefault();
           this.toggleStatusButton(button);
         }
+        // Navigation entre les boutons avec les flèches
+        if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+          e.preventDefault();
+          this.navigateBetweenToggles(button, e.key === "ArrowRight");
+        }
       });
     });
 
@@ -83,6 +88,30 @@ class TaskManager {
     document.getElementById("new-task-btn").addEventListener("click", () => {
       this.redirectToCreate();
     });
+
+    // Event listener pour le bouton d'aide
+    document.getElementById("help-btn").addEventListener("click", () => {
+      this.showHelpModal();
+    });
+
+    // Event listeners pour le modal d'aide
+    document.getElementById("close-help-btn").addEventListener("click", () => {
+      this.hideHelpModal();
+    });
+
+    document.getElementById("close-help-modal-btn").addEventListener("click", () => {
+      this.hideHelpModal();
+    });
+
+    // Fermer le modal d'aide avec Escape
+    document.getElementById("help-modal").addEventListener("click", (e) => {
+      if (e.target === e.currentTarget) {
+        this.hideHelpModal();
+      }
+    });
+
+    // Gestion des raccourcis clavier globaux
+    this.setupKeyboardShortcuts();
   }
 
   // Nouvelle méthode pour gérer le toggle des boutons de statut
@@ -474,6 +503,117 @@ class TaskManager {
   // Redirection vers la page de création
   redirectToCreate() {
     window.location.href = "edit.html";
+  }
+
+  // Navigation entre les boutons toggle avec les flèches
+  navigateBetweenToggles(currentButton, goNext) {
+    const allToggles = Array.from(document.querySelectorAll(".toggle-button[data-value]"));
+    const currentIndex = allToggles.indexOf(currentButton);
+    
+    let nextIndex;
+    if (goNext) {
+      nextIndex = currentIndex + 1 >= allToggles.length ? 0 : currentIndex + 1;
+    } else {
+      nextIndex = currentIndex - 1 < 0 ? allToggles.length - 1 : currentIndex - 1;
+    }
+    
+    allToggles[nextIndex].focus();
+  }
+
+  // Raccourcis clavier globaux
+  setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+      // Raccourci Ctrl/Cmd + N pour nouvelle tâche
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        this.redirectToCreate();
+      }
+      
+      // Raccourci Ctrl/Cmd + R pour actualiser
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        this.loadTasks();
+      }
+      
+      // Raccourci '/' pour focus sur la recherche
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
+        const searchInput = document.getElementById('search-input');
+        if (document.activeElement !== searchInput) {
+          e.preventDefault();
+          searchInput.focus();
+        }
+      }
+      
+      // Échap pour clear la recherche
+      if (e.key === 'Escape') {
+        const searchInput = document.getElementById('search-input');
+        if (document.activeElement === searchInput && searchInput.value) {
+          searchInput.value = '';
+          this.currentFilters.search = '';
+          this.applyFilters();
+        } else {
+          // Fermer le modal d'aide si ouvert
+          const helpModal = document.getElementById('help-modal');
+          if (!helpModal.classList.contains('hidden')) {
+            this.hideHelpModal();
+          }
+        }
+      }
+      
+      // F1 ou ? pour afficher l'aide
+      if (e.key === 'F1' || (e.key === '?' && !e.ctrlKey && !e.metaKey)) {
+        e.preventDefault();
+        this.showHelpModal();
+      }
+    });
+  }
+
+  // Afficher le modal d'aide
+  showHelpModal() {
+    const modal = document.getElementById('help-modal');
+    const closeBtn = document.getElementById('close-help-btn');
+    
+    modal.classList.remove('hidden');
+    closeBtn.focus(); // Focus sur le bouton fermer pour l'accessibilité
+    
+    // Piéger le focus dans le modal
+    this.trapFocusInModal(modal);
+  }
+
+  // Masquer le modal d'aide
+  hideHelpModal() {
+    const modal = document.getElementById('help-modal');
+    const helpBtn = document.getElementById('help-btn');
+    
+    modal.classList.add('hidden');
+    helpBtn.focus(); // Retourner le focus au bouton d'aide
+  }
+
+  // Piéger le focus dans un modal (trap focus)
+  trapFocusInModal(modal) {
+    const focusableElements = modal.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    modal.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        if (e.shiftKey) {
+          // Shift + Tab
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          // Tab
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
+    });
   }
 }
 
