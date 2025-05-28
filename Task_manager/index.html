@@ -37,11 +37,21 @@
         transition: all 0.3s ease;
         position: relative;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        border: none;
+        outline: none;
       }
 
       .toggle-button:hover {
         transform: translateY(-1px);
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      .toggle-button:focus {
+        outline: 3px solid #22c55e;
+        outline-offset: 2px;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
       }
 
       .toggle-button.active {
@@ -50,9 +60,9 @@
       }
 
       .toggle-button.inactive {
-        background-color: #e5e7eb !important;
-        color: #6b7280 !important;
-        opacity: 0.7;
+        background-color: #d1d5db !important;
+        color: #1f2937 !important;
+        opacity: 1;
       }
 
       .check-icon {
@@ -194,91 +204,76 @@
             <label class="block text-sm font-semibold text-gray-700 mb-3">
               <i class="fas fa-tasks text-agro-green mr-2"></i>Statuts
             </label>
-            <div class="flex flex-wrap gap-2">
-              <label
-                class="cursor-pointer transition-all duration-200 hover:scale-105"
+            <div class="flex flex-wrap gap-2" role="group" aria-label="Filtres de statut">
+              <button
+                type="button"
+                id="status-todo"
+                data-value="À faire"
+                class="toggle-button bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center"
+                role="button"
+                aria-pressed="true"
+                tabindex="0"
+                aria-label="Filtrer les tâches à faire"
               >
-                <input
-                  type="checkbox"
-                  id="status-todo"
-                  value="À faire"
-                  class="status-checkbox hidden"
-                />
-                <div
-                  class="toggle-button bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center"
-                >
-                  <i class="fas fa-clock mr-2"></i>À faire
-                  <i class="fas fa-check ml-2 check-icon"></i>
-                </div>
-              </label>
+                <i class="fas fa-clock mr-2"></i>À faire
+                <i class="fas fa-check ml-2 check-icon"></i>
+              </button>
 
-              <label
-                class="cursor-pointer transition-all duration-200 hover:scale-105"
+              <button
+                type="button"
+                id="status-progress"
+                data-value="En cours"
+                class="toggle-button bg-yellow-500 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center"
+                role="button"
+                aria-pressed="true"
+                tabindex="0"
+                aria-label="Filtrer les tâches en cours"
               >
-                <input
-                  type="checkbox"
-                  id="status-progress"
-                  value="En cours"
-                  class="status-checkbox hidden"
-                />
-                <div
-                  class="toggle-button bg-yellow-500 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center"
-                >
-                  <i class="fas fa-spinner mr-2"></i>En cours
-                  <i class="fas fa-check ml-2 check-icon"></i>
-                </div>
-              </label>
+                <i class="fas fa-spinner mr-2"></i>En cours
+                <i class="fas fa-check ml-2 check-icon"></i>
+              </button>
 
-              <label
-                class="cursor-pointer transition-all duration-200 hover:scale-105"
+              <button
+                type="button"
+                id="status-completed"
+                data-value="Terminée"
+                class="toggle-button bg-gray-300 text-gray-600 px-4 py-2 rounded-full text-sm font-medium flex items-center inactive"
+                role="button"
+                aria-pressed="false"
+                tabindex="0"
+                aria-label="Filtrer les tâches terminées"
               >
-                <input
-                  type="checkbox"
-                  id="status-completed"
-                  value="Terminée"
-                  class="status-checkbox hidden"
-                />
-                <div
-                  class="toggle-button bg-gray-300 text-gray-600 px-4 py-2 rounded-full text-sm font-medium flex items-center"
-                >
-                  <i class="fas fa-check-circle mr-2"></i>Terminée
-                  <i class="fas fa-check ml-2 check-icon opacity-0"></i>
-                </div>
-              </label>
+                <i class="fas fa-check-circle mr-2"></i>Terminée
+                <i class="fas fa-check ml-2 check-icon opacity-0"></i>
+              </button>
 
-              <label
-                class="cursor-pointer transition-all duration-200 hover:scale-105"
+              <button
+                type="button"
+                id="status-waiting"
+                data-value="En attente"
+                class="toggle-button bg-gray-300 text-gray-600 px-4 py-2 rounded-full text-sm font-medium flex items-center inactive"
+                role="button"
+                aria-pressed="false"
+                tabindex="0"
+                aria-label="Filtrer les tâches en attente"
               >
-                <input
-                  type="checkbox"
-                  id="status-waiting"
-                  value="En attente"
-                  class="status-checkbox hidden"
-                />
-                <div
-                  class="toggle-button bg-gray-300 text-gray-600 px-4 py-2 rounded-full text-sm font-medium flex items-center"
-                >
-                  <i class="fas fa-pause-circle mr-2"></i>En attente
-                  <i class="fas fa-check ml-2 check-icon opacity-0"></i>
-                </div>
-              </label>
+                <i class="fas fa-pause-circle mr-2"></i>En attente
+                <i class="fas fa-check ml-2 check-icon opacity-0"></i>
+              </button>
 
-              <label
-                class="cursor-pointer transition-all duration-200 hover:scale-105"
+              <button
+                type="button"
+                id="status-cancelled"
+                data-value="Annulée"
+                class="toggle-button bg-gray-300 text-gray-600 px-4 py-2 rounded-full text-sm font-medium flex items-center inactive"
+                role="button"
+                aria-pressed="false"
+                tabindex="0"
+                aria-label="Filtrer les tâches annulées"
               >
-                <input
-                  type="checkbox"
-                  id="status-cancelled"
-                  value="Annulée"
-                  class="status-checkbox hidden"
-                />
-                <div
-                  class="toggle-button bg-gray-300 text-gray-600 px-4 py-2 rounded-full text-sm font-medium flex items-center"
-                >
-                  <i class="fas fa-times-circle mr-2"></i>Annulée
-                  <i class="fas fa-check ml-2 check-icon opacity-0"></i>
-                </div>
-              </label>
+                <i class="fas fa-times-circle mr-2"></i>Annulée
+                <i class="fas fa-check ml-2 check-icon opacity-0"></i>
+              </button>
             </div>
           </div>
 

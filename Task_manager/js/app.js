@@ -33,12 +33,19 @@ class TaskManager {
       this.applyFilters();
     });
 
-    // Filtres de statut par cases à cocher avec boutons toggle
-    document.querySelectorAll(".status-checkbox").forEach((checkbox) => {
-      checkbox.addEventListener("change", () => {
-        this.updateStatusFilter();
-        this.updateToggleButtons();
-        this.applyFilters();
+    // Filtres de statut avec nouveaux boutons accessibles
+    document.querySelectorAll(".toggle-button[data-value]").forEach((button) => {
+      // Gestion des clics
+      button.addEventListener("click", () => {
+        this.toggleStatusButton(button);
+      });
+
+      // Gestion du clavier (Enter et Space)
+      button.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          this.toggleStatusButton(button);
+        }
       });
     });
 
@@ -54,18 +61,6 @@ class TaskManager {
       .addEventListener("click", () => {
         this.toggleAllStatus(false);
       });
-
-    // Gestion des clics sur les boutons toggle (labels)
-    document.querySelectorAll('label[for^="status-"]').forEach((label) => {
-      label.addEventListener("click", (e) => {
-        // Le checkbox sera automatiquement changé par le label
-        setTimeout(() => {
-          this.updateStatusFilter();
-          this.updateToggleButtons();
-          this.applyFilters();
-        }, 10);
-      });
-    });
 
     document
       .getElementById("priority-filter")
@@ -90,37 +85,53 @@ class TaskManager {
     });
   }
 
+  // Nouvelle méthode pour gérer le toggle des boutons de statut
+  toggleStatusButton(button) {
+    const isPressed = button.getAttribute("aria-pressed") === "true";
+    const newState = !isPressed;
+    
+    // Mettre à jour l'état aria-pressed
+    button.setAttribute("aria-pressed", newState.toString());
+    
+    // Mettre à jour les classes visuelles
+    if (newState) {
+      button.classList.remove("inactive");
+      button.classList.add("active");
+    } else {
+      button.classList.remove("active");
+      button.classList.add("inactive");
+    }
+    
+    // Mettre à jour les filtres
+    this.updateStatusFilter();
+    this.applyFilters();
+  }
+
   // Initialiser l'état des boutons toggle selon les valeurs par défaut
   initializeToggleButtons() {
-    document.querySelectorAll(".status-checkbox").forEach((checkbox) => {
-      if (this.currentFilters.statusList.includes(checkbox.value)) {
-        checkbox.checked = true;
-      }
-    });
-    this.updateToggleButtons();
-  }
-
-  // Mettre à jour l'apparence visuelle des boutons toggle
-  updateToggleButtons() {
-    document.querySelectorAll(".status-checkbox").forEach((checkbox) => {
-      const toggleButton = checkbox.nextElementSibling;
-      if (checkbox.checked) {
-        toggleButton.classList.remove("inactive");
-        toggleButton.classList.add("active");
+    document.querySelectorAll(".toggle-button[data-value]").forEach((button) => {
+      const value = button.getAttribute("data-value");
+      const isActive = this.currentFilters.statusList.includes(value);
+      
+      button.setAttribute("aria-pressed", isActive.toString());
+      
+      if (isActive) {
+        button.classList.remove("inactive");
+        button.classList.add("active");
       } else {
-        toggleButton.classList.remove("active");
-        toggleButton.classList.add("inactive");
+        button.classList.remove("active");
+        button.classList.add("inactive");
       }
     });
   }
 
-  // Mise à jour du filtre de statut basé sur les cases cochées
+  // Mise à jour du filtre de statut basé sur les boutons pressés
   updateStatusFilter() {
     const checkedStatuses = [];
     document
-      .querySelectorAll(".status-checkbox:checked")
-      .forEach((checkbox) => {
-        checkedStatuses.push(checkbox.value);
+      .querySelectorAll(".toggle-button[data-value][aria-pressed='true']")
+      .forEach((button) => {
+        checkedStatuses.push(button.getAttribute("data-value"));
       });
     this.currentFilters.statusList = checkedStatuses;
   }
@@ -445,11 +456,18 @@ class TaskManager {
 
   // Méthode pour activer/désactiver tous les statuts
   toggleAllStatus(selectAll) {
-    document.querySelectorAll(".status-checkbox").forEach((checkbox) => {
-      checkbox.checked = selectAll;
+    document.querySelectorAll(".toggle-button[data-value]").forEach((button) => {
+      button.setAttribute("aria-pressed", selectAll.toString());
+      
+      if (selectAll) {
+        button.classList.remove("inactive");
+        button.classList.add("active");
+      } else {
+        button.classList.remove("active");
+        button.classList.add("inactive");
+      }
     });
     this.updateStatusFilter();
-    this.updateToggleButtons();
     this.applyFilters();
   }
 
