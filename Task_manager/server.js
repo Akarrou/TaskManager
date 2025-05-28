@@ -362,6 +362,118 @@ app.put("/api/tasks/:id", async (req, res) => {
   }
 });
 
+// Créer une nouvelle tâche
+app.post("/api/tasks", async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      status,
+      priority,
+      category,
+      assignee,
+      dueDate,
+      tags,
+      tasks,
+      problem,
+      objective,
+    } = req.body;
+
+    // Validation des champs obligatoires
+    if (!title) {
+      return res.status(400).json({ error: "Le titre est requis" });
+    }
+
+    // Générer un nouvel ID
+    let newId = 1;
+    try {
+      const allTaskKeys = await redisClient.keys("tasks:*");
+      const numericIds = allTaskKeys
+        .map(key => {
+          const match = key.match(/tasks:(\d+)$/);
+          return match ? parseInt(match[1], 10) : 0;
+        })
+        .filter(id => id > 0);
+      
+      if (numericIds.length > 0) {
+        newId = Math.max(...numericIds) + 1;
+      }
+    } catch (error) {
+      console.error("Erreur lors de la génération de l'ID:", error);
+    }
+
+    const now = new Date().toISOString();
+    const today = new Date().toISOString().split('T')[0];
+
+    // Créer l'objet de tâche
+    const newTask = {
+      id: newId,
+      title: title.trim(),
+      description: description?.trim() || "",
+      status: status || "À faire",
+      priority: priority || "Moyenne",
+      category: category || "Fullstack",
+      assignee: assignee?.trim() || "",
+      dueDate: dueDate || today,
+      tags: Array.isArray(tags) ? tags : (tags ? tags.split(',').map(t => t.trim()) : []),
+      tasks: Array.isArray(tasks) ? tasks : (tasks ? tasks.split('\n').filter(t => t.trim()) : []),
+      problem: problem?.trim() || "",
+      objective: objective?.trim() || "",
+      source_file: "web-interface.mdc",
+      created_at: today,
+      updated_at: now,
+      completed_at: null,
+    };
+
+    // Sauvegarder la nouvelle tâche
+    await redisClient.sendCommand([
+      "JSON.SET",
+      `tasks:${newId}`,
+      "$",
+      JSON.stringify(newTask),
+    ]);
+
+    console.log(`Nouvelle tâche créée avec l'ID ${newId}: ${title}`);
+
+    // Recalculer et mettre à jour l'index
+    await updateTasksIndex();
+
+    res.status(201).json(newTask);
+  } catch (error) {
+    console.error("Erreur lors de la création de la tâche:", error);
+    res.status(500).json({ error: "Erreur lors de la création de la tâche" });
+  }
+});
+
+// Supprimer une tâche
+app.delete("/api/tasks/:id", async (req, res) => {
+  try {
+    const taskId = req.params.id;
+
+    // Vérifier si la tâche existe
+    const existingTask = await redisClient.sendCommand([
+      "JSON.GET",
+      `tasks:${taskId}`,
+    ]);
+    if (!existingTask) {
+      return res.status(404).json({ error: "Tâche non trouvée" });
+    }
+
+    // Supprimer la tâche
+    await redisClient.del(`tasks:${taskId}`);
+
+    console.log(`Tâche supprimée avec l'ID ${taskId}`);
+
+    // Recalculer et mettre à jour l'index
+    await updateTasksIndex();
+
+    res.json({ message: "Tâche supprimée avec succès", id: parseInt(taskId) });
+  } catch (error) {
+    console.error(`Erreur lors de la suppression de la tâche ${req.params.id}:`, error);
+    res.status(500).json({ error: "Erreur lors de la suppression de la tâche" });
+  }
+});
+
 // Fonction utilitaire pour mettre à jour l'index des tâches
 async function updateTasksIndex() {
   try {

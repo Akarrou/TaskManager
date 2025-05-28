@@ -105,6 +105,45 @@ class RedisAPI {
     }
   }
 
+  // Créer une nouvelle tâche
+  async createTask(taskData) {
+    try {
+      const response = await fetch(`${this.baseURL}/tasks`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(taskData),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("Erreur lors de la création de la tâche:", error);
+      throw error;
+    }
+  }
+
+  // Supprimer une tâche
+  async deleteTask(id) {
+    try {
+      const response = await fetch(`${this.baseURL}/tasks/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error(`Erreur lors de la suppression de la tâche ${id}:`, error);
+      throw error;
+    }
+  }
+
   // Données de test pour le développement
   getMockTasks() {
     return [

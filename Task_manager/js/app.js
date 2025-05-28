@@ -83,6 +83,11 @@ class TaskManager {
 
     // Initialiser l'état des boutons toggle
     this.initializeToggleButtons();
+
+    // Event listener pour le bouton nouvelle tâche
+    document.getElementById("new-task-btn").addEventListener("click", () => {
+      this.redirectToCreate();
+    });
   }
 
   // Initialiser l'état des boutons toggle selon les valeurs par défaut
@@ -384,7 +389,7 @@ class TaskManager {
 
     if (isConnected) {
       statusElement.innerHTML =
-        '<i class="fas fa-circle text-green-500"></i> Connecté';
+        '<i class="fas fa-circle text-green-500"></i> Connecté à la base de données';
     } else {
       statusElement.innerHTML =
         '<i class="fas fa-circle text-red-500"></i> Déconnecté (Mode démo)';
@@ -446,6 +451,11 @@ class TaskManager {
     this.updateStatusFilter();
     this.updateToggleButtons();
     this.applyFilters();
+  }
+
+  // Redirection vers la page de création
+  redirectToCreate() {
+    window.location.href = "edit.html";
   }
 }
 

@@ -16,12 +16,52 @@ class TaskEditor {
   // Initialisation
   async init() {
     if (!this.taskId) {
-      this.showError("Aucun ID de tâche spécifié");
-      return;
+      // Mode création : pas d'ID fourni
+      this.setupNewTaskMode();
+    } else {
+      // Mode édition : ID fourni
+      await this.loadTask();
     }
-
-    await this.loadTask();
+    
     this.setupEventListeners();
+  }
+
+  // Configuration pour la création d'une nouvelle tâche
+  setupNewTaskMode() {
+    // Définir un objet tâche vide avec des valeurs par défaut
+    const today = new Date().toISOString().split('T')[0];
+    this.originalTask = {
+      title: "",
+      description: "",
+      status: "À faire",
+      priority: "Moyenne", 
+      category: "Fullstack",
+      assignee: "",
+      dueDate: today,
+      tags: [],
+      tasks: [],
+      problem: "",
+      objective: "",
+      source_file: "web-interface.mdc"
+    };
+    
+    this.currentTasks = [];
+    this.populateForm(this.originalTask);
+    this.showEditForm();
+    this.showLoading(false); // Arrêter le spinner de chargement
+    
+    // Mettre à jour le titre de la page pour indiquer qu'on crée une nouvelle tâche
+    document.title = window.PROJECT_NAME + " - Créer une nouvelle tâche";
+    const pageTitle = document.querySelector('h1');
+    if (pageTitle) {
+      pageTitle.innerHTML = '<i class="fas fa-plus text-blue-600 mr-2"></i>Créer une nouvelle tâche';
+    }
+    
+    // Masquer les informations système puisqu'il n'y en a pas encore
+    const taskInfo = document.getElementById("task-info");
+    if (taskInfo) {
+      taskInfo.style.display = "none";
+    }
   }
 
   // Chargement de la tâche
@@ -39,6 +79,12 @@ class TaskEditor {
       this.currentTasks = [...(task.tasks || [])];
       this.populateForm(task);
       this.showEditForm();
+      
+      // Afficher le bouton de suppression en mode édition
+      const deleteBtn = document.getElementById("delete-btn");
+      if (deleteBtn) {
+        deleteBtn.classList.remove("hidden");
+      }
     } catch (error) {
       console.error("Erreur lors du chargement de la tâche:", error);
       this.showError("Erreur lors du chargement de la tâche");
@@ -163,6 +209,37 @@ class TaskEditor {
       this.resetForm();
     });
 
+    // Bouton de suppression
+    document.getElementById("delete-btn").addEventListener("click", () => {
+      this.showDeleteConfirmation();
+    });
+
+    // Modal de confirmation de suppression
+    document.getElementById("cancel-delete-btn").addEventListener("click", () => {
+      this.hideDeleteConfirmation();
+    });
+
+    document.getElementById("confirm-delete-btn").addEventListener("click", () => {
+      this.handleDelete();
+    });
+
+    // Fermer le modal en cliquant en dehors
+    document.getElementById("delete-confirmation-modal").addEventListener("click", (e) => {
+      if (e.target.id === "delete-confirmation-modal") {
+        this.hideDeleteConfirmation();
+      }
+    });
+
+    // Gestion du clavier pour le modal de confirmation
+    document.addEventListener("keydown", (e) => {
+      const modal = document.getElementById("delete-confirmation-modal");
+      if (!modal.classList.contains("hidden")) {
+        if (e.key === "Escape") {
+          this.hideDeleteConfirmation();
+        }
+      }
+    });
+
     // Mise à jour du badge lors du changement de statut
     document.getElementById("edit-status").addEventListener("change", (e) => {
       this.updateStatusBadge(e.target.value);
@@ -199,8 +276,10 @@ class TaskEditor {
     try {
       // Désactiver le bouton pendant la sauvegarde
       saveBtn.disabled = true;
-      saveBtn.innerHTML =
-        '<i class="fas fa-spinner fa-spin mr-2"></i>Sauvegarde...';
+      const isCreating = !this.taskId;
+      saveBtn.innerHTML = isCreating
+        ? '<i class="fas fa-spinner fa-spin mr-2"></i>Création...'
+        : '<i class="fas fa-spinner fa-spin mr-2"></i>Sauvegarde...';
 
       // Récupérer les données du formulaire
       const form = document.getElementById("task-edit-form");
@@ -233,17 +312,44 @@ class TaskEditor {
         return;
       }
 
-      // Envoyer la mise à jour
-      const updatedTask = await api.updateTask(this.taskId, taskData);
+      let result;
+      if (isCreating) {
+        // Créer une nouvelle tâche
+        result = await api.createTask(taskData);
+        this.taskId = result.id; // Mettre à jour l'ID pour les futures opérations
+        
+        // Mettre à jour l'URL pour inclure l'ID
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('id', result.id);
+        window.history.replaceState({}, '', newUrl);
+        
+        // Mettre à jour le titre de la page
+        document.title = window.PROJECT_NAME + " - Éditer la tâche #" + result.id;
+        const pageTitle = document.querySelector('h1');
+        if (pageTitle) {
+          pageTitle.innerHTML = '<i class="fas fa-edit text-blue-600 mr-2"></i>Éditer la tâche #' + result.id;
+        }
+        
+        // Afficher les informations système maintenant qu'on a une tâche
+        const taskInfo = document.getElementById("task-info");
+        if (taskInfo) {
+          taskInfo.style.display = "block";
+        }
+        
+        this.showSuccessMessage("Tâche créée avec succès !");
+      } else {
+        // Mettre à jour une tâche existante
+        result = await api.updateTask(this.taskId, taskData);
+        this.showSuccessMessage("Tâche mise à jour avec succès");
+      }
 
       // Mettre à jour les données originales
-      this.originalTask = { ...updatedTask };
-      this.currentTasks = [...(updatedTask.tasks || [])];
+      this.originalTask = { ...result };
+      this.currentTasks = [...(result.tasks || [])];
 
       // Mettre à jour l'affichage
-      this.updateTaskInfo(updatedTask);
+      this.updateTaskInfo(result);
 
-      this.showSuccessMessage("Tâche mise à jour avec succès");
     } catch (error) {
       console.error("Erreur lors de la sauvegarde:", error);
       this.showError("Erreur lors de la sauvegarde de la tâche");
@@ -254,23 +360,54 @@ class TaskEditor {
     }
   }
 
+  // Gestion de la suppression avec confirmation
+  async handleDelete() {
+    if (!this.taskId) {
+      this.showError("Impossible de supprimer une tâche non créée");
+      return;
+    }
+
+    const deleteBtn = document.getElementById("delete-btn");
+    const confirmBtn = document.getElementById("confirm-delete-btn");
+    const originalText = confirmBtn.innerHTML;
+
+    try {
+      // Masquer le modal de confirmation
+      this.hideDeleteConfirmation();
+
+      // Désactiver les boutons pendant la suppression
+      deleteBtn.disabled = true;
+      confirmBtn.disabled = true;
+      confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Suppression...';
+
+      // Supprimer la tâche via l'API
+      const taskTitle = this.originalTask?.title || "cette tâche";
+      await api.deleteTask(this.taskId);
+
+      // Afficher un message de succès
+      this.showSuccessMessage(`Tâche "${taskTitle}" supprimée avec succès !`);
+
+      // Rediriger vers la liste des tâches après un court délai
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1500);
+
+    } catch (error) {
+      console.error("Erreur lors de la suppression de la tâche:", error);
+      this.showError(`Erreur lors de la suppression : ${error.message}`);
+      
+      // Réactiver les boutons
+      deleteBtn.disabled = false;
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = originalText;
+    }
+  }
+
   // Validation du formulaire
   validateForm(taskData) {
     if (!taskData.title) {
       this.showError("Le titre est obligatoire");
       document.getElementById("edit-title").focus();
-      return false;
-    }
-
-    if (!taskData.description) {
-      this.showError("La description est obligatoire");
-      document.getElementById("edit-description").focus();
-      return false;
-    }
-
-    if (!taskData.assignee) {
-      this.showError("L'assigné est obligatoire");
-      document.getElementById("edit-assignee").focus();
       return false;
     }
 
@@ -321,6 +458,26 @@ class TaskEditor {
         document.body.removeChild(notification);
       }, 300);
     }, 3000);
+  }
+
+  showDeleteConfirmation() {
+    // Personnaliser le message de confirmation
+    const taskTitle = this.originalTask?.title || "cette tâche";
+    const messageElement = document.getElementById("delete-confirmation-message");
+    
+    messageElement.innerHTML = `
+      Êtes-vous sûr de vouloir supprimer la tâche <strong>"${taskTitle}"</strong> ?
+      <br><br>
+      <span class="text-red-600 font-medium">Cette action est irréversible !</span>
+    `;
+    
+    // Afficher le modal de confirmation
+    document.getElementById("delete-confirmation-modal").classList.remove("hidden");
+  }
+
+  hideDeleteConfirmation() {
+    // Masquer le modal de confirmation
+    document.getElementById("delete-confirmation-modal").classList.add("hidden");
   }
 }
 
