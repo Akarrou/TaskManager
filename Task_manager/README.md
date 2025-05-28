@@ -76,6 +76,8 @@ L'application sera disponible sur : **http://localhost:3001**
 
 ## 🐳 Déploiement Docker
 
+**Note sur les noms des objets Docker :** La variable `PROJECT_NAME` que vous définissez sera utilisée pour nommer les conteneurs et volumes Docker. Par exemple, si `PROJECT_NAME` est `MonProjet`, le conteneur de l'application sera `MonProjet-task-manager` et le volume Redis `MonProjet-task-redis-data`. La casse de `PROJECT_NAME` est préservée pour ces noms. Le script `build.sh` génère cependant un nom d'image Docker en minuscules (par exemple, `monprojet-task-manager`).
+
 ### Méthode rapide avec le script
 
 ```bash

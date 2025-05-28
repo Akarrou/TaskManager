@@ -19,15 +19,15 @@ PROJECT_NAME_LOWER=$(echo "$PROJECT_NAME" | tr '[:upper:]' '[:lower:]')
 
 # Nettoyer les conteneurs existants
 echo "🧹 Cleaning existing containers..."
-docker-compose -f docker-compose.task-manager.yml down --remove-orphans 2>/dev/null || true
+sudo DOCKER_HOST=unix:///var/run/docker.sock /usr/local/bin/docker-compose -f docker-compose.task-manager.yml down --remove-orphans 2>/dev/null || true
 
 # Supprimer les images existantes
 echo "🗑️  Removing old images..."
-docker rmi ${PROJECT_NAME_LOWER}-task-manager 2>/dev/null || true
+sudo docker rmi ${PROJECT_NAME_LOWER}-task-manager 2>/dev/null || true
 
 # Construire l'image Docker
 echo "🐳 Building Docker image..."
-docker build \
+sudo docker build \
   -t ${PROJECT_NAME_LOWER}-task-manager \
   -f task-manager.Dockerfile \
   --build-arg PROJECT_NAME="$PROJECT_NAME" \
@@ -35,7 +35,7 @@ docker build \
 
 # Démarrer les services
 echo "🚀 Starting services..."
-docker-compose -f docker-compose.task-manager.yml up -d
+sudo DOCKER_HOST=unix:///var/run/docker.sock /usr/local/bin/docker-compose -f docker-compose.task-manager.yml up -d
 
 echo "✅ Build completed successfully!"
 echo "🌐 Application available at: http://localhost:3001"
