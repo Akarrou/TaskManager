@@ -198,11 +198,30 @@ class TaskEditor {
   // Configuration des événements
   setupEventListeners() {
     // Soumission du formulaire
-    const form = document.getElementById("task-edit-form");
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      this.handleSave();
+    document
+      .getElementById("task-edit-form")
+      .addEventListener("submit", (e) => {
+        e.preventDefault();
+        this.handleSave();
+      });
+
+    // Validation temps réel des champs
+    this.setupFieldValidation();
+
+    // Bouton d'ajout de sous-tâche
+    document.getElementById("add-task-btn").addEventListener("click", () => {
+      this.addTask();
     });
+
+    // Entrée pour ajouter une sous-tâche avec Enter
+    document
+      .getElementById("new-task-input")
+      .addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          this.addTask();
+        }
+      });
 
     // Bouton de réinitialisation
     document.getElementById("reset-btn").addEventListener("click", () => {
@@ -214,50 +233,237 @@ class TaskEditor {
       this.showDeleteConfirmation();
     });
 
-    // Modal de confirmation de suppression
-    document.getElementById("cancel-delete-btn").addEventListener("click", () => {
-      this.hideDeleteConfirmation();
-    });
+    // Gestionnaires pour le modal de confirmation
+    document
+      .getElementById("confirm-delete-btn")
+      .addEventListener("click", () => {
+        this.handleDelete();
+      });
 
-    document.getElementById("confirm-delete-btn").addEventListener("click", () => {
-      this.handleDelete();
-    });
-
-    // Fermer le modal en cliquant en dehors
-    document.getElementById("delete-confirmation-modal").addEventListener("click", (e) => {
-      if (e.target.id === "delete-confirmation-modal") {
+    document
+      .getElementById("cancel-delete-btn")
+      .addEventListener("click", () => {
         this.hideDeleteConfirmation();
-      }
-    });
+      });
 
-    // Gestion du clavier pour le modal de confirmation
-    document.addEventListener("keydown", (e) => {
-      const modal = document.getElementById("delete-confirmation-modal");
-      if (!modal.classList.contains("hidden")) {
-        if (e.key === "Escape") {
+    // Fermer le modal en cliquant sur le backdrop
+    document
+      .getElementById("delete-confirmation-modal")
+      .addEventListener("click", (e) => {
+        if (e.target === e.currentTarget) {
           this.hideDeleteConfirmation();
         }
-      }
-    });
+      });
 
-    // Mise à jour du badge lors du changement de statut
+    // Mise à jour du badge de statut quand le statut change
     document.getElementById("edit-status").addEventListener("change", (e) => {
       this.updateStatusBadge(e.target.value);
     });
+  }
 
-    // Gestion des sous-tâches
-    document.getElementById("add-task-btn").addEventListener("click", () => {
-      this.addTask();
+  // Configuration de la validation en temps réel
+  setupFieldValidation() {
+    const fieldsToValidate = [
+      {
+        id: 'edit-title',
+        validators: [
+          { type: 'required', message: 'Le titre est obligatoire' },
+          { type: 'minLength', value: 3, message: 'Le titre doit contenir au moins 3 caractères' },
+          { type: 'maxLength', value: 100, message: 'Le titre ne peut pas dépasser 100 caractères' }
+        ]
+      },
+      {
+        id: 'edit-description',
+        validators: [
+          { type: 'maxLength', value: 1000, message: 'La description ne peut pas dépasser 1000 caractères' }
+        ]
+      },
+      {
+        id: 'edit-assignee',
+        validators: [
+          { type: 'required', message: 'Le champ assigné est obligatoire' },
+          { type: 'minLength', value: 2, message: 'Le nom doit contenir au moins 2 caractères' },
+          { type: 'pattern', value: /^[a-zA-ZÀ-ÿ\s\-']+$/, message: 'Le nom ne peut contenir que des lettres, espaces, tirets et apostrophes' }
+        ]
+      },
+      {
+        id: 'edit-dueDate',
+        validators: [
+          { type: 'dateNotPast', message: 'La date d\'échéance ne peut pas être dans le passé' }
+        ]
+      }
+    ];
+
+    fieldsToValidate.forEach(fieldConfig => {
+      const field = document.getElementById(fieldConfig.id);
+      if (field) {
+        // Validation en temps réel (à la saisie)
+        field.addEventListener('input', () => {
+          this.validateField(fieldConfig.id, fieldConfig.validators);
+        });
+
+        // Validation au blur (perte de focus)
+        field.addEventListener('blur', () => {
+          this.validateField(fieldConfig.id, fieldConfig.validators);
+        });
+      }
     });
+  }
 
-    document
-      .getElementById("new-task-input")
-      .addEventListener("keypress", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          this.addTask();
-        }
-      });
+  // Validation d'un champ spécifique
+  validateField(fieldId, validators) {
+    const field = document.getElementById(fieldId);
+    const value = field.value.trim();
+    const errorDiv = document.getElementById(`${fieldId}-error`);
+    const successDiv = document.getElementById(`${fieldId}-success`);
+    const errorText = errorDiv?.querySelector('.error-text');
+
+    let isValid = true;
+    let errorMessage = '';
+
+    // Appliquer chaque validateur
+    for (const validator of validators) {
+      switch (validator.type) {
+        case 'required':
+          if (!value) {
+            isValid = false;
+            errorMessage = validator.message;
+          }
+          break;
+
+        case 'minLength':
+          if (value && value.length < validator.value) {
+            isValid = false;
+            errorMessage = validator.message;
+          }
+          break;
+
+        case 'maxLength':
+          if (value && value.length > validator.value) {
+            isValid = false;
+            errorMessage = validator.message;
+          }
+          break;
+
+        case 'pattern':
+          if (value && !validator.value.test(value)) {
+            isValid = false;
+            errorMessage = validator.message;
+          }
+          break;
+
+        case 'dateNotPast':
+          if (value) {
+            const selectedDate = new Date(value);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (selectedDate < today) {
+              isValid = false;
+              errorMessage = validator.message;
+            }
+          }
+          break;
+      }
+
+      // Arrêter au premier échec
+      if (!isValid) break;
+    }
+
+    // Mettre à jour l'affichage
+    this.updateFieldValidationDisplay(field, errorDiv, successDiv, errorText, isValid, errorMessage, value);
+
+    return isValid;
+  }
+
+  // Mise à jour de l'affichage de validation
+  updateFieldValidationDisplay(field, errorDiv, successDiv, errorText, isValid, errorMessage, value) {
+    // Supprimer les classes existantes
+    field.classList.remove('error', 'success');
+    
+    if (errorDiv) errorDiv.classList.add('hidden');
+    if (successDiv) successDiv.classList.add('hidden');
+
+    if (!value) {
+      // Champ vide - pas de feedback visuel sauf si requis et en erreur
+      return;
+    }
+
+    if (isValid) {
+      // Champ valide
+      field.classList.add('success');
+      if (successDiv) successDiv.classList.remove('hidden');
+    } else {
+      // Champ en erreur
+      field.classList.add('error');
+      if (errorDiv && errorText) {
+        errorText.textContent = errorMessage;
+        errorDiv.classList.remove('hidden');
+      }
+    }
+  }
+
+  // Validation complète du formulaire
+  validateForm(taskData) {
+    let isFormValid = true;
+    const errors = [];
+
+    // Valider le titre
+    if (!taskData.title) {
+      errors.push('Le titre est obligatoire');
+      isFormValid = false;
+      document.getElementById("edit-title").focus();
+    } else if (taskData.title.length < 3) {
+      errors.push('Le titre doit contenir au moins 3 caractères');
+      isFormValid = false;
+    } else if (taskData.title.length > 100) {
+      errors.push('Le titre ne peut pas dépasser 100 caractères');
+      isFormValid = false;
+    }
+
+    // Valider l'assigné
+    if (!taskData.assignee) {
+      errors.push('Le champ assigné est obligatoire');
+      isFormValid = false;
+    } else if (taskData.assignee.length < 2) {
+      errors.push('Le nom de l\'assigné doit contenir au moins 2 caractères');
+      isFormValid = false;
+    } else if (!/^[a-zA-ZÀ-ÿ\s\-']+$/.test(taskData.assignee)) {
+      errors.push('Le nom de l\'assigné ne peut contenir que des lettres, espaces, tirets et apostrophes');
+      isFormValid = false;
+    }
+
+    // Valider la description
+    if (taskData.description && taskData.description.length > 1000) {
+      errors.push('La description ne peut pas dépasser 1000 caractères');
+      isFormValid = false;
+    }
+
+    // Valider la date d'échéance
+    if (taskData.dueDate) {
+      const selectedDate = new Date(taskData.dueDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        errors.push('La date d\'échéance ne peut pas être dans le passé');
+        isFormValid = false;
+      }
+    }
+
+    // Afficher les erreurs si nécessaire
+    if (!isFormValid) {
+      this.showValidationErrors(errors);
+    }
+
+    return isFormValid;
+  }
+
+  // Affichage des erreurs de validation globales
+  showValidationErrors(errors) {
+    const errorMessage = errors.length === 1 
+      ? errors[0] 
+      : `Veuillez corriger les erreurs suivantes :\n• ${errors.join('\n• ')}`;
+    
+    this.showError(errorMessage);
   }
 
   // Réinitialiser le formulaire avec les valeurs originales
@@ -403,17 +609,6 @@ class TaskEditor {
     }
   }
 
-  // Validation du formulaire
-  validateForm(taskData) {
-    if (!taskData.title) {
-      this.showError("Le titre est obligatoire");
-      document.getElementById("edit-title").focus();
-      return false;
-    }
-
-    return true;
-  }
-
   // Affichage/masquage des éléments
   showLoading(show) {
     const loading = document.getElementById("loading");
@@ -428,13 +623,24 @@ class TaskEditor {
     const errorDiv = document.getElementById("error-message");
     const errorText = document.getElementById("error-text");
 
-    errorText.textContent = message;
+    // Gérer les messages multilignes
+    if (message.includes('\n•')) {
+      const lines = message.split('\n');
+      const formattedMessage = lines.map((line, index) => {
+        if (index === 0) return line;
+        return line.replace('•', '<span class="inline-block w-2 h-2 bg-red-500 rounded-full mr-2 mt-1"></span>');
+      }).join('<br>');
+      errorText.innerHTML = formattedMessage;
+    } else {
+      errorText.textContent = message;
+    }
+
     errorDiv.classList.remove("hidden");
 
-    // Masquer après 5 secondes
+    // Masquer après 8 secondes pour les messages de validation
     setTimeout(() => {
       errorDiv.classList.add("hidden");
-    }, 5000);
+    }, 8000);
   }
 
   showSuccessMessage(message) {
