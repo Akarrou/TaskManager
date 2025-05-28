@@ -1,5 +1,11 @@
 // Configuration pour l'application Task Manager
 const CONFIG = {
+  // Configuration du projet
+  PROJECT: {
+    NAME: window.PROJECT_NAME || "AgroFlow",
+    FULL_NAME: (window.PROJECT_NAME || "AgroFlow") + " Task Manager",
+  },
+
   // URL de l'API Redis (proxy local)
   API_BASE_URL: "http://localhost:3001/api",
 

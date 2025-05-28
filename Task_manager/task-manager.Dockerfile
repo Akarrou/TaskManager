@@ -1,10 +1,13 @@
 # Multi-stage build pour l'application Task Manager
 FROM node:20-alpine AS base
 
+# Arguments de build
+ARG PROJECT_NAME=AgroFlow
+
 # Métadonnées de l'image
-LABEL maintainer="AgroFlow Team <admin@agroflow.fr>"
+LABEL maintainer="${PROJECT_NAME} Team <admin@${PROJECT_NAME,,}.fr>"
 LABEL version="1.0"
-LABEL description="AgroFlow Task Manager - Interface de gestion des tâches Redis JSON"
+LABEL description="${PROJECT_NAME} Task Manager - Interface de gestion des tâches Redis JSON"
 
 # Installer des utilitaires nécessaires
 RUN apk add --no-cache curl
@@ -32,6 +35,7 @@ USER taskmanager
 # Variables d'environnement
 ENV NODE_ENV=production
 ENV PORT=3001
+ENV PROJECT_NAME=${PROJECT_NAME}
 ENV REDIS_HOST=redis
 ENV REDIS_PORT=6379
 

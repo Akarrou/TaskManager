@@ -2,12 +2,12 @@ services:
   # Redis avec module JSON pour le Task Manager
   redis:
     image: redis/redis-stack:latest
-    container_name: agroflow-task-redis
+    container_name: ${PROJECT_NAME:-agroflow}-task-redis
     ports:
       - "6380:6379" # Redis sur port 6380 (externe)
       - "8002:8001" # RedisInsight sur port 8002 (externe)
     volumes:
-      - agroflow-task-redis-data:/data
+      - ${PROJECT_NAME:-agroflow}-task-redis-data:/data
     environment:
       - REDIS_ARGS=--save 60 1 --loglevel warning
     restart: unless-stopped
@@ -24,12 +24,15 @@ services:
     build:
       context: ../
       dockerfile: Task_manager/task-manager.Dockerfile
-    container_name: agroflow-task-manager
+      args:
+        - PROJECT_NAME=${PROJECT_NAME:-AgroFlow}
+    container_name: ${PROJECT_NAME:-agroflow}-task-manager
     ports:
       - "3001:3001"
     environment:
       - PORT=3001
-      - REDIS_HOST=agroflow-task-redis
+      - PROJECT_NAME=${PROJECT_NAME:-AgroFlow}
+      - REDIS_HOST=${PROJECT_NAME:-agroflow}-task-redis
       - REDIS_PORT=6379 # Port interne du conteneur Redis
     depends_on:
       redis:
@@ -42,7 +45,7 @@ services:
   # Accessible via http://localhost:8002
 
 volumes:
-  agroflow-task-redis-data:
+  ${PROJECT_NAME:-agroflow}-task-redis-data:
     driver: local
 
 networks:

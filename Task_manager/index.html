@@ -3,7 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AgroFlow - Task Manager</title>
+    <title id="page-title">Task Manager</title>
+    <script>
+      // Configuration du nom du projet (peut être surchargée par variables d'environnement)
+      window.PROJECT_NAME = window.PROJECT_NAME || "AgroFlow";
+      // Mettre à jour le titre de la page
+      document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('page-title').textContent = window.PROJECT_NAME + ' - Task Manager';
+        document.getElementById('app-title').textContent = window.PROJECT_NAME + ' Task Manager';
+      });
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -90,7 +99,7 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-3">
             <i class="fas fa-seedling text-agro-green text-2xl"></i>
-            <h1 class="text-2xl font-bold">AgroFlow Task Manager</h1>
+            <h1 id="app-title" class="text-2xl font-bold">Task Manager</h1>
           </div>
           <div class="flex items-center space-x-4">
             <span id="connection-status" class="px-3 py-1 rounded-full text-sm">

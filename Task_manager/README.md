@@ -1,9 +1,11 @@
-# AgroFlow Task Manager
+# Task Manager
 
-Une interface web moderne pour visualiser et gérer les tâches du projet AgroFlow stockées dans Redis JSON.
+Une interface web moderne pour visualiser et gérer les tâches stockées dans Redis JSON. 
+Le nom du projet est configurable via des variables d'environnement.
 
 ## 🚀 Fonctionnalités
 
+- **Nom de projet configurable** via la variable `PROJECT_NAME`
 - **Affichage en temps réel** des tâches depuis Redis JSON
 - **Statistiques visuelles** avec tableaux de bord
 - **Filtrage avancé** par statut, priorité, catégorie
@@ -21,14 +23,33 @@ Une interface web moderne pour visualiser et gérer les tâches du projet AgroFl
 
 ## 🛠 Installation
 
-### 1. Installation des dépendances
+### 1. Configuration du nom de projet
+
+Définissez la variable d'environnement `PROJECT_NAME` :
+
+```bash
+# Pour AgroFlow (par défaut)
+export PROJECT_NAME="AgroFlow"
+
+# Pour un autre projet
+export PROJECT_NAME="MonProjet"
+```
+
+Ou créez un fichier `.env` :
+
+```bash
+cp env.example .env
+# Éditez le fichier .env avec votre nom de projet
+```
+
+### 2. Installation des dépendances
 
 ```bash
 cd Task_manager
 npm install
 ```
 
-### 2. Vérification de Redis
+### 3. Vérification de Redis
 
 Assurez-vous que Redis Stack est démarré avec le module JSON :
 
@@ -41,31 +62,65 @@ redis-cli ping
 redis-cli JSON.GET tasks:index
 ```
 
-### 3. Démarrage de l'application
+### 4. Démarrage de l'application
 
 ```bash
 # Mode production
-npm start
+PROJECT_NAME="MonProjet" npm start
 
 # Mode développement (avec nodemon)
-npm run dev
+PROJECT_NAME="MonProjet" npm run dev
 ```
 
 L'application sera disponible sur : **http://localhost:3001**
+
+## 🐳 Déploiement Docker
+
+### Méthode rapide avec le script
+
+```bash
+# Utiliser AgroFlow (par défaut)
+./build.sh
+
+# Utiliser un autre nom de projet
+./build.sh "MonProjet"
+
+# Ou avec variable d'environnement
+PROJECT_NAME="MonProjet" ./build.sh
+```
+
+### Méthode manuelle
+
+```bash
+# Définir le nom du projet
+export PROJECT_NAME="MonProjet"
+
+# Build avec npm scripts
+npm run docker:build
+npm run docker:up
+
+# Ou directement avec Docker
+docker build -t monprojet-task-manager \
+  -f task-manager.Dockerfile \
+  --build-arg PROJECT_NAME="MonProjet" \
+  ..
+
+PROJECT_NAME="MonProjet" docker-compose -f docker-compose.task-manager.yml up -d
+```
 
 ## 🔧 Configuration
 
 ### Variables d'environnement
 
-Vous pouvez personnaliser la configuration via les variables d'environnement :
+| Variable | Défaut | Description |
+|----------|--------|-------------|
+| `PROJECT_NAME` | `AgroFlow` | Nom du projet affiché dans l'interface |
+| `PORT` | `3001` | Port du serveur web |
+| `REDIS_HOST` | `localhost` | Adresse Redis |
+| `REDIS_PORT` | `6379` | Port Redis |
+| `NODE_ENV` | `production` | Environnement Node.js |
 
-```bash
-PORT=3001                    # Port du serveur web
-REDIS_HOST=localhost         # Adresse Redis
-REDIS_PORT=6379             # Port Redis
-```
-
-### Configuration dans le code
+### Personnalisation avancée
 
 Modifiez `js/config.js` pour personnaliser :
 
@@ -92,6 +147,9 @@ L'application utilise le format de données suivant dans Redis :
   "category": "Frontend|Backend|Fullstack|Testing|OPS",
   "tags": ["tag1", "tag2"],
   "tasks": ["sous-tâche 1", "sous-tâche 2"],
+  "problem": "Description du problème",
+  "objective": "Objectif à atteindre",
+  "source_file": "nom-du-fichier.mdc",
   "created_at": "2024-12-20",
   "updated_at": "2024-12-20",
   "completed_at": null

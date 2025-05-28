@@ -6,6 +6,10 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Configuration du projet
+const PROJECT_NAME = process.env.PROJECT_NAME || "AgroFlow";
+const PROJECT_FULL_NAME = `${PROJECT_NAME} Task Manager`;
+
 // Configuration Redis avec variables d'environnement
 const REDIS_HOST = process.env.REDIS_HOST || "localhost";
 const REDIS_PORT = process.env.REDIS_PORT || 6379;
@@ -367,9 +371,31 @@ async function updateTasksIndex() {
   }
 }
 
-// Route par défaut pour servir l'application
+// Route pour injecter la configuration du projet dans les pages HTML
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  const fs = require("fs");
+  let html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
+  
+  // Injecter la variable PROJECT_NAME
+  html = html.replace(
+    'window.PROJECT_NAME = window.PROJECT_NAME || "AgroFlow";',
+    `window.PROJECT_NAME = "${PROJECT_NAME}";`
+  );
+  
+  res.send(html);
+});
+
+app.get("/edit.html", (req, res) => {
+  const fs = require("fs");
+  let html = fs.readFileSync(path.join(__dirname, "edit.html"), "utf8");
+  
+  // Injecter la variable PROJECT_NAME
+  html = html.replace(
+    'window.PROJECT_NAME = window.PROJECT_NAME || "AgroFlow";',
+    `window.PROJECT_NAME = "${PROJECT_NAME}";`
+  );
+  
+  res.send(html);
 });
 
 // Gestion des erreurs 404
@@ -386,20 +412,20 @@ async function startServer() {
     // Démarrer le serveur Express
     app.listen(PORT, () => {
       console.log(
-        `🚀 Serveur Task Manager démarré sur http://localhost:${PORT}`
+        `🚀 ${PROJECT_FULL_NAME} démarré sur http://localhost:${PORT}`
       );
       console.log(`📊 API disponible sur http://localhost:${PORT}/api`);
       console.log(`🌐 Interface web disponible sur http://localhost:${PORT}`);
     });
   } catch (error) {
-    console.error("❌ Erreur lors du démarrage du serveur:", error);
+    console.error(`❌ Erreur lors du démarrage du serveur ${PROJECT_NAME}:`, error);
     process.exit(1);
   }
 }
 
 // Gestion propre de l'arrêt
 process.on("SIGINT", async () => {
-  console.log("\n🛑 Arrêt du serveur...");
+  console.log(`\n🛑 Arrêt du serveur ${PROJECT_NAME}...`);
   try {
     await redisClient.quit();
     process.exit(0);
