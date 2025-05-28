@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AgroFlow - Modifier une tâche</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              "agro-green": "#22c55e",
+              "agro-dark": "#1f2937",
+              "agro-light": "#f3f4f6",
+            },
+          },
+        },
+      };
+    </script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      /* Styles personnalisés */
+      .form-input {
+        transition: all 0.3s ease;
+      }
+
+      .form-input:focus {
+        transform: scale(1.02);
+        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
+      }
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body class="bg-agro-light min-h-screen">
+    <!-- Header -->
+    <header class="bg-agro-dark text-white shadow-lg">
+      <div class="container mx-auto px-4 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <i class="fas fa-seedling text-agro-green text-2xl"></i>
+            <h1 class="text-2xl font-bold">AgroFlow Task Manager</h1>
+          </div>
+          <div class="flex items-center space-x-4">
+            <a
+              href="/"
+              class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg transition-colors"
+            >
+              <i class="fas fa-arrow-left mr-2"></i>Retour à la liste
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+      <!-- Loading -->
+      <div id="loading" class="text-center py-12">
+        <i class="fas fa-spinner fa-spin text-4xl text-agro-green mb-4"></i>
+        <p class="text-lg text-gray-600">Chargement de la tâche...</p>
+      </div>
+
+      <!-- Error Message -->
+      <div id="error-message" class="hidden">
+        <div
+          class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6"
+        >
+          <div class="flex items-center">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            <span id="error-text">Erreur lors du chargement de la tâche</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Form -->
+      <div id="edit-container" class="hidden">
+        <div class="bg-white rounded-lg shadow-lg">
+          <!-- Header -->
+          <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <h2 class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-edit text-agro-green mr-3"></i>Modifier la
+                tâche
+              </h2>
+              <div id="task-status-badge" class="status-badge">
+                <!-- Status badge will be inserted here -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Content -->
+          <form id="task-edit-form" class="p-6">
+            <div class="space-y-6">
+              <!-- Titre -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                  <i class="fas fa-heading text-blue-500 mr-2"></i>Titre
+                </label>
+                <input
+                  type="text"
+                  id="edit-title"
+                  name="title"
+                  required
+                  class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent text-lg font-medium"
+                />
+              </div>
+
+              <!-- Description -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                  <i class="fas fa-align-left text-green-500 mr-2"></i
+                  >Description
+                </label>
+                <textarea
+                  id="edit-description"
+                  name="description"
+                  rows="5"
+                  required
+                  class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent resize-none"
+                ></textarea>
+              </div>
+
+              <!-- Ligne 1: Statut et Priorité -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    <i class="fas fa-tasks text-agro-green mr-2"></i>Statut
+                  </label>
+                  <select
+                    id="edit-status"
+                    name="status"
+                    class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent bg-white"
+                  >
+                    <option value="À faire">🕐 À faire</option>
+                    <option value="En cours">⚙️ En cours</option>
+                    <option value="Terminée">✅ Terminée</option>
+                    <option value="En attente">⏸️ En attente</option>
+                    <option value="Annulée">❌ Annulée</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i
+                    >Priorité
+                  </label>
+                  <select
+                    id="edit-priority"
+                    name="priority"
+                    class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent bg-white"
+                  >
+                    <option value="Haute">🔴 Haute</option>
+                    <option value="Moyenne">🟡 Moyenne</option>
+                    <option value="Basse">🟢 Basse</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Ligne 2: Catégorie et Assigné -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    <i class="fas fa-layer-group text-purple-500 mr-2"></i
+                    >Catégorie
+                  </label>
+                  <select
+                    id="edit-category"
+                    name="category"
+                    class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent bg-white"
+                  >
+                    <option value="Frontend">💻 Frontend</option>
+                    <option value="Backend">⚙️ Backend</option>
+                    <option value="Fullstack">🔄 Fullstack</option>
+                    <option value="Testing">🧪 Testing</option>
+                    <option value="OPS">🛠 OPS</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    <i class="fas fa-user text-indigo-500 mr-2"></i>Assigné à
+                  </label>
+                  <input
+                    type="text"
+                    id="edit-assignee"
+                    name="assignee"
+                    required
+                    class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <!-- Date d'échéance -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                  <i class="fas fa-calendar-alt text-orange-500 mr-2"></i>Date
+                  d'échéance
+                </label>
+                <input
+                  type="date"
+                  id="edit-dueDate"
+                  name="dueDate"
+                  class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent"
+                />
+              </div>
+
+              <!-- Tags -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                  <i class="fas fa-tags text-pink-500 mr-2"></i>Tags (séparés
+                  par des virgules)
+                </label>
+                <input
+                  type="text"
+                  id="edit-tags"
+                  name="tags"
+                  placeholder="angular, api, crud"
+                  class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent"
+                />
+              </div>
+
+              <!-- Sous-tâches -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                  <i class="fas fa-list-ul text-blue-500 mr-2"></i>Sous-tâches
+                </label>
+                <div id="tasks-container" class="space-y-2 mb-3">
+                  <!-- Les sous-tâches seront ajoutées ici dynamiquement -->
+                </div>
+                <div class="flex gap-2">
+                  <input
+                    type="text"
+                    id="new-task-input"
+                    placeholder="Nouvelle sous-tâche..."
+                    class="form-input flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent"
+                  />
+                  <button
+                    type="button"
+                    id="add-task-btn"
+                    class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  >
+                    <i class="fas fa-plus"></i> Ajouter
+                  </button>
+                </div>
+              </div>
+
+              <!-- Problem et Objective -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    <i class="fas fa-exclamation-circle text-red-500 mr-2"></i
+                    >Problème
+                  </label>
+                  <textarea
+                    id="edit-problem"
+                    name="problem"
+                    rows="4"
+                    placeholder="Description du problème..."
+                    class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent resize-none"
+                  ></textarea>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    <i class="fas fa-target text-green-500 mr-2"></i>Objectif
+                  </label>
+                  <textarea
+                    id="edit-objective"
+                    name="objective"
+                    rows="4"
+                    placeholder="Objectif à atteindre..."
+                    class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent resize-none"
+                  ></textarea>
+                </div>
+              </div>
+
+              <!-- Fichier source -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                  <i class="fas fa-file-alt text-purple-500 mr-2"></i>Fichier
+                  source
+                </label>
+                <input
+                  type="text"
+                  id="edit-source-file"
+                  name="source_file"
+                  placeholder="tache-a-realiser.mdc"
+                  class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <!-- Informations système -->
+            <div
+              id="task-info"
+              class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 mt-6 border-t border-gray-200 text-sm text-gray-500"
+            >
+              <!-- Task info will be inserted here -->
+            </div>
+
+            <!-- Boutons d'action -->
+            <div
+              class="flex justify-between items-center pt-6 mt-6 border-t border-gray-200"
+            >
+              <a
+                href="/"
+                class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                <i class="fas fa-arrow-left mr-2"></i>Retour
+              </a>
+              <div class="flex space-x-4">
+                <button
+                  type="button"
+                  id="reset-btn"
+                  class="px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
+                >
+                  <i class="fas fa-undo mr-2"></i>Réinitialiser
+                </button>
+                <button
+                  type="submit"
+                  id="save-btn"
+                  class="px-6 py-3 bg-agro-green text-white rounded-lg hover:bg-green-600 transition-colors"
+                >
+                  <i class="fas fa-save mr-2"></i>Sauvegarder
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/edit.js"></script>
+  </body>
+</html>
