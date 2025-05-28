@@ -6,7 +6,7 @@
 set -e
 
 # Configuration par défaut
-DEFAULT_PROJECT_NAME="AgroFlow"
+DEFAULT_PROJECT_NAME="MyProject"
 PROJECT_NAME=${1:-${PROJECT_NAME:-$DEFAULT_PROJECT_NAME}}
 
 echo "🏗️  Building Task Manager for project: $PROJECT_NAME"

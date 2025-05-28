@@ -28,11 +28,11 @@ Le nom du projet est configurable via des variables d'environnement.
 Définissez la variable d'environnement `PROJECT_NAME` :
 
 ```bash
-# Pour AgroFlow (par défaut)
-export PROJECT_NAME="AgroFlow"
+# Pour votre projet
+export PROJECT_NAME="MonProjet"
 
 # Pour un autre projet
-export PROJECT_NAME="MonProjet"
+export PROJECT_NAME="SuperApp"
 ```
 
 Ou créez un fichier `.env` :
@@ -79,7 +79,7 @@ L'application sera disponible sur : **http://localhost:3001**
 ### Méthode rapide avec le script
 
 ```bash
-# Utiliser AgroFlow (par défaut)
+# Utiliser MyProject (par défaut)
 ./build.sh
 
 # Utiliser un autre nom de projet
@@ -114,7 +114,7 @@ PROJECT_NAME="MonProjet" docker-compose -f docker-compose.task-manager.yml up -d
 
 | Variable | Défaut | Description |
 |----------|--------|-------------|
-| `PROJECT_NAME` | `AgroFlow` | Nom du projet affiché dans l'interface |
+| `PROJECT_NAME` | `MyProject` | Nom du projet affiché dans l'interface |
 | `PORT` | `3001` | Port du serveur web |
 | `REDIS_HOST` | `localhost` | Adresse Redis |
 | `REDIS_PORT` | `6379` | Port Redis |
@@ -305,4 +305,4 @@ MIT - Voir le fichier LICENSE pour plus de détails.
 
 ---
 
-**Développé pour le projet AgroFlow** 🌱
+**Task Manager générique et configurable** 🚀

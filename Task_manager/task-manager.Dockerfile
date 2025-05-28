@@ -2,7 +2,7 @@
 FROM node:20-alpine AS base
 
 # Arguments de build
-ARG PROJECT_NAME=AgroFlow
+ARG PROJECT_NAME=MyProject
 
 # Métadonnées de l'image
 LABEL maintainer="${PROJECT_NAME} Team <admin@${PROJECT_NAME,,}.fr>"

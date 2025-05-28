@@ -7,7 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Configuration du projet
-const PROJECT_NAME = process.env.PROJECT_NAME || "AgroFlow";
+const PROJECT_NAME = process.env.PROJECT_NAME || "MyProject";
 const PROJECT_FULL_NAME = `${PROJECT_NAME} Task Manager`;
 
 // Configuration Redis avec variables d'environnement
@@ -378,7 +378,7 @@ app.get("/", (req, res) => {
   
   // Injecter la variable PROJECT_NAME
   html = html.replace(
-    'window.PROJECT_NAME = window.PROJECT_NAME || "AgroFlow";',
+    'window.PROJECT_NAME = window.PROJECT_NAME || "MyProject";',
     `window.PROJECT_NAME = "${PROJECT_NAME}";`
   );
   
@@ -391,7 +391,7 @@ app.get("/edit.html", (req, res) => {
   
   // Injecter la variable PROJECT_NAME
   html = html.replace(
-    'window.PROJECT_NAME = window.PROJECT_NAME || "AgroFlow";',
+    'window.PROJECT_NAME = window.PROJECT_NAME || "MyProject";',
     `window.PROJECT_NAME = "${PROJECT_NAME}";`
   );
   
