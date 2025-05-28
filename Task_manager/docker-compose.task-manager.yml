@@ -7,7 +7,7 @@ services:
       - "6380:6379" # Redis sur port 6380 (externe)
       - "8002:8001" # RedisInsight sur port 8002 (externe)
     volumes:
-      - ${PROJECT_NAME:-myproject}-task-redis-data:/data
+      - task-redis-data:/data
     environment:
       - REDIS_ARGS=--save 60 1 --loglevel warning
     restart: unless-stopped
@@ -45,8 +45,9 @@ services:
   # Accessible via http://localhost:8002
 
 volumes:
-  ${PROJECT_NAME:-myproject}-task-redis-data:
+  task-redis-data:
     driver: local
+    name: ${PROJECT_NAME:-myproject}-task-redis-data
 
 networks:
   local_default:

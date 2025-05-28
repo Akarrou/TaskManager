@@ -11,8 +11,11 @@ PROJECT_NAME=${1:-${PROJECT_NAME:-$DEFAULT_PROJECT_NAME}}
 
 echo "🏗️  Building Task Manager for project: $PROJECT_NAME"
 
-# Exporter la variable d'environnement
+# Exporter la variable d'environnement pour Docker Compose
 export PROJECT_NAME
+
+# Convertir en minuscules pour les noms Docker
+PROJECT_NAME_LOWER=$(echo "$PROJECT_NAME" | tr '[:upper:]' '[:lower:]')
 
 # Nettoyer les conteneurs existants
 echo "🧹 Cleaning existing containers..."
@@ -20,12 +23,12 @@ docker-compose -f docker-compose.task-manager.yml down --remove-orphans 2>/dev/n
 
 # Supprimer les images existantes
 echo "🗑️  Removing old images..."
-docker rmi ${PROJECT_NAME,,}-task-manager 2>/dev/null || true
+docker rmi ${PROJECT_NAME_LOWER}-task-manager 2>/dev/null || true
 
 # Construire l'image Docker
 echo "🐳 Building Docker image..."
 docker build \
-  -t ${PROJECT_NAME,,}-task-manager \
+  -t ${PROJECT_NAME_LOWER}-task-manager \
   -f task-manager.Dockerfile \
   --build-arg PROJECT_NAME="$PROJECT_NAME" \
   ..
