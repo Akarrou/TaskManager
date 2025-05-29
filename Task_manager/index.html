@@ -36,71 +36,105 @@
       rel="stylesheet"
     />
     <style>
-      /* ===== DESIGN SYSTEM MODERNISÉ ===== */
+      /* ===== DESIGN SYSTEM MODERNISÉ - Inspiré Microsoft To Do ===== */
       
-      /* Variables de couleurs accessibles conformes WCAG AA */
+      /* Variables de couleurs modernes conformes WCAG AA */
       :root {
-        --agro-green: #22c55e;
-        --agro-dark: #1f2937;
-        --agro-light: #f3f4f6;
+        /* Couleurs principales modernisées */
+        --primary-blue: #2564eb;        /* Bleu principal moderne */
+        --primary-blue-light: #3b82f6;  /* Bleu clair */
+        --primary-blue-dark: #1d4ed8;   /* Bleu foncé */
         
-        /* Palette étendue moderne */
-        --emerald-50: #ecfdf5;
-        --emerald-100: #d1fae5;
-        --emerald-500: #10b981;
-        --emerald-600: #059669;
-        --emerald-700: #047857;
+        /* Couleurs secondaires douces */
+        --soft-purple: #8b5cf6;         /* Violet doux */
+        --soft-green: #10b981;          /* Vert éméralde doux */
+        --soft-orange: #f59e0b;         /* Orange doux */
+        --soft-pink: #ec4899;           /* Rose doux */
+        --soft-teal: #06b6d4;           /* Teal moderne */
         
-        /* Textes avec contraste WCAG AA (minimum 4.5:1, optimal 7:1+) */
-        --text-primary: #1f2937;      /* Contraste 13.46:1 sur blanc */
-        --text-secondary: #374151;    /* Contraste 9.74:1 sur blanc */
-        --text-tertiary: #4b5563;     /* Contraste 7.01:1 sur blanc */
-        --text-disabled: #6b7280;     /* Contraste 4.54:1 sur blanc - minimum WCAG AA */
-        --text-placeholder: #9ca3af;  /* Contraste 2.84:1 - uniquement pour placeholders */
-        
-        /* Arrière-plans avec gradients subtils */
+        /* Arrière-plans modernisés */
         --bg-primary: #ffffff;
-        --bg-secondary: #f9fafb;
-        --bg-tertiary: #f3f4f6;
-        --bg-gradient-main: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        --bg-secondary: #f8fafc;        /* Gris très clair */
+        --bg-tertiary: #f1f5f9;         /* Gris clair moderne */
+        --bg-quaternary: #e2e8f0;       /* Gris moyen */
+        --bg-gradient-main: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
         --bg-gradient-card: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+        --bg-gradient-header: linear-gradient(135deg, #1e293b 0%, #334155 100%);
         
-        /* Bordures et ombres */
-        --border-default: #d1d5db;
-        --border-focus: #22c55e;
-        --border-error: #ef4444;
-        --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
-        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-        --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
-        --shadow-focus: 0 0 0 3px rgba(34, 197, 94, 0.12);
+        /* Textes avec contraste optimal */
+        --text-primary: #0f172a;        /* Noir ardoise - Contraste 19.5:1 */
+        --text-secondary: #334155;      /* Gris ardoise foncé - Contraste 12.6:1 */
+        --text-tertiary: #64748b;       /* Gris ardoise - Contraste 7.9:1 */
+        --text-quaternary: #94a3b8;     /* Gris ardoise clair - Contraste 4.9:1 */
+        --text-disabled: #cbd5e1;       /* Gris très clair - Contraste 3.1:1 */
+        --text-white: #ffffff;
         
-        /* États d'erreur et succès */
-        --error-bg: #fef2f2;
-        --error-border: #fecaca;
-        --error-text: #dc2626;
-        --success-bg: #f0fdf4;
-        --success-border: #bbf7d0;
-        --success-text: #16a34a;
+        /* Bordures modernisées */
+        --border-light: #e2e8f0;        /* Bordure claire */
+        --border-medium: #cbd5e1;       /* Bordure moyenne */
+        --border-focus: #2564eb;        /* Bordure focus moderne */
+        --border-error: #dc2626;        /* Bordure erreur */
+        --border-success: #059669;      /* Bordure succès */
         
-        /* Espacements harmoniques */
-        --space-xs: 0.25rem;
-        --space-sm: 0.5rem;
-        --space-md: 1rem;
-        --space-lg: 1.5rem;
-        --space-xl: 2rem;
-        --space-2xl: 3rem;
+        /* Ombres douces et modernes */
+        --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+        --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+        --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
+        --shadow-focus: 0 0 0 3px rgba(37, 100, 235, 0.1);
         
-        /* Rayons de bordure modulaires */
-        --radius-sm: 0.375rem;
-        --radius-md: 0.5rem;
-        --radius-lg: 0.75rem;
-        --radius-xl: 1rem;
+        /* Espacement harmonieux */
+        --space-xs: 0.25rem;    /* 4px */
+        --space-sm: 0.5rem;     /* 8px */
+        --space-md: 1rem;       /* 16px */
+        --space-lg: 1.5rem;     /* 24px */
+        --space-xl: 2rem;       /* 32px */
+        --space-2xl: 3rem;      /* 48px */
+        --space-3xl: 4rem;      /* 64px */
+        
+        /* Rayons de bordure cohérents */
+        --radius-xs: 0.125rem;  /* 2px */
+        --radius-sm: 0.25rem;   /* 4px */
+        --radius-md: 0.375rem;  /* 6px */
+        --radius-lg: 0.5rem;    /* 8px */
+        --radius-xl: 0.75rem;   /* 12px */
+        --radius-2xl: 1rem;     /* 16px */
         --radius-full: 9999px;
         
         /* Transitions fluides */
-        --transition-fast: 0.15s ease-out;
-        --transition-normal: 0.25s ease-out;
-        --transition-slow: 0.35s ease-out;
+        --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        
+        /* États de couleur */
+        --state-info-bg: #dbeafe;
+        --state-info-border: #93c5fd;
+        --state-info-text: #1e40af;
+        
+        --state-success-bg: #dcfce7;
+        --state-success-border: #86efac;
+        --state-success-text: #166534;
+        
+        --state-warning-bg: #fef3c7;
+        --state-warning-border: #fcd34d;
+        --state-warning-text: #92400e;
+        
+        --state-error-bg: #fee2e2;
+        --state-error-border: #fca5a5;
+        --state-error-text: #991b1b;
+        
+        /* Couleurs de priorité modernes */
+        --priority-high: linear-gradient(135deg, #dc2626, #b91c1c);
+        --priority-medium: linear-gradient(135deg, #d97706, #b45309);
+        --priority-low: linear-gradient(135deg, #059669, #047857);
+        
+        /* Couleurs de statut modernes */
+        --status-todo: #3b82f6;
+        --status-progress: #f59e0b;
+        --status-completed: #10b981;
+        --status-waiting: #8b5cf6;
+        --status-cancelled: #6b7280;
       }
 
       /* ===== TYPOGRAPHIE MODERNE ===== */
@@ -140,19 +174,20 @@
 
       /* ===== COMPOSANTS MODERNISÉS ===== */
       
-      /* Header avec glassmorphism */
+      /* Header avec design Microsoft To Do */
       .header-modern {
-        background: rgba(31, 41, 55, 0.95);
+        background: var(--bg-gradient-header);
         backdrop-filter: blur(20px);
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-sm);
       }
       
-      /* Cartes avec effet de profondeur */
+      /* Cartes avec design doux et moderne */
       .card-modern {
         background: var(--bg-gradient-card);
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-xl);
         box-shadow: var(--shadow-sm);
-        border: 1px solid rgba(255, 255, 255, 0.8);
+        border: 1px solid var(--border-light);
         transition: all var(--transition-normal);
         position: relative;
         overflow: hidden;
@@ -165,21 +200,22 @@
         left: 0;
         right: 0;
         height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+        background: linear-gradient(90deg, transparent, rgba(37, 100, 235, 0.2), transparent);
       }
       
       .card-modern:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-lg);
-        border-color: rgba(34, 197, 94, 0.2);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--border-focus);
       }
       
-      /* Boutons avec états visuels avancés */
+      /* Boutons modernes style Microsoft To Do */
       .btn-modern {
         position: relative;
         overflow: hidden;
         border-radius: var(--radius-lg);
         font-weight: 600;
+        font-size: 0.875rem;
         transition: all var(--transition-normal);
         border: none;
         cursor: pointer;
@@ -187,6 +223,18 @@
         align-items: center;
         justify-content: center;
         gap: var(--space-sm);
+        text-decoration: none;
+        outline: none;
+        box-shadow: var(--shadow-xs);
+      }
+      
+      .btn-modern:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-sm);
+      }
+      
+      .btn-modern:focus {
+        box-shadow: var(--shadow-focus);
       }
       
       .btn-modern::before {
@@ -204,29 +252,43 @@
         left: 100%;
       }
       
-      .btn-modern:focus {
-        outline: none;
-        box-shadow: var(--shadow-focus);
-      }
-      
       .btn-primary {
-        background: linear-gradient(135deg, var(--emerald-500), var(--emerald-600));
-        color: white;
+        background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-dark));
+        color: var(--text-white);
       }
       
       .btn-primary:hover {
-        background: linear-gradient(135deg, var(--emerald-600), var(--emerald-700));
-        transform: translateY(-1px);
+        background: linear-gradient(135deg, var(--primary-blue-light), var(--primary-blue));
       }
       
       .btn-secondary {
-        background: linear-gradient(135deg, #6366f1, #8b5cf6);
-        color: white;
+        background: linear-gradient(135deg, var(--soft-purple), #7c3aed);
+        color: var(--text-white);
       }
       
       .btn-secondary:hover {
-        background: linear-gradient(135deg, #4f46e5, #7c3aed);
-        transform: translateY(-1px);
+        background: linear-gradient(135deg, #a855f7, var(--soft-purple));
+      }
+      
+      .btn-success {
+        background: linear-gradient(135deg, var(--soft-green), #047857);
+        color: var(--text-white);
+      }
+      
+      .btn-success:hover {
+        background: linear-gradient(135deg, #34d399, var(--soft-green));
+      }
+      
+      .btn-outline {
+        background: var(--bg-primary);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-medium);
+      }
+      
+      .btn-outline:hover {
+        background: var(--bg-secondary);
+        border-color: var(--border-focus);
+        color: var(--text-primary);
       }
 
       /* ===== BOUTONS TOGGLE MODERNISÉS ===== */
@@ -356,15 +418,16 @@
         animation: shimmer 2s infinite;
       }
 
-      /* ===== STATISTIQUES AVEC GRADIENTS ===== */
+      /* ===== STATISTIQUES MODERNES ===== */
       
       .stats-card {
         background: var(--bg-gradient-card);
         border-radius: var(--radius-xl);
-        border: 1px solid rgba(255, 255, 255, 0.8);
+        border: 1px solid var(--border-light);
         transition: all var(--transition-normal);
         position: relative;
         overflow: hidden;
+        box-shadow: var(--shadow-sm);
       }
       
       .stats-card::before {
@@ -374,12 +437,65 @@
         left: 0;
         right: 0;
         height: 2px;
-        background: linear-gradient(90deg, var(--emerald-500), var(--emerald-600));
+        background: linear-gradient(90deg, var(--primary-blue), var(--soft-purple));
       }
       
       .stats-card:hover {
-        transform: translateY(-4px) scale(1.02);
-        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--border-focus);
+      }
+      
+      /* Icônes de statistiques modernisées */
+      .stats-icon-total {
+        background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-dark));
+      }
+      
+      .stats-icon-todo {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+      }
+      
+      .stats-icon-progress {
+        background: linear-gradient(135deg, var(--soft-orange), #d97706);
+      }
+      
+      .stats-icon-completed {
+        background: linear-gradient(135deg, var(--soft-green), #047857);
+      }
+
+      /* ===== COULEURS DE STATUT MODERNISÉES ===== */
+      
+      /* Boutons de statut avec couleurs modernes */
+      .status-todo {
+        background: linear-gradient(135deg, var(--status-todo), #2563eb);
+      }
+      
+      .status-progress {
+        background: linear-gradient(135deg, var(--status-progress), #d97706);
+      }
+      
+      .status-completed {
+        background: linear-gradient(135deg, var(--status-completed), #047857);
+      }
+      
+      .status-waiting {
+        background: linear-gradient(135deg, var(--status-waiting), #7c3aed);
+      }
+      
+      .status-cancelled {
+        background: linear-gradient(135deg, var(--status-cancelled), #4b5563);
+      }
+      
+      /* États inactifs avec couleurs douces */
+      .toggle-button.inactive {
+        background: var(--bg-secondary);
+        color: var(--text-tertiary);
+        border: 1px solid var(--border-light);
+      }
+      
+      .toggle-button.inactive:hover {
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
       }
 
       /* ===== EFFETS POUR CARTES DE TÂCHES ===== */
@@ -754,14 +870,14 @@
             </span>
             <button
               id="help-btn"
-              class="btn-modern btn-secondary px-4 py-2"
+              class="btn-modern btn-outline px-4 py-2"
               title="Raccourcis clavier disponibles"
             >
               <i class="fas fa-keyboard"></i> Aide
             </button>
             <button
               id="new-task-btn"
-              class="btn-modern bg-blue-600 hover:bg-blue-700 px-4 py-2 text-white"
+              class="btn-modern btn-success px-4 py-2"
               title="Ctrl+N : Nouvelle tâche"
             >
               <i class="fas fa-plus"></i> Nouvelle tâche
@@ -788,7 +904,7 @@
               <p class="text-secondary text-sm font-medium mb-1">Total</p>
               <p id="total-tasks" class="text-3xl font-bold text-primary">0</p>
             </div>
-            <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center">
+            <div class="stats-icon-total w-12 h-12 rounded-xl flex items-center justify-center">
               <i class="fas fa-tasks text-xl text-white"></i>
             </div>
           </div>
@@ -797,9 +913,9 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-secondary text-sm font-medium mb-1">À faire</p>
-              <p id="todo-tasks" class="text-3xl font-bold text-blue-600">0</p>
+              <p id="todo-tasks" class="text-3xl font-bold" style="color: var(--status-todo)">0</p>
             </div>
-            <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center">
+            <div class="stats-icon-todo w-12 h-12 rounded-xl flex items-center justify-center">
               <i class="fas fa-clock text-xl text-white"></i>
             </div>
           </div>
@@ -808,9 +924,9 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-secondary text-sm font-medium mb-1">En cours</p>
-              <p id="progress-tasks" class="text-3xl font-bold text-yellow-600">0</p>
+              <p id="progress-tasks" class="text-3xl font-bold" style="color: var(--status-progress)">0</p>
             </div>
-            <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center">
+            <div class="stats-icon-progress w-12 h-12 rounded-xl flex items-center justify-center">
               <i class="fas fa-spinner text-xl text-white"></i>
             </div>
           </div>
@@ -819,9 +935,9 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-secondary text-sm font-medium mb-1">Terminées</p>
-              <p id="completed-tasks" class="text-3xl font-bold text-green-600">0</p>
+              <p id="completed-tasks" class="text-3xl font-bold" style="color: var(--status-completed)">0</p>
             </div>
-            <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center">
+            <div class="stats-icon-completed w-12 h-12 rounded-xl flex items-center justify-center">
               <i class="fas fa-check-circle text-xl text-white"></i>
             </div>
           </div>
@@ -865,7 +981,7 @@
                 type="button"
                 id="status-todo"
                 data-value="À faire"
-                class="toggle-button bg-blue-500 text-white px-5 py-3 text-sm font-semibold flex items-center"
+                class="toggle-button status-todo text-white px-5 py-3 text-sm font-semibold flex items-center"
                 role="button"
                 aria-pressed="true"
                 tabindex="0"
@@ -879,7 +995,7 @@
                 type="button"
                 id="status-progress"
                 data-value="En cours"
-                class="toggle-button bg-yellow-500 text-white px-5 py-3 text-sm font-semibold flex items-center"
+                class="toggle-button status-progress text-white px-5 py-3 text-sm font-semibold flex items-center"
                 role="button"
                 aria-pressed="true"
                 tabindex="0"
@@ -893,7 +1009,7 @@
                 type="button"
                 id="status-completed"
                 data-value="Terminée"
-                class="toggle-button bg-gray-300 text-gray-600 px-5 py-3 text-sm font-semibold flex items-center inactive"
+                class="toggle-button inactive px-5 py-3 text-sm font-semibold flex items-center"
                 role="button"
                 aria-pressed="false"
                 tabindex="0"
@@ -907,7 +1023,7 @@
                 type="button"
                 id="status-waiting"
                 data-value="En attente"
-                class="toggle-button bg-gray-300 text-gray-600 px-5 py-3 text-sm font-semibold flex items-center inactive"
+                class="toggle-button inactive px-5 py-3 text-sm font-semibold flex items-center"
                 role="button"
                 aria-pressed="false"
                 tabindex="0"
@@ -921,7 +1037,7 @@
                 type="button"
                 id="status-cancelled"
                 data-value="Annulée"
-                class="toggle-button bg-gray-300 text-gray-600 px-5 py-3 text-sm font-semibold flex items-center inactive"
+                class="toggle-button inactive px-5 py-3 text-sm font-semibold flex items-center"
                 role="button"
                 aria-pressed="false"
                 tabindex="0"

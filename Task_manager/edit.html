@@ -32,36 +32,67 @@
       rel="stylesheet"
     />
     <style>
-      /* Variables de couleurs accessibles conformes WCAG AA */
+      /* Variables de couleurs modernes conformes WCAG AA */
       :root {
-        --agro-green: #22c55e;
-        --agro-dark: #1f2937;
-        --agro-light: #f3f4f6;
+        /* Couleurs principales modernisées */
+        --primary-blue: #2564eb;
+        --primary-blue-light: #3b82f6;
+        --primary-blue-dark: #1d4ed8;
         
-        /* Textes avec contraste WCAG AA (minimum 4.5:1, optimal 7:1+) */
-        --text-primary: #1f2937;      /* Contraste 13.46:1 sur blanc */
-        --text-secondary: #374151;    /* Contraste 9.74:1 sur blanc */
-        --text-tertiary: #4b5563;     /* Contraste 7.01:1 sur blanc */
-        --text-disabled: #6b7280;     /* Contraste 4.54:1 sur blanc - minimum WCAG AA */
-        --text-placeholder: #9ca3af;  /* Contraste 2.84:1 - uniquement pour placeholders */
+        /* Couleurs secondaires douces */
+        --soft-purple: #8b5cf6;
+        --soft-green: #10b981;
+        --soft-orange: #f59e0b;
+        --soft-pink: #ec4899;
         
-        /* Arrière-plans */
+        /* Arrière-plans modernisés */
         --bg-primary: #ffffff;
-        --bg-secondary: #f9fafb;
-        --bg-tertiary: #f3f4f6;
+        --bg-secondary: #f8fafc;
+        --bg-tertiary: #f1f5f9;
+        --bg-quaternary: #e2e8f0;
+        --bg-gradient-header: linear-gradient(135deg, #1e293b 0%, #334155 100%);
         
-        /* Bordures */
-        --border-default: #d1d5db;
-        --border-focus: #22c55e;
-        --border-error: #ef4444;
+        /* Textes avec contraste optimal */
+        --text-primary: #0f172a;
+        --text-secondary: #334155;
+        --text-tertiary: #64748b;
+        --text-quaternary: #94a3b8;
+        --text-disabled: #cbd5e1;
+        --text-white: #ffffff;
         
-        /* États d'erreur et succès */
-        --error-bg: #fef2f2;
-        --error-border: #fecaca;
-        --error-text: #dc2626;
-        --success-bg: #f0fdf4;
-        --success-border: #bbf7d0;
-        --success-text: #16a34a;
+        /* Bordures modernisées */
+        --border-light: #e2e8f0;
+        --border-medium: #cbd5e1;
+        --border-focus: #2564eb;
+        --border-error: #dc2626;
+        --border-success: #059669;
+        
+        /* Ombres douces */
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+        --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+        --shadow-focus: 0 0 0 3px rgba(37, 100, 235, 0.1);
+        
+        /* États de couleur */
+        --state-info-bg: #dbeafe;
+        --state-info-border: #93c5fd;
+        --state-info-text: #1e40af;
+        
+        --state-success-bg: #dcfce7;
+        --state-success-border: #86efac;
+        --state-success-text: #166534;
+        
+        --state-warning-bg: #fef3c7;
+        --state-warning-border: #fcd34d;
+        --state-warning-text: #92400e;
+        
+        --state-error-bg: #fee2e2;
+        --state-error-border: #fca5a5;
+        --state-error-text: #991b1b;
+        
+        /* Transitions fluides */
+        --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       /* Classes utilitaires avec contraste amélioré */
@@ -322,17 +353,20 @@
   </head>
   <body class="bg-agro-light min-h-screen">
     <!-- Header -->
-    <header class="bg-agro-dark text-white shadow-lg">
+    <header class="shadow-lg" style="background: var(--bg-gradient-header);">
       <div class="container mx-auto px-4 py-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-3">
-            <i class="fas fa-seedling text-agro-green text-2xl"></i>
-            <h1 id="app-title" class="text-2xl font-bold">Task Manager</h1>
+            <i class="fas fa-seedling text-2xl" style="color: var(--soft-green);"></i>
+            <h1 id="app-title" class="text-2xl font-bold" style="color: var(--text-white);">Task Manager</h1>
           </div>
           <div class="flex items-center space-x-4">
             <a
               href="/"
-              class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg transition-colors"
+              class="px-4 py-2 rounded-lg transition-colors"
+              style="background-color: var(--text-quaternary); color: var(--text-white);"
+              onmouseover="this.style.backgroundColor='var(--text-tertiary)'"
+              onmouseout="this.style.backgroundColor='var(--text-quaternary)'"
             >
               <i class="fas fa-arrow-left mr-2"></i>Retour à la liste
             </a>
