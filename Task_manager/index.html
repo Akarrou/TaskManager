@@ -424,7 +424,7 @@
       
       .input-modern {
         background: rgba(255, 255, 255, 0.8);
-        border: 2px solid var(--border-default);
+        border: 2px solid var(--border-light);
         border-radius: var(--radius-lg);
         transition: all var(--transition-normal);
         backdrop-filter: blur(10px);
@@ -435,6 +435,28 @@
         border-color: var(--border-focus);
         box-shadow: var(--shadow-focus);
         transform: scale(1.01);
+      }
+      
+      /* Styles spécifiques pour les sélecteurs */
+      select.input-modern {
+        border: 2px solid var(--border-light);
+        background-color: #ffffff;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.5rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+        padding-right: 2.5rem;
+      }
+      
+      select.input-modern:focus {
+        border-color: var(--border-focus);
+        box-shadow: var(--shadow-focus);
+        outline: none;
+      }
+      
+      select.input-modern:hover {
+        border-color: var(--border-medium);
       }
 
       /* ===== ANIMATIONS ET MICRO-INTERACTIONS ===== */
@@ -1049,6 +1071,137 @@
       }
       
       /* ===== FIN MICRO-INTERACTIONS ===== */
+
+      /* ===== ACCORDÉON FILTRES ===== */
+      
+      .filters-accordion {
+        transition: all var(--transition-normal);
+        overflow: hidden;
+      }
+      
+      .accordion-header {
+        cursor: pointer;
+        background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+        border: 2px solid var(--border-light);
+        border-radius: var(--radius-xl);
+        transition: all var(--transition-normal);
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .accordion-header:hover {
+        border-color: var(--border-focus);
+        box-shadow: var(--shadow-sm);
+        transform: translateY(-1px);
+      }
+      
+      .accordion-header.active {
+        border-color: var(--border-focus);
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        box-shadow: var(--shadow-md);
+      }
+      
+      .accordion-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        background: var(--bg-primary);
+        border: 2px solid var(--border-focus);
+        border-top: none;
+        border-bottom-left-radius: var(--radius-xl);
+        border-bottom-right-radius: var(--radius-xl);
+      }
+      
+      .accordion-content.active {
+        max-height: 800px;
+        box-shadow: var(--shadow-md);
+      }
+      
+      .accordion-chevron {
+        transition: transform var(--transition-normal);
+      }
+      
+      .accordion-header.active .accordion-chevron {
+        transform: rotate(180deg);
+      }
+      
+      /* Header du filtre avec recherche inline */
+      .filter-header-content {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 1rem;
+        align-items: center;
+      }
+      
+      .filter-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+      }
+      
+      .status-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 1px solid transparent;
+      }
+      
+      .status-tag.todo {
+        background: rgba(59, 130, 246, 0.1);
+        color: #1e40af;
+        border-color: rgba(59, 130, 246, 0.2);
+      }
+      
+      .status-tag.progress {
+        background: rgba(245, 158, 11, 0.1);
+        color: #92400e;
+        border-color: rgba(245, 158, 11, 0.2);
+      }
+      
+      .status-tag.completed {
+        background: rgba(16, 185, 129, 0.1);
+        color: #065f46;
+        border-color: rgba(16, 185, 129, 0.2);
+      }
+      
+      .status-tag.waiting {
+        background: rgba(139, 92, 246, 0.1);
+        color: #5b21b6;
+        border-color: rgba(139, 92, 246, 0.2);
+      }
+      
+      .status-tag.cancelled {
+        background: rgba(107, 114, 128, 0.1);
+        color: #374151;
+        border-color: rgba(107, 114, 128, 0.2);
+      }
+      
+      /* Recherche compacte dans le header */
+      .search-compact {
+        min-width: 200px;
+        max-width: 300px;
+      }
+      
+      @media (max-width: 768px) {
+        .filter-header-content {
+          grid-template-columns: 1fr;
+          gap: 0.75rem;
+        }
+        
+        .search-compact {
+          min-width: 100%;
+          max-width: none;
+        }
+        
+        .filter-summary {
+          justify-content: center;
+        }
+      }
     </style>
   </head>
   <body class="bg-agro-light min-h-screen">
@@ -1181,183 +1334,225 @@
         </div>
       </div>
 
-      <!-- Filters and Search modernisés -->
-      <div class="card-modern p-6 mb-8 animate-slide-in">
-        <!-- Barre de recherche avec design moderne -->
-        <div class="mb-6">
-          <div class="relative">
-            <div
-              class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"
-            >
-              <i class="fas fa-search text-disabled"></i>
-            </div>
-            <input
-              type="text"
-              id="search-input"
-              placeholder="Rechercher une tâche..."
-              class="input-modern w-full pl-12 pr-4 py-4 text-lg font-medium placeholder-gray-400 focus:placeholder-gray-300"
-            />
-            <div class="absolute inset-y-0 right-0 pr-4 flex items-center">
-              <kbd class="px-2 py-1 bg-gray-100 text-gray-500 rounded text-sm font-medium">/</kbd>
-            </div>
-          </div>
-        </div>
-
-        <!-- Filtres organisés avec design moderne -->
-        <div class="grid grid-cols-1 gap-6">
-          <!-- Filtre Statuts - Design moderne avec boutons toggle en ligne -->
-          <div>
-            <label class="block text-sm font-bold text-primary mb-4 flex items-center">
-              <div class="w-8 h-8 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center mr-3">
-                <i class="fas fa-tasks text-white text-sm"></i>
+      <!-- Section de recherche et filtres compacte avec accordéon -->
+      <section class="filters-accordion mb-8" role="region" aria-labelledby="filters-section">
+        <!-- Header de l'accordéon avec recherche et statuts -->
+        <div class="accordion-header px-6 py-4" id="filters-header" role="button" tabindex="0" aria-expanded="false" aria-controls="filters-content">
+          <div class="filter-header-content">
+            <!-- Zone de résumé avec statuts sélectionnés -->
+            <div class="filter-summary">
+              <div class="flex items-center gap-2">
+                <i class="fas fa-filter text-blue-500"></i>
+                <span class="font-semibold text-gray-700">Filtres</span>
               </div>
-              Statuts
-            </label>
-            <div class="filter-scroll-container">
-              <div class="flex flex-nowrap gap-3 pb-2" role="group" aria-label="Filtres de statut">
-                <button
-                  type="button"
-                  id="status-todo"
-                  data-value="À faire"
-                  class="toggle-button active status-todo text-white px-5 py-3 text-sm font-semibold flex items-center"
-                  role="button"
-                  aria-pressed="true"
-                  tabindex="0"
-                  aria-label="Filtrer les tâches à faire"
-                >
-                  <i class="fas fa-clock mr-2"></i>À faire
-                  <i class="fas fa-check ml-2 check-icon"></i>
-                </button>
-
-                <button
-                  type="button"
-                  id="status-progress"
-                  data-value="En cours"
-                  class="toggle-button active status-progress text-white px-5 py-3 text-sm font-semibold flex items-center"
-                  role="button"
-                  aria-pressed="true"
-                  tabindex="0"
-                  aria-label="Filtrer les tâches en cours"
-                >
-                  <i class="fas fa-spinner mr-2"></i>En cours
-                  <i class="fas fa-check ml-2 check-icon"></i>
-                </button>
-
-                <button
-                  type="button"
-                  id="status-completed"
-                  data-value="Terminée"
-                  class="toggle-button inactive px-5 py-3 text-sm font-semibold flex items-center"
-                  role="button"
-                  aria-pressed="false"
-                  tabindex="0"
-                  aria-label="Filtrer les tâches terminées"
-                >
-                  <i class="fas fa-check-circle mr-2"></i>Terminée
-                  <i class="fas fa-check ml-2 check-icon opacity-0"></i>
-                </button>
-
-                <button
-                  type="button"
-                  id="status-waiting"
-                  data-value="En attente"
-                  class="toggle-button inactive px-5 py-3 text-sm font-semibold flex items-center"
-                  role="button"
-                  aria-pressed="false"
-                  tabindex="0"
-                  aria-label="Filtrer les tâches en attente"
-                >
-                  <i class="fas fa-pause-circle mr-2"></i>En attente
-                  <i class="fas fa-check ml-2 check-icon opacity-0"></i>
-                </button>
-
-                <button
-                  type="button"
-                  id="status-cancelled"
-                  data-value="Annulée"
-                  class="toggle-button inactive px-5 py-3 text-sm font-semibold flex items-center"
-                  role="button"
-                  aria-pressed="false"
-                  tabindex="0"
-                  aria-label="Filtrer les tâches annulées"
-                >
-                  <i class="fas fa-times-circle mr-2"></i>Annulée
-                  <i class="fas fa-check ml-2 check-icon opacity-0"></i>
-                </button>
+              <div id="selected-statuses" class="flex flex-wrap gap-1">
+                <!-- Les tags de statuts sélectionnés apparaîtront ici -->
               </div>
             </div>
-          </div>
-
-          <!-- Filtres Priorité et Catégorie en ligne modernisés -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Filtre Priorités -->
-            <div>
-              <label class="block text-sm font-bold text-primary mb-4 flex items-center">
-                <div class="w-8 h-8 bg-gradient-to-br from-red-400 to-red-600 rounded-lg flex items-center justify-center mr-3">
-                  <i class="fas fa-exclamation-triangle text-white text-sm"></i>
-                </div>
-                Priorité
-              </label>
-              <select
-                id="priority-filter"
-                class="input-modern w-full px-4 py-4 text-lg font-medium bg-white"
-              >
-                <option value="">Toutes les priorités</option>
-                <option value="Haute">🔴 Haute</option>
-                <option value="Moyenne">🟡 Moyenne</option>
-                <option value="Basse">🟢 Basse</option>
-              </select>
-            </div>
-
-            <!-- Filtre Catégories -->
-            <div>
-              <label class="block text-sm font-bold text-primary mb-4 flex items-center">
-                <div class="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center mr-3">
-                  <i class="fas fa-layer-group text-white text-sm"></i>
-                </div>
-                Catégorie
-              </label>
-              <select
-                id="category-filter"
-                class="input-modern w-full px-4 py-4 text-lg font-medium bg-white"
-              >
-                <option value="">Toutes les catégories</option>
-                <option value="Frontend">💻 Frontend</option>
-                <option value="Backend">⚙️ Backend</option>
-                <option value="Fullstack">🔄 Fullstack</option>
-                <option value="Testing">🧪 Testing</option>
-                <option value="OPS">🛠 OPS</option>
-              </select>
+            
+            <!-- Recherche rapide dans le header -->
+            <div class="flex items-center gap-3">
+              <div class="relative search-compact">
+                <input
+                  type="text"
+                  id="search-compact"
+                  placeholder="Rechercher une tâche..."
+                  class="input-modern w-full px-4 py-2 pl-10 text-sm"
+                  aria-label="Recherche rapide de tâches"
+                />
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+              </div>
+              <button class="accordion-chevron p-2 text-gray-500 hover:text-blue-500 transition-colors" aria-label="Afficher/masquer les filtres">
+                <i class="fas fa-chevron-down text-lg"></i>
+              </button>
             </div>
           </div>
         </div>
-
-        <!-- Boutons d'action rapide modernisés -->
-        <div class="mt-8 pt-6 border-t border-gray-200">
-          <div class="flex items-center justify-between">
-            <div class="flex space-x-3">
-              <button
-                id="select-all-status"
-                class="btn-modern btn-primary px-5 py-2 text-sm"
-              >
-                <i class="fas fa-check-double mr-2"></i>Tout sélectionner
-              </button>
-              <button
-                id="deselect-all-status"
-                class="btn-modern bg-gray-500 hover:bg-gray-600 px-5 py-2 text-sm text-white"
-              >
-                <i class="fas fa-times mr-2"></i>Tout désélectionner
-              </button>
+        
+        <!-- Contenu des filtres (fermé par défaut) -->
+        <div class="accordion-content" id="filters-content" aria-hidden="true">
+          <div class="p-6 space-y-6">
+            <!-- Recherche détaillée -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label for="search-input" class="block text-sm font-semibold text-gray-700 mb-2">
+                  <i class="fas fa-search text-blue-500 mr-2"></i>Recherche détaillée
+                </label>
+                <input
+                  type="text"
+                  id="search-input"
+                  placeholder="Titre, description, tags..."
+                  class="input-modern w-full px-4 py-3"
+                  aria-describedby="search-help"
+                />
+                <p id="search-help" class="text-sm text-gray-500 mt-1">
+                  Recherche dans le titre, la description et les tags
+                </p>
+              </div>
+              
+              <div>
+                <label for="category-filter" class="block text-sm font-semibold text-gray-700 mb-2">
+                  <i class="fas fa-layer-group text-purple-500 mr-2"></i>Catégorie
+                </label>
+                <select id="category-filter" class="input-modern w-full px-4 py-3" aria-label="Filtrer par catégorie">
+                  <option value="">Toutes les catégories</option>
+                  <option value="Frontend">💻 Frontend</option>
+                  <option value="Backend">⚙️ Backend</option>
+                  <option value="Fullstack">🔄 Fullstack</option>
+                  <option value="Testing">🧪 Testing</option>
+                  <option value="OPS">🛠 OPS</option>
+                </select>
+              </div>
             </div>
-            <div class="flex items-center space-x-2 text-sm">
-              <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-              <span class="text-tertiary font-medium">
-                <span id="filtered-count">0</span> tâche(s) affichée(s)
-              </span>
+
+            <!-- Filtres de statut -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-3">
+                <i class="fas fa-tasks text-green-500 mr-2"></i>Statut des tâches
+              </label>
+              <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="status"
+                    value="À faire"
+                    class="rounded border-gray-300 text-blue-600 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 mr-3"
+                    aria-describedby="status-todo-desc"
+                  />
+                  <div>
+                    <span class="font-medium text-gray-700">🕐 À faire</span>
+                    <p id="status-todo-desc" class="text-xs text-gray-500">Tâches non commencées</p>
+                  </div>
+                </label>
+
+                <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-orange-50 transition-colors cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="status"
+                    value="En cours"
+                    class="rounded border-gray-300 text-orange-600 focus:border-orange-300 focus:ring focus:ring-orange-200 focus:ring-opacity-50 mr-3"
+                    aria-describedby="status-progress-desc"
+                  />
+                  <div>
+                    <span class="font-medium text-gray-700">⚙️ En cours</span>
+                    <p id="status-progress-desc" class="text-xs text-gray-500">Tâches en progression</p>
+                  </div>
+                </label>
+
+                <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-green-50 transition-colors cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="status"
+                    value="Terminée"
+                    class="rounded border-gray-300 text-green-600 focus:border-green-300 focus:ring focus:ring-green-200 focus:ring-opacity-50 mr-3"
+                    aria-describedby="status-completed-desc"
+                  />
+                  <div>
+                    <span class="font-medium text-gray-700">✅ Terminée</span>
+                    <p id="status-completed-desc" class="text-xs text-gray-500">Tâches complétées</p>
+                  </div>
+                </label>
+
+                <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-purple-50 transition-colors cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="status"
+                    value="En attente"
+                    class="rounded border-gray-300 text-purple-600 focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50 mr-3"
+                    aria-describedby="status-waiting-desc"
+                  />
+                  <div>
+                    <span class="font-medium text-gray-700">⏸️ En attente</span>
+                    <p id="status-waiting-desc" class="text-xs text-gray-500">Tâches en pause</p>
+                  </div>
+                </label>
+
+                <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="status"
+                    value="Annulée"
+                    class="rounded border-gray-300 text-gray-600 focus:border-gray-300 focus:ring focus:ring-gray-200 focus:ring-opacity-50 mr-3"
+                    aria-describedby="status-cancelled-desc"
+                  />
+                  <div>
+                    <span class="font-medium text-gray-700">❌ Annulée</span>
+                    <p id="status-cancelled-desc" class="text-xs text-gray-500">Tâches annulées</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Autres filtres -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label for="priority-filter" class="block text-sm font-semibold text-gray-700 mb-2">
+                  <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>Priorité
+                </label>
+                <select id="priority-filter" class="input-modern w-full px-4 py-3" aria-label="Filtrer par priorité">
+                  <option value="">Toutes les priorités</option>
+                  <option value="Haute">🔴 Haute</option>
+                  <option value="Moyenne">🟡 Moyenne</option>
+                  <option value="Basse">🟢 Basse</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="assignee-filter" class="block text-sm font-semibold text-gray-700 mb-2">
+                  <i class="fas fa-user text-indigo-500 mr-2"></i>Assigné à
+                </label>
+                <input
+                  type="text"
+                  id="assignee-filter"
+                  placeholder="Nom de la personne..."
+                  class="input-modern w-full px-4 py-3"
+                  aria-label="Filtrer par personne assignée"
+                />
+              </div>
+
+              <div>
+                <label for="sort-select" class="block text-sm font-semibold text-gray-700 mb-2">
+                  <i class="fas fa-sort text-gray-500 mr-2"></i>Trier par
+                </label>
+                <select id="sort-select" class="input-modern w-full px-4 py-3" aria-label="Trier les tâches">
+                  <option value="createdAt-desc">Plus récentes</option>
+                  <option value="createdAt-asc">Plus anciennes</option>
+                  <option value="title-asc">Titre A-Z</option>
+                  <option value="title-desc">Titre Z-A</option>
+                  <option value="priority-desc">Priorité haute d'abord</option>
+                  <option value="priority-asc">Priorité basse d'abord</option>
+                  <option value="dueDate-asc">Échéance proche</option>
+                  <option value="dueDate-desc">Échéance lointaine</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Actions de filtrage -->
+            <div class="flex justify-between items-center pt-4 border-t border-gray-200">
+              <button
+                id="clear-filters-btn"
+                class="flex items-center px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Réinitialiser tous les filtres"
+              >
+                <i class="fas fa-times mr-2"></i>Effacer les filtres
+              </button>
+              
+              <div class="flex items-center gap-3">
+                <span id="filter-count" class="text-sm text-gray-500" aria-live="polite">
+                  <!-- Le nombre de résultats apparaîtra ici -->
+                </span>
+                <button
+                  id="apply-filters-btn"
+                  class="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  aria-label="Appliquer les filtres sélectionnés"
+                >
+                  <i class="fas fa-check mr-2"></i>Appliquer
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       <!-- Tasks List modernisée -->
       <div class="card-modern animate-slide-in">
@@ -1580,6 +1775,168 @@
     <script src="js/ux-enhancements.js"></script>
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/ui-state.js"></script>
+    <script src="js/tasks-view.js"></script>
+    <script src="js/main.js"></script>
+    
+    <!-- Script pour l'accordéon des filtres -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Gestion de l'accordéon des filtres
+        const accordionHeader = document.getElementById('filters-header');
+        const accordionContent = document.getElementById('filters-content');
+        const accordionChevron = accordionHeader.querySelector('.accordion-chevron i');
+        const searchCompact = document.getElementById('search-compact');
+        const searchDetailed = document.getElementById('search-input');
+        const selectedStatusesContainer = document.getElementById('selected-statuses');
+        
+        // Fonction pour basculer l'accordéon
+        function toggleAccordion() {
+          const isActive = accordionHeader.classList.contains('active');
+          
+          if (isActive) {
+            // Fermer l'accordéon
+            accordionHeader.classList.remove('active');
+            accordionContent.classList.remove('active');
+            accordionHeader.setAttribute('aria-expanded', 'false');
+            accordionContent.setAttribute('aria-hidden', 'true');
+          } else {
+            // Ouvrir l'accordéon
+            accordionHeader.classList.add('active');
+            accordionContent.classList.add('active');
+            accordionHeader.setAttribute('aria-expanded', 'true');
+            accordionContent.setAttribute('aria-hidden', 'false');
+          }
+        }
+        
+        // Événements pour ouvrir/fermer l'accordéon
+        accordionHeader.addEventListener('click', toggleAccordion);
+        accordionHeader.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleAccordion();
+          }
+        });
+        
+        // Synchronisation des champs de recherche
+        searchCompact.addEventListener('input', function() {
+          searchDetailed.value = this.value;
+          // Déclencher la recherche
+          if (window.filterTasks) {
+            window.filterTasks();
+          }
+        });
+        
+        searchDetailed.addEventListener('input', function() {
+          searchCompact.value = this.value;
+          // Déclencher la recherche
+          if (window.filterTasks) {
+            window.filterTasks();
+          }
+        });
+        
+        // Fonction pour mettre à jour les statuts sélectionnés dans le header
+        function updateSelectedStatuses() {
+          const statusCheckboxes = document.querySelectorAll('input[name="status"]:checked');
+          selectedStatusesContainer.innerHTML = '';
+          
+          statusCheckboxes.forEach(checkbox => {
+            const statusValue = checkbox.value;
+            const statusTag = document.createElement('div');
+            statusTag.className = 'status-tag';
+            
+            // Ajouter la classe CSS appropriée selon le statut
+            switch(statusValue) {
+              case 'À faire':
+                statusTag.classList.add('todo');
+                statusTag.innerHTML = '🕐 À faire';
+                break;
+              case 'En cours':
+                statusTag.classList.add('progress');
+                statusTag.innerHTML = '⚙️ En cours';
+                break;
+              case 'Terminée':
+                statusTag.classList.add('completed');
+                statusTag.innerHTML = '✅ Terminée';
+                break;
+              case 'En attente':
+                statusTag.classList.add('waiting');
+                statusTag.innerHTML = '⏸️ En attente';
+                break;
+              case 'Annulée':
+                statusTag.classList.add('cancelled');
+                statusTag.innerHTML = '❌ Annulée';
+                break;
+            }
+            
+            selectedStatusesContainer.appendChild(statusTag);
+          });
+          
+          // Si aucun statut sélectionné, afficher un message
+          if (statusCheckboxes.length === 0) {
+            const noStatusTag = document.createElement('div');
+            noStatusTag.className = 'text-sm text-gray-500';
+            noStatusTag.textContent = 'Aucun filtre actif';
+            selectedStatusesContainer.appendChild(noStatusTag);
+          }
+        }
+        
+        // Écouter les changements sur les checkboxes de statut
+        const statusCheckboxes = document.querySelectorAll('input[name="status"]');
+        statusCheckboxes.forEach(checkbox => {
+          checkbox.addEventListener('change', updateSelectedStatuses);
+        });
+        
+        // Initialiser les statuts sélectionnés (par défaut, "À faire" et "En cours" sont sélectionnés)
+        document.querySelector('input[value="À faire"]').checked = true;
+        document.querySelector('input[value="En cours"]').checked = true;
+        updateSelectedStatuses();
+        
+        // Gestion du bouton "Effacer les filtres"
+        document.getElementById('clear-filters-btn').addEventListener('click', function() {
+          // Effacer tous les champs
+          searchCompact.value = '';
+          searchDetailed.value = '';
+          document.getElementById('category-filter').value = '';
+          document.getElementById('priority-filter').value = '';
+          document.getElementById('assignee-filter').value = '';
+          
+          // Décocher toutes les checkboxes
+          statusCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+          });
+          
+          // Mettre à jour l'affichage
+          updateSelectedStatuses();
+          
+          // Déclencher la recherche
+          if (window.filterTasks) {
+            window.filterTasks();
+          }
+        });
+        
+        // Gestion du bouton "Appliquer les filtres"
+        document.getElementById('apply-filters-btn').addEventListener('click', function() {
+          if (window.filterTasks) {
+            window.filterTasks();
+          }
+          // Fermer l'accordéon après application des filtres
+          if (accordionHeader.classList.contains('active')) {
+            toggleAccordion();
+          }
+        });
+        
+        // Raccourci clavier pour ouvrir la recherche rapide
+        document.addEventListener('keydown', function(e) {
+          if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            // Vérifier si on n'est pas dans un champ de saisie
+            if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+              e.preventDefault();
+              searchCompact.focus();
+            }
+          }
+        });
+      });
+    </script>
   </body>
 </html>
