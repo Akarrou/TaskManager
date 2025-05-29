@@ -6,11 +6,17 @@ class UXEnhancer {
     this.fabState = 'closed';
     this.connectionRetryCount = 0;
     this.maxRetries = 5;
-    
-    this.init();
+    this.initialized = false;
   }
 
   init() {
+    if (this.initialized) {
+      console.log('🔄 UXEnhancer déjà initialisé, skip...');
+      return;
+    }
+    
+    console.log('🚀 Initialisation UXEnhancer...');
+    
     this.initializeConnectionMonitor();
     this.initializeFAB();
     this.initializeBreadcrumbs();
@@ -20,6 +26,9 @@ class UXEnhancer {
     
     // Démarrer le monitoring
     this.startConnectionMonitoring();
+    
+    this.initialized = true;
+    console.log('✅ UXEnhancer initialisé avec succès!');
   }
 
   // ===== GESTION DE LA CONNEXION =====
@@ -30,8 +39,20 @@ class UXEnhancer {
     this.connectionText = document.getElementById('connection-text');
     this.headerConnectionStatus = document.getElementById('connection-status');
     
-    // Test initial de connexion
-    this.checkConnection();
+    // Loguer les éléments trouvés pour debug
+    console.log('🔍 Éléments de connexion trouvés:', {
+      indicator: !!this.connectionIndicator,
+      dot: !!this.connectionDot,
+      text: !!this.connectionText,
+      header: !!this.headerConnectionStatus
+    });
+    
+    // Test initial de connexion seulement si on a au moins un élément
+    if (this.headerConnectionStatus || this.connectionIndicator) {
+      this.checkConnection();
+    } else {
+      console.warn('⚠️ Aucun élément de statut de connexion trouvé');
+    }
   }
 
   async checkConnection() {
@@ -66,11 +87,17 @@ class UXEnhancer {
   setConnectionStatus(status, message) {
     this.connectionStatus = status;
     
-    // Mettre à jour l'indicateur de connexion
-    this.connectionIndicator.className = `fixed bottom-4 left-4 z-40 connection-${status}`;
-    this.connectionText.textContent = message;
+    // Mettre à jour l'indicateur de connexion seulement s'il existe
+    if (this.connectionIndicator) {
+      this.connectionIndicator.className = `fixed bottom-4 left-4 z-40 connection-${status}`;
+    }
     
-    // Mettre à jour le header
+    // Mettre à jour le texte de connexion seulement s'il existe
+    if (this.connectionText) {
+      this.connectionText.textContent = message;
+    }
+    
+    // Mettre à jour le header (celui-ci existe)
     if (this.headerConnectionStatus) {
       const iconClass = status === 'online' ? 'text-green-500' : 
                       status === 'loading' ? 'text-yellow-500' : 'text-red-500';
@@ -136,23 +163,37 @@ class UXEnhancer {
     this.fabRefresh = document.getElementById('fab-refresh');
     this.fabSearch = document.getElementById('fab-search');
 
+    // Vérifier que les éléments FAB existent
+    if (!this.fabMain || !this.fabMenu) {
+      console.log('ℹ️ Éléments FAB non trouvés, skip initialisation FAB');
+      return;
+    }
+
+    console.log('🎯 Initialisation FAB...');
+
     // Gestionnaires d'événements
     this.fabMain.addEventListener('click', () => this.toggleFAB());
     
-    this.fabNewTask.addEventListener('click', () => {
-      this.closeFAB();
-      document.getElementById('new-task-btn')?.click();
-    });
+    if (this.fabNewTask) {
+      this.fabNewTask.addEventListener('click', () => {
+        this.closeFAB();
+        document.getElementById('new-task-btn')?.click();
+      });
+    }
     
-    this.fabRefresh.addEventListener('click', () => {
-      this.closeFAB();
-      this.performRefresh();
-    });
+    if (this.fabRefresh) {
+      this.fabRefresh.addEventListener('click', () => {
+        this.closeFAB();
+        this.performRefresh();
+      });
+    }
     
-    this.fabSearch.addEventListener('click', () => {
-      this.closeFAB();
-      this.focusSearch();
-    });
+    if (this.fabSearch) {
+      this.fabSearch.addEventListener('click', () => {
+        this.closeFAB();
+        this.focusSearch();
+      });
+    }
 
     // Fermer FAB en cliquant ailleurs
     document.addEventListener('click', (e) => {
