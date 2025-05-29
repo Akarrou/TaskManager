@@ -194,26 +194,6 @@
         box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
       }
       
-      #delete-btn[data-confirm="true"]::after {
-        content: "⚠️ Confirmation requise";
-        position: absolute;
-        bottom: -30px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(239, 68, 68, 0.9);
-        color: white;
-        padding: 0.25rem 0.5rem;
-        border-radius: 0.25rem;
-        font-size: 0.75rem;
-        white-space: nowrap;
-        z-index: 10;
-        animation: slideDown 0.3s ease-out;
-      }
-      
-      #delete-btn:hover::after {
-        opacity: 1;
-      }
-      
       /* Action principale mise en évidence */
       #save-btn {
         transform: scale(1.05);
