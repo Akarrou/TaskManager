@@ -10,10 +10,13 @@
       // Mettre à jour le titre de la page
       document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('page-title').textContent = window.PROJECT_NAME + ' - Task Manager';
-        // FIX: Préserver l'icône existante et ne changer que le texte
+        // FIX: Ne modifier que le texte du titre, pas son contenu HTML
         const appTitle = document.getElementById('app-title');
-        if (appTitle && !appTitle.textContent.includes(window.PROJECT_NAME)) {
-          appTitle.textContent = window.PROJECT_NAME + ' Task Manager';
+        if (appTitle) {
+          // Ne modifier que si le texte ne contient pas déjà le nom du projet
+          if (!appTitle.textContent.includes(window.PROJECT_NAME)) {
+            appTitle.textContent = window.PROJECT_NAME + ' Task Manager';
+          }
         }
       });
     </script>
