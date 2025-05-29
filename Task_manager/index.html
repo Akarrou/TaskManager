@@ -1515,11 +1515,11 @@
                 </label>
                 <select id="category-filter" class="input-modern w-full px-4 py-3" aria-label="Filtrer par catégorie">
                   <option value="">Toutes les catégories</option>
-                  <option value="Frontend">💻 Frontend</option>
-                  <option value="Backend">⚙️ Backend</option>
-                  <option value="Fullstack">🔄 Fullstack</option>
-                  <option value="Testing">🧪 Testing</option>
-                  <option value="OPS">🛠 OPS</option>
+                  <option value="Frontend"><i class="fas fa-laptop-code"></i> Frontend</option>
+                  <option value="Backend"><i class="fas fa-server"></i> Backend</option>
+                  <option value="Fullstack"><i class="fas fa-layer-group"></i> Fullstack</option>
+                  <option value="Testing"><i class="fas fa-vial"></i> Testing</option>
+                  <option value="OPS"><i class="fas fa-tools"></i> OPS</option>
                 </select>
               </div>
             </div>
@@ -1619,9 +1619,9 @@
                 </label>
                 <select id="priority-filter" class="input-modern w-full px-4 py-3" aria-label="Filtrer par priorité">
                   <option value="">Toutes les priorités</option>
-                  <option value="Haute">🔴 Haute</option>
-                  <option value="Moyenne">🟡 Moyenne</option>
-                  <option value="Basse">🟢 Basse</option>
+                  <option value="Haute"><i class="fas fa-exclamation-triangle text-red-500"></i> Haute</option>
+                  <option value="Moyenne"><i class="fas fa-minus-circle text-yellow-500"></i> Moyenne</option>
+                  <option value="Basse"><i class="fas fa-arrow-down text-green-500"></i> Basse</option>
                 </select>
               </div>
 
@@ -1973,27 +1973,27 @@
             const statusTag = document.createElement('div');
             statusTag.className = 'status-tag';
             
-            // Ajouter la classe CSS appropriée selon le statut
+            // Ajouter la classe CSS appropriée selon le statut avec icônes Font Awesome
             switch(statusValue) {
               case 'À faire':
                 statusTag.classList.add('todo');
-                statusTag.innerHTML = '🕐 À faire';
+                statusTag.innerHTML = '<i class="fas fa-clock mr-1"></i>À faire';
                 break;
               case 'En cours':
                 statusTag.classList.add('progress');
-                statusTag.innerHTML = '⚙️ En cours';
+                statusTag.innerHTML = '<i class="fas fa-spinner mr-1"></i>En cours';
                 break;
               case 'Terminée':
                 statusTag.classList.add('completed');
-                statusTag.innerHTML = '✅ Terminée';
+                statusTag.innerHTML = '<i class="fas fa-check-circle mr-1"></i>Terminée';
                 break;
               case 'En attente':
                 statusTag.classList.add('waiting');
-                statusTag.innerHTML = '⏸️ En attente';
+                statusTag.innerHTML = '<i class="fas fa-pause-circle mr-1"></i>En attente';
                 break;
               case 'Annulée':
                 statusTag.classList.add('cancelled');
-                statusTag.innerHTML = '❌ Annulée';
+                statusTag.innerHTML = '<i class="fas fa-times-circle mr-1"></i>Annulée';
                 break;
             }
             
