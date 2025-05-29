@@ -281,7 +281,7 @@ class TaskManager {
            onclick="window.location.href='/edit.html?id=${task.id}'"
            data-task-id="${task.id}">
         <div class="flex justify-between items-start mb-4">
-          <h3 class="text-lg font-semibold text-gray-900 line-clamp-2">${task.title || 'Titre non défini'}</h3>
+          <h3 class="text-lg font-semibold text-gray-900 line-clamp-2">${task.id} - ${task.title || 'Titre non défini'}</h3>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityColor}">
             ${task.priority || 'Non définie'}
           </span>
