@@ -10,7 +10,11 @@
       // Mettre à jour le titre de la page
       document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('page-title').textContent = window.PROJECT_NAME + ' - Task Manager';
-        document.getElementById('app-title').textContent = window.PROJECT_NAME + ' Task Manager';
+        // FIX: Préserver l'icône existante et ne changer que le texte
+        const appTitle = document.getElementById('app-title');
+        if (appTitle && !appTitle.textContent.includes(window.PROJECT_NAME)) {
+          appTitle.textContent = window.PROJECT_NAME + ' Task Manager';
+        }
       });
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -283,15 +287,20 @@
       }
       
       .btn-outline {
-        background: var(--bg-primary);
-        color: var(--text-secondary);
-        border: 1px solid var(--border-medium);
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: var(--text-white) !important;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(10px);
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
       
       .btn-outline:hover {
-        background: var(--bg-secondary);
-        border-color: var(--border-focus);
-        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.2) !important;
+        border-color: rgba(255, 255, 255, 0.5);
+        color: var(--text-white) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       }
 
       /* ===== BOUTONS TOGGLE MODERNISÉS ===== */
@@ -306,6 +315,10 @@
         border-radius: var(--radius-full);
         backdrop-filter: blur(10px);
         overflow: hidden;
+        font-weight: 600;
+        min-height: 44px;
+        padding: 0.75rem 1.5rem !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
       
       .toggle-button::before {
@@ -325,7 +338,7 @@
 
       .toggle-button:hover {
         transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       }
 
       .toggle-button:focus {
@@ -335,17 +348,59 @@
         box-shadow: var(--shadow-focus);
       }
 
-      .toggle-button.active {
-        box-shadow: var(--shadow-md);
-        border-color: var(--border-focus);
-        background: linear-gradient(135deg, var(--emerald-500), var(--emerald-600));
-        color: white;
+      .toggle-button.active,
+      .toggle-button[aria-pressed="true"] {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        border-color: rgba(255, 255, 255, 0.3);
+        transform: translateY(-1px);
+      }
+
+      .status-todo.active,
+      .status-todo[aria-pressed="true"] {
+        background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+        color: white !important;
+        border-color: #93c5fd;
+      }
+
+      .status-progress.active,
+      .status-progress[aria-pressed="true"] {
+        background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+        color: white !important;
+        border-color: #fcd34d;
+      }
+
+      .status-completed.active,
+      .status-completed[aria-pressed="true"] {
+        background: linear-gradient(135deg, #10b981, #059669) !important;
+        color: white !important;
+        border-color: #86efac;
+      }
+
+      .status-waiting.active,
+      .status-waiting[aria-pressed="true"] {
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+        color: white !important;
+        border-color: #c4b5fd;
+      }
+
+      .status-cancelled.active,
+      .status-cancelled[aria-pressed="true"] {
+        background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+        color: white !important;
+        border-color: #d1d5db;
       }
 
       .toggle-button.inactive {
-        background: rgba(209, 213, 219, 0.8);
-        color: var(--text-primary);
-        opacity: 1;
+        background: rgba(255, 255, 255, 0.9) !important;
+        color: var(--text-secondary) !important;
+        border: 2px solid var(--border-light);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+      
+      .toggle-button.inactive:hover {
+        background: var(--bg-secondary) !important;
+        border-color: var(--border-medium);
+        color: var(--text-primary) !important;
       }
 
       .check-icon {
@@ -464,41 +519,6 @@
       
       .stats-icon-completed {
         background: linear-gradient(135deg, var(--soft-green), #047857);
-      }
-
-      /* ===== COULEURS DE STATUT MODERNISÉES ===== */
-      
-      /* Boutons de statut avec couleurs modernes */
-      .status-todo {
-        background: linear-gradient(135deg, var(--status-todo), #2563eb);
-      }
-      
-      .status-progress {
-        background: linear-gradient(135deg, var(--status-progress), #d97706);
-      }
-      
-      .status-completed {
-        background: linear-gradient(135deg, var(--status-completed), #047857);
-      }
-      
-      .status-waiting {
-        background: linear-gradient(135deg, var(--status-waiting), #7c3aed);
-      }
-      
-      .status-cancelled {
-        background: linear-gradient(135deg, var(--status-cancelled), #4b5563);
-      }
-      
-      /* États inactifs avec couleurs douces */
-      .toggle-button.inactive {
-        background: var(--bg-secondary);
-        color: var(--text-tertiary);
-        border: 1px solid var(--border-light);
-      }
-      
-      .toggle-button.inactive:hover {
-        background: var(--bg-tertiary);
-        color: var(--text-secondary);
       }
 
       /* ===== EFFETS POUR CARTES DE TÂCHES ===== */
@@ -1237,7 +1257,7 @@
                   type="button"
                   id="status-todo"
                   data-value="À faire"
-                  class="toggle-button status-todo text-white px-5 py-3 text-sm font-semibold flex items-center"
+                  class="toggle-button active status-todo text-white px-5 py-3 text-sm font-semibold flex items-center"
                   role="button"
                   aria-pressed="true"
                   tabindex="0"
@@ -1251,7 +1271,7 @@
                   type="button"
                   id="status-progress"
                   data-value="En cours"
-                  class="toggle-button status-progress text-white px-5 py-3 text-sm font-semibold flex items-center"
+                  class="toggle-button active status-progress text-white px-5 py-3 text-sm font-semibold flex items-center"
                   role="button"
                   aria-pressed="true"
                   tabindex="0"

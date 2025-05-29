@@ -774,11 +774,13 @@
         if (isEditMode) {
           // Mode édition
           pageTitle.textContent = window.PROJECT_NAME + ' - Modifier une tâche';
+          // FIX: Préserver la structure avec icône
           headerTitle.innerHTML = '<i class="fas fa-seedling text-2xl mr-2" style="color: var(--soft-green);"></i>' + window.PROJECT_NAME + ' Task Manager';
           formTitle.innerHTML = '<i class="fas fa-edit text-agro-green mr-3"></i>Modifier la tâche';
         } else {
           // Mode création
           pageTitle.textContent = window.PROJECT_NAME + ' - Créer une nouvelle tâche';
+          // FIX: Préserver la structure avec icône
           headerTitle.innerHTML = '<i class="fas fa-seedling text-2xl mr-2" style="color: var(--soft-green);"></i>' + window.PROJECT_NAME + ' Task Manager';
           formTitle.innerHTML = '<i class="fas fa-plus text-agro-green mr-3"></i>Créer une nouvelle tâche';
         }
