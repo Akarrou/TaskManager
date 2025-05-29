@@ -1067,30 +1067,57 @@
             <span id="connection-status" class="px-3 py-1 rounded-full text-sm bg-white/10 backdrop-blur-sm">
               <i class="fas fa-circle text-red-500"></i> Déconnecté
             </span>
-            <button
-              id="help-btn"
-              class="btn-modern btn-outline px-4 py-2"
-              title="Raccourcis clavier disponibles"
-              style="pointer-events: auto !important; position: relative; z-index: 75;"
-            >
-              <i class="fas fa-keyboard"></i> Aide
-            </button>
-            <button
-              id="new-task-btn"
-              class="btn-modern btn-success px-4 py-2"
-              title="Ctrl+N : Nouvelle tâche"
-              style="pointer-events: auto !important; position: relative; z-index: 75;"
-            >
-              <i class="fas fa-plus"></i> Nouvelle tâche
-            </button>
-            <button
-              id="refresh-btn"
-              class="btn-modern btn-primary px-4 py-2"
-              title="Ctrl+R : Actualiser"
-              style="pointer-events: auto !important; position: relative; z-index: 75;"
-            >
-              <i class="fas fa-sync-alt"></i> Actualiser
-            </button>
+            
+            <!-- Bouton d'aide simplifié -->
+            <div class="relative group">
+              <button
+                id="help-btn"
+                class="btn-modern btn-outline w-10 h-10 rounded-full flex items-center justify-center"
+                aria-label="Raccourcis clavier"
+                style="pointer-events: auto !important; position: relative; z-index: 75;"
+              >
+                <i class="fas fa-keyboard text-lg"></i>
+              </button>
+              <!-- Tooltip -->
+              <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
+                Raccourcis clavier
+                <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
+              </div>
+            </div>
+            
+            <!-- Bouton nouvelle tâche simplifié -->
+            <div class="relative group">
+              <button
+                id="new-task-btn"
+                class="btn-modern btn-success w-10 h-10 rounded-full flex items-center justify-center"
+                aria-label="Nouvelle tâche (Ctrl+N)"
+                style="pointer-events: auto !important; position: relative; z-index: 75;"
+              >
+                <i class="fas fa-plus text-lg"></i>
+              </button>
+              <!-- Tooltip -->
+              <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
+                Nouvelle tâche (Ctrl+N)
+                <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
+              </div>
+            </div>
+            
+            <!-- Bouton actualiser simplifié -->
+            <div class="relative group">
+              <button
+                id="refresh-btn"
+                class="btn-modern btn-primary w-10 h-10 rounded-full flex items-center justify-center"
+                aria-label="Actualiser (Ctrl+R)"
+                style="pointer-events: auto !important; position: relative; z-index: 75;"
+              >
+                <i class="fas fa-sync-alt text-lg"></i>
+              </button>
+              <!-- Tooltip -->
+              <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
+                Actualiser (Ctrl+R)
+                <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1437,53 +1464,66 @@
       <div class="relative flex flex-col items-end">
         <!-- Quick Action Buttons - FIX: Repositionnés au-dessus -->
         <div id="fab-menu" class="flex flex-col items-center space-y-3 mb-4 opacity-0 invisible transition-all duration-300 transform scale-90">
-          <button
-            id="fab-search"
-            class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group relative"
-            aria-label="Rechercher (Raccourci: /)"
-          >
-            <i class="fas fa-search text-white transition-transform duration-300 group-hover:scale-110"></i>
-            <!-- Tooltip non-bloquant -->
+          <!-- Bouton recherche -->
+          <div class="relative group">
+            <button
+              id="fab-search"
+              class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+              aria-label="Rechercher (Raccourci: /)"
+            >
+              <i class="fas fa-search text-white transition-transform duration-300 group-hover:scale-110"></i>
+            </button>
+            <!-- Tooltip simplifié -->
             <div class="absolute right-14 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
               Rechercher (/)
             </div>
-          </button>
-          <button
-            id="fab-refresh"
-            class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group relative"
-            aria-label="Actualiser (Ctrl+R)"
-          >
-            <i class="fas fa-sync-alt text-white transition-transform duration-300 group-hover:rotate-180"></i>
-            <!-- Tooltip non-bloquant -->
+          </div>
+          
+          <!-- Bouton actualiser -->
+          <div class="relative group">
+            <button
+              id="fab-refresh"
+              class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+              aria-label="Actualiser (Ctrl+R)"
+            >
+              <i class="fas fa-sync-alt text-white transition-transform duration-300 group-hover:rotate-180"></i>
+            </button>
+            <!-- Tooltip simplifié -->
             <div class="absolute right-14 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-              Actualiser (Ctrl+R)
+              Actualiser
             </div>
-          </button>
-          <button
-            id="fab-new-task"
-            class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group relative"
-            aria-label="Nouvelle tâche (Ctrl+N)"
-          >
-            <i class="fas fa-tasks text-white transition-transform duration-300 group-hover:scale-110"></i>
-            <!-- Tooltip non-bloquant -->
+          </div>
+          
+          <!-- Bouton nouvelle tâche -->
+          <div class="relative group">
+            <button
+              id="fab-new-task"
+              class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+              aria-label="Nouvelle tâche (Ctrl+N)"
+            >
+              <i class="fas fa-tasks text-white transition-transform duration-300 group-hover:scale-110"></i>
+            </button>
+            <!-- Tooltip simplifié -->
             <div class="absolute right-14 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-              Nouvelle tâche (Ctrl+N)
+              Nouvelle tâche
             </div>
-          </button>
+          </div>
         </div>
         
         <!-- Main FAB Button - FIX: Taille uniforme -->
-        <button
-          id="fab-main"
-          class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group relative"
-          aria-label="Actions rapides"
-        >
-          <i class="fas fa-plus text-white text-xl transition-transform duration-300 group-hover:rotate-45"></i>
-          <!-- Tooltip non-bloquant -->
+        <div class="relative group">
+          <button
+            id="fab-main"
+            class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+            aria-label="Actions rapides"
+          >
+            <i class="fas fa-plus text-white text-xl transition-transform duration-300 group-hover:rotate-45"></i>
+          </button>
+          <!-- Tooltip simplifié -->
           <div class="absolute right-16 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
             Actions rapides
           </div>
-        </button>
+        </div>
       </div>
     </div>
 
