@@ -850,6 +850,258 @@
         transform: translateX(100%);
         opacity: 0;
       }
+
+      /* ===== OPTIMISATIONS RESPONSIVE MOBILE ===== */
+      
+      @media (max-width: 768px) {
+        /* Header mobile optimisé */
+        .header-modern {
+          padding: 0.75rem 0;
+        }
+        
+        .header-modern .container {
+          padding: 0 1rem;
+        }
+        
+        .header-modern h1 {
+          font-size: 1.25rem;
+        }
+        
+        .header-modern .flex.items-center.space-x-4 {
+          gap: 0.5rem;
+        }
+        
+        /* Boutons mobile avec touch targets appropriés */
+        .btn-modern {
+          min-height: 44px; /* Apple recommandation */
+          min-width: 44px;
+          padding: 0.75rem 1rem;
+          font-size: 0.875rem;
+        }
+        
+        /* Navigation mobile améliorée */
+        .stats-card {
+          padding: 1rem;
+          margin-bottom: 1rem;
+        }
+        
+        .stats-card .text-3xl {
+          font-size: 1.875rem;
+        }
+        
+        /* Filtres mobile avec scroll horizontal */
+        .filter-scroll-container {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        
+        .filter-scroll-container::-webkit-scrollbar {
+          display: none;
+        }
+        
+        .toggle-button {
+          min-width: 120px;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+        
+        /* Formulaires mobile optimisés */
+        .card-modern {
+          margin: 0.5rem;
+          border-radius: var(--radius-lg);
+        }
+        
+        .form-input {
+          font-size: 16px; /* Évite le zoom sur iOS */
+          min-height: 44px;
+          padding: 0.75rem 1rem;
+        }
+        
+        /* Grille responsive améliorée */
+        .grid.grid-cols-1.md\\:grid-cols-2,
+        .grid.grid-cols-1.md\\:grid-cols-4 {
+          gap: 1rem;
+        }
+        
+        /* FAB mobile optimisé */
+        #quick-actions-fab {
+          bottom: 1rem;
+          right: 1rem;
+        }
+        
+        #fab-main {
+          width: 56px;
+          height: 56px;
+          box-shadow: var(--shadow-lg);
+        }
+        
+        #fab-menu button {
+          width: 48px;
+          height: 48px;
+        }
+        
+        /* Notifications mobile */
+        .notification-toast {
+          min-width: 280px;
+          max-width: calc(100vw - 2rem);
+          margin: 0 1rem;
+        }
+        
+        /* Amélioration du focus mobile */
+        .form-input:focus {
+          transform: none; /* Évite les problèmes de layout */
+          box-shadow: var(--shadow-focus);
+        }
+        
+        /* Textes mobile optimisés */
+        .heading-primary {
+          font-size: 1.5rem;
+          line-height: 1.3;
+        }
+        
+        .heading-secondary {
+          font-size: 1.25rem;
+        }
+        
+        /* Espacements mobile cohérents */
+        .container {
+          padding-left: 1rem;
+          padding-right: 1rem;
+        }
+        
+        /* Tables/listes mobile */
+        .task-card {
+          padding: 1rem;
+          margin-bottom: 0.75rem;
+        }
+        
+        .task-card:hover {
+          transform: none; /* Évite les animations sur mobile */
+        }
+        
+        /* Modal mobile full screen */
+        #help-modal .bg-white {
+          margin: 1rem;
+          max-height: calc(100vh - 2rem);
+          overflow-y: auto;
+        }
+        
+        /* Breadcrumbs mobile cachés */
+        #breadcrumb-container {
+          display: none;
+        }
+        
+        /* Espacement vertical mobile */
+        .py-8 {
+          padding-top: 1.5rem;
+          padding-bottom: 1.5rem;
+        }
+        
+        .mb-8 {
+          margin-bottom: 1.5rem;
+        }
+        
+        /* Menu hamburger si nécessaire */
+        .mobile-menu-toggle {
+          display: block;
+          background: none;
+          border: none;
+          color: var(--text-white);
+          font-size: 1.25rem;
+          padding: 0.5rem;
+          border-radius: var(--radius-md);
+          transition: background-color var(--transition-normal);
+        }
+        
+        .mobile-menu-toggle:hover {
+          background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Navigation slide pour mobile si nécessaire */
+        .mobile-nav {
+          position: fixed;
+          top: 0;
+          left: -100%;
+          width: 280px;
+          height: 100vh;
+          background: var(--bg-primary);
+          box-shadow: var(--shadow-xl);
+          transition: left var(--transition-slow);
+          z-index: 50;
+          overflow-y: auto;
+        }
+        
+        .mobile-nav.open {
+          left: 0;
+        }
+        
+        .mobile-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 40;
+          opacity: 0;
+          visibility: hidden;
+          transition: all var(--transition-normal);
+        }
+        
+        .mobile-overlay.show {
+          opacity: 1;
+          visibility: visible;
+        }
+      }
+      
+      /* ===== OPTIMISATIONS TABLET ===== */
+      
+      @media (min-width: 769px) and (max-width: 1024px) {
+        .grid.grid-cols-1.md\\:grid-cols-4 {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .stats-card {
+          padding: 1.25rem;
+        }
+        
+        .container {
+          max-width: 100%;
+          padding-left: 2rem;
+          padding-right: 2rem;
+        }
+      }
+      
+      /* ===== OPTIMISATIONS TOUCH DEVICES ===== */
+      
+      @media (hover: none) and (pointer: coarse) {
+        /* Suppression des hover effects sur touch */
+        .card-modern:hover,
+        .stats-card:hover,
+        .task-card:hover,
+        .btn-modern:hover {
+          transform: none;
+        }
+        
+        /* Focus plus visible sur touch */
+        .btn-modern:focus,
+        .form-input:focus,
+        .toggle-button:focus {
+          outline: 3px solid var(--border-focus);
+          outline-offset: 2px;
+        }
+        
+        /* Amélioration des zones de touch */
+        .toggle-button,
+        .btn-modern,
+        button,
+        [role="button"] {
+          min-height: 44px;
+          min-width: 44px;
+        }
+      }
     </style>
   </head>
   <body class="bg-agro-light min-h-screen">
@@ -976,76 +1228,78 @@
               </div>
               Statuts
             </label>
-            <div class="flex flex-wrap gap-3" role="group" aria-label="Filtres de statut">
-              <button
-                type="button"
-                id="status-todo"
-                data-value="À faire"
-                class="toggle-button status-todo text-white px-5 py-3 text-sm font-semibold flex items-center"
-                role="button"
-                aria-pressed="true"
-                tabindex="0"
-                aria-label="Filtrer les tâches à faire"
-              >
-                <i class="fas fa-clock mr-2"></i>À faire
-                <i class="fas fa-check ml-2 check-icon"></i>
-              </button>
+            <div class="filter-scroll-container">
+              <div class="flex flex-nowrap gap-3 pb-2" role="group" aria-label="Filtres de statut">
+                <button
+                  type="button"
+                  id="status-todo"
+                  data-value="À faire"
+                  class="toggle-button status-todo text-white px-5 py-3 text-sm font-semibold flex items-center"
+                  role="button"
+                  aria-pressed="true"
+                  tabindex="0"
+                  aria-label="Filtrer les tâches à faire"
+                >
+                  <i class="fas fa-clock mr-2"></i>À faire
+                  <i class="fas fa-check ml-2 check-icon"></i>
+                </button>
 
-              <button
-                type="button"
-                id="status-progress"
-                data-value="En cours"
-                class="toggle-button status-progress text-white px-5 py-3 text-sm font-semibold flex items-center"
-                role="button"
-                aria-pressed="true"
-                tabindex="0"
-                aria-label="Filtrer les tâches en cours"
-              >
-                <i class="fas fa-spinner mr-2"></i>En cours
-                <i class="fas fa-check ml-2 check-icon"></i>
-              </button>
+                <button
+                  type="button"
+                  id="status-progress"
+                  data-value="En cours"
+                  class="toggle-button status-progress text-white px-5 py-3 text-sm font-semibold flex items-center"
+                  role="button"
+                  aria-pressed="true"
+                  tabindex="0"
+                  aria-label="Filtrer les tâches en cours"
+                >
+                  <i class="fas fa-spinner mr-2"></i>En cours
+                  <i class="fas fa-check ml-2 check-icon"></i>
+                </button>
 
-              <button
-                type="button"
-                id="status-completed"
-                data-value="Terminée"
-                class="toggle-button inactive px-5 py-3 text-sm font-semibold flex items-center"
-                role="button"
-                aria-pressed="false"
-                tabindex="0"
-                aria-label="Filtrer les tâches terminées"
-              >
-                <i class="fas fa-check-circle mr-2"></i>Terminée
-                <i class="fas fa-check ml-2 check-icon opacity-0"></i>
-              </button>
+                <button
+                  type="button"
+                  id="status-completed"
+                  data-value="Terminée"
+                  class="toggle-button inactive px-5 py-3 text-sm font-semibold flex items-center"
+                  role="button"
+                  aria-pressed="false"
+                  tabindex="0"
+                  aria-label="Filtrer les tâches terminées"
+                >
+                  <i class="fas fa-check-circle mr-2"></i>Terminée
+                  <i class="fas fa-check ml-2 check-icon opacity-0"></i>
+                </button>
 
-              <button
-                type="button"
-                id="status-waiting"
-                data-value="En attente"
-                class="toggle-button inactive px-5 py-3 text-sm font-semibold flex items-center"
-                role="button"
-                aria-pressed="false"
-                tabindex="0"
-                aria-label="Filtrer les tâches en attente"
-              >
-                <i class="fas fa-pause-circle mr-2"></i>En attente
-                <i class="fas fa-check ml-2 check-icon opacity-0"></i>
-              </button>
+                <button
+                  type="button"
+                  id="status-waiting"
+                  data-value="En attente"
+                  class="toggle-button inactive px-5 py-3 text-sm font-semibold flex items-center"
+                  role="button"
+                  aria-pressed="false"
+                  tabindex="0"
+                  aria-label="Filtrer les tâches en attente"
+                >
+                  <i class="fas fa-pause-circle mr-2"></i>En attente
+                  <i class="fas fa-check ml-2 check-icon opacity-0"></i>
+                </button>
 
-              <button
-                type="button"
-                id="status-cancelled"
-                data-value="Annulée"
-                class="toggle-button inactive px-5 py-3 text-sm font-semibold flex items-center"
-                role="button"
-                aria-pressed="false"
-                tabindex="0"
-                aria-label="Filtrer les tâches annulées"
-              >
-                <i class="fas fa-times-circle mr-2"></i>Annulée
-                <i class="fas fa-check ml-2 check-icon opacity-0"></i>
-              </button>
+                <button
+                  type="button"
+                  id="status-cancelled"
+                  data-value="Annulée"
+                  class="toggle-button inactive px-5 py-3 text-sm font-semibold flex items-center"
+                  role="button"
+                  aria-pressed="false"
+                  tabindex="0"
+                  aria-label="Filtrer les tâches annulées"
+                >
+                  <i class="fas fa-times-circle mr-2"></i>Annulée
+                  <i class="fas fa-check ml-2 check-icon opacity-0"></i>
+                </button>
+              </div>
             </div>
           </div>
 
