@@ -1321,6 +1321,26 @@
           font-size: 0.75rem;
         }
       }
+
+      /* Animation pour le focus de recherche */
+      .search-focus-animation {
+        animation: searchFocusPulse 0.6s ease-out;
+      }
+      
+      @keyframes searchFocusPulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(37, 100, 235, 0.7);
+          transform: scale(1);
+        }
+        50% {
+          box-shadow: 0 0 0 10px rgba(37, 100, 235, 0.2);
+          transform: scale(1.02);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(37, 100, 235, 0);
+          transform: scale(1);
+        }
+      }
     </style>
   </head>
   <body class="bg-agro-light min-h-screen">
@@ -2133,6 +2153,48 @@
               searchCompact.focus();
             }
           }
+        });
+        
+        // Gestion du bouton de recherche flottant
+        document.getElementById('fab-search')?.addEventListener('click', function(e) {
+          e.preventDefault();
+          
+          // Ouvrir l'accordéon si fermé pour plus de visibilité
+          if (!accordionHeader.classList.contains('active')) {
+            toggleAccordion();
+          }
+          
+          // Ajouter une animation visuelle au champ de recherche
+          searchCompact.classList.add('search-focus-animation');
+          
+          // Mettre le focus sur le champ de recherche compact
+          searchCompact.focus();
+          
+          // Sélectionner tout le texte s'il y en a
+          if (searchCompact.value) {
+            searchCompact.select();
+          }
+          
+          // Supprimer l'animation après qu'elle soit terminée
+          setTimeout(() => {
+            searchCompact.classList.remove('search-focus-animation');
+          }, 600);
+        });
+        
+        // Gestion du bouton d'actualisation flottant
+        document.getElementById('fab-refresh')?.addEventListener('click', function(e) {
+          e.preventDefault();
+          
+          // Déclencher le même événement que le bouton refresh du header
+          document.getElementById('refresh-btn')?.click();
+        });
+        
+        // Gestion du bouton nouvelle tâche flottant
+        document.getElementById('fab-new-task')?.addEventListener('click', function(e) {
+          e.preventDefault();
+          
+          // Déclencher le même événement que le bouton nouvelle tâche du header
+          document.getElementById('new-task-btn')?.click();
         });
       });
     </script>
