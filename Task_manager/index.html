@@ -1202,6 +1202,125 @@
           justify-content: center;
         }
       }
+
+      /* ===== BOUTONS FILTRES DE STATUT ===== */
+      
+      .status-filter-btn {
+        background: rgba(255, 255, 255, 0.9);
+        border: 2px solid var(--border-light);
+        border-radius: var(--radius-lg);
+        transition: all var(--transition-normal);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        min-height: 48px;
+        box-shadow: var(--shadow-xs);
+      }
+      
+      .status-filter-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left var(--transition-slow);
+      }
+      
+      .status-filter-btn:hover::before {
+        left: 100%;
+      }
+      
+      .status-filter-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-sm);
+        border-color: var(--border-medium);
+      }
+      
+      .status-filter-btn:focus {
+        outline: none;
+        box-shadow: var(--shadow-focus);
+        transform: translateY(-1px);
+      }
+      
+      /* États actifs pour chaque statut */
+      .status-filter-btn.active.todo-btn {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+        border-color: #93c5fd;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      }
+      
+      .status-filter-btn.active.progress-btn {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        border-color: #fcd34d;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+      }
+      
+      .status-filter-btn.active.completed-btn {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        border-color: #86efac;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      }
+      
+      .status-filter-btn.active.waiting-btn {
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        color: white;
+        border-color: #c4b5fd;
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+      }
+      
+      .status-filter-btn.active.cancelled-btn {
+        background: linear-gradient(135deg, #6b7280, #4b5563);
+        color: white;
+        border-color: #d1d5db;
+        box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+      }
+      
+      /* États inactifs */
+      .status-filter-btn.inactive {
+        background: rgba(255, 255, 255, 0.9);
+        color: var(--text-secondary);
+        border-color: var(--border-light);
+      }
+      
+      .status-filter-btn.inactive:hover {
+        background: var(--bg-secondary);
+        border-color: var(--border-medium);
+        color: var(--text-primary);
+      }
+      
+      /* Animation de l'icône de check */
+      .status-filter-btn .check-icon {
+        transition: all var(--transition-normal);
+        transform: scale(0.8);
+      }
+      
+      .status-filter-btn.active .check-icon {
+        opacity: 1;
+        transform: scale(1);
+      }
+      
+      .status-filter-btn.inactive .check-icon {
+        opacity: 0;
+        transform: scale(0.6);
+      }
+      
+      /* Responsive pour les boutons de statut */
+      @media (max-width: 768px) {
+        .status-filter-btn {
+          min-height: 52px;
+          font-size: 0.875rem;
+          padding: 0.875rem 0.75rem;
+        }
+        
+        .status-filter-btn span {
+          font-size: 0.75rem;
+        }
+      }
     </style>
   </head>
   <body class="bg-agro-light min-h-screen">
@@ -1411,75 +1530,84 @@
                 <i class="fas fa-tasks text-green-500 mr-2"></i>Statut des tâches
               </label>
               <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-                <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="status"
-                    value="À faire"
-                    class="rounded border-gray-300 text-blue-600 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 mr-3"
-                    aria-describedby="status-todo-desc"
-                  />
-                  <div>
-                    <span class="font-medium text-gray-700">🕐 À faire</span>
-                    <p id="status-todo-desc" class="text-xs text-gray-500">Tâches non commencées</p>
+                <button
+                  type="button"
+                  data-status="À faire"
+                  class="status-filter-btn todo-btn active flex items-center justify-center p-3 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  aria-pressed="true"
+                  aria-describedby="status-todo-desc"
+                >
+                  <div class="flex items-center">
+                    <i class="fas fa-clock mr-2"></i>
+                    <span>🕐 À faire</span>
+                    <i class="fas fa-check ml-2 check-icon"></i>
                   </div>
-                </label>
+                </button>
 
-                <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-orange-50 transition-colors cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="status"
-                    value="En cours"
-                    class="rounded border-gray-300 text-orange-600 focus:border-orange-300 focus:ring focus:ring-orange-200 focus:ring-opacity-50 mr-3"
-                    aria-describedby="status-progress-desc"
-                  />
-                  <div>
-                    <span class="font-medium text-gray-700">⚙️ En cours</span>
-                    <p id="status-progress-desc" class="text-xs text-gray-500">Tâches en progression</p>
+                <button
+                  type="button"
+                  data-status="En cours"
+                  class="status-filter-btn progress-btn active flex items-center justify-center p-3 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-300"
+                  aria-pressed="true"
+                  aria-describedby="status-progress-desc"
+                >
+                  <div class="flex items-center">
+                    <i class="fas fa-spinner mr-2"></i>
+                    <span>⚙️ En cours</span>
+                    <i class="fas fa-check ml-2 check-icon"></i>
                   </div>
-                </label>
+                </button>
 
-                <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-green-50 transition-colors cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="status"
-                    value="Terminée"
-                    class="rounded border-gray-300 text-green-600 focus:border-green-300 focus:ring focus:ring-green-200 focus:ring-opacity-50 mr-3"
-                    aria-describedby="status-completed-desc"
-                  />
-                  <div>
-                    <span class="font-medium text-gray-700">✅ Terminée</span>
-                    <p id="status-completed-desc" class="text-xs text-gray-500">Tâches complétées</p>
+                <button
+                  type="button"
+                  data-status="Terminée"
+                  class="status-filter-btn completed-btn inactive flex items-center justify-center p-3 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-300"
+                  aria-pressed="false"
+                  aria-describedby="status-completed-desc"
+                >
+                  <div class="flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span>✅ Terminée</span>
+                    <i class="fas fa-check ml-2 check-icon opacity-0"></i>
                   </div>
-                </label>
+                </button>
 
-                <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-purple-50 transition-colors cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="status"
-                    value="En attente"
-                    class="rounded border-gray-300 text-purple-600 focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50 mr-3"
-                    aria-describedby="status-waiting-desc"
-                  />
-                  <div>
-                    <span class="font-medium text-gray-700">⏸️ En attente</span>
-                    <p id="status-waiting-desc" class="text-xs text-gray-500">Tâches en pause</p>
+                <button
+                  type="button"
+                  data-status="En attente"
+                  class="status-filter-btn waiting-btn inactive flex items-center justify-center p-3 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                  aria-pressed="false"
+                  aria-describedby="status-waiting-desc"
+                >
+                  <div class="flex items-center">
+                    <i class="fas fa-pause-circle mr-2"></i>
+                    <span>⏸️ En attente</span>
+                    <i class="fas fa-check ml-2 check-icon opacity-0"></i>
                   </div>
-                </label>
+                </button>
 
-                <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="status"
-                    value="Annulée"
-                    class="rounded border-gray-300 text-gray-600 focus:border-gray-300 focus:ring focus:ring-gray-200 focus:ring-opacity-50 mr-3"
-                    aria-describedby="status-cancelled-desc"
-                  />
-                  <div>
-                    <span class="font-medium text-gray-700">❌ Annulée</span>
-                    <p id="status-cancelled-desc" class="text-xs text-gray-500">Tâches annulées</p>
+                <button
+                  type="button"
+                  data-status="Annulée"
+                  class="status-filter-btn cancelled-btn inactive flex items-center justify-center p-3 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                  aria-pressed="false"
+                  aria-describedby="status-cancelled-desc"
+                >
+                  <div class="flex items-center">
+                    <i class="fas fa-times-circle mr-2"></i>
+                    <span>❌ Annulée</span>
+                    <i class="fas fa-check ml-2 check-icon opacity-0"></i>
                   </div>
-                </label>
+                </button>
+              </div>
+              
+              <!-- Descriptions des statuts (pour l'accessibilité) -->
+              <div class="hidden">
+                <p id="status-todo-desc">Tâches non commencées</p>
+                <p id="status-progress-desc">Tâches en progression</p>
+                <p id="status-completed-desc">Tâches complétées</p>
+                <p id="status-waiting-desc">Tâches en pause</p>
+                <p id="status-cancelled-desc">Tâches annulées</p>
               </div>
             </div>
 
@@ -1837,11 +1965,11 @@
         
         // Fonction pour mettre à jour les statuts sélectionnés dans le header
         function updateSelectedStatuses() {
-          const statusCheckboxes = document.querySelectorAll('input[name="status"]:checked');
+          const activeStatusButtons = document.querySelectorAll('.status-filter-btn.active');
           selectedStatusesContainer.innerHTML = '';
           
-          statusCheckboxes.forEach(checkbox => {
-            const statusValue = checkbox.value;
+          activeStatusButtons.forEach(button => {
+            const statusValue = button.getAttribute('data-status');
             const statusTag = document.createElement('div');
             statusTag.className = 'status-tag';
             
@@ -1873,7 +2001,7 @@
           });
           
           // Si aucun statut sélectionné, afficher un message
-          if (statusCheckboxes.length === 0) {
+          if (activeStatusButtons.length === 0) {
             const noStatusTag = document.createElement('div');
             noStatusTag.className = 'text-sm text-gray-500';
             noStatusTag.textContent = 'Aucun filtre actif';
@@ -1881,15 +2009,78 @@
           }
         }
         
-        // Écouter les changements sur les checkboxes de statut
-        const statusCheckboxes = document.querySelectorAll('input[name="status"]');
-        statusCheckboxes.forEach(checkbox => {
-          checkbox.addEventListener('change', updateSelectedStatuses);
+        // Fonction pour basculer l'état d'un bouton de statut
+        function toggleStatusButton(button) {
+          const isActive = button.classList.contains('active');
+          
+          if (isActive) {
+            // Désactiver le bouton
+            button.classList.remove('active');
+            button.classList.add('inactive');
+            button.setAttribute('aria-pressed', 'false');
+            
+            // Masquer l'icône de check
+            const checkIcon = button.querySelector('.check-icon');
+            if (checkIcon) {
+              checkIcon.classList.add('opacity-0');
+            }
+          } else {
+            // Activer le bouton
+            button.classList.remove('inactive');
+            button.classList.add('active');
+            button.setAttribute('aria-pressed', 'true');
+            
+            // Afficher l'icône de check
+            const checkIcon = button.querySelector('.check-icon');
+            if (checkIcon) {
+              checkIcon.classList.remove('opacity-0');
+            }
+          }
+          
+          // Mettre à jour l'affichage et déclencher le filtrage
+          updateSelectedStatuses();
+          if (window.filterTasks) {
+            window.filterTasks();
+          }
+        }
+        
+        // Écouter les changements sur les boutons de statut
+        const statusButtons = document.querySelectorAll('.status-filter-btn');
+        statusButtons.forEach(button => {
+          button.addEventListener('click', () => {
+            toggleStatusButton(button);
+          });
+          
+          // Gestion du clavier (Enter et Space)
+          button.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              toggleStatusButton(button);
+            }
+            // Navigation entre les boutons avec les flèches
+            if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+              e.preventDefault();
+              navigateBetweenStatusButtons(button, e.key === 'ArrowRight');
+            }
+          });
         });
         
-        // Initialiser les statuts sélectionnés (par défaut, "À faire" et "En cours" sont sélectionnés)
-        document.querySelector('input[value="À faire"]').checked = true;
-        document.querySelector('input[value="En cours"]').checked = true;
+        // Fonction pour naviguer entre les boutons de statut avec les flèches
+        function navigateBetweenStatusButtons(currentButton, goNext) {
+          const buttons = Array.from(document.querySelectorAll('.status-filter-btn'));
+          const currentIndex = buttons.indexOf(currentButton);
+          
+          let nextIndex;
+          if (goNext) {
+            nextIndex = currentIndex + 1 >= buttons.length ? 0 : currentIndex + 1;
+          } else {
+            nextIndex = currentIndex - 1 < 0 ? buttons.length - 1 : currentIndex - 1;
+          }
+          
+          buttons[nextIndex].focus();
+        }
+        
+        // Initialiser les statuts sélectionnés (par défaut, "À faire" et "En cours" sont actifs)
         updateSelectedStatuses();
         
         // Gestion du bouton "Effacer les filtres"
@@ -1901,9 +2092,16 @@
           document.getElementById('priority-filter').value = '';
           document.getElementById('assignee-filter').value = '';
           
-          // Décocher toutes les checkboxes
-          statusCheckboxes.forEach(checkbox => {
-            checkbox.checked = false;
+          // Désactiver tous les boutons de statut
+          statusButtons.forEach(button => {
+            button.classList.remove('active');
+            button.classList.add('inactive');
+            button.setAttribute('aria-pressed', 'false');
+            
+            const checkIcon = button.querySelector('.check-icon');
+            if (checkIcon) {
+              checkIcon.classList.add('opacity-0');
+            }
           });
           
           // Mettre à jour l'affichage

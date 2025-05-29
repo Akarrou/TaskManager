@@ -109,11 +109,19 @@ class TaskManager {
       }
     });
 
-    // Gestion des checkboxes de statut (nouveau système)
-    document.querySelectorAll('input[name="status"]').forEach((checkbox) => {
-      checkbox.addEventListener("change", () => {
+    // Gestion des boutons de statut (nouveau système)
+    document.querySelectorAll('.status-filter-btn').forEach((button) => {
+      button.addEventListener("click", () => {
         this.updateStatusFilter();
         this.applyFilters();
+      });
+      
+      // Gestion du clavier (Enter et Space)
+      button.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          // Le toggle est géré par le script d'accordéon
+        }
       });
     });
 
@@ -121,10 +129,10 @@ class TaskManager {
     this.setupKeyboardShortcuts();
   }
 
-  // Mettre à jour le filtre de statut basé sur les checkboxes
+  // Mettre à jour le filtre de statut basé sur les boutons
   updateStatusFilter() {
-    const checkedStatuses = Array.from(document.querySelectorAll('input[name="status"]:checked'))
-      .map(checkbox => checkbox.value);
+    const checkedStatuses = Array.from(document.querySelectorAll('.status-filter-btn.active'))
+      .map(button => button.getAttribute('data-status'));
     this.currentFilters.statusList = checkedStatuses;
   }
 
@@ -340,7 +348,7 @@ class TaskManager {
 
   // Initialiser les filtres
   initializeFilters() {
-    // Les checkboxes sont initialisées dans le script d'accordéon
+    // Les boutons sont initialisés dans le script d'accordéon
     this.updateStatusFilter();
     this.applyFilters();
   }
