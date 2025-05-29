@@ -236,6 +236,88 @@
           display: none;
         }
       }
+
+      /* ===== FIX: ACCESSIBILITÉ FORMULAIRES ===== */
+      
+      /* Indicateurs visuels pour champs obligatoires */
+      .required-field::after {
+        content: " *";
+        color: #dc2626;
+        font-weight: bold;
+      }
+      
+      /* Amélioration des messages d'aide */
+      .field-help {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.25rem;
+      }
+      
+      /* États de validation améliorés */
+      .form-input.valid {
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+      }
+      
+      .form-input.invalid {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        animation: shake 0.3s ease-in-out;
+      }
+      
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+      }
+      
+      /* Amélioration du focus pour navigation clavier */
+      .form-input:focus {
+        outline: 2px solid #22c55e;
+        outline-offset: 2px;
+        border-color: #22c55e;
+      }
+      
+      /* Labels avec contraste amélioré */
+      label {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+        display: block;
+      }
+      
+      /* Messages de validation accessibles */
+      [role="alert"] {
+        border-radius: 0.375rem;
+        padding: 0.5rem;
+        background-color: #fef2f2;
+        border: 1px solid #fecaca;
+      }
+      
+      [role="status"] {
+        border-radius: 0.375rem;
+        padding: 0.5rem;
+        background-color: #f0fdf4;
+        border: 1px solid #bbf7d0;
+      }
+      
+      /* Responsive amélioré pour formulaires */
+      @media (max-width: 768px) {
+        .grid.grid-cols-1.md\\:grid-cols-2 {
+          gap: 1.5rem;
+        }
+        
+        .form-input {
+          font-size: 16px; /* Évite le zoom sur iOS */
+        }
+        
+        textarea.form-input {
+          min-height: 120px;
+        }
+      }
     </style>
   </head>
   <body class="bg-agro-light min-h-screen">
@@ -296,295 +378,301 @@
           </div>
 
           <!-- Form Content -->
-          <form id="task-edit-form" class="p-6">
-            <div class="space-y-6">
-              <!-- Titre -->
-              <div>
-                <label class="block text-sm font-semibold text-primary mb-3">
-                  <i class="fas fa-heading text-blue-500 mr-2"></i>Titre
-                </label>
-                <input
-                  type="text"
-                  id="edit-title"
-                  name="title"
-                  required
-                  class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent text-lg font-medium"
-                />
-                <div id="edit-title-error" class="error-message hidden text-red-600 text-sm mt-1 flex items-center">
-                  <i class="fas fa-exclamation-circle mr-2"></i>
-                  <span class="error-text"></span>
-                </div>
-                <div id="edit-title-success" class="success-message hidden text-green-600 text-sm mt-1 flex items-center">
-                  <i class="fas fa-check-circle mr-2"></i>
-                  <span class="success-text">Titre valide</span>
-                </div>
-              </div>
-
-              <!-- Description -->
-              <div>
-                <label class="block text-sm font-semibold text-primary mb-3">
-                  <i class="fas fa-align-left text-green-500 mr-2"></i
-                  >Description
-                </label>
-                <textarea
-                  id="edit-description"
-                  name="description"
-                  rows="5"
-                  class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent resize-none"
-                ></textarea>
-                <div id="edit-description-error" class="error-message hidden text-red-600 text-sm mt-1 flex items-center">
-                  <i class="fas fa-exclamation-circle mr-2"></i>
-                  <span class="error-text"></span>
-                </div>
-                <div id="edit-description-success" class="success-message hidden text-green-600 text-sm mt-1 flex items-center">
-                  <i class="fas fa-check-circle mr-2"></i>
-                  <span class="success-text">Description valide</span>
-                </div>
-              </div>
-
-              <!-- Ligne 1: Statut et Priorité -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form id="task-edit-form" class="p-6" role="form" aria-labelledby="form-title" aria-describedby="form-description" novalidate>
+            <div id="form-description" class="sr-only">
+              Formulaire de modification d'une tâche. Les champs marqués d'un astérisque sont obligatoires.
+            </div>
+            <fieldset class="space-y-6">
+              <legend class="sr-only">Informations de la tâche</legend>
+              <div class="space-y-6">
+                <!-- Titre -->
                 <div>
                   <label class="block text-sm font-semibold text-primary mb-3">
-                    <i class="fas fa-tasks text-agro-green mr-2"></i>Statut
-                  </label>
-                  <select
-                    id="edit-status"
-                    name="status"
-                    class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent bg-white"
-                  >
-                    <option value="À faire">🕐 À faire</option>
-                    <option value="En cours">⚙️ En cours</option>
-                    <option value="Terminée">✅ Terminée</option>
-                    <option value="En attente">⏸️ En attente</option>
-                    <option value="Annulée">❌ Annulée</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label class="block text-sm font-semibold text-primary mb-3">
-                    <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i
-                    >Priorité
-                  </label>
-                  <select
-                    id="edit-priority"
-                    name="priority"
-                    class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent bg-white"
-                  >
-                    <option value="Haute">🔴 Haute</option>
-                    <option value="Moyenne">🟡 Moyenne</option>
-                    <option value="Basse">🟢 Basse</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Ligne 2: Catégorie et Assigné -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label class="block text-sm font-semibold text-primary mb-3">
-                    <i class="fas fa-layer-group text-purple-500 mr-2"></i
-                    >Catégorie
-                  </label>
-                  <select
-                    id="edit-category"
-                    name="category"
-                    class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent bg-white"
-                  >
-                    <option value="Frontend">💻 Frontend</option>
-                    <option value="Backend">⚙️ Backend</option>
-                    <option value="Fullstack">🔄 Fullstack</option>
-                    <option value="Testing">🧪 Testing</option>
-                    <option value="OPS">🛠 OPS</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label class="block text-sm font-semibold text-primary mb-3">
-                    <i class="fas fa-user text-indigo-500 mr-2"></i>Assigné à
+                    <i class="fas fa-heading text-blue-500 mr-2"></i>Titre
                   </label>
                   <input
                     type="text"
-                    id="edit-assignee"
-                    name="assignee"
-                    class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent"
+                    id="edit-title"
+                    name="title"
+                    required
+                    class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent text-lg font-medium"
                   />
-                  <div id="edit-assignee-error" class="error-message hidden text-red-600 text-sm mt-1 flex items-center">
+                  <div id="edit-title-error" class="error-message hidden text-red-600 text-sm mt-1 flex items-center">
                     <i class="fas fa-exclamation-circle mr-2"></i>
                     <span class="error-text"></span>
                   </div>
-                  <div id="edit-assignee-success" class="success-message hidden text-green-600 text-sm mt-1 flex items-center">
+                  <div id="edit-title-success" class="success-message hidden text-green-600 text-sm mt-1 flex items-center">
                     <i class="fas fa-check-circle mr-2"></i>
-                    <span class="success-text">Assigné valide</span>
+                    <span class="success-text">Titre valide</span>
                   </div>
                 </div>
-              </div>
 
-              <!-- Date d'échéance -->
-              <div>
-                <label class="block text-sm font-semibold text-primary mb-3">
-                  <i class="fas fa-calendar-alt text-orange-500 mr-2"></i>Date
-                  d'échéance
-                </label>
-                <input
-                  type="date"
-                  id="edit-dueDate"
-                  name="dueDate"
-                  class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent"
-                />
-                <div id="edit-dueDate-error" class="error-message hidden text-red-600 text-sm mt-1 flex items-center">
-                  <i class="fas fa-exclamation-circle mr-2"></i>
-                  <span class="error-text"></span>
+                <!-- Description -->
+                <div>
+                  <label class="block text-sm font-semibold text-primary mb-3">
+                    <i class="fas fa-align-left text-green-500 mr-2"></i
+                    >Description
+                  </label>
+                  <textarea
+                    id="edit-description"
+                    name="description"
+                    rows="5"
+                    class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent resize-none"
+                  ></textarea>
+                  <div id="edit-description-error" class="error-message hidden text-red-600 text-sm mt-1 flex items-center">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    <span class="error-text"></span>
+                  </div>
+                  <div id="edit-description-success" class="success-message hidden text-green-600 text-sm mt-1 flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span class="success-text">Description valide</span>
+                  </div>
                 </div>
-                <div id="edit-dueDate-success" class="success-message hidden text-green-600 text-sm mt-1 flex items-center">
-                  <i class="fas fa-check-circle mr-2"></i>
-                  <span class="success-text">Date d'échéance valide</span>
-                </div>
-              </div>
 
-              <!-- Tags -->
-              <div>
-                <label class="block text-sm font-semibold text-primary mb-3">
-                  <i class="fas fa-tags text-pink-500 mr-2"></i>Tags (séparés
-                  par des virgules)
-                </label>
-                <input
-                  type="text"
-                  id="edit-tags"
-                  name="tags"
-                  placeholder="angular, api, crud"
-                  class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent"
-                />
-              </div>
+                <!-- Ligne 1: Statut et Priorité -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-sm font-semibold text-primary mb-3">
+                      <i class="fas fa-tasks text-agro-green mr-2"></i>Statut
+                    </label>
+                    <select
+                      id="edit-status"
+                      name="status"
+                      class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent bg-white"
+                    >
+                      <option value="À faire">🕐 À faire</option>
+                      <option value="En cours">⚙️ En cours</option>
+                      <option value="Terminée">✅ Terminée</option>
+                      <option value="En attente">⏸️ En attente</option>
+                      <option value="Annulée">❌ Annulée</option>
+                    </select>
+                  </div>
 
-              <!-- Sous-tâches -->
-              <div>
-                <label class="block text-sm font-semibold text-primary mb-3">
-                  <i class="fas fa-list-ul text-blue-500 mr-2"></i>Sous-tâches
-                </label>
-                <div id="tasks-container" class="space-y-2 mb-3">
-                  <!-- Les sous-tâches seront ajoutées ici dynamiquement -->
+                  <div>
+                    <label class="block text-sm font-semibold text-primary mb-3">
+                      <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i
+                      >Priorité
+                    </label>
+                    <select
+                      id="edit-priority"
+                      name="priority"
+                      class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent bg-white"
+                    >
+                      <option value="Haute">🔴 Haute</option>
+                      <option value="Moyenne">🟡 Moyenne</option>
+                      <option value="Basse">🟢 Basse</option>
+                    </select>
+                  </div>
                 </div>
-                <div class="flex gap-2">
+
+                <!-- Ligne 2: Catégorie et Assigné -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-sm font-semibold text-primary mb-3">
+                      <i class="fas fa-layer-group text-purple-500 mr-2"></i
+                      >Catégorie
+                    </label>
+                    <select
+                      id="edit-category"
+                      name="category"
+                      class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent bg-white"
+                    >
+                      <option value="Frontend">💻 Frontend</option>
+                      <option value="Backend">⚙️ Backend</option>
+                      <option value="Fullstack">🔄 Fullstack</option>
+                      <option value="Testing">🧪 Testing</option>
+                      <option value="OPS">🛠 OPS</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-semibold text-primary mb-3">
+                      <i class="fas fa-user text-indigo-500 mr-2"></i>Assigné à
+                    </label>
+                    <input
+                      type="text"
+                      id="edit-assignee"
+                      name="assignee"
+                      class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent"
+                    />
+                    <div id="edit-assignee-error" class="error-message hidden text-red-600 text-sm mt-1 flex items-center">
+                      <i class="fas fa-exclamation-circle mr-2"></i>
+                      <span class="error-text"></span>
+                    </div>
+                    <div id="edit-assignee-success" class="success-message hidden text-green-600 text-sm mt-1 flex items-center">
+                      <i class="fas fa-check-circle mr-2"></i>
+                      <span class="success-text">Assigné valide</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Date d'échéance -->
+                <div>
+                  <label class="block text-sm font-semibold text-primary mb-3">
+                    <i class="fas fa-calendar-alt text-orange-500 mr-2"></i>Date
+                    d'échéance
+                  </label>
+                  <input
+                    type="date"
+                    id="edit-dueDate"
+                    name="dueDate"
+                    class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent"
+                  />
+                  <div id="edit-dueDate-error" class="error-message hidden text-red-600 text-sm mt-1 flex items-center">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    <span class="error-text"></span>
+                  </div>
+                  <div id="edit-dueDate-success" class="success-message hidden text-green-600 text-sm mt-1 flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span class="success-text">Date d'échéance valide</span>
+                  </div>
+                </div>
+
+                <!-- Tags -->
+                <div>
+                  <label class="block text-sm font-semibold text-primary mb-3">
+                    <i class="fas fa-tags text-pink-500 mr-2"></i>Tags (séparés
+                    par des virgules)
+                  </label>
                   <input
                     type="text"
-                    id="new-task-input"
-                    placeholder="Nouvelle sous-tâche..."
-                    class="form-input flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent"
+                    id="edit-tags"
+                    name="tags"
+                    placeholder="angular, api, crud"
+                    class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent"
                   />
+                </div>
+
+                <!-- Sous-tâches -->
+                <div>
+                  <label class="block text-sm font-semibold text-primary mb-3">
+                    <i class="fas fa-list-ul text-blue-500 mr-2"></i>Sous-tâches
+                  </label>
+                  <div id="tasks-container" class="space-y-2 mb-3">
+                    <!-- Les sous-tâches seront ajoutées ici dynamiquement -->
+                  </div>
+                  <div class="flex gap-2">
+                    <input
+                      type="text"
+                      id="new-task-input"
+                      placeholder="Nouvelle sous-tâche..."
+                      class="form-input flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent"
+                    />
+                    <button
+                      type="button"
+                      id="add-task-btn"
+                      class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      <i class="fas fa-plus"></i> Ajouter
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Problem et Objective -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-sm font-semibold text-primary mb-3">
+                      <i class="fas fa-exclamation-circle text-red-500 mr-2"></i
+                      >Problème
+                    </label>
+                    <textarea
+                      id="edit-problem"
+                      name="problem"
+                      rows="4"
+                      placeholder="Description du problème..."
+                      class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent resize-none"
+                    ></textarea>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-semibold text-primary mb-3">
+                      <i class="fas fa-target text-green-500 mr-2"></i>Objectif
+                    </label>
+                    <textarea
+                      id="edit-objective"
+                      name="objective"
+                      rows="4"
+                      placeholder="Objectif à atteindre..."
+                      class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent resize-none"
+                    ></textarea>
+                  </div>
+                </div>
+
+                <!-- Fichier source -->
+                <div>
+                  <label class="block text-sm font-semibold text-primary mb-3">
+                    <i class="fas fa-file-alt text-purple-500 mr-2"></i>Fichier
+                    source
+                  </label>
+                  <input
+                    type="text"
+                    id="edit-source-file"
+                    name="source_file"
+                    placeholder="tache-a-realiser.mdc"
+                    class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <!-- Informations système -->
+              <div
+                id="task-info"
+                class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 mt-6 border-t border-gray-200 text-sm text-tertiary"
+              >
+                <!-- Task info will be inserted here -->
+              </div>
+
+              <!-- Boutons d'action - FIX: Positionnement sécurisé -->
+              <div class="form-actions-container flex justify-between items-center pt-6 mt-6 border-t border-gray-200">
+                <!-- Actions secondaires à gauche -->
+                <div class="form-actions-secondary flex items-center space-x-3">
+                  <a
+                    href="/"
+                    class="inline-flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors focus:ring-2 focus:ring-gray-300 focus:outline-none"
+                    aria-label="Retourner à la liste des tâches"
+                  >
+                    <i class="fas fa-arrow-left mr-2"></i>Retour
+                  </a>
+                </div>
+                
+                <!-- Actions principales à droite -->
+                <div class="form-actions-primary flex items-center space-x-4">
+                  <!-- Action de réinitialisation -->
                   <button
                     type="button"
-                    id="add-task-btn"
-                    class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    id="reset-btn"
+                    class="inline-flex items-center px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors focus:ring-2 focus:ring-yellow-300 focus:outline-none"
+                    aria-label="Réinitialiser le formulaire"
                   >
-                    <i class="fas fa-plus"></i> Ajouter
+                    <i class="fas fa-undo mr-2"></i>Réinitialiser
+                  </button>
+                  
+                  <!-- Séparateur visuel -->
+                  <div class="action-separator w-px h-8 bg-gray-300"></div>
+                  
+                  <!-- Action destructrice - Séparée et mise en évidence -->
+                  <button
+                    type="button"
+                    id="delete-btn"
+                    class="hidden inline-flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors focus:ring-2 focus:ring-red-300 focus:outline-none border-2 border-red-200"
+                    aria-label="Supprimer cette tâche de façon permanente"
+                    data-confirm="true"
+                  >
+                    <i class="fas fa-trash mr-2"></i>Supprimer
+                  </button>
+                  
+                  <!-- Action principale - Mise en évidence -->
+                  <button
+                    type="submit"
+                    id="save-btn"
+                    class="inline-flex items-center px-6 py-2 bg-agro-green text-white rounded-lg hover:bg-green-600 transition-colors focus:ring-2 focus:ring-green-300 focus:outline-none font-semibold shadow-lg"
+                    aria-label="Sauvegarder les modifications"
+                  >
+                    <i class="fas fa-save mr-2"></i>Sauvegarder
                   </button>
                 </div>
               </div>
-
-              <!-- Problem et Objective -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label class="block text-sm font-semibold text-primary mb-3">
-                    <i class="fas fa-exclamation-circle text-red-500 mr-2"></i
-                    >Problème
-                  </label>
-                  <textarea
-                    id="edit-problem"
-                    name="problem"
-                    rows="4"
-                    placeholder="Description du problème..."
-                    class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent resize-none"
-                  ></textarea>
-                </div>
-
-                <div>
-                  <label class="block text-sm font-semibold text-primary mb-3">
-                    <i class="fas fa-target text-green-500 mr-2"></i>Objectif
-                  </label>
-                  <textarea
-                    id="edit-objective"
-                    name="objective"
-                    rows="4"
-                    placeholder="Objectif à atteindre..."
-                    class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent resize-none"
-                  ></textarea>
-                </div>
-              </div>
-
-              <!-- Fichier source -->
-              <div>
-                <label class="block text-sm font-semibold text-primary mb-3">
-                  <i class="fas fa-file-alt text-purple-500 mr-2"></i>Fichier
-                  source
-                </label>
-                <input
-                  type="text"
-                  id="edit-source-file"
-                  name="source_file"
-                  placeholder="tache-a-realiser.mdc"
-                  class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-agro-green focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            <!-- Informations système -->
-            <div
-              id="task-info"
-              class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 mt-6 border-t border-gray-200 text-sm text-tertiary"
-            >
-              <!-- Task info will be inserted here -->
-            </div>
-
-            <!-- Boutons d'action - FIX: Positionnement sécurisé -->
-            <div class="form-actions-container flex justify-between items-center pt-6 mt-6 border-t border-gray-200">
-              <!-- Actions secondaires à gauche -->
-              <div class="form-actions-secondary flex items-center space-x-3">
-                <a
-                  href="/"
-                  class="inline-flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors focus:ring-2 focus:ring-gray-300 focus:outline-none"
-                  aria-label="Retourner à la liste des tâches"
-                >
-                  <i class="fas fa-arrow-left mr-2"></i>Retour
-                </a>
-              </div>
-              
-              <!-- Actions principales à droite -->
-              <div class="form-actions-primary flex items-center space-x-4">
-                <!-- Action de réinitialisation -->
-                <button
-                  type="button"
-                  id="reset-btn"
-                  class="inline-flex items-center px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors focus:ring-2 focus:ring-yellow-300 focus:outline-none"
-                  aria-label="Réinitialiser le formulaire"
-                >
-                  <i class="fas fa-undo mr-2"></i>Réinitialiser
-                </button>
-                
-                <!-- Séparateur visuel -->
-                <div class="action-separator w-px h-8 bg-gray-300"></div>
-                
-                <!-- Action destructrice - Séparée et mise en évidence -->
-                <button
-                  type="button"
-                  id="delete-btn"
-                  class="hidden inline-flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors focus:ring-2 focus:ring-red-300 focus:outline-none border-2 border-red-200"
-                  aria-label="Supprimer cette tâche de façon permanente"
-                  data-confirm="true"
-                >
-                  <i class="fas fa-trash mr-2"></i>Supprimer
-                </button>
-                
-                <!-- Action principale - Mise en évidence -->
-                <button
-                  type="submit"
-                  id="save-btn"
-                  class="inline-flex items-center px-6 py-2 bg-agro-green text-white rounded-lg hover:bg-green-600 transition-colors focus:ring-2 focus:ring-green-300 focus:outline-none font-semibold shadow-lg"
-                  aria-label="Sauvegarder les modifications"
-                >
-                  <i class="fas fa-save mr-2"></i>Sauvegarder
-                </button>
-              </div>
-            </div>
+            </fieldset>
           </form>
         </div>
       </div>
