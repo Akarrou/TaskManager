@@ -278,8 +278,8 @@ class TaskManager {
 
     return `
       <div class="task-card bg-white border-2 ${statusColor} rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer shadow-sm"
-           onclick="window.location.href='/edit.html?id=${task._id}'"
-           data-task-id="${task._id}">
+           onclick="window.location.href='/edit.html?id=${task.id}'"
+           data-task-id="${task.id}">
         <div class="flex justify-between items-start mb-4">
           <h3 class="text-lg font-semibold text-gray-900 line-clamp-2">${task.title || 'Titre non défini'}</h3>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityColor}">
