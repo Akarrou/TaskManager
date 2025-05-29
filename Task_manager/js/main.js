@@ -246,7 +246,7 @@ class TaskManager {
 
   // Rendu des tâches
   renderTasks() {
-    const container = document.getElementById('tasks-list');
+    const container = document.getElementById('tasks-container');
     if (!container) return;
 
     if (this.filteredTasks.length === 0) {
@@ -315,7 +315,7 @@ class TaskManager {
 
   // État vide
   renderEmptyState() {
-    const container = document.getElementById('tasks-list');
+    const container = document.getElementById('tasks-container');
     if (!container) return;
 
     container.innerHTML = `
@@ -363,11 +363,11 @@ class TaskManager {
 
   setAppState(state, errorMessage = '') {
     const loadingEl = document.getElementById('loading');
-    const tasksListEl = document.getElementById('tasks-list');
-    const errorEl = document.getElementById('error-message');
+    const tasksContainerEl = document.getElementById('tasks-container');
+    const noTasksEl = document.getElementById('no-tasks');
 
     // Cacher tous les éléments
-    [loadingEl, tasksListEl, errorEl].forEach(el => {
+    [loadingEl, noTasksEl].forEach(el => {
       if (el) el.classList.add('hidden');
     });
 
@@ -376,13 +376,51 @@ class TaskManager {
         if (loadingEl) loadingEl.classList.remove('hidden');
         break;
       case 'success':
-        if (tasksListEl) tasksListEl.classList.remove('hidden');
+        if (tasksContainerEl) {
+          // Afficher le conteneur de tâches
+          tasksContainerEl.style.display = 'block';
+        }
         break;
       case 'error':
-        if (errorEl) {
-          errorEl.classList.remove('hidden');
-          const errorText = errorEl.querySelector('#error-text');
-          if (errorText) errorText.textContent = errorMessage || this.appStates.error;
+        if (noTasksEl) {
+          noTasksEl.classList.remove('hidden');
+          // Modifier le contenu pour afficher l'erreur
+          noTasksEl.innerHTML = `
+            <div class="flex flex-col items-center space-y-4">
+              <div class="w-20 h-20 bg-gradient-to-br from-red-200 to-red-300 rounded-2xl flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle text-3xl text-red-500"></i>
+              </div>
+              <p class="text-xl font-semibold text-red-600">Erreur</p>
+              <p class="text-secondary">${errorMessage || this.appStates.error}</p>
+              <button
+                onclick="window.taskManager.loadTasks()"
+                class="btn-modern btn-primary px-6 py-3 mt-4"
+              >
+                <i class="fas fa-sync-alt mr-2"></i>Réessayer
+              </button>
+            </div>
+          `;
+        }
+        break;
+      case 'empty':
+        if (noTasksEl) {
+          noTasksEl.classList.remove('hidden');
+          // Remettre le contenu original pour l'état vide
+          noTasksEl.innerHTML = `
+            <div class="flex flex-col items-center space-y-4">
+              <div class="w-20 h-20 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl flex items-center justify-center">
+                <i class="fas fa-inbox text-3xl text-gray-400"></i>
+              </div>
+              <p class="text-xl font-semibold text-primary">Aucune tâche trouvée</p>
+              <p class="text-secondary">Ajustez vos filtres ou créez une nouvelle tâche</p>
+              <button
+                onclick="document.getElementById('new-task-btn').click()"
+                class="btn-modern btn-primary px-6 py-3 mt-4"
+              >
+                <i class="fas fa-plus mr-2"></i>Créer une tâche
+              </button>
+            </div>
+          `;
         }
         break;
     }
@@ -402,19 +440,120 @@ class TaskManager {
   }
 
   initializeKeyboardShortcuts() {
-    // Raccourcis clavier
+    // Méthode appelée pour initialiser les raccourcis clavier
+    this.setupKeyboardShortcuts();
   }
 
   setupKeyboardShortcuts() {
-    // Configuration des raccourcis
+    document.addEventListener('keydown', (e) => {
+      // Vérifier si on n'est pas dans un champ de saisie
+      const isInputField = e.target.tagName === 'INPUT' || 
+                          e.target.tagName === 'TEXTAREA' || 
+                          e.target.isContentEditable;
+
+      // Ctrl+N : Nouvelle tâche
+      if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault();
+        this.redirectToCreate();
+      }
+
+      // Ctrl+R : Actualiser
+      if (e.ctrlKey && e.key === 'r') {
+        e.preventDefault();
+        this.loadTasks();
+      }
+
+      // F1 : Aide
+      if (e.key === 'F1') {
+        e.preventDefault();
+        this.showHelpModal();
+      }
+
+      // Escape : Fermer les modals
+      if (e.key === 'Escape') {
+        const helpModal = document.getElementById('help-modal');
+        if (helpModal && !helpModal.classList.contains('hidden')) {
+          this.hideHelpModal();
+        }
+      }
+
+      // / : Focus sur la recherche (seulement si pas dans un champ)
+      if (e.key === '/' && !isInputField) {
+        e.preventDefault();
+        const searchField = document.getElementById('search-compact') || 
+                           document.getElementById('search-input');
+        if (searchField) {
+          searchField.focus();
+        }
+      }
+
+      // Escape : Effacer la recherche si dans un champ de recherche
+      if (e.key === 'Escape' && isInputField) {
+        if (e.target.id === 'search-compact' || e.target.id === 'search-input') {
+          e.target.value = '';
+          e.target.blur();
+          this.currentFilters.search = '';
+          this.applyFilters();
+        }
+      }
+    });
   }
 
   showHelpModal() {
-    // Afficher l'aide
+    const modal = document.getElementById('help-modal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      // Focus sur le modal pour l'accessibilité
+      modal.focus();
+      // Trap focus dans le modal
+      this.trapFocusInModal(modal);
+    }
   }
 
   hideHelpModal() {
-    // Masquer l'aide
+    const modal = document.getElementById('help-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+  }
+
+  // Fonction pour capturer le focus dans le modal
+  trapFocusInModal(modal) {
+    const focusableElements = modal.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    // Focus sur le premier élément
+    if (firstElement) {
+      firstElement.focus();
+    }
+
+    // Gérer la navigation par tabulation
+    modal.addEventListener('keydown', function(e) {
+      if (e.key === 'Tab') {
+        if (e.shiftKey) {
+          // Shift + Tab (navigation vers l'arrière)
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          // Tab (navigation vers l'avant)
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
+      
+      // Fermer avec Escape
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        window.taskManager.hideHelpModal();
+      }
+    });
   }
 }
 

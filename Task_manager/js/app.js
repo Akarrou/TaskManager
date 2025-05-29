@@ -25,15 +25,15 @@ class TaskManager {
       this.enhanceAccessibility();
 
       // Configuration des événements
-      this.setupEventListeners();
-      this.setupAutoRefresh();
-
-      // Écouter les événements UX
-      this.setupUXIntegration();
-
+    this.setupEventListeners();
+    this.setupAutoRefresh();
+    
+    // Écouter les événements UX
+    this.setupUXIntegration();
+    
       // Charger les tâches
-      await this.loadTasks();
-      this.updateConnectionStatus();
+    await this.loadTasks();
+    this.updateConnectionStatus();
 
       // Initialiser les filtres
       this.initializeFilters();
@@ -227,10 +227,10 @@ class TaskManager {
       this.updateConnectionStatus();
 
       // Afficher notification de succès
-      window.notifications?.success(
+          window.notifications?.success(
         'Synchronisation réussie',
         `${tasks.length} tâche(s) chargée(s)`
-      );
+          );
 
       this.setAppState('success');
     } catch (error) {
@@ -301,7 +301,7 @@ class TaskManager {
   // Rendu des tâches avec nouvelle gestion d'état
   renderTasks() {
     const container = document.getElementById("tasks-container");
-    
+
     // Si aucune tâche après filtrage
     if (this.filteredTasks.length === 0) {
       if (this.tasks.length === 0) {
