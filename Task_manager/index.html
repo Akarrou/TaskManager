@@ -711,6 +711,29 @@
           transform: none;
         }
       }
+
+      /* ===== FIX: NOTIFICATIONS NON-BLOQUANTES ===== */
+      
+      /* Le conteneur de notifications n'intercepte pas les clics */
+      #notification-container {
+        pointer-events: none;
+      }
+      
+      /* Mais chaque notification individuelle est interactive */
+      .notification-toast {
+        pointer-events: auto;
+      }
+      
+      /* Amélioration de la transition d'entrée */
+      .notification-toast.show {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      
+      .notification-toast.hide {
+        transform: translateX(100%);
+        opacity: 0;
+      }
     </style>
   </head>
   <body class="bg-agro-light min-h-screen">
@@ -1031,8 +1054,8 @@
       </div>
     </main>
 
-    <!-- Système de notifications modernisé -->
-    <div id="notification-container" class="fixed top-4 right-4 z-50 space-y-3 max-w-sm">
+    <!-- Système de notifications modernisé - FIX: Notifications non-bloquantes -->
+    <div id="notification-container" class="fixed top-4 right-4 z-40 space-y-3 max-w-sm pointer-events-none">
       <!-- Les notifications seront ajoutées ici dynamiquement -->
     </div>
 
