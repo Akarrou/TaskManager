@@ -142,6 +142,100 @@
         from { opacity: 0; }
         to { opacity: 1; }
       }
+
+      /* ===== FIX: BOUTONS SÉCURISÉS ET ACCESSIBLES ===== */
+      
+      /* Amélioration du focus pour l'accessibilité */
+      button:focus,
+      a:focus {
+        outline: 2px solid #22c55e;
+        outline-offset: 2px;
+      }
+      
+      /* Styles pour le bouton de suppression sécurisé */
+      #delete-btn {
+        position: relative;
+        transition: all 0.3s ease;
+      }
+      
+      #delete-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+      }
+      
+      #delete-btn[data-confirm="true"]::after {
+        content: "⚠️ Confirmation requise";
+        position: absolute;
+        bottom: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(239, 68, 68, 0.9);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        white-space: nowrap;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+      }
+      
+      #delete-btn:hover::after {
+        opacity: 1;
+      }
+      
+      /* Action principale mise en évidence */
+      #save-btn {
+        transform: scale(1.05);
+        position: relative;
+        z-index: 10;
+      }
+      
+      #save-btn:hover {
+        transform: scale(1.08);
+        box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
+      }
+      
+      /* Responsive mobile - Actions empilées */
+      @media (max-width: 768px) {
+        .form-actions-container {
+          flex-direction: column;
+          gap: 1rem;
+        }
+        
+        .form-actions-container > div {
+          width: 100%;
+          justify-content: center;
+        }
+        
+        .form-actions-secondary {
+          order: 2;
+        }
+        
+        .form-actions-primary {
+          order: 1;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+        
+        #save-btn {
+          flex: 1;
+          min-width: 0;
+        }
+        
+        #delete-btn {
+          order: 3;
+          width: 100%;
+          margin-top: 1rem;
+          background-color: #dc2626;
+          border-color: #dc2626;
+        }
+        
+        /* Séparateur invisible sur mobile */
+        .action-separator {
+          display: none;
+        }
+      }
     </style>
   </head>
   <body class="bg-agro-light min-h-screen">
@@ -441,35 +535,51 @@
               <!-- Task info will be inserted here -->
             </div>
 
-            <!-- Boutons d'action -->
-            <div
-              class="flex justify-between items-center pt-6 mt-6 border-t border-gray-200"
-            >
-              <a
-                href="/"
-                class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-              >
-                <i class="fas fa-arrow-left mr-2"></i>Retour
-              </a>
-              <div class="flex space-x-4">
+            <!-- Boutons d'action - FIX: Positionnement sécurisé -->
+            <div class="form-actions-container flex justify-between items-center pt-6 mt-6 border-t border-gray-200">
+              <!-- Actions secondaires à gauche -->
+              <div class="form-actions-secondary flex items-center space-x-3">
+                <a
+                  href="/"
+                  class="inline-flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors focus:ring-2 focus:ring-gray-300 focus:outline-none"
+                  aria-label="Retourner à la liste des tâches"
+                >
+                  <i class="fas fa-arrow-left mr-2"></i>Retour
+                </a>
+              </div>
+              
+              <!-- Actions principales à droite -->
+              <div class="form-actions-primary flex items-center space-x-4">
+                <!-- Action de réinitialisation -->
                 <button
                   type="button"
                   id="reset-btn"
-                  class="px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
+                  class="inline-flex items-center px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors focus:ring-2 focus:ring-yellow-300 focus:outline-none"
+                  aria-label="Réinitialiser le formulaire"
                 >
                   <i class="fas fa-undo mr-2"></i>Réinitialiser
                 </button>
+                
+                <!-- Séparateur visuel -->
+                <div class="action-separator w-px h-8 bg-gray-300"></div>
+                
+                <!-- Action destructrice - Séparée et mise en évidence -->
                 <button
                   type="button"
                   id="delete-btn"
-                  class="hidden px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                  class="hidden inline-flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors focus:ring-2 focus:ring-red-300 focus:outline-none border-2 border-red-200"
+                  aria-label="Supprimer cette tâche de façon permanente"
+                  data-confirm="true"
                 >
                   <i class="fas fa-trash mr-2"></i>Supprimer
                 </button>
+                
+                <!-- Action principale - Mise en évidence -->
                 <button
                   type="submit"
                   id="save-btn"
-                  class="px-6 py-3 bg-agro-green text-white rounded-lg hover:bg-green-600 transition-colors"
+                  class="inline-flex items-center px-6 py-2 bg-agro-green text-white rounded-lg hover:bg-green-600 transition-colors focus:ring-2 focus:ring-green-300 focus:outline-none font-semibold shadow-lg"
+                  aria-label="Sauvegarder les modifications"
                 >
                   <i class="fas fa-save mr-2"></i>Sauvegarder
                 </button>
