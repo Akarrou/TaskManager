@@ -14,27 +14,72 @@ class TaskManager {
 
   // Initialisation de l'application
   async init() {
-    this.setupEventListeners();
-    this.setupAutoRefresh();
-    
-    // Écouter les événements UX
-    this.setupUXIntegration();
-    
-    await this.loadTasks();
-    this.updateConnectionStatus();
+    console.log("🚀 Initialisation Task Manager...");
+
+    try {
+      // Initialiser les notifications
+      window.notifications = new NotificationSystem();
+
+      // Optimisations de performance et accessibilité
+      this.initPerformanceOptimizations();
+      this.enhanceAccessibility();
+
+      // Configuration des événements
+      this.setupEventListeners();
+      this.setupAutoRefresh();
+
+      // Écouter les événements UX
+      this.setupUXIntegration();
+
+      // Charger les tâches
+      await this.loadTasks();
+      this.updateConnectionStatus();
+
+      // Initialiser les filtres
+      this.initializeFilters();
+
+      // Initialiser les raccourcis clavier
+      this.initializeKeyboardShortcuts();
+
+      // Initialiser les boutons toggle
+      this.initializeToggleButtons();
+
+      console.log("✅ Task Manager initialisé avec succès!");
+    } catch (error) {
+      console.error("❌ Erreur lors de l'initialisation:", error);
+      this.setAppState('error', 'Erreur lors du chargement de l\'application');
+    }
   }
 
   // Configuration des événements
   setupEventListeners() {
-    // Bouton actualiser
-    document.getElementById("refresh-btn").addEventListener("click", () => {
+    // Événements pour les filtres
+    document.getElementById("search-input")?.addEventListener("input", (e) => {
+      this.currentFilters.search = e.target.value;
+      this.applyFilters();
+    });
+
+    document.getElementById("priority-filter")?.addEventListener("change", (e) => {
+      this.currentFilters.priority = e.target.value;
+      this.applyFilters();
+    });
+
+    document.getElementById("category-filter")?.addEventListener("change", (e) => {
+      this.currentFilters.category = e.target.value;
+      this.applyFilters();
+    });
+
+    // Boutons d'action
+    document.getElementById("refresh-btn")?.addEventListener("click", () => {
       this.loadTasks();
     });
 
-    // Filtres
-    document.getElementById("search-input").addEventListener("input", (e) => {
-      this.currentFilters.search = e.target.value;
-      this.applyFilters();
+    document.getElementById("select-all-btn")?.addEventListener("click", () => {
+      this.selectAllTasks();
+    });
+
+    document.getElementById("deselect-all-btn")?.addEventListener("click", () => {
+      this.deselectAllTasks();
     });
 
     // Filtres de statut avec nouveaux boutons accessibles
@@ -71,23 +116,6 @@ class TaskManager {
         this.toggleAllStatus(false);
       });
 
-    document
-      .getElementById("priority-filter")
-      .addEventListener("change", (e) => {
-        this.currentFilters.priority = e.target.value;
-        this.applyFilters();
-      });
-
-    document
-      .getElementById("category-filter")
-      .addEventListener("change", (e) => {
-        this.currentFilters.category = e.target.value;
-        this.applyFilters();
-      });
-
-    // Initialiser l'état des boutons toggle
-    this.initializeToggleButtons();
-
     // Event listener pour le bouton nouvelle tâche
     document.getElementById("new-task-btn").addEventListener("click", () => {
       this.redirectToCreate();
@@ -116,6 +144,19 @@ class TaskManager {
 
     // Gestion des raccourcis clavier globaux
     this.setupKeyboardShortcuts();
+  }
+
+  // Configuration de l'auto-refresh
+  setupAutoRefresh() {
+    setInterval(() => {
+      this.loadTasks();
+    }, 30000); // Refresh toutes les 30 secondes
+  }
+
+  // Configuration UX
+  setupUXIntegration() {
+    // Intégration avec le système de notifications
+    // et autres événements UX
   }
 
   // Nouvelle méthode pour gérer le toggle des boutons de statut
@@ -167,13 +208,6 @@ class TaskManager {
         checkedStatuses.push(button.getAttribute("data-value"));
       });
     this.currentFilters.statusList = checkedStatuses;
-  }
-
-  // Configuration du rafraîchissement automatique
-  setupAutoRefresh() {
-    setInterval(() => {
-      this.loadTasks();
-    }, CONFIG.UI.REFRESH_INTERVAL);
   }
 
   // Chargement des tâches
@@ -733,71 +767,350 @@ class TaskManager {
     });
   }
 
-  // ===== NOUVELLES MÉTHODES UX =====
-  
-  // Intégration avec les systèmes UX
-  setupUXIntegration() {
-    // Écouter l'événement refresh demandé par l'UX enhancer
-    window.addEventListener('refresh-requested', () => {
-      this.loadTasks();
-    });
-
-    // Notification de bienvenue après le chargement initial
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        if (window.notifications && this.tasks.length === 0) {
-          window.notifications.info(
-            'Bienvenue !',
-            'Créez votre première tâche pour commencer',
-            {
-              onClick: () => this.redirectToCreate(),
-              actions: [
-                {
-                  label: 'Créer une tâche',
-                  handler: () => this.redirectToCreate(),
-                  className: 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                }
-              ]
-            }
-          );
-        }
-      }, 2000);
-    });
-  }
-
-  // Nouvelle méthode pour effacer tous les filtres
-  clearAllFilters() {
-    // Réinitialiser les filtres
-    this.currentFilters = {
-      search: "",
-      statusList: ["À faire", "En cours"], // Valeurs par défaut
-      priority: "",
-      category: "",
-    };
-
-    // Réinitialiser les champs du formulaire
-    document.getElementById("search-input").value = "";
-    document.getElementById("priority-filter").value = "";
-    document.getElementById("category-filter").value = "";
-
-    // Réinitialiser les boutons toggle
-    this.initializeToggleButtons();
-
-    // Réappliquer les filtres
-    this.applyFilters();
-
-    // Notification
-    window.notifications?.info(
-      'Filtres effacés',
-      'Tous les filtres ont été réinitialisés.'
-    );
-  }
-
   // Mise à jour du compteur de tâches filtrées
   updateFilteredCount() {
     const countElement = document.getElementById("filtered-count");
     if (countElement) {
       countElement.textContent = this.filteredTasks.length;
+    }
+  }
+
+  // Optimisations de performance et accessibilité
+  initPerformanceOptimizations() {
+    // Gestion des animations réduites pour l'accessibilité
+    this.handleReducedMotion();
+    
+    // Lazy loading des images (si présentes)
+    this.initLazyLoading();
+    
+    // Throttling pour les events de scroll/resize
+    this.initThrottledEvents();
+    
+    // Preload des ressources critiques
+    this.preloadCriticalResources();
+    
+    // Optimisation du rendering avec RequestAnimationFrame
+    this.initOptimizedRendering();
+  }
+
+  // Gestion des préférences d'animation
+  handleReducedMotion() {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    
+    const toggleAnimations = (e) => {
+      if (e.matches) {
+        document.documentElement.style.setProperty('--animation-duration', '0.01ms');
+        document.documentElement.style.setProperty('--transition-duration', '0.01ms');
+      } else {
+        document.documentElement.style.removeProperty('--animation-duration');
+        document.documentElement.style.removeProperty('--transition-duration');
+      }
+    };
+    
+    prefersReducedMotion.addEventListener('change', toggleAnimations);
+    toggleAnimations(prefersReducedMotion);
+  }
+
+  // Lazy loading optimisé
+  initLazyLoading() {
+    if ('IntersectionObserver' in window) {
+      const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const img = entry.target;
+            img.src = img.dataset.src;
+            img.classList.remove('lazy');
+            observer.unobserve(img);
+          }
+        });
+      });
+
+      document.querySelectorAll('img[data-src]').forEach(img => {
+        imageObserver.observe(img);
+      });
+    }
+  }
+
+  // Throttling des événements performance-sensitive
+  initThrottledEvents() {
+    let ticking = false;
+    
+    const throttledScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          this.updateScrollIndicators();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    
+    const throttledResize = this.debounce(() => {
+      this.handleViewportChange();
+    }, 250);
+    
+    window.addEventListener('scroll', throttledScroll, { passive: true });
+    window.addEventListener('resize', throttledResize, { passive: true });
+  }
+
+  // Debounce helper
+  debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
+  // Preload des ressources critiques
+  preloadCriticalResources() {
+    // Preload des fonts si nécessaire
+    const fontLink = document.createElement('link');
+    fontLink.rel = 'preload';
+    fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
+    fontLink.as = 'style';
+    fontLink.crossOrigin = 'anonymous';
+    document.head.appendChild(fontLink);
+  }
+
+  // Optimisation du rendering
+  initOptimizedRendering() {
+    // Virtual scrolling pour de grandes listes (si nécessaire)
+    this.setupVirtualScrolling();
+    
+    // Batch des mises à jour DOM
+    this.batchedUpdates = [];
+    this.isUpdating = false;
+  }
+
+  // Virtual scrolling (basique)
+  setupVirtualScrolling() {
+    const taskContainer = document.querySelector('.task-list');
+    if (!taskContainer) return;
+    
+    // Implémentation simplifiée - à étendre si beaucoup de tâches
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-viewport');
+        } else {
+          entry.target.classList.remove('in-viewport');
+        }
+      });
+    }, {
+      rootMargin: '50px'
+    });
+    
+    // Observer toutes les tâches
+    taskContainer.querySelectorAll('.task-item').forEach(task => {
+      observer.observe(task);
+    });
+  }
+
+  // Batch des mises à jour DOM
+  batchDOMUpdates(updateFunction) {
+    this.batchedUpdates.push(updateFunction);
+    
+    if (!this.isUpdating) {
+      this.isUpdating = true;
+      requestAnimationFrame(() => {
+        this.batchedUpdates.forEach(update => update());
+        this.batchedUpdates = [];
+        this.isUpdating = false;
+      });
+    }
+  }
+
+  // Mise à jour des indicateurs de scroll
+  updateScrollIndicators() {
+    const scrolled = window.pageYOffset;
+    const maxHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const scrollPercent = Math.min(scrolled / maxHeight, 1);
+    
+    // Mettre à jour la barre de progression si elle existe
+    const progressBar = document.querySelector('.scroll-progress');
+    if (progressBar) {
+      progressBar.style.transform = `scaleX(${scrollPercent})`;
+    }
+  }
+
+  // Gestion des changements de viewport
+  handleViewportChange() {
+    // Recalculer les dimensions pour la responsivité
+    const isMobile = window.innerWidth < 768;
+    document.documentElement.classList.toggle('mobile-view', isMobile);
+    
+    // Optimiser l'affichage selon la taille
+    this.optimizeForViewport(isMobile);
+  }
+
+  // Optimisation selon le viewport
+  optimizeForViewport(isMobile) {
+    const taskItems = document.querySelectorAll('.task-item');
+    
+    if (isMobile) {
+      // Désactiver certaines animations coûteuses sur mobile
+      taskItems.forEach(item => {
+        item.style.willChange = 'auto';
+      });
+    } else {
+      // Réactiver les animations sur desktop
+      taskItems.forEach(item => {
+        item.style.willChange = 'transform';
+      });
+    }
+  }
+
+  // Améliorations d'accessibilité
+  enhanceAccessibility() {
+    // Gestion du focus avec skip links
+    this.addSkipLinks();
+    
+    // ARIA live regions pour les mises à jour
+    this.setupLiveRegions();
+    
+    // Gestion des raccourcis clavier
+    this.enhanceKeyboardNavigation();
+    
+    // Améliorer les annonces screen reader
+    this.improveScreenReaderAnnouncements();
+  }
+
+  // Ajouter des skip links
+  addSkipLinks() {
+    const skipLink = document.createElement('a');
+    skipLink.href = '#main-content';
+    skipLink.className = 'skip-link sr-only focus:not-sr-only';
+    skipLink.textContent = 'Aller au contenu principal';
+    skipLink.style.cssText = `
+      position: absolute;
+      top: -40px;
+      left: 6px;
+      background: var(--primary-color);
+      color: white;
+      padding: 8px;
+      text-decoration: none;
+      border-radius: 4px;
+      z-index: 1000;
+      transition: top 0.3s;
+    `;
+    
+    skipLink.addEventListener('focus', () => {
+      skipLink.style.top = '6px';
+    });
+    
+    skipLink.addEventListener('blur', () => {
+      skipLink.style.top = '-40px';
+    });
+    
+    document.body.insertBefore(skipLink, document.body.firstChild);
+  }
+
+  // Configuration des live regions
+  setupLiveRegions() {
+    // Région pour les notifications
+    let liveRegion = document.getElementById('live-region');
+    if (!liveRegion) {
+      liveRegion = document.createElement('div');
+      liveRegion.id = 'live-region';
+      liveRegion.setAttribute('aria-live', 'polite');
+      liveRegion.setAttribute('aria-atomic', 'true');
+      liveRegion.className = 'sr-only';
+      document.body.appendChild(liveRegion);
+    }
+    
+    // Région pour les status urgents
+    let assertiveRegion = document.getElementById('assertive-region');
+    if (!assertiveRegion) {
+      assertiveRegion = document.createElement('div');
+      assertiveRegion.id = 'assertive-region';
+      assertiveRegion.setAttribute('aria-live', 'assertive');
+      assertiveRegion.setAttribute('aria-atomic', 'true');
+      assertiveRegion.className = 'sr-only';
+      document.body.appendChild(assertiveRegion);
+    }
+  }
+
+  // Améliorations navigation clavier
+  enhanceKeyboardNavigation() {
+    // Gestion des flèches pour naviguer dans les listes
+    document.addEventListener('keydown', (e) => {
+      if (e.target.closest('.task-list')) {
+        this.handleTaskListNavigation(e);
+      }
+    });
+  }
+
+  // Navigation dans la liste des tâches
+  handleTaskListNavigation(e) {
+    const currentTask = e.target.closest('.task-item');
+    if (!currentTask) return;
+    
+    const allTasks = Array.from(document.querySelectorAll('.task-item'));
+    const currentIndex = allTasks.indexOf(currentTask);
+    
+    let nextTask = null;
+    
+    switch(e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        nextTask = allTasks[currentIndex + 1];
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        nextTask = allTasks[currentIndex - 1];
+        break;
+      case 'Home':
+        e.preventDefault();
+        nextTask = allTasks[0];
+        break;
+      case 'End':
+        e.preventDefault();
+        nextTask = allTasks[allTasks.length - 1];
+        break;
+    }
+    
+    if (nextTask) {
+      nextTask.focus();
+      this.announceToScreenReader(`Tâche ${allTasks.indexOf(nextTask) + 1} de ${allTasks.length}`);
+    }
+  }
+
+  // Améliorations pour les screen readers
+  improveScreenReaderAnnouncements() {
+    // Annoncer les changements de filtres
+    const originalApplyFilters = this.applyFilters.bind(this);
+    this.applyFilters = function(...args) {
+      const result = originalApplyFilters.apply(this, args);
+      
+      const filteredCount = this.filteredTasks.length;
+      const totalCount = this.tasks.length;
+      
+      this.announceToScreenReader(
+        `Filtres appliqués. ${filteredCount} tâche(s) affichée(s) sur ${totalCount} au total.`
+      );
+      
+      return result;
+    };
+  }
+
+  // Annoncer aux screen readers
+  announceToScreenReader(message, urgent = false) {
+    const region = urgent ? 
+      document.getElementById('assertive-region') : 
+      document.getElementById('live-region');
+    
+    if (region) {
+      region.textContent = message;
+      
+      // Nettoyer après annonce
+      setTimeout(() => {
+        region.textContent = '';
+      }, 1000);
     }
   }
 }
