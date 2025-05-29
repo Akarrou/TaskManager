@@ -423,6 +423,11 @@ document.head.appendChild(style);
 // Instance globale
 window.uxEnhancer = new UXEnhancer();
 
+// Initialiser quand le DOM est prêt
+document.addEventListener('DOMContentLoaded', () => {
+  window.uxEnhancer.init();
+});
+
 // Export pour modules
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = UXEnhancer;

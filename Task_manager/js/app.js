@@ -624,7 +624,7 @@ class TaskManager {
         </div>
       </div>
     `;
-  }
+    }
 
   // Astuces rapides pour nouveaux utilisateurs
   showQuickTips() {

@@ -5,7 +5,7 @@ services:
     container_name: ${PROJECT_NAME:-myproject}-task-redis
     ports:
       - "6380:6379" # Redis sur port 6380 (externe)
-      - "8002:8001" # RedisInsight sur port 8002 (externe)
+      - "8001:8001" # RedisInsight sur port 8001 (externe)
     volumes:
       - task-redis-data:/data
     environment:
@@ -42,7 +42,7 @@ services:
       - local_default
 
   # Interface Web RedisInsight (inclus dans redis-stack)
-  # Accessible via http://localhost:8002
+  # Accessible via http://localhost:8001
 
 volumes:
   task-redis-data:
