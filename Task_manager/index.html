@@ -650,8 +650,20 @@
 
       /* ===== FLOATING ACTION BUTTON (FAB) ===== */
       
+      /* FIX: Amélioration de l'interaction et alignement des FAB */
+      #quick-actions-fab {
+        user-select: none;
+      }
+      
       #fab-main:hover + #fab-menu,
       #fab-menu:hover {
+        opacity: 1;
+        visibility: visible;
+        transform: scale(1);
+      }
+      
+      /* Garantir que le menu reste visible pendant le hover */
+      #quick-actions-fab:hover #fab-menu {
         opacity: 1;
         visibility: visible;
         transform: scale(1);
@@ -679,6 +691,24 @@
       .fab-button:active::before {
         width: 300px;
         height: 300px;
+      }
+      
+      /* Garantir que les tooltips ne bloquent pas les clics */
+      [class*="tooltip"] {
+        pointer-events: none !important;
+      }
+      
+      /* Amélioration de l'animation d'ouverture */
+      #fab-menu > button:nth-child(1) {
+        transition-delay: 0.05s;
+      }
+      
+      #fab-menu > button:nth-child(2) {
+        transition-delay: 0.1s;
+      }
+      
+      #fab-menu > button:nth-child(3) {
+        transition-delay: 0.15s;
       }
 
       /* ===== INDICATEURS DE CONNEXION ===== */
@@ -1505,42 +1535,58 @@
       </div>
     </div>
 
-    <!-- Quick Actions Floating Button -->
+    <!-- Quick Actions Floating Button - FIX: Alignement et tooltips -->
     <div id="quick-actions-fab" class="fixed bottom-6 right-6 z-40">
-      <div class="relative">
-        <!-- Main FAB Button -->
-        <button
-          id="fab-main"
-          class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
-          title="Actions rapides"
-        >
-          <i class="fas fa-plus text-white text-xl transition-transform duration-300 group-hover:rotate-45"></i>
-        </button>
-        
-        <!-- Quick Action Buttons -->
-        <div id="fab-menu" class="absolute bottom-16 right-0 space-y-3 opacity-0 invisible transition-all duration-300 transform scale-90">
+      <div class="relative flex flex-col items-end">
+        <!-- Quick Action Buttons - FIX: Repositionnés au-dessus -->
+        <div id="fab-menu" class="flex flex-col items-center space-y-3 mb-4 opacity-0 invisible transition-all duration-300 transform scale-90">
           <button
-            id="fab-new-task"
-            class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
-            title="Nouvelle tâche (Ctrl+N)"
+            id="fab-search"
+            class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group relative"
+            aria-label="Rechercher (Raccourci: /)"
           >
-            <i class="fas fa-tasks text-white transition-transform duration-300 group-hover:scale-110"></i>
+            <i class="fas fa-search text-white transition-transform duration-300 group-hover:scale-110"></i>
+            <!-- Tooltip non-bloquant -->
+            <div class="absolute right-14 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+              Rechercher (/)
+            </div>
           </button>
           <button
             id="fab-refresh"
-            class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
-            title="Actualiser (Ctrl+R)"
+            class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group relative"
+            aria-label="Actualiser (Ctrl+R)"
           >
             <i class="fas fa-sync-alt text-white transition-transform duration-300 group-hover:rotate-180"></i>
+            <!-- Tooltip non-bloquant -->
+            <div class="absolute right-14 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+              Actualiser (Ctrl+R)
+            </div>
           </button>
           <button
-            id="fab-search"
-            class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
-            title="Rechercher (/)"
+            id="fab-new-task"
+            class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group relative"
+            aria-label="Nouvelle tâche (Ctrl+N)"
           >
-            <i class="fas fa-search text-white transition-transform duration-300 group-hover:scale-110"></i>
+            <i class="fas fa-tasks text-white transition-transform duration-300 group-hover:scale-110"></i>
+            <!-- Tooltip non-bloquant -->
+            <div class="absolute right-14 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+              Nouvelle tâche (Ctrl+N)
+            </div>
           </button>
         </div>
+        
+        <!-- Main FAB Button - FIX: Taille uniforme -->
+        <button
+          id="fab-main"
+          class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group relative"
+          aria-label="Actions rapides"
+        >
+          <i class="fas fa-plus text-white text-xl transition-transform duration-300 group-hover:rotate-45"></i>
+          <!-- Tooltip non-bloquant -->
+          <div class="absolute right-16 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+            Actions rapides
+          </div>
+        </button>
       </div>
     </div>
 
