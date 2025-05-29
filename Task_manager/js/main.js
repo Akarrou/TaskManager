@@ -277,7 +277,7 @@ class TaskManager {
     const priorityColor = priorityColors[task.priority] || 'text-gray-600 bg-gray-100';
 
     return `
-      <div class="task-card bg-white border-2 ${statusColor} rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer"
+      <div class="task-card bg-white border-2 ${statusColor} rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer shadow-sm"
            onclick="window.location.href='/edit.html?id=${task._id}'"
            data-task-id="${task._id}">
         <div class="flex justify-between items-start mb-4">
@@ -319,7 +319,7 @@ class TaskManager {
     if (!container) return;
 
     container.innerHTML = `
-      <div class="text-center py-12">
+      <div class="text-center py-8">
         <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
         <h3 class="text-xl font-semibold text-gray-500 mb-2">Aucune tâche trouvée</h3>
         <p class="text-gray-400 mb-6">Aucune tâche ne correspond aux critères de recherche.</p>
@@ -560,4 +560,4 @@ class TaskManager {
 // Initialiser l'application quand le DOM est prêt
 document.addEventListener('DOMContentLoaded', () => {
   window.taskManager = new TaskManager();
-}); 
+});
