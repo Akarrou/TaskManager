@@ -39,5 +39,5 @@ sudo DOCKER_HOST=unix:///var/run/docker.sock /usr/local/bin/docker-compose -f do
 
 echo "✅ Build completed successfully!"
 echo "🌐 Application available at: http://localhost:3001"
-echo "📊 Redis Insight available at: http://localhost:8002"
+echo "📊 Redis Insight available at: http://localhost:8001"
 echo "🔧 Project Name: $PROJECT_NAME" 
