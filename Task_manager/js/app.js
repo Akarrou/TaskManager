@@ -178,15 +178,9 @@ class TaskManager {
 
   // Chargement des tâches
   async loadTasks() {
-    this.showLoading(true);
+    this.setAppState('loading');
 
     try {
-      // Afficher notification de chargement
-      const loadingId = window.notifications?.loading(
-        'Chargement',
-        'Récupération des tâches en cours...'
-      );
-
       // Charger les tâches et les statistiques en parallèle
       const [tasks, index] = await Promise.all([
         api.getAllTasks(),
@@ -198,40 +192,22 @@ class TaskManager {
       this.applyFilters();
       this.updateConnectionStatus();
 
-      // Fermer notification de chargement et afficher succès
-      if (loadingId) {
-        window.notifications?.dismiss(loadingId);
-        
-        // Ne pas afficher de notification de succès pour le chargement initial silencieux
-        if (this.tasks.length > 0 && window.performance.now() > 10000) {
-          window.notifications?.success(
-            'Tâches chargées',
-            `${this.tasks.length} tâche(s) récupérée(s) avec succès`
-          );
-        }
-      }
+      // Afficher notification de succès
+      window.notifications?.success(
+        'Synchronisation réussie',
+        `${tasks.length} tâche(s) chargée(s)`
+      );
 
+      this.setAppState('success');
     } catch (error) {
       console.error("Erreur lors du chargement des tâches:", error);
+      this.setAppState('error', error.message);
       
-      // Notification d'erreur avec possibilité de retry
+      // Afficher notification d'erreur
       window.notifications?.error(
         'Erreur de chargement',
-        'Impossible de charger les tâches du serveur',
-        {
-          actions: [
-            {
-              label: 'Réessayer',
-              handler: () => this.loadTasks(),
-              className: 'bg-blue-500 hover:bg-blue-600 text-white'
-            }
-          ]
-        }
+        'Impossible de charger les tâches du serveur'
       );
-      
-      this.showError("Erreur lors du chargement des tâches");
-    } finally {
-      this.showLoading(false);
     }
   }
 
@@ -248,34 +224,35 @@ class TaskManager {
 
   // Application des filtres
   applyFilters() {
-    let filtered = [...this.tasks];
+    let filtered = this.tasks;
 
-    // Filtrer par recherche textuelle
+    // Filtrage par recherche
     if (this.currentFilters.search) {
-      const search = this.currentFilters.search.toLowerCase();
+      const searchTerm = this.currentFilters.search.toLowerCase();
       filtered = filtered.filter(
         (task) =>
-          task.title.toLowerCase().includes(search) ||
-          task.description.toLowerCase().includes(search) ||
-          task.tags.some((tag) => tag.toLowerCase().includes(search))
+          task.title.toLowerCase().includes(searchTerm) ||
+          task.description.toLowerCase().includes(searchTerm) ||
+          task.assignee.toLowerCase().includes(searchTerm) ||
+          task.tags.some((tag) => tag.toLowerCase().includes(searchTerm))
       );
     }
 
-    // Filtrer par statuts sélectionnés
+    // Filtrage par statut
     if (this.currentFilters.statusList.length > 0) {
       filtered = filtered.filter((task) =>
         this.currentFilters.statusList.includes(task.status)
       );
     }
 
-    // Filtrer par priorité
+    // Filtrage par priorité
     if (this.currentFilters.priority) {
       filtered = filtered.filter(
         (task) => task.priority === this.currentFilters.priority
       );
     }
 
-    // Filtrer par catégorie
+    // Filtrage par catégorie
     if (this.currentFilters.category) {
       filtered = filtered.filter(
         (task) => task.category === this.currentFilters.category
@@ -284,32 +261,56 @@ class TaskManager {
 
     this.filteredTasks = filtered;
     this.renderTasks();
+    this.updateFilteredCount();
   }
 
-  // Rendu des tâches
+  // Rendu des tâches avec nouvelle gestion d'état
   renderTasks() {
     const container = document.getElementById("tasks-container");
-    const noTasksDiv = document.getElementById("no-tasks");
-    const filteredCount = document.getElementById("filtered-count");
-
-    // Mettre à jour le compteur
-    filteredCount.textContent = this.filteredTasks.length;
-
+    
+    // Si aucune tâche après filtrage
     if (this.filteredTasks.length === 0) {
-      container.innerHTML = "";
-      noTasksDiv.classList.remove("hidden");
+      if (this.tasks.length === 0) {
+        // Aucune tâche du tout - état vide initial
+        this.setAppState('empty');
+        this.renderEmptyState();
+      } else {
+        // Tâches existent mais filtrées - état de filtrage vide
+        container.innerHTML = `
+          <div class="p-12 text-center">
+            <div class="flex flex-col items-center space-y-4">
+              <div class="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center">
+                <i class="fas fa-search text-2xl text-gray-400"></i>
+              </div>
+              <div class="space-y-2">
+                <h3 class="text-lg font-semibold text-gray-700">Aucun résultat</h3>
+                <p class="text-gray-500">Aucune tâche ne correspond à vos critères de recherche.</p>
+              </div>
+              <button
+                onclick="taskManager.clearAllFilters()"
+                class="btn-modern bg-blue-500 hover:bg-blue-600 text-white px-6 py-3"
+              >
+                <i class="fas fa-filter mr-2"></i>Effacer les filtres
+              </button>
+            </div>
+          </div>
+        `;
+        document.getElementById('no-tasks').classList.add('hidden');
+      }
       return;
     }
 
-    noTasksDiv.classList.add("hidden");
-    container.innerHTML = this.filteredTasks
-      .map((task) => this.renderTaskCard(task))
-      .join("");
+    // Masquer les états d'erreur/vide
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('no-tasks').classList.add('hidden');
 
-    // Ajouter les événements aux cartes de tâches
+    // Rendu des tâches
+    container.innerHTML = this.filteredTasks.map(task => this.renderTaskCard(task)).join('');
+
+    // Ajouter les événements de clic
     container.querySelectorAll(".task-card").forEach((card) => {
       card.addEventListener("click", () => {
-        const taskId = parseInt(card.dataset.taskId);
+        const taskId = card.getAttribute("data-task-id");
         this.redirectToEdit(taskId);
       });
     });
@@ -476,48 +477,127 @@ class TaskManager {
     }
   }
 
-  // Affichage du chargement
-  showLoading(show) {
-    const loading = document.getElementById("loading");
-    const tasksContainer = document.getElementById("tasks-container");
+  // États possibles de l'application
+  appStates = {
+    LOADING: 'loading',
+    SUCCESS: 'success',
+    ERROR: 'error',
+    EMPTY: 'empty'
+  };
 
-    if (show) {
-      loading.classList.remove("hidden");
-      tasksContainer.classList.add("hidden");
-    } else {
-      loading.classList.add("hidden");
-      tasksContainer.classList.remove("hidden");
+  // Gestion centralisée des états
+  setAppState(state, errorMessage = '') {
+    // Cacher tous les états
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('no-tasks').classList.add('hidden');
+    
+    // Supprimer les anciens états d'erreur s'ils existent
+    const existingError = document.getElementById('error-state');
+    if (existingError) {
+      existingError.remove();
+    }
+
+    // Appliquer le nouvel état
+    switch (state) {
+      case this.appStates.LOADING:
+        document.getElementById('loading').classList.remove('hidden');
+        document.getElementById('tasks-container').innerHTML = '';
+        break;
+        
+      case this.appStates.SUCCESS:
+        // État géré par renderTasks()
+        break;
+        
+      case this.appStates.ERROR:
+        this.showErrorState(errorMessage);
+        break;
+        
+      case this.appStates.EMPTY:
+        document.getElementById('no-tasks').classList.remove('hidden');
+        document.getElementById('tasks-container').innerHTML = '';
+        break;
     }
   }
 
-  // Affichage des messages d'erreur
-  showError(message) {
-    // Utiliser le nouveau système de notifications
-    window.notifications?.error('Erreur', message);
+  // Nouvel état d'erreur professionnel
+  showErrorState(message) {
+    const tasksContainer = document.getElementById('tasks-container');
+    tasksContainer.innerHTML = `
+      <div id="error-state" class="p-12 text-center">
+        <div class="flex flex-col items-center space-y-6">
+          <div class="w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-2xl flex items-center justify-center">
+            <i class="fas fa-exclamation-triangle text-3xl text-red-500"></i>
+          </div>
+          <div class="space-y-2">
+            <h3 class="text-xl font-semibold text-gray-800">Problème de connexion</h3>
+            <p class="text-gray-600 max-w-md">${message || 'Une erreur est survenue lors du chargement des données.'}</p>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <button
+              onclick="taskManager.loadTasks()"
+              class="btn-modern btn-primary px-6 py-3"
+            >
+              <i class="fas fa-redo mr-2"></i>Réessayer
+            </button>
+            <button
+              onclick="taskManager.showOfflineHelp()"
+              class="btn-modern bg-gray-500 hover:bg-gray-600 text-white px-6 py-3"
+            >
+              <i class="fas fa-info-circle mr-2"></i>Aide
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
-  // Affichage des messages de succès
-  showSuccessMessage(message) {
-    // Utiliser le nouveau système de notifications
-    window.notifications?.success('Succès', message);
+  // Aide hors ligne
+  showOfflineHelp() {
+    window.notifications?.info(
+      'Mode hors ligne',
+      'Vérifiez votre connexion internet et réessayez. Les données seront synchronisées dès que la connexion sera rétablie.'
+    );
   }
 
-  // Système de notifications
-  showNotification(message, type = "info") {
-    // Utiliser le nouveau système de notifications
-    switch(type) {
-      case 'success':
-        window.notifications?.success('Information', message);
-        break;
-      case 'error':
-        window.notifications?.error('Erreur', message);
-        break;
-      case 'warning':
-        window.notifications?.warning('Attention', message);
-        break;
-      default:
-        window.notifications?.info('Information', message);
-    }
+  // ===== CORRECTION CRITIQUE : ÉTAT VIDE PROFESSIONNEL =====
+  
+  // Amélioration de l'état vide dans le HTML (remplace "Aucune tâche trouvée")
+  renderEmptyState() {
+    document.getElementById('no-tasks').innerHTML = `
+      <div class="p-12 text-center">
+        <div class="flex flex-col items-center space-y-6">
+          <div class="w-24 h-24 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-3xl flex items-center justify-center">
+            <i class="fas fa-clipboard-check text-4xl text-indigo-500"></i>
+          </div>
+          <div class="space-y-2">
+            <h3 class="text-2xl font-bold text-gray-800">Prêt à organiser vos tâches ?</h3>
+            <p class="text-gray-600 max-w-md">Commencez par créer votre première tâche et boostez votre productivité.</p>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <button
+              onclick="taskManager.redirectToCreate()"
+              class="btn-modern btn-primary px-8 py-4 text-lg"
+            >
+              <i class="fas fa-plus mr-3"></i>Créer ma première tâche
+            </button>
+            <button
+              onclick="taskManager.showQuickTips()"
+              class="btn-modern bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-4"
+            >
+              <i class="fas fa-lightbulb mr-2"></i>Astuces rapides
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Astuces rapides pour nouveaux utilisateurs
+  showQuickTips() {
+    window.notifications?.info(
+      'Astuces productivité',
+      '💡 Utilisez les raccourcis clavier (? pour voir la liste) et organisez vos tâches par priorité et catégorie.'
+    );
   }
 
   // Méthode pour activer/désactiver tous les statuts
@@ -683,6 +763,42 @@ class TaskManager {
         }
       }, 2000);
     });
+  }
+
+  // Nouvelle méthode pour effacer tous les filtres
+  clearAllFilters() {
+    // Réinitialiser les filtres
+    this.currentFilters = {
+      search: "",
+      statusList: ["À faire", "En cours"], // Valeurs par défaut
+      priority: "",
+      category: "",
+    };
+
+    // Réinitialiser les champs du formulaire
+    document.getElementById("search-input").value = "";
+    document.getElementById("priority-filter").value = "";
+    document.getElementById("category-filter").value = "";
+
+    // Réinitialiser les boutons toggle
+    this.initializeToggleButtons();
+
+    // Réappliquer les filtres
+    this.applyFilters();
+
+    // Notification
+    window.notifications?.info(
+      'Filtres effacés',
+      'Tous les filtres ont été réinitialisés.'
+    );
+  }
+
+  // Mise à jour du compteur de tâches filtrées
+  updateFilteredCount() {
+    const countElement = document.getElementById("filtered-count");
+    if (countElement) {
+      countElement.textContent = this.filteredTasks.length;
+    }
   }
 }
 

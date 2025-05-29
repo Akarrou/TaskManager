@@ -202,13 +202,12 @@
         transform: translateX(-50%);
         background: rgba(239, 68, 68, 0.9);
         color: white;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 10px;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
         white-space: nowrap;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        pointer-events: none;
+        z-index: 10;
+        animation: slideDown 0.3s ease-out;
       }
       
       #delete-btn:hover::after {
@@ -348,6 +347,237 @@
         textarea.form-input {
           min-height: 120px;
         }
+      }
+
+      /* ===== CORRECTION CRITIQUE : ESPACEMENT FORMULAIRES AMÉLIORÉ ===== */
+      
+      .form-section {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border-light);
+      }
+      
+      .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+      }
+      
+      .form-field {
+        margin-bottom: 1.25rem;
+        position: relative;
+      }
+      
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+        margin-bottom: 1.25rem;
+      }
+      
+      @media (min-width: 768px) {
+        .form-row {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      /* ===== CORRECTION : RESPONSIVITÉ MOBILE FORMULAIRES ===== */
+      
+      @media (max-width: 768px) {
+        .container {
+          padding: 0 1rem;
+        }
+        
+        .form-section {
+          margin-bottom: 1.5rem;
+          padding-bottom: 1rem;
+        }
+        
+        .form-field {
+          margin-bottom: 1rem;
+        }
+        
+        .form-input, .form-select, .form-textarea {
+          font-size: 16px; /* Évite le zoom sur iOS */
+          min-height: 48px;
+          padding: 0.875rem 1rem;
+        }
+        
+        .form-textarea {
+          min-height: 120px;
+        }
+        
+        .form-label {
+          margin-bottom: 0.5rem;
+          font-size: 0.875rem;
+          font-weight: 600;
+        }
+        
+        /* Boutons mobile plus grands */
+        .btn {
+          min-height: 48px;
+          padding: 0.875rem 1.5rem;
+          font-size: 1rem;
+        }
+        
+        /* Actions en pile sur mobile */
+        .form-actions {
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+        
+        .form-actions .btn {
+          width: 100%;
+          justify-content: center;
+        }
+        
+        /* Metadata en pile */
+        .task-metadata {
+          flex-direction: column;
+          gap: 0.5rem;
+          text-align: center;
+        }
+        
+        .task-metadata > div {
+          width: 100%;
+        }
+      }
+
+      /* ===== CORRECTION : FEEDBACK VISUEL AMÉLIORÉ ===== */
+      
+      .btn {
+        transition: all var(--transition-normal);
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+        filter: brightness(1.05);
+      }
+      
+      .btn:active {
+        transform: translateY(0);
+        box-shadow: var(--shadow-sm);
+      }
+      
+      .btn:focus-visible {
+        outline: 3px solid var(--primary-blue);
+        outline-offset: 2px;
+        box-shadow: var(--shadow-focus);
+      }
+      
+      /* Animation de ripple pour les boutons */
+      .btn::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+        z-index: 0;
+      }
+      
+      .btn:active::before {
+        width: 300px;
+        height: 300px;
+      }
+      
+      .btn > * {
+        position: relative;
+        z-index: 1;
+      }
+      
+      /* États de chargement pour les boutons */
+      .btn.loading {
+        pointer-events: none;
+        opacity: 0.7;
+        filter: grayscale(0.3);
+      }
+      
+      .btn.loading::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        margin: -10px 0 0 -10px;
+        border: 2px solid transparent;
+        border-top: 2px solid currentColor;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        z-index: 2;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      /* États de succès et erreur pour les champs */
+      .form-input.success {
+        border-color: var(--border-success);
+        background-color: var(--state-success-bg);
+      }
+      
+      .form-input.error {
+        border-color: var(--border-error);
+        background-color: var(--state-error-bg);
+      }
+      
+      .form-input:hover {
+        border-color: var(--border-medium);
+        box-shadow: var(--shadow-sm);
+      }
+      
+      .form-input:focus {
+        border-color: var(--border-focus);
+        box-shadow: var(--shadow-focus);
+        background-color: var(--bg-primary);
+      }
+
+      /* ===== CORRECTION : NAVIGATION CLAVIER AMÉLIORÉE ===== */
+      
+      .keyboard-navigation-active *:focus {
+        outline: 3px solid var(--primary-blue);
+        outline-offset: 2px;
+      }
+      
+      /* Amélioration des focus pour les éléments interactifs */
+      .form-input:focus-visible,
+      .form-select:focus-visible,
+      .form-textarea:focus-visible {
+        outline: 3px solid var(--primary-blue);
+        outline-offset: 2px;
+        box-shadow: var(--shadow-focus), 0 0 0 6px rgba(37, 100, 235, 0.1);
+      }
+      
+      /* Indicateurs visuels pour les champs requis */
+      .form-field.required .form-label::after {
+        content: ' *';
+        color: #ef4444;
+        font-weight: bold;
+      }
+      
+      /* Messages d'aide contextuels */
+      .form-help {
+        font-size: 0.875rem;
+        color: var(--text-tertiary);
+        margin-top: 0.25rem;
+        line-height: 1.4;
+      }
+      
+      .form-field.invalid .form-help {
+        color: var(--state-error-text);
+      }
+      
+      .form-field.valid .form-help {
+        color: var(--state-success-text);
       }
     </style>
   </head>

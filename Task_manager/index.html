@@ -592,575 +592,261 @@
         }
       }
 
-      /* ===== SYSTÈME DE NOTIFICATIONS MODERNISÉ ===== */
-      
-      .notification-toast {
-        max-width: 400px;
-        min-width: 320px;
-      }
-      
-      .notification-toast.show {
-        transform: translateX(0);
-        opacity: 1;
-      }
-      
-      .notification-toast.hide {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-      
-      .notification-success {
-        border-left-color: var(--success-text);
-      }
-      
-      .notification-success .notification-icon {
-        background: linear-gradient(135deg, #10b981, #059669);
-      }
-      
-      .notification-error {
-        border-left-color: var(--error-text);
-      }
-      
-      .notification-error .notification-icon {
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-      }
-      
-      .notification-warning {
-        border-left-color: #f59e0b;
-      }
-      
-      .notification-warning .notification-icon {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-      }
-      
-      .notification-info {
-        border-left-color: #3b82f6;
-      }
-      
-      .notification-info .notification-icon {
-        background: linear-gradient(135deg, #3b82f6, #2563eb);
-      }
-      
-      .notification-progress {
-        transform-origin: left;
-        animation: progressBar linear;
-      }
-      
-      @keyframes progressBar {
-        from {
-          transform: scaleX(1);
-        }
-        to {
-          transform: scaleX(0);
-        }
-      }
-
-      /* ===== FLOATING ACTION BUTTON (FAB) ===== */
-      
-      /* FIX: Amélioration de l'interaction et alignement des FAB */
-      #quick-actions-fab {
-        user-select: none;
-      }
-      
-      #fab-main:hover + #fab-menu,
-      #fab-menu:hover {
-        opacity: 1;
-        visibility: visible;
-        transform: scale(1);
-      }
-      
-      /* Garantir que le menu reste visible pendant le hover */
-      #quick-actions-fab:hover #fab-menu {
-        opacity: 1;
-        visibility: visible;
-        transform: scale(1);
-      }
-      
-      .fab-button {
-        transition: all var(--transition-normal);
-        position: relative;
-        overflow: hidden;
-      }
-      
-      .fab-button::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 0;
-        height: 0;
-        background: rgba(255, 255, 255, 0.3);
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-        transition: width 0.6s, height 0.6s;
-      }
-      
-      .fab-button:active::before {
-        width: 300px;
-        height: 300px;
-      }
-      
-      /* Garantir que les tooltips ne bloquent pas les clics */
-      [class*="tooltip"] {
-        pointer-events: none !important;
-      }
-      
-      /* Amélioration de l'animation d'ouverture */
-      #fab-menu > button:nth-child(1) {
-        transition-delay: 0.05s;
-      }
-      
-      #fab-menu > button:nth-child(2) {
-        transition-delay: 0.1s;
-      }
-      
-      #fab-menu > button:nth-child(3) {
-        transition-delay: 0.15s;
-      }
-
-      /* ===== INDICATEURS DE CONNEXION ===== */
-      
-      .connection-online #connection-dot {
-        background-color: #10b981;
-        animation: none;
-      }
-      
-      .connection-offline #connection-dot {
-        background-color: #ef4444;
-        animation: pulse 2s infinite;
-      }
-      
-      .connection-loading #connection-dot {
-        background-color: #f59e0b;
-        animation: pulse 1s infinite;
-      }
-
-      /* ===== BREADCRUMBS MODERNISÉS ===== */
-      
-      #breadcrumb-container.show {
-        display: block;
-        animation: slideInLeft 0.3s ease-out;
-      }
-      
-      @keyframes slideInLeft {
-        from {
-          opacity: 0;
-          transform: translateX(-20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateX(0);
-        }
-      }
-
-      /* ===== ÉTATS DE CHARGEMENT ENRICHIS ===== */
-      
-      .loading-skeleton {
-        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-        background-size: 200% 100%;
-        animation: shimmer 1.5s infinite;
-      }
-      
-      .loading-pulse {
-        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-      }
-
-      /* ===== AMÉLIORATIONS POUR LES CARTES DE TÂCHES ===== */
-      
-      .task-card-enhanced {
-        transition: all var(--transition-normal);
-        position: relative;
-      }
-      
-      .task-card-enhanced::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05));
-        opacity: 0;
-        transition: opacity var(--transition-normal);
-        pointer-events: none;
-      }
-      
-      .task-card-enhanced:hover::after {
-        opacity: 1;
-      }
-      
-      .task-priority-indicator {
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 4px;
-        height: 100%;
-        border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-      }
-      
-      .priority-high {
-        background: linear-gradient(180deg, #ef4444, #dc2626);
-      }
-      
-      .priority-medium {
-        background: linear-gradient(180deg, #f59e0b, #d97706);
-      }
-      
-      .priority-low {
-        background: linear-gradient(180deg, #10b981, #059669);
-      }
-
-      /* ===== TOOLTIPS MODERNISÉS ===== */
-      
-      .tooltip {
-        position: relative;
-        display: inline-block;
-      }
-      
-      .tooltip .tooltip-text {
-        visibility: hidden;
-        width: max-content;
-        max-width: 200px;
-        background: rgba(31, 41, 55, 0.95);
-        color: white;
-        text-align: center;
-        padding: 8px 12px;
-        border-radius: var(--radius-md);
-        position: absolute;
-        z-index: 1000;
-        bottom: 125%;
-        left: 50%;
-        transform: translateX(-50%);
-        opacity: 0;
-        transition: opacity var(--transition-normal), transform var(--transition-normal);
-        font-size: 12px;
-        font-weight: 500;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-      }
-      
-      .tooltip .tooltip-text::after {
-        content: '';
-        position: absolute;
-        top: 100%;
-        left: 50%;
-        margin-left: -5px;
-        border-width: 5px;
-        border-style: solid;
-        border-color: rgba(31, 41, 55, 0.95) transparent transparent transparent;
-      }
-      
-      .tooltip:hover .tooltip-text {
-        visibility: visible;
-        opacity: 1;
-        transform: translateX(-50%) translateY(-4px);
-      }
-
-      /* ===== ANIMATIONS SPÉCIFIQUES MOBILES ===== */
+      /* ===== CORRECTION CRITIQUE : RESPONSIVE MOBILE-FIRST ===== */
       
       @media (max-width: 768px) {
-        .notification-toast {
-          min-width: 280px;
-          max-width: calc(100vw - 2rem);
-        }
-        
-        #quick-actions-fab {
-          bottom: 4rem;
-          right: 1rem;
-        }
-        
-        #fab-main {
-          width: 56px;
-          height: 56px;
-        }
-        
-        #fab-menu button {
-          width: 48px;
-          height: 48px;
-        }
-        
-        .stats-card {
-          transform: none !important;
-        }
-        
-        .card-modern:hover {
-          transform: none;
-        }
-      }
-
-      /* ===== FIX: NOTIFICATIONS NON-BLOQUANTES ===== */
-      
-      /* Le conteneur de notifications n'intercepte pas les clics */
-      #notification-container {
-        pointer-events: none;
-      }
-      
-      /* Mais chaque notification individuelle est interactive */
-      .notification-toast {
-        pointer-events: auto;
-      }
-      
-      /* Amélioration de la transition d'entrée */
-      .notification-toast.show {
-        transform: translateX(0);
-        opacity: 1;
-      }
-      
-      .notification-toast.hide {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-
-      /* ===== OPTIMISATIONS RESPONSIVE MOBILE ===== */
-      
-      @media (max-width: 768px) {
-        /* Header mobile optimisé */
+        /* Header responsive avec menu hamburger */
         .header-modern {
-          padding: 0.75rem 0;
+          padding: 0.75rem;
         }
         
-        .header-modern .container {
-          padding: 0 1rem;
-        }
-        
-        .header-modern h1 {
-          font-size: 1.25rem;
-        }
-        
-        .header-modern .flex.items-center.space-x-4 {
+        .header-actions {
+          flex-direction: column;
           gap: 0.5rem;
+          width: 100%;
         }
         
-        /* Boutons mobile avec touch targets appropriés */
-        .btn-modern {
-          min-height: 44px; /* Apple recommandation */
-          min-width: 44px;
-          padding: 0.75rem 1rem;
-          font-size: 0.875rem;
+        .header-actions > * {
+          width: 100%;
+          justify-content: center;
         }
         
-        /* Navigation mobile améliorée */
+        /* Statistiques responsive */
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 0.75rem;
+        }
+        
         .stats-card {
-          padding: 1rem;
-          margin-bottom: 1rem;
+          padding: 1rem 0.75rem;
         }
         
-        .stats-card .text-3xl {
-          font-size: 1.875rem;
+        .stats-number {
+          font-size: 1.75rem !important;
+          font-weight: 800 !important;
+          color: var(--primary-blue) !important;
         }
         
-        /* Filtres mobile avec scroll horizontal */
-        .filter-scroll-container {
-          overflow-x: auto;
-          -webkit-overflow-scrolling: touch;
-          scrollbar-width: none;
-          -ms-overflow-style: none;
+        /* Filtres cachés dans un menu mobile */
+        .task-filters {
+          display: none; /* Sera remplacé par un menu hamburger */
         }
         
-        .filter-scroll-container::-webkit-scrollbar {
-          display: none;
-        }
-        
-        .toggle-button {
-          min-width: 120px;
-          white-space: nowrap;
-          flex-shrink: 0;
-        }
-        
-        /* Formulaires mobile optimisés */
-        .card-modern {
-          margin: 0.5rem;
-          border-radius: var(--radius-lg);
-        }
-        
-        .form-input {
-          font-size: 16px; /* Évite le zoom sur iOS */
-          min-height: 44px;
-          padding: 0.75rem 1rem;
-        }
-        
-        /* Grille responsive améliorée */
-        .grid.grid-cols-1.md\\:grid-cols-2,
-        .grid.grid-cols-1.md\\:grid-cols-4 {
-          gap: 1rem;
-        }
-        
-        /* FAB mobile optimisé */
-        #quick-actions-fab {
-          bottom: 1rem;
-          right: 1rem;
-        }
-        
-        #fab-main {
-          width: 56px;
-          height: 56px;
-          box-shadow: var(--shadow-lg);
-        }
-        
-        #fab-menu button {
-          width: 48px;
-          height: 48px;
-        }
-        
-        /* Notifications mobile */
-        .notification-toast {
-          min-width: 280px;
-          max-width: calc(100vw - 2rem);
-          margin: 0 1rem;
-        }
-        
-        /* Amélioration du focus mobile */
-        .form-input:focus {
-          transform: none; /* Évite les problèmes de layout */
-          box-shadow: var(--shadow-focus);
-        }
-        
-        /* Textes mobile optimisés */
-        .heading-primary {
-          font-size: 1.5rem;
-          line-height: 1.3;
-        }
-        
-        .heading-secondary {
-          font-size: 1.25rem;
-        }
-        
-        /* Espacements mobile cohérents */
-        .container {
-          padding-left: 1rem;
-          padding-right: 1rem;
-        }
-        
-        /* Tables/listes mobile */
-        .task-card {
-          padding: 1rem;
-          margin-bottom: 0.75rem;
-        }
-        
-        .task-card:hover {
-          transform: none; /* Évite les animations sur mobile */
-        }
-        
-        /* Modal mobile full screen */
-        #help-modal .bg-white {
-          margin: 1rem;
-          max-height: calc(100vh - 2rem);
+        .task-filters.mobile-show {
+          display: block;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.9);
+          z-index: 1000;
+          padding: 2rem;
           overflow-y: auto;
         }
         
-        /* Breadcrumbs mobile cachés */
-        #breadcrumb-container {
-          display: none;
+        /* Boutons plus gros pour mobile */
+        .btn-modern, .toggle-button {
+          min-height: 48px;
+          font-size: 1rem;
+          padding: 0.875rem 1.5rem;
         }
         
-        /* Espacement vertical mobile */
-        .py-8 {
-          padding-top: 1.5rem;
-          padding-bottom: 1.5rem;
+        /* Formulaires plus spacieux */
+        .form-section {
+          margin-bottom: 2rem;
         }
         
-        .mb-8 {
+        .form-field {
           margin-bottom: 1.5rem;
         }
         
-        /* Menu hamburger si nécessaire */
-        .mobile-menu-toggle {
-          display: block;
-          background: none;
-          border: none;
-          color: var(--text-white);
-          font-size: 1.25rem;
-          padding: 0.5rem;
-          border-radius: var(--radius-md);
-          transition: background-color var(--transition-normal);
-        }
-        
-        .mobile-menu-toggle:hover {
-          background-color: rgba(255, 255, 255, 0.1);
-        }
-        
-        /* Navigation slide pour mobile si nécessaire */
-        .mobile-nav {
-          position: fixed;
-          top: 0;
-          left: -100%;
-          width: 280px;
-          height: 100vh;
-          background: var(--bg-primary);
-          box-shadow: var(--shadow-xl);
-          transition: left var(--transition-slow);
-          z-index: 50;
-          overflow-y: auto;
-        }
-        
-        .mobile-nav.open {
-          left: 0;
-        }
-        
-        .mobile-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.5);
-          z-index: 40;
-          opacity: 0;
-          visibility: hidden;
-          transition: all var(--transition-normal);
-        }
-        
-        .mobile-overlay.show {
-          opacity: 1;
-          visibility: visible;
-        }
-      }
-      
-      /* ===== OPTIMISATIONS TABLET ===== */
-      
-      @media (min-width: 769px) and (max-width: 1024px) {
-        .grid.grid-cols-1.md\\:grid-cols-4 {
-          grid-template-columns: repeat(2, 1fr);
-        }
-        
-        .stats-card {
+        /* Cartes de tâches adaptées */
+        .task-card {
+          margin-bottom: 1rem;
           padding: 1.25rem;
         }
         
+        .task-card:hover {
+          transform: none; /* Pas d'animation sur mobile */
+        }
+        
+        /* Navigation plus accessible */
+        .navigation-button {
+          min-height: 44px;
+          padding: 0.75rem 1rem;
+        }
+        
+        /* Compteurs plus visibles */
+        .stat-label {
+          font-size: 0.875rem;
+        }
+        
+        /* Espacement général amélioré */
         .container {
-          max-width: 100%;
-          padding-left: 2rem;
-          padding-right: 2rem;
+          padding: 0 1rem;
+        }
+        
+        .section-spacing {
+          margin-bottom: 1.5rem;
         }
       }
       
-      /* ===== OPTIMISATIONS TOUCH DEVICES ===== */
+      @media (max-width: 480px) {
+        /* Très petits écrans */
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+        
+        .heading-primary {
+          font-size: 1.5rem;
+        }
+        
+        .btn-modern {
+          font-size: 0.875rem;
+          padding: 0.75rem 1rem;
+        }
+        
+        .stats-number {
+          font-size: 1.5rem !important;
+        }
+      }
+
+      /* ===== CORRECTION CRITIQUE : AMÉLIORATION FOCUS KEYBOARD ===== */
       
-      @media (hover: none) and (pointer: coarse) {
-        /* Suppression des hover effects sur touch */
-        .card-modern:hover,
-        .stats-card:hover,
-        .task-card:hover,
-        .btn-modern:hover {
-          transform: none;
+      .focus-visible,
+      *:focus-visible {
+        outline: 3px solid var(--primary-blue) !important;
+        outline-offset: 2px !important;
+        border-radius: var(--radius-sm);
+        z-index: 1000;
+      }
+      
+      .btn-modern:focus-visible,
+      .toggle-button:focus-visible,
+      .input-modern:focus-visible {
+        outline: 3px solid var(--primary-blue);
+        outline-offset: 2px;
+        box-shadow: var(--shadow-focus), 0 0 0 6px rgba(37, 100, 235, 0.1);
+        transform: translateY(-1px);
+      }
+      
+      /* Navigation clavier améliorée */
+      .keyboard-navigation-active *:focus {
+        outline: 3px solid var(--primary-blue);
+        outline-offset: 2px;
+      }
+
+      /* ===== CORRECTION MODÉRÉE : HIÉRARCHIE VISUELLE AMÉLIORÉE ===== */
+      
+      .stats-number {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--primary-blue);
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        line-height: 1;
+        margin-bottom: 0.25rem;
+      }
+      
+      .stats-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      
+      /* Compteurs avec couleurs distinctives */
+      .stats-total .stats-number {
+        color: var(--primary-blue);
+      }
+      
+      .stats-todo .stats-number {
+        color: #3b82f6;
+      }
+      
+      .stats-progress .stats-number {
+        color: var(--soft-orange);
+      }
+      
+      .stats-completed .stats-number {
+        color: var(--soft-green);
+      }
+
+      /* ===== CORRECTION MODÉRÉE : ESPACEMENT FORMULAIRES ===== */
+      
+      .form-section {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border-light);
+      }
+      
+      .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+      }
+      
+      .form-field {
+        margin-bottom: 1.25rem;
+      }
+      
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+      }
+      
+      @media (min-width: 768px) {
+        .form-row {
+          grid-template-columns: 1fr 1fr;
         }
-        
-        /* Focus plus visible sur touch */
-        .btn-modern:focus,
-        .form-input:focus,
-        .toggle-button:focus {
-          outline: 3px solid var(--border-focus);
-          outline-offset: 2px;
-        }
-        
-        /* Amélioration des zones de touch */
-        .toggle-button,
-        .btn-modern,
-        button,
-        [role="button"] {
-          min-height: 44px;
-          min-width: 44px;
-        }
+      }
+
+      /* ===== CORRECTION MODÉRÉE : FEEDBACK VISUEL AMÉLIORÉ ===== */
+      
+      .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+        filter: brightness(1.05);
+      }
+      
+      .btn-modern:active {
+        transform: translateY(0);
+        box-shadow: var(--shadow-sm);
+      }
+      
+      .toggle-button:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+        filter: brightness(1.1);
+      }
+      
+      .input-modern:hover {
+        border-color: var(--border-medium);
+        box-shadow: var(--shadow-xs);
+      }
+      
+      /* États visuels pour les interactions */
+      .interactive:hover {
+        cursor: pointer;
+        opacity: 0.9;
+        transition: all var(--transition-fast);
+      }
+      
+      .loading-state {
+        pointer-events: none;
+        opacity: 0.7;
+        filter: grayscale(0.3);
+      }
+      
+      .success-state {
+        border-color: var(--soft-green);
+        background-color: var(--state-success-bg);
+      }
+      
+      .error-state {
+        border-color: #dc2626;
+        background-color: var(--state-error-bg);
       }
     </style>
   </head>
