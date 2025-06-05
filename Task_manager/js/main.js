@@ -171,6 +171,7 @@ class TaskManager {
     if (this.currentFilters.search) {
       const searchLower = this.currentFilters.search.toLowerCase();
       filtered = filtered.filter(task => 
+        task.id?.toString().toLowerCase().includes(searchLower) ||
         task.title?.toLowerCase().includes(searchLower) ||
         task.description?.toLowerCase().includes(searchLower) ||
         (task.tags && task.tags.some(tag => tag.toLowerCase().includes(searchLower)))

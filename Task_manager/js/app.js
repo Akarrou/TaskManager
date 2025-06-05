@@ -265,6 +265,7 @@ class TaskManager {
       const searchTerm = this.currentFilters.search.toLowerCase();
       filtered = filtered.filter(
         (task) =>
+          task.id?.toString().toLowerCase().includes(searchTerm) ||
           task.title.toLowerCase().includes(searchTerm) ||
           task.description.toLowerCase().includes(searchTerm) ||
           task.assignee.toLowerCase().includes(searchTerm) ||
