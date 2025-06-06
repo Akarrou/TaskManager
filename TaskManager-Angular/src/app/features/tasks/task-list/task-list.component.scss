@@ -1,32 +1,11 @@
 @use "sass:color";
-
-// Variables de design tokens (simplifié, idéalement dans un fichier global)
-$primary-color: #3b82f6; // Bleu
-$secondary-color: #10b981; // Vert
-$text-color-dark: #1f2937; // Gris très foncé
-$text-color-medium: #4b5563; // Gris foncé
-$text-color-light: #6b7280; // Gris moyen
-$border-color: #e5e7eb; // Gris clair
-$background-light: #f9fafb; // Fond très clair
-$white: #ffffff;
-
-$font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-
-// Mixin pour les boutons
-@mixin button-reset {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  text-align: inherit;
-  font: inherit;
-  color: inherit;
-}
+@use '../../../styles/variables' as v;
+@use '../../../styles/mixins' as m;
 
 .task-list-container {
-  font-family: $font-family-sans;
+  font-family: v.$font-family-sans;
   padding: 1.5rem;
-  background-color: $background-light;
+  background-color: v.$background-color-light;
   border-radius: 0.75rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   margin-top: 1.5rem;
@@ -44,19 +23,19 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
     .list-title {
       font-size: 1.5rem;
       font-weight: 600;
-      color: $text-color-dark;
+      color: v.$text-color-dark;
       margin: 0;
       display: flex;
       align-items: center;
       gap: 0.5rem;
 
       mat-icon {
-        color: $primary-color;
+        color: v.$primary-color;
       }
 
       .task-count-detail {
         font-size: 0.9rem;
-        color: $text-color-light;
+        color: v.$text-color-light;
         font-weight: 400;
       }
     }
@@ -74,17 +53,17 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
 
     .filter-select {
       padding: 0.5rem 0.75rem;
-      border: 1px solid $border-color;
+      border: 1px solid v.$border-color-light;
       border-radius: 0.375rem;
-      background-color: $white;
-      color: $text-color-medium;
+      background-color: v.$background-color-form;
+      color: v.$text-color-medium;
       font-size: 0.875rem;
       transition: border-color 0.2s, box-shadow 0.2s;
 
       &:focus {
         outline: none;
-        border-color: $primary-color;
-        box-shadow: 0 0 0 2px rgba($primary-color, 0.2);
+        border-color: v.$primary-color;
+        box-shadow: 0 0 0 2px rgba(v.$primary-color, 0.2);
       }
     }
   }
@@ -97,13 +76,13 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
   gap: 0.75rem;
   margin-bottom: 1.5rem;
   padding: 0.75rem;
-  background-color: color.adjust($primary-color, $lightness: 40%);
-  border: 1px solid color.adjust($primary-color, $lightness: 30%);
+  background-color: color.adjust(v.$primary-color, $lightness: 40%);
+  border: 1px solid color.adjust(v.$primary-color, $lightness: 30%);
   border-radius: 0.375rem;
 
   .filter-label {
     font-weight: 500;
-    color: color.adjust($primary-color, $lightness: -10%);
+    color: color.adjust(v.$primary-color, $lightness: -10%);
     font-size: 0.875rem;
   }
 
@@ -111,32 +90,32 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    background-color: $white;
-    color: $text-color-medium;
+    background-color: v.$background-color-form;
+    color: v.$text-color-medium;
     padding: 0.25rem 0.6rem;
     border-radius: 0.25rem;
     font-size: 0.8rem;
-    border: 1px solid $border-color;
+    border: 1px solid v.$border-color-light;
 
     .filter-remove {
-      @include button-reset;
+      @include m.button-reset;
       font-size: 1rem;
       line-height: 1;
-      color: $text-color-light;
+      color: v.$text-color-light;
       margin-left: 0.25rem;
 
       &:hover {
-        color: $text-color-dark;
+        color: v.$text-color-dark;
       }
     }
   }
 
   .clear-all-filters {
-    @include button-reset;
+    @include m.button-reset;
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    color: color.adjust($primary-color, $lightness: -10%);
+    color: color.adjust(v.$primary-color, $lightness: -10%);
     font-size: 0.8rem;
     font-weight: 500;
     margin-left: auto; // Pousse à droite
@@ -144,7 +123,7 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
     border-radius: 0.25rem;
 
     &:hover {
-      background-color: color.adjust($primary-color, $lightness: 45%);
+      background-color: color.adjust(v.$primary-color, $lightness: 45%);
     }
 
     mat-icon {
@@ -187,25 +166,25 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
 
 .status-badge {
   @extend %badge-base;
-  &.status-pending { background-color: #fffbeb; color: #b45309; .status-icon { color: #f59e0b;} }
-  &.status-in_progress { background-color: #eff6ff; color: #1d4ed8; .status-icon { color: #3b82f6;} }
-  &.status-completed { background-color: #f0fdf4; color: #15803d; .status-icon { color: #22c55e;} }
-  &.status-cancelled { background-color: #f1f5f9; color: #475569; .status-icon { color: #64748b;} }
+  &.status-pending { background-color: #fffbeb; color: #b45309; .status-icon { color: v.$warning-color;} }
+  &.status-in_progress { background-color: #eff6ff; color: #1d4ed8; .status-icon { color: v.$primary-color;} }
+  &.status-completed { background-color: #f0fdf4; color: #15803d; .status-icon { color: v.$success-color;} }
+  &.status-cancelled { background-color: #f1f5f9; color: #475569; .status-icon { color: v.$text-color-light;} }
 }
 
 .task-priority-badge, .priority-badge {
   @extend %badge-base;
-  &.priority-low { background-color: #f0fdf4; color: #15803d; .priority-icon { color: #22c55e;} }
-  &.priority-medium { background-color: #fffbeb; color: #b45309; .priority-icon { color: #f59e0b;} }
+  &.priority-low { background-color: #f0fdf4; color: #15803d; .priority-icon { color: v.$success-color;} }
+  &.priority-medium { background-color: #fffbeb; color: #b45309; .priority-icon { color: v.$warning-color;} }
   &.priority-high { background-color: #fff1f2; color: #c2410c; .priority-icon { color: #f97316;} }
-  &.priority-urgent { background-color: #fee2e2; color: #b91c1c; .priority-icon { color: #ef4444;} }
+  &.priority-urgent { background-color: #fee2e2; color: #b91c1c; .priority-icon { color: v.$error-color;} }
 }
 
 // Styles pour la vue GRILLE (Task Card)
 .task-card {
-  background-color: $white;
+  background-color: v.$background-color-form;
   border-radius: 0.5rem;
-  border: 1px solid $border-color;
+  border: 1px solid v.$border-color-light;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   display: flex;
   flex-direction: column;
@@ -219,10 +198,10 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
   }
 
   // Bordures de statut/priorité
-  &.status-border-pending::before { background-color: #f59e0b; }
-  &.status-border-in_progress::before { background-color: #3b82f6; }
-  &.status-border-completed::before { background-color: #22c55e; }
-  &.status-border-cancelled::before { background-color: #64748b; }
+  &.status-border-pending::before { background-color: v.$warning-color; }
+  &.status-border-in_progress::before { background-color: v.$primary-color; }
+  &.status-border-completed::before { background-color: v.$success-color; }
+  &.status-border-cancelled::before { background-color: v.$text-color-light; }
   
   &::before { // Pour la barre de couleur de statut/priorité
     content: '';
@@ -245,7 +224,7 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
     .task-title {
       font-size: 1.1rem;
       font-weight: 600;
-      color: $text-color-dark;
+      color: v.$text-color-dark;
       margin: 0;
       line-height: 1.3;
       // Truncate
@@ -269,7 +248,7 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
 
     .task-description {
       font-size: 0.875rem;
-      color: $text-color-medium;
+      color: v.$text-color-medium;
       line-height: 1.5;
       margin-bottom: 0.75rem;
       // Truncate
@@ -289,25 +268,25 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
 
       .tag-icon {
         font-size: 0.9rem;
-        color: $text-color-light;
+        color: v.$text-color-light;
       }
 
       .task-tag {
-        background-color: color.adjust($primary-color, $lightness: 40%);
-        color: color.adjust($primary-color, $lightness: -10%);
+        background-color: color.adjust(v.$primary-color, $lightness: 40%);
+        color: color.adjust(v.$primary-color, $lightness: -10%);
         padding: 0.125rem 0.5rem;
         border-radius: 0.25rem;
       }
       .more-tags {
         font-style: italic;
-        color: $text-color-light;
+        color: v.$text-color-light;
       }
     }
   }
 
   .task-card-footer {
     padding: 0.75rem 1rem;
-    border-top: 1px solid $border-color;
+    border-top: 1px solid v.$border-color-light;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -318,7 +297,7 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
       align-items: center;
       gap: 0.75rem;
       font-size: 0.8rem;
-      color: $text-color-light;
+      color: v.$text-color-light;
 
       span {
         display: inline-flex;
@@ -334,19 +313,19 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
       gap: 0.25rem;
 
       .action-btn {
-        @include button-reset;
+        @include m.button-reset;
         padding: 0.375rem;
         border-radius: 50%;
-        color: $text-color-light;
+        color: v.$text-color-light;
         transition: background-color 0.2s, color 0.2s;
 
         mat-icon { font-size: 1.1rem; display: block;}
 
         &:hover {
-          background-color: $background-light;
+          background-color: v.$background-color-light;
         }
-        &.edit-btn:hover { color: $primary-color; }
-        &.delete-btn:hover { color: #ef4444; }
+        &.edit-btn:hover { color: v.$primary-color; }
+        &.delete-btn:hover { color: v.$error-color; }
       }
     }
   }
@@ -360,20 +339,20 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
     gap: 1rem;
     align-items: center;
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid $border-color;
+    border-bottom: 1px solid v.$border-color-light;
   }
 
   .list-view-header-row {
     font-weight: 600;
-    color: $text-color-medium;
+    color: v.$text-color-medium;
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    background-color: $background-light;
+    background-color: v.$background-color-light;
   }
 
   .task-row {
-    background-color: $white;
+    background-color: v.$background-color-form;
     transition: background-color 0.2s ease;
     position: relative; // Pour la bordure de statut
 
@@ -385,18 +364,18 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
       bottom: 0;
       width: 3px;
     }
-    &.status-border-pending::before { background-color: #f59e0b; }
-    &.status-border-in_progress::before { background-color: #3b82f6; }
-    &.status-border-completed::before { background-color: #22c55e; }
-    &.status-border-cancelled::before { background-color: #64748b; }
+    &.status-border-pending::before { background-color: v.$warning-color; }
+    &.status-border-in_progress::before { background-color: v.$primary-color; }
+    &.status-border-completed::before { background-color: v.$success-color; }
+    &.status-border-cancelled::before { background-color: v.$text-color-light; }
 
     &:hover {
-      background-color: color.adjust($primary-color, $lightness: 45%);
+      background-color: color.adjust(v.$primary-color, $lightness: 45%);
     }
 
     .col {
       font-size: 0.875rem;
-      color: $text-color-medium;
+      color: v.$text-color-medium;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -406,7 +385,7 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
       .task-title-cell {
         .row-task-title {
           font-weight: 500;
-          color: $text-color-dark;
+          color: v.$text-color-dark;
           margin: 0 0 0.25rem 0;
           // Truncate
           overflow: hidden;
@@ -415,7 +394,7 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
         }
         .row-task-description {
           font-size: 0.8rem;
-          color: $text-color-light;
+          color: v.$text-color-light;
           margin: 0;
           // Truncate
           overflow: hidden;
@@ -433,24 +412,24 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
         font-size: 0.7rem;
 
         .row-task-tag {
-            background-color: color.adjust($primary-color, $lightness: 42%);
-            color: color.adjust($primary-color, $lightness: -15%);
+            background-color: color.adjust(v.$primary-color, $lightness: 42%);
+            color: color.adjust(v.$primary-color, $lightness: -15%);
             padding: 0.1rem 0.4rem;
             border-radius: 0.2rem;
         }
         .more-tags-small {
             font-style: italic;
-            color: $text-color-light;
+            color: v.$text-color-light;
         }
     }
 
     .no-assignee, .no-date, .no-tags {
-      color: $text-color-light;
+      color: v.$text-color-light;
       font-style: italic;
     }
 
     .due-date.overdue {
-      color: #ef4444;
+      color: v.$error-color;
       font-weight: 500;
     }
 
@@ -458,7 +437,7 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
       display: inline-flex;
       align-items: center;
       gap: 0.25rem;
-      mat-icon { font-size: 1rem; color: $text-color-light;}
+      mat-icon { font-size: 1rem; color: v.$text-color-light;}
     }
 
     .col-actions {
@@ -466,16 +445,16 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
       justify-content: flex-end;
       gap: 0.25rem;
       .row-action-btn {
-        @include button-reset;
+        @include m.button-reset;
         padding: 0.375rem;
         border-radius: 50%;
-        color: $text-color-light;
+        color: v.$text-color-light;
         transition: background-color 0.2s, color 0.2s;
         mat-icon { font-size: 1.1rem; display:block;}
 
-        &:hover { background-color: $background-light; }
-        &.edit-btn:hover { color: $primary-color; }
-        &.delete-btn:hover { color: #ef4444; }
+        &:hover { background-color: v.$background-color-light; }
+        &.edit-btn:hover { color: v.$primary-color; }
+        &.delete-btn:hover { color: v.$error-color; }
       }
     }
   }
@@ -485,14 +464,14 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
 .empty-state, .loading-state {
   text-align: center;
   padding: 3rem 1rem;
-  color: $text-color-light;
+  color: v.$text-color-light;
 
   .empty-icon mat-icon, .loading-spinner mat-icon {
     font-size: 3.5rem;
     width: 3.5rem;
     height: 3.5rem;
     margin-bottom: 1rem;
-    color: color.adjust($text-color-light, $lightness: 20%);
+    color: color.adjust(v.$text-color-light, $lightness: 20%);
   }
   .loading-spinner mat-icon.spin-icon {
     animation: spin 1.5s linear infinite;
@@ -500,7 +479,7 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
 
   h3 {
     font-size: 1.25rem;
-    color: $text-color-dark;
+    color: v.$text-color-dark;
     margin-bottom: 0.5rem;
   }
   p {
@@ -510,8 +489,8 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
 }
 
 .cta-button.primary-action-btn {
-  background-color: $secondary-color;
-  color: $white;
+  background-color: v.$secondary-color;
+  color: v.$background-color-form;
   padding: 0.6rem 1.2rem;
   border: none;
   border-radius: 0.375rem;
@@ -525,7 +504,7 @@ $font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe
   mat-icon { font-size: 1.1rem; }
 
   &:hover {
-    background-color: color.adjust($secondary-color, $lightness: -8%);
+    background-color: color.adjust(v.$secondary-color, $lightness: -8%);
     transform: translateY(-1px);
   }
 }

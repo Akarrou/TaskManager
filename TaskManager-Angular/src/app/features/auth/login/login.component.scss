@@ -1,0 +1,144 @@
+@use '../../../styles/variables' as v;
+@use '../../../styles/mixins' as m;
+
+// These styles are adapted from the user's provided HTML
+// and integrated into the project's SCSS structure.
+
+:host {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 100vh;
+  background-color: v.$background-color-page;
+  padding: 1rem;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 450px;
+}
+
+.login-form-wrapper {
+  background-color: v.$background-color-form;
+  padding: 2.5rem;
+  border-radius: v.$border-radius-lg;
+  box-shadow: v.$shadow-md;
+  border: 1px solid v.$border-color-light;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  
+  h2 {
+    font-size: 2rem;
+    font-weight: 600;
+    color: v.$text-color-dark;
+    margin: 0;
+  }
+
+  p {
+    margin-top: 0.5rem;
+    color: v.$text-color-medium;
+  }
+}
+
+// Re-using form styles from task-form
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+// Utilisation des styles d'input globaux définis dans task-form.component.scss
+// Pour une cohérence parfaite, ces styles devraient aussi être dans un fichier partagé.
+// En attendant, on les recrée ici avec les variables.
+input.form-input {
+  display: block;
+  width: 100%;
+  border-radius: v.$border-radius-md;
+  border: 1px solid v.$border-color-medium;
+  box-shadow: v.$shadow-sm;
+  padding: 0.875rem 1rem;
+  font-size: v.$font-size-sm;
+
+  &:focus {
+    @include m.focus-ring(v.$primary-color);
+  }
+}
+
+.btn-primary {
+  width: 100%;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid transparent;
+  border-radius: v.$border-radius-md;
+  box-shadow: v.$shadow-sm;
+  font-size: v.$font-size-sm;
+  font-weight: 600;
+  color: v.$text-color-inverted;
+  background-color: v.$primary-color;
+  transition: background-color 0.2s;
+  cursor: pointer;
+
+  &:hover {
+    background-color: v.$primary-color-dark;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(v.$primary-color, 0.3);
+  }
+  
+  &:disabled {
+    background-color: v.$secondary-color-light;
+    cursor: not-allowed;
+  }
+}
+
+.spinner {
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-left-color: #fff;
+  border-radius: 50%;
+  width: 1.2rem;
+  height: 1.2rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// Basic error message styling
+.error-message {
+  background-color: v.$danger-bg;
+  border: 1px solid v.$danger-border;
+  color: v.$danger-text;
+  padding: 0.75rem 1rem;
+  border-radius: v.$border-radius-md;
+  position: relative;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.form-actions {
+  margin-top: 1.5rem;
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 2rem;
+  color: v.$text-color-medium;
+  
+  a {
+    color: v.$primary-color;
+    font-weight: 500;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+} 

@@ -1,0 +1,19 @@
+@use './variables' as v;
+
+// Mixin for a consistent focus ring style
+@mixin focus-ring($color: v.$primary-color) {
+  outline: none;
+  border-color: $color;
+  box-shadow: 0 0 0 3px rgba($color, 0.25);
+}
+
+// Mixin to reset button styles
+@mixin button-reset {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: inherit;
+  font: inherit;
+  color: inherit;
+} 

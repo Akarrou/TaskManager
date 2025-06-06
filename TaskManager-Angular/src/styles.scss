@@ -1,2 +1,23 @@
 /* You can add global styles to this file, and also import other style files */
+
+// Import shared SCSS partials to apply them globally.
+// The order is important: @use must come before any other rule.
+@use 'app/styles/variables';
+@use 'app/styles/mixins';
+@use 'app/styles/forms';
+
+// Import Google Fonts after @use rules.
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons+Outlined');
+
+// Global base styles
+body {
+  background-color: variables.$background-color-page;
+  font-family: variables.$font-family-sans;
+  color: variables.$text-color-medium;
+  line-height: 1.6;
+  margin: 0;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}

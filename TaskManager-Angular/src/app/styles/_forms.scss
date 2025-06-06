@@ -1,0 +1,156 @@
+@use 'variables' as v;
+@use 'mixins' as m;
+@use "sass:color";
+
+// ==========================================================================
+// Global Form Styles
+// ==========================================================================
+
+label {
+  display: block;
+  margin-bottom: 0.625rem;
+  font-weight: v.$font-weight-medium;
+  color: v.$text-color-medium;
+  font-size: v.$font-size-sm;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+textarea,
+select {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: v.$border-width-1 solid v.$border-color-medium;
+  border-radius: v.$border-radius-md;
+  font-size: v.$font-size-base;
+  color: v.$text-color-dark;
+  background-color: v.$background-color-form;
+  transition: border-color v.$transition-duration, box-shadow v.$transition-duration;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: v.$text-color-light;
+    opacity: 1;
+  }
+
+  &:focus {
+    @include m.focus-ring(v.$primary-color);
+  }
+
+  &:disabled {
+    background-color: color.adjust(v.$border-color-light, $lightness: 5%);
+    color: v.$text-color-light;
+    cursor: not-allowed;
+    border-color: v.$border-color-light;
+  }
+
+  &.error {
+    border-color: v.$error-color;
+
+    &:focus {
+      @include m.focus-ring(v.$error-color);
+    }
+  }
+}
+
+select {
+  appearance: none;
+  background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236B7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E');
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 0.65em auto;
+  padding-right: 2.5rem;
+}
+
+textarea {
+  min-height: 100px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.error-message {
+  color: v.$error-color;
+  font-size: v.$font-size-sm;
+  margin-top: 0.375rem;
+}
+
+
+// ==========================================================================
+// Global Button Styles
+// ==========================================================================
+
+.btn-primary, .btn-secondary {
+  padding: 0.875rem 1.75rem;
+  border-radius: v.$border-radius-md;
+  font-weight: v.$font-weight-medium;
+  cursor: pointer;
+  transition: background-color v.$transition-duration, border-color v.$transition-duration, box-shadow v.$transition-duration, transform v.$transition-duration;
+  border: v.$border-width-1 solid transparent;
+  font-size: v.$font-size-base;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: v.$space-2;
+  text-decoration: none;
+  line-height: 1;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: v.$shadow-md;
+  }
+
+  &:active {
+    transform: translateY(0px);
+    box-shadow: v.$shadow-sm;
+  }
+  
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(v.$primary-color, 0.3);
+  }
+}
+
+.btn-primary {
+  background-color: v.$primary-color;
+  color: v.$text-color-inverted;
+  border-color: v.$primary-color;
+
+  &:hover {
+    background-color: v.$primary-color-dark;
+    border-color: v.$primary-color-dark;
+  }
+  
+  &:disabled {
+    background-color: v.$secondary-color-light;
+    border-color: v.$secondary-color-light;
+    color: v.$text-color-medium;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+
+    &:hover {
+      background-color: v.$secondary-color-light;
+      border-color: v.$secondary-color-light;
+    }
+  }
+}
+
+.btn-secondary {
+  background-color: v.$background-color-form;
+  color: v.$text-color-medium;
+  border-color: v.$border-color-medium;
+
+  &:hover {
+    background-color: color.adjust(v.$border-color-light, $lightness: 5%);
+    border-color: v.$secondary-color-dark;
+    color: v.$text-color-dark;
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: v.$secondary-color-dark;
+    box-shadow: 0 0 0 3px rgba(v.$secondary-color-dark, 0.3);
+  }
+} 

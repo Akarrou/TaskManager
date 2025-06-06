@@ -1,6 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '../../../core/services/auth';
 
 @Component({
   selector: 'app-header-nav',
@@ -97,19 +98,26 @@ import { RouterModule } from '@angular/router';
 
           <!-- Menu déroulant profil -->
           <div class="profile-dropdown" *ngIf="showProfileMenu()">
-            <div class="dropdown-header">
-              <div class="user-info">
-                <div class="user-name">Jérôme Valette</div>
-                <div class="user-email">jerome.valette&#64;example.com</div>
+            <ng-container *ngIf="currentUser() as user; else notConnected">
+              <div class="dropdown-header">
+                <div class="user-info">
+                  <div class="user-name">{{ user.email }}</div>
+                  <div class="user-email">Connecté</div>
+                </div>
               </div>
-            </div>
-            <div class="dropdown-divider"></div>
-            <ul class="dropdown-menu">
-              <li><a href="/profile" class="dropdown-item">Mon profil</a></li>
-              <li><a href="/settings" class="dropdown-item">Paramètres</a></li>
-              <li class="dropdown-divider"></li>
-              <li><button class="dropdown-item logout-btn">Déconnexion</button></li>
-            </ul>
+              <div class="dropdown-divider"></div>
+              <ul class="dropdown-menu">
+                <li><a routerLink="/profile" class="dropdown-item">Mon profil</a></li>
+                <li><a routerLink="/settings" class="dropdown-item">Paramètres</a></li>
+                <li class="dropdown-divider"></li>
+                <li><button (click)="logout()" class="dropdown-item logout-btn">Déconnexion</button></li>
+              </ul>
+            </ng-container>
+            <ng-template #notConnected>
+              <ul class="dropdown-menu">
+                <li><a routerLink="/login" class="dropdown-item">Connexion</a></li>
+              </ul>
+            </ng-template>
           </div>
         </div>
 
@@ -452,6 +460,11 @@ import { RouterModule } from '@angular/router';
   `]
 })
 export class HeaderNavComponent {
+  private authService = inject(AuthService);
+  private router = inject(Router);
+
+  currentUser = this.authService.currentUser;
+  
   activeRoute = signal('dashboard');
   notificationCount = signal(3);
   showProfileMenu = signal(false);
@@ -475,5 +488,11 @@ export class HeaderNavComponent {
 
   closeMobileMenu() {
     this.showMobileMenu.set(false);
+  }
+
+  async logout(): Promise<void> {
+    await this.authService.signOut();
+    this.closeProfileMenu();
+    this.router.navigate(['/login']);
   }
 } 

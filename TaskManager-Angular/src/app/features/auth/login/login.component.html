@@ -1,0 +1,64 @@
+<div class="relative flex size-full min-h-screen flex-col bg-slate-50 group/design-root overflow-x-hidden">
+  <div class="layout-container flex h-full grow flex-col items-center justify-center">
+    <main class="flex flex-col items-center justify-center w-full px-6 py-8 lg:py-0">
+      <div class="w-full bg-white rounded-xl shadow-xl md:mt-0 sm:max-w-md xl:p-0">
+        <div class="p-6 space-y-4 md:space-y-6 sm:p-8">
+          <div class="flex items-center justify-center mb-6">
+            <div class="size-8 text-[#0b80ee] mr-3">
+              <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path>
+              </svg>
+            </div>
+            <h1 class="text-2xl font-bold leading-tight tracking-tight text-gray-900">
+              TaskMaster
+            </h1>
+          </div>
+          <h2 class="text-xl font-semibold leading-tight tracking-tight text-gray-800 md:text-2xl text-center">
+            Welcome back
+          </h2>
+          <form (ngSubmit)="handleLogin()" #loginForm="ngForm" class="space-y-4 md:space-y-6">
+            <div>
+              <label class="block mb-2 text-sm font-medium text-gray-900" for="email">Email Address</label>
+              <input 
+                class="form-input h-12 p-3 placeholder-gray-400" 
+                id="email" 
+                name="email"
+                type="email"
+                [ngModel]="email()"
+                (ngModelChange)="email.set($event)"
+                placeholder="Enter your email" 
+                required="" 
+                [disabled]="loading()"/>
+            </div>
+            <div>
+              <label class="block mb-2 text-sm font-medium text-gray-900" for="password">Password</label>
+              <input 
+                class="form-input h-12 p-3 placeholder-gray-400" 
+                id="password" 
+                name="password" 
+                placeholder="••••••••" 
+                required="" 
+                type="password"
+                [ngModel]="password()"
+                (ngModelChange)="password.set($event)"
+                [disabled]="loading()"/>
+            </div>
+
+            <div *ngIf="error()" class="error-message">
+                <p>{{ error() }}</p>
+            </div>
+
+            <button class="btn-primary" type="submit" [disabled]="loading() || !loginForm.valid">
+              @if (loading()) {
+                <span class="spinner"></span>
+                <span>Connexion...</span>
+              } @else {
+                <span>Login</span>
+              }
+            </button>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+</div> 
