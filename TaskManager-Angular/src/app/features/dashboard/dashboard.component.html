@@ -24,26 +24,8 @@
             </div>
           </section>
 
-          <div class="c-filters">
-            <div class="c-filters__group">
-              <button class="c-button c-button--secondary">
-                <span>Statut</span>
-                <span class="material-icons-outlined">arrow_drop_down</span>
-              </button>
-              <button class="c-button c-button--secondary">
-                <span>Priorité</span>
-                <span class="material-icons-outlined">arrow_drop_down</span>
-              </button>
-              <button class="c-button c-button--secondary">
-                <span>Assigné à</span>
-                <span class="material-icons-outlined">arrow_drop_down</span>
-              </button>
-            </div>
-            <button class="c-button c-button--secondary c-filters__more">
-              <span class="material-icons-outlined">filter_list</span>
-              <span>Plus de filtres</span>
-            </button>
-          </div>
+          <!-- Filtres interactifs -->
+          <app-task-search class="c-filters" (filtersChange)="onSearchFiltersChange($event)"></app-task-search>
 
           <div class="c-tasks-container">
             <div class="c-tasks-table-wrapper">

@@ -1,6 +1,9 @@
 import { Component, signal, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
 
 export interface SearchFilters {
   searchText: string;
@@ -11,33 +14,21 @@ export interface SearchFilters {
 @Component({
   selector: 'app-task-search',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatFormFieldModule, MatInputModule, MatIconModule],
   template: `
-    <div class="search-container">
+    <div class="c-filters" style="width: 100%; box-sizing: border-box; flex-direction: column; gap: 0.5rem;">
       <!-- Barre de recherche principale -->
-      <div class="search-main">
-        <div class="search-input-wrapper">
-          <span class="search-icon">🔍</span>
-          <input
+      <div style="margin-bottom: 1rem; margin-top: 1rem;">
+          <input matInput
             type="text"
-            class="search-input"
             placeholder="Rechercher des tâches..."
             [(ngModel)]="searchText"
             (input)="onSearchChange()"
             aria-label="Rechercher des tâches">
-          <button 
-            *ngIf="searchText"
-            class="clear-search"
-            (click)="clearSearch()"
-            title="Effacer la recherche"
-            aria-label="Effacer la recherche">
-            ✕
-          </button>
-        </div>
       </div>
 
       <!-- Filtres rapides -->
-      <div class="filters-quick">
+      <div class="filters-quick" style="display: flex; align-items: flex-end; gap: 1rem; width: 100%;">
         <!-- Filtre par statut -->
         <div class="filter-group">
           <label class="filter-label">Statut</label>
@@ -57,24 +48,27 @@ export interface SearchFilters {
         <div class="filter-group">
           <label class="filter-label">Priorité</label>
           <select 
-            class="filter-select"
+            class="filter-select priority-select"
             [(ngModel)]="priorityFilter"
             (change)="onFilterChange()"
             aria-label="Filtrer par priorité">
             <option value="">Toutes</option>
-            <option value="high">🔴 Haute</option>
-            <option value="medium">🟡 Moyenne</option>
-            <option value="low">🟢 Basse</option>
+            <option value="high">Haute</option>
+            <option value="medium">Moyenne</option>
+            <option value="low">Basse</option>
           </select>
         </div>
 
-        <!-- Bouton reset -->
+        <div style="flex:1;"></div>
+        <!-- Bouton reset aligné à droite -->
         <button 
           *ngIf="hasActiveFilters()"
           class="reset-filters"
+          style="margin-left:auto; display:flex; align-items:center; gap:0.25rem;"
           (click)="resetFilters()"
           title="Réinitialiser les filtres">
-          🗑️ Reset
+          <span class="material-icons-outlined" style="font-size:1.1em;">delete_sweep</span>
+          <span>Reset</span>
         </button>
       </div>
 
@@ -96,124 +90,94 @@ export interface SearchFilters {
     </div>
   `,
   styles: [`
-    .search-container {
+    .c-filters {
       background: white;
       border-radius: 0.75rem;
       border: 2px solid #e5e7eb;
-      padding: 1.5rem;
+      padding: 1rem 1.5rem 1.5rem 1.5rem;
       margin-bottom: 1.5rem;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      width: 100%;
+      box-sizing: border-box;
     }
-
-    .search-main {
-      margin-bottom: 1rem;
+    .search-mat-field {
+      width: 100%;
+      margin-bottom: 0.5rem;
     }
-
-    .search-input-wrapper {
-      position: relative;
-      display: flex;
-      align-items: center;
+    .search-mat-field .mat-form-field-flex {
+      min-height: 38px;
+      padding: 0 8px;
       background: #f9fafb;
-      border: 2px solid #e5e7eb;
-      border-radius: 0.5rem;
-      padding: 0.75rem;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      border-radius: 8px;
     }
-
-    .search-input-wrapper:focus-within {
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    .mat-form-field-appearance-fill .mat-form-field-flex {
+      background: #f9fafb;
     }
-
-    .search-icon {
-      margin-right: 0.5rem;
-      color: #6b7280;
-      font-size: 1.125rem;
-    }
-
-    .search-input {
-      flex: 1;
-      border: none;
-      background: none;
-      outline: none;
+    .mat-input-element {
       font-size: 1rem;
-      color: #374151;
+      padding: 0.5rem 0;
     }
-
-    .search-input::placeholder {
-      color: #9ca3af;
+    .mat-form-field-outline {
+      border-radius: 8px;
     }
-
-    .clear-search {
-      background: none;
-      border: none;
-      color: #6b7280;
-      cursor: pointer;
-      padding: 0.25rem;
-      border-radius: 0.25rem;
-      transition: all 0.2s;
+    .mat-form-field-appearance-fill .mat-form-field-outline {
+      border-radius: 8px;
     }
-
-    .clear-search:hover {
-      background: #e5e7eb;
-      color: #374151;
-    }
-
     .filters-quick {
       display: flex;
       gap: 1rem;
       align-items: flex-end;
-      flex-wrap: wrap;
+      width: 100%;
     }
-
     .filter-group {
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
     }
-
     .filter-label {
       font-size: 0.875rem;
       font-weight: 600;
       color: #374151;
     }
-
     .filter-select {
-      padding: 0.5rem 0.75rem;
-      border: 2px solid #e5e7eb;
+      padding: 0.35rem 0.75rem;
+      border: 1.5px solid #e5e7eb;
       border-radius: 0.375rem;
       background: white;
       color: #374151;
-      font-size: 0.875rem;
+      font-size: 0.95rem;
       cursor: pointer;
       transition: border-color 0.2s;
       min-width: 120px;
+      min-height: 32px;
     }
-
     .filter-select:focus {
       outline: none;
       border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.08);
     }
-
+    .priority-select option {
+      padding-left: 1.5em;
+    }
     .reset-filters {
       padding: 0.5rem 1rem;
       background: #fee2e2;
       color: #dc2626;
       border: 2px solid #fecaca;
       border-radius: 0.375rem;
-      font-size: 0.875rem;
+      font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
       height: fit-content;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
     }
-
     .reset-filters:hover {
       background: #fecaca;
       border-color: #fca5a5;
     }
-
     .search-results {
       margin-top: 1rem;
       padding: 0.75rem;
@@ -221,12 +185,10 @@ export interface SearchFilters {
       border: 1px solid #bae6fd;
       border-radius: 0.375rem;
     }
-
     .results-text {
       font-size: 0.875rem;
       color: #0369a1;
     }
-
     .active-filter {
       font-weight: 600;
       margin-right: 0.5rem;
@@ -234,24 +196,16 @@ export interface SearchFilters {
       background: #dbeafe;
       border-radius: 0.25rem;
     }
-
-    /* Responsive */
     @media (max-width: 640px) {
-      .search-container {
+      .c-filters {
         padding: 1rem;
       }
-
       .filters-quick {
         flex-direction: column;
         align-items: stretch;
       }
-
       .filter-group {
         width: 100%;
-      }
-
-      .filter-select {
-        min-width: auto;
       }
     }
   `]
