@@ -209,9 +209,12 @@ export class TaskService {
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
 
+    // On retire task_number si présent
+    const { task_number, ...taskWithoutNumber } = task;
+
     try {
       const { data, error } = await this.supabaseService.tasks
-        .insert([task])
+        .insert([taskWithoutNumber])
         .select()
         .single();
 
