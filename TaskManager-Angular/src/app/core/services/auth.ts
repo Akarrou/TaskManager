@@ -7,6 +7,7 @@ import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 })
 export class AuthService implements OnDestroy {
   private supabaseService = inject(SupabaseService);
+  get supabase() { return this.supabaseService; }
   
   readonly currentUser = signal<User | null>(null);
   readonly currentSession = signal<Session | null>(null);
