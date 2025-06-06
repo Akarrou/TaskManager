@@ -8,6 +8,7 @@ import { SupabaseService } from '../../core/services/supabase';
 import { TaskService, Task } from '../../core/services/task';
 import { SearchFilters } from '../../shared/components/task-search/task-search.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { UserService } from '../../core/services/user.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -21,6 +22,7 @@ export class DashboardComponent implements OnInit {
   private taskService = inject(TaskService);
   private router = inject(Router);
   private dialog = inject(MatDialog);
+  private userService = inject(UserService);
   
   supabaseStatus = signal<'connecting' | 'connected' | 'error'>('connecting');
   statusMessage = signal('Connexion en cours...');
@@ -28,6 +30,8 @@ export class DashboardComponent implements OnInit {
   tasks = this.taskService.tasks;
   loading = this.taskService.loading;
   taskError = this.taskService.error;
+
+  users = signal<{ id: string; email: string }[]>([]);
 
   currentSearchFilters = signal<SearchFilters>({
     searchText: '',
@@ -64,6 +68,7 @@ export class DashboardComponent implements OnInit {
 
   async ngOnInit() {
     await this.checkSupabaseConnection();
+    await this.loadUsers();
   }
 
   private async checkSupabaseConnection() {
@@ -77,6 +82,17 @@ export class DashboardComponent implements OnInit {
       this.supabaseStatus.set('error');
       this.statusMessage.set(`Erreur de connexion: ${error.message || 'Vérifiez la console'}`);
     }
+  }
+
+  private async loadUsers() {
+    const users = await this.userService.getUsers();
+    this.users.set(users);
+  }
+
+  getAssigneeEmail(userId: string | undefined): string {
+    if (!userId) return '';
+    const user = this.users().find(u => u.id === userId);
+    return user ? user.email : '';
   }
 
   getTaskStats() {

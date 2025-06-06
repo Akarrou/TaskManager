@@ -54,7 +54,7 @@
                     <th class="c-table__header c-table-column--task" scope="col">Tâche</th>
                     <th class="c-table__header c-table-column--status" scope="col">Statut</th>
                     <th class="c-table__header c-table-column--priority" scope="col">Priorité</th>
-                    <th class="c-table__header c-table-column--assigned" scope="col">Assigné à</th>
+                    <th class="c-table__header c-table-column--assignee" scope="col">Assigné à</th>
                     <th class="c-table__header c-table-column--due" scope="col">Date d'échéance</th>
                     <th class="c-table__header c-table-column--actions" scope="col"><span class="sr-only">Actions</span></th>
                   </tr>
@@ -69,7 +69,9 @@
                     <td class="c-table__cell c-table-column--priority">
                       <span class="c-badge c-badge--priority-{{ task.priority }}">{{ getPriorityLabel(task.priority) }}</span>
                     </td>
-                    <td class="c-table__cell c-table-column--assigned">{{ task.assigned_to }}</td>
+                    <td class="c-table__cell c-table-column--assignee">
+                      {{ getAssigneeEmail(task.assigned_to) }}
+                    </td>
                     <td class="c-table__cell c-table-column--due">{{ task.due_date | date:'dd/MM/yyyy' }}</td>
                     <td class="c-table__cell c-table__cell--actions c-table-column--actions">
                       <div class="c-table__actions">
