@@ -4,6 +4,12 @@
   </div>
 
   <form [formGroup]="taskForm" (ngSubmit)="onSubmit()" class="task-form">
+    <!-- Task Number -->
+    <div class="c-form__field" *ngIf="isEditMode()">
+      <label for="task_number" class="c-form__label">Numéro de la Tâche</label>
+      <input id="task_number" type="text" formControlName="task_number" class="c-form__input" readonly>
+    </div>
+
     <!-- Titre -->
     <div class="form-group">
       <label for="title">Titre de la tâche *</label>

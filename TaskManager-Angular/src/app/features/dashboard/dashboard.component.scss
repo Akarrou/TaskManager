@@ -192,9 +192,13 @@
   }
 }
 
+.c-table-column--task-number {
+  width: 5%;
+}
+
 .c-table-column--task {
-  width: 40%;
-  max-width: 300px;
+  width: 35%;
+  max-width: 250px;
   white-space: normal;
   word-break: break-word;
 }

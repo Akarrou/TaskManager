@@ -35,6 +35,8 @@ export class TaskFormComponent implements OnInit {
   currentTaskId = signal<string | null>(null);
   taskForm!: FormGroup;
 
+  isEditMode = computed(() => !!this.currentTaskId());
+
   // Signal pour la liste des utilisateurs
   users = signal<any[]>([]);
 
@@ -67,6 +69,7 @@ export class TaskFormComponent implements OnInit {
 
     this.taskForm = this.fb.group({
       id: [null as string | null],
+      task_number: [{ value: null as number | null, disabled: true }],
       title: ['', Validators.required],
       description: [''],
       status: ['pending' as Task['status'], Validators.required],
@@ -113,6 +116,7 @@ export class TaskFormComponent implements OnInit {
   private patchFormWithTask(task: Task) {
     this.taskForm.patchValue({
       id: task.id,
+      task_number: task.task_number,
       title: task.title,
       description: task.description,
       status: task.status,
@@ -126,6 +130,7 @@ export class TaskFormComponent implements OnInit {
   private resetForm() {
     this.taskForm.reset({
       id: null,
+      task_number: null,
       title: '',
       description: '',
       status: 'pending',
