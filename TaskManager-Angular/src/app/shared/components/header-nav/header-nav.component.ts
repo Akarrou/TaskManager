@@ -13,7 +13,7 @@ import { AuthService } from '../../../core/services/auth';
         <!-- Logo et titre -->
         <div class="nav-brand">
           <div class="logo">🌱</div>
-          <h1 class="brand-title">AgroFlow</h1>
+          <h1 class="brand-title">TaskManager</h1>
         </div>
 
         <!-- Navigation principale -->
@@ -30,45 +30,6 @@ import { AuthService } from '../../../core/services/auth';
                   <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
                 </svg>
                 Dashboard
-              </a>
-            </li>
-            <li class="nav-item">
-              <a 
-                href="/tasks" 
-                class="nav-link"
-                [class.active]="activeRoute() === 'tasks'"
-                (click)="setActiveRoute('tasks')"
-                aria-label="Gestion des tâches">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-                </svg>
-                Tâches
-              </a>
-            </li>
-            <li class="nav-item">
-              <a 
-                href="/projects" 
-                class="nav-link"
-                [class.active]="activeRoute() === 'projects'"
-                (click)="setActiveRoute('projects')"
-                aria-label="Gestion des projets">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,19H5V5H19V19Z"/>
-                </svg>
-                Projets
-              </a>
-            </li>
-            <li class="nav-item">
-              <a 
-                href="/profile" 
-                class="nav-link"
-                [class.active]="activeRoute() === 'profile'"
-                (click)="setActiveRoute('profile')"
-                aria-label="Profil utilisateur">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
-                </svg>
-                Profil
               </a>
             </li>
           </ul>

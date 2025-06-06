@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angula
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TaskService, Task, TaskComment } from '../../../core/services/task';
 import { AuthService } from '../../../core/services/auth';
+import { UserService } from '../../../core/services/user.service';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DatePipe } from '@angular/common';
 
@@ -26,12 +27,16 @@ export class TaskFormComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private authService = inject(AuthService);
+  private userService = inject(UserService);
   private snackBar = inject(MatSnackBar);
 
   isSubmitting = signal(false);
   pageTitle = signal('Nouvelle tâche');
   currentTaskId = signal<string | null>(null);
   taskForm!: FormGroup;
+
+  // Signal pour la liste des utilisateurs
+  users = signal<any[]>([]);
 
   // Signaux pour les commentaires
   taskComments = signal<TaskComment[]>([]);
@@ -43,6 +48,7 @@ export class TaskFormComponent implements OnInit {
   });
 
   constructor() {
+    this.loadUsers();
   }
 
   ngOnInit(): void {
@@ -69,6 +75,16 @@ export class TaskFormComponent implements OnInit {
       due_date: [null as string | null],
       tagsInput: ['' as string | null]
     });
+  }
+
+  async loadUsers(): Promise<void> {
+    try {
+      const userList = await this.userService.getUsers();
+      this.users.set(userList);
+    } catch (error) {
+      console.error("Erreur lors du chargement de la liste des utilisateurs", error);
+      this.snackBar.open("Impossible de charger la liste des utilisateurs.", 'Fermer', { duration: 3000 });
+    }
   }
 
   async loadTaskForEditing(id: string): Promise<void> {

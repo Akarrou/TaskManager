@@ -55,11 +55,12 @@
     <div class="form-row">
       <div class="form-group">
         <label for="assigned_to">Assigné à</label>
-        <input 
-          id="assigned_to"
-          type="text" 
-          formControlName="assigned_to"
-          placeholder="ID de l'utilisateur">
+        <select id="assigned_to" formControlName="assigned_to">
+          <option [ngValue]="null">Non assigné</option>
+          @for (user of users(); track user.id) {
+            <option [value]="user.id">{{ user.email }}</option>
+          }
+        </select>
       </div>
 
       <div class="form-group">
