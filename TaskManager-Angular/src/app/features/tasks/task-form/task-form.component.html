@@ -1,0 +1,147 @@
+<div class="task-form-container">
+  <div class="form-header">
+    <h2>{{ pageTitle() }}</h2>
+  </div>
+
+  <form [formGroup]="taskForm" (ngSubmit)="onSubmit()" class="task-form">
+    <!-- Titre -->
+    <div class="form-group">
+      <label for="title">Titre de la tâche *</label>
+      <input 
+        id="title"
+        type="text" 
+        formControlName="title"
+        placeholder="ex: Plantation de tomates"
+        [class.error]="taskForm.get('title')?.invalid && taskForm.get('title')?.touched">
+      <div class="error-message" *ngIf="taskForm.get('title')?.invalid && taskForm.get('title')?.touched">
+        Le titre est obligatoire
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="form-group">
+      <label for="description">Description</label>
+      <textarea 
+        id="description"
+        formControlName="description"
+        placeholder="Décrivez la tâche en détail..."
+        rows="3"></textarea>
+    </div>
+
+    <!-- Statut et Priorité -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="status">Statut *</label>
+        <select id="status" formControlName="status">
+          <option value="pending">En attente</option>
+          <option value="in_progress">En cours</option>
+          <option value="completed">Terminée</option>
+          <option value="cancelled">Annulée</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="priority">Priorité *</label>
+        <select id="priority" formControlName="priority">
+          <option value="low">Faible</option>
+          <option value="medium">Moyenne</option>
+          <option value="high">Élevée</option>
+          <option value="urgent">Urgente</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Assignation et Date -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="assigned_to">Assigné à</label>
+        <input 
+          id="assigned_to"
+          type="text" 
+          formControlName="assigned_to"
+          placeholder="ID de l'utilisateur">
+      </div>
+
+      <div class="form-group">
+        <label for="due_date">Date d'échéance</label>
+        <input 
+          id="due_date"
+          type="date" 
+          formControlName="due_date">
+      </div>
+    </div>
+
+    <!-- Tags -->
+    <div class="form-group">
+      <label for="tags">Tags (séparés par des virgules)</label>
+      <input 
+        id="tags"
+        type="text" 
+        formControlName="tagsInput"
+        placeholder="ex: urgent, serre, irrigation">
+    </div>
+
+    <!-- Boutons d'action -->
+    <div class="form-actions" role="group" aria-label="Actions du formulaire">
+      <button 
+        type="button" 
+        class="btn-secondary" 
+        (click)="handleCancel()"
+        aria-label="Annuler et fermer le formulaire">
+        Annuler
+      </button>
+      <button 
+        type="submit" 
+        class="btn-primary"
+        [disabled]="taskForm.invalid"
+        [attr.aria-label]="currentTaskId() ? 'Sauvegarder les modifications de la tâche' : 'Créer une nouvelle tâche'">
+        <span>
+          {{ currentTaskId() ? 'Sauvegarder' : 'Créer' }}
+        </span>
+      </button>
+    </div>
+  </form>
+
+  <!-- Section des Commentaires -->
+  <div *ngIf="currentTaskId()" class="comments-section">
+    <h4>Commentaires ({{ taskComments().length }})</h4>
+
+    <div class="comments-list" *ngIf="taskComments().length > 0; else noComments">
+      <div *ngFor="let comment of taskComments(); trackBy: commentTrackByFn" class="comment-item">
+        <div class="comment-header">
+          <span class="comment-author">
+            Utilisateur: {{ comment.users?.email || 'Utilisateur inconnu' }}
+          </span>
+          <span class="comment-date">{{ comment.created_at | date:'dd/MM/yyyy à HH:mm' }}</span>
+        </div>
+        <p class="comment-body">{{ comment.comment }}</p>
+      </div>
+    </div>
+    <ng-template #noComments>
+      <p class="no-comments-message">Aucun commentaire pour cette tâche pour le moment.</p>
+    </ng-template>
+
+    <div class="add-comment-form">
+      <h5>Ajouter un commentaire</h5>
+      <div class="form-group">
+        <label for="new-comment">Votre commentaire</label>
+        <textarea 
+          id="new-comment"
+          rows="3"
+          [value]="newCommentText()" 
+          (input)="newCommentText.set($any($event.target).value)"
+          placeholder="Écrivez votre commentaire ici..."></textarea>
+      </div>
+      <div class="form-actions">
+        <button 
+          type="button"
+          class="btn-primary"
+          (click)="submitComment()"
+          [disabled]="!canSubmitComment()">
+          <span class="material-icons-outlined">add_comment</span>
+          <span>Ajouter le commentaire</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div> 

@@ -1,0 +1,87 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Règles de développement pour le frontend TaskManager-Angular
+globs: ["TaskManager-Angular/src/**/*"]
+alwaysApply: true
+---
+
+# 📘 Contexte Général
+
+Ce document définit les conventions, l'architecture et les bonnes pratiques spécifiques au développement frontend du projet **TaskManager**.
+
+# 🧰 Stack Technique
+
+- **Framework** : Angular (^20.0.0)
+- **Langage** : TypeScript
+- **UI** : Angular Material (^20.0.1)
+- **Styling** : Tailwind CSS (^4.1.8)
+- **Gestion de l'état (State Management)** : NgRx (^19.2.1) (`@ngrx/store`, `@ngrx/effects`, `@ngrx/entity`)
+- **Backend as a Service (BaaS)** : Supabase (`@supabase/supabase-js`)
+- **Server-Side Rendering (SSR)** : Angular SSR avec Express
+- **Gestion des dépendances** : `npm` (basé sur la présence de `package-lock.json`)
+
+# 🧱 Structure du Projet
+
+- **`src/app/core/`** : Services essentiels (authentification, intercepteurs, guards).
+- **`src/app/features/`** : Modules fonctionnels (ex: `tasks`, `dashboard`).
+- **`src/app/shared/`** : Composants, directives et pipes réutilisables.
+- **`src/app/store/`** : Fichiers NgRx (actions, reducers, effects, selectors).
+
+# 🧑‍💻 Conventions de Codage
+
+- **Composants** : Utiliser des composants autonomes (`standalone: true`).
+- **Services** : Préférer l'injection de services via la fonction `inject()` plutôt que via le constructeur.
+- **TypeScript** : Activer le `strict mode`. Éviter l'utilisation du type `any`.
+- **Styling** : Utiliser les classes utilitaires de Tailwind CSS directement dans les templates HTML. Éviter le CSS/SCSS personnalisé autant que possible.
+
+
+- **Composants Angular** :
+  - Nom de fichier au format _kebab-case_. Exemple : `user-profile.component.ts`.
+  - Utiliser des composants autonomes (`standalone: true`) pour favoriser la modularité.
+  - **Structure de fichiers obligatoire** :
+    - Chaque composant DOIT avoir trois fichiers séparés :
+      - `.ts` : fichier TypeScript du composant
+      - `.html` : fichier template HTML (utiliser `templateUrl` dans le décorateur)
+      - `.scss` : fichier de styles SCSS (utiliser `styleUrls` dans le décorateur)
+    - L'utilisation de `template:` dans le décorateur `@Component` est **INTERDITE**. Toujours utiliser `templateUrl:` pour référencer un fichier `.html` externe.
+- **Services Angular** :
+  - Nom de fichier avec le suffixe `.service.ts`. Exemple : `authentication.service.ts`.
+- **Modèles et Interfaces TypeScript** :
+  - Nom de fichier avec le suffixe `.model.ts`. Exemple : `account.model.ts`.
+  - Interfaces préfixées par `I`. Exemple : `IUser`.
+- **TypeScript** :
+  - Activer le _strict mode_ pour garantir la sécurité des types.
+  - Ne jamais utiliser le type `any`, sauf cas exceptionnel dûment justifié.
+  - Préférer l'injection de services via la fonction `inject()` plutôt que via le constructeur.
+  - Utiliser des types explicites et éviter les types implicites.
+  - Appliquer des fonctions pures et favoriser l'immutabilité.
+- **Organisation du code** :
+  - Structurer les fichiers avec l'ordre suivant : imports, décorateur, classe, propriétés, méthodes.
+  - Respecter l'ordre des imports : Angular > RxJS > Modules spécifiques > Imports relatifs.
+
+---
+
+# 🎨 Style et Formatage
+
+- **Linting et Formatage** :
+  - Respecter impérativement les règles définies par ESLint, Prettier et Angular ESLint.
+- **CSS/SCSS** :
+  - Utiliser Tailwind CSS pour le style des composants.
+  - Éviter la manipulation directe du DOM ; utiliser les directives Angular appropriées.
+  - Utiliser `NgOptimizedImage` pour l'optimisation️ BRecté\*bliutilisation et la maintenabilité.
+- **Performance** :
+  - Implémenter le _lazy loading_ pour les modules non critiques au chargement initial de l'application.
+  - Utiliser les nouvelles directives introduites avec Angular 19.
+  - Appliquer des _pipes_ purs pour les opérations coûteuses en calcul.
+- **Gestion de l'état** :
+  - Utiliser les `signals` pour la gestion réactive de l'état.
+  - Appliquer l'`async pipe` dans les templates pour gérer les observables.
+- **Tests** :
+  - Implémenter des tests unitaires en suivant le pattern Arrange-Act-Assert.
+  - Utiliser des outils tels que Jest ou Karma pour les tests unitaires.
+
+---

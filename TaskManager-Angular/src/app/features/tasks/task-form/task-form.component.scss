@@ -1,0 +1,358 @@
+@use "sass:color";
+
+// Design Tokens (simplifié)
+$primary-color: #3b82f6; // Bleu principal
+$primary-color-dark: #2563eb; // Bleu plus foncé
+$primary-color-light: #60a5fa; // Bleu plus clair
+
+$secondary-color: #6b7280; // Gris pour actions secondaires
+$secondary-color-dark: #4b5563;
+$secondary-color-light: #9ca3af;
+
+$success-color: #10b981; // Vert pour succès (si nécessaire pour feedback)
+$error-color: #ef4444;   // Rouge pour erreurs
+$warning-color: #f59e0b; // Orange pour avertissements
+
+$text-color-dark: #1f2937;    // Pour les titres et textes importants
+$text-color-medium: #374151;  // Pour le corps du texte, labels
+$text-color-light: #6b7280;   // Pour les placeholders, textes d'aide
+$text-color-inverted: #ffffff; // Texte sur fond sombre
+
+$background-color-page: #f3f4f6; // Fond de page global (si le formulaire est sur une page)
+$background-color-form: #ffffff; // Fond du formulaire
+$border-color-light: #e5e7eb;   // Bordures légères
+$border-color-medium: #d1d5db;  // Bordures standard pour inputs
+
+$font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+$font-size-base: 1rem; // 16px
+$font-size-sm: 0.875rem; // 14px
+$font-size-lg: 1.125rem; // 18px
+
+$border-radius-sm: 0.25rem; // 4px
+$border-radius-md: 0.5rem;  // 8px
+$border-radius-lg: 0.75rem; // 12px
+
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+// Mixin pour le focus ring
+@mixin focus-ring($color: $primary-color) {
+  outline: none;
+  border-color: $color;
+  box-shadow: 0 0 0 3px rgba($color, 0.25);
+}
+
+// Styles Globaux pour la page (si applicable, sinon dans un fichier global)
+// body {
+//   background-color: $background-color-page;
+//   font-family: $font-family-sans;
+//   color: $text-color-medium;
+//   line-height: 1.6;
+// }
+
+.task-form-container {
+  background: $background-color-form;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-lg;
+  border: 1px solid $border-color-light;
+  overflow: hidden;
+  max-width: 1200px;
+  margin: 3rem auto;
+  font-family: $font-family-sans;
+}
+
+.form-header {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid transparent;
+  display: flex;
+
+
+
+  h3 {
+    margin: 0;
+    font-size: $font-size-lg;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: rgba($text-color-inverted, 0.8);
+  padding: 0.5rem;
+  border-radius: $border-radius-sm;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+
+  .close-icon {
+    width: 24px;
+    height: 24px;
+    display: block;
+  }
+
+  &:hover {
+    background-color: rgba($text-color-inverted, 0.1);
+    color: $text-color-inverted;
+  }
+  &:focus-visible {
+    outline: 2px solid $text-color-inverted;
+    outline-offset: 2px;
+  }
+}
+
+.task-form {
+  padding: 2rem 2.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.75rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.75rem;
+
+  @media (min-width: 640px) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+label {
+  display: block;
+  margin-bottom: 0.625rem;
+  font-weight: 500;
+  color: $text-color-medium;
+  font-size: $font-size-sm;
+}
+
+input[type="text"],
+input[type="date"],
+textarea,
+select {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 1px solid $border-color-medium;
+  border-radius: $border-radius-md;
+  font-size: $font-size-base;
+  color: $text-color-dark;
+  background-color: $background-color-form;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: $text-color-light;
+    opacity: 1;
+  }
+
+  &:focus {
+    @include focus-ring($primary-color);
+  }
+
+  &:disabled {
+    background-color: color.adjust($border-color-light, $lightness: 5%);
+    color: $text-color-light;
+    cursor: not-allowed;
+    border-color: $border-color-light;
+  }
+
+  &.error {
+    border-color: $error-color;
+
+    &:focus {
+      @include focus-ring($error-color);
+    }
+  }
+}
+
+select {
+  appearance: none;
+  background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236B7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E');
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 0.65em auto;
+  padding-right: 2.5rem;
+}
+
+input[type="date"] {
+  min-height: calc(0.875rem * 2 + 1rem * 2 + 2px);
+}
+
+textarea {
+  min-height: 100px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.error-message {
+  color: $error-color;
+  font-size: $font-size-sm;
+  margin-top: 0.375rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding-top: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid $border-color-light;
+
+  &.no-border {
+    border-top: none;
+    padding-top: 0;
+  }
+}
+
+.btn-primary, .btn-secondary {
+  padding: 0.875rem 1.75rem;
+  border-radius: $border-radius-md;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.15s ease-in-out, transform 0.15s ease-in-out;
+  border: 1px solid transparent;
+  font-size: $font-size-base;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  line-height: 1;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-md;
+  }
+
+  &:active {
+    transform: translateY(0px);
+    box-shadow: $shadow-sm;
+  }
+  
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.3);
+  }
+}
+
+.btn-primary {
+  background-color: $primary-color;
+  color: $text-color-inverted;
+  border-color: $primary-color;
+
+  &:hover {
+    background-color: $primary-color-dark;
+    border-color: $primary-color-dark;
+  }
+  
+  &:disabled {
+    background-color: $secondary-color-light;
+    border-color: $secondary-color-light;
+    color: $text-color-medium;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+
+    &:hover {
+      background-color: $secondary-color-light;
+      border-color: $secondary-color-light;
+    }
+  }
+}
+
+.btn-secondary {
+  background-color: $background-color-form;
+  color: $text-color-medium;
+  border-color: $border-color-medium;
+
+  &:hover {
+    background-color: color.adjust($border-color-light, $lightness: 5%);
+    border-color: $secondary-color-dark;
+    color: $text-color-dark;
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: $secondary-color-dark;
+    box-shadow: 0 0 0 3px rgba($secondary-color-dark, 0.3);
+  }
+}
+
+// Styles for Comments Section
+.comments-section {
+  padding: 2rem 2.5rem;
+  border-top: 1px solid $border-color-light;
+  background-color: color.adjust($background-color-page, $lightness: -2%);
+
+  h4, h5 {
+    font-weight: 600;
+    color: $text-color-dark;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+  }
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.comment-item {
+  background-color: $background-color-form;
+  border-radius: $border-radius-md;
+  padding: 1.25rem;
+  box-shadow: $shadow-sm;
+  border: 1px solid $border-color-light;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.comment-author {
+  font-weight: 500;
+  color: $text-color-medium;
+  font-size: $font-size-sm;
+}
+
+.comment-date {
+  font-size: $font-size-sm;
+  color: $text-color-light;
+}
+
+.comment-body {
+  margin: 0;
+  line-height: 1.6;
+  color: $text-color-medium;
+  white-space: pre-wrap; // Respect line breaks in comments
+}
+
+.no-comments-message {
+  padding: 1.5rem;
+  text-align: center;
+  color: $text-color-light;
+  background-color: $background-color-page;
+  border-radius: $border-radius-md;
+  margin-bottom: 2rem;
+  border: 1px dashed $border-color-medium;
+}
+
+.add-comment-form {
+  .mat-form-field {
+    width: 100%;
+  }
+
+  .form-actions {
+    justify-content: flex-end;
+    border-top: none;
+    padding-top: 0;
+    margin-top: 1rem;
+  }
+} 

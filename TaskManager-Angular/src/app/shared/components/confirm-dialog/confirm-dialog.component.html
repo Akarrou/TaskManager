@@ -1,0 +1,8 @@
+<h1 mat-dialog-title>{{ data.title }}</h1>
+<div mat-dialog-content>
+  <p *ngFor="let p of data.message.split('\\n')">{{ p }}</p>
+</div>
+<div mat-dialog-actions align="end">
+  <button mat-button (click)="onNoClick()">Annuler</button>
+  <button mat-button="outlined" color="warn" [mat-dialog-close]="true" cdkFocusInitial>Supprimer</button>
+</div> 

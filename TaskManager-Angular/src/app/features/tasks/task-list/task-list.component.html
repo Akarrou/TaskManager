@@ -1,0 +1,261 @@
+    <div class="task-list-container">
+      <!-- En-tête avec filtres et contrôles -->
+      <div class="list-header">
+        <div class="header-left">
+          <h2 class="list-title">
+            <mat-icon>assignment</mat-icon> {{ filteredTasks().length }} tâche(s)
+            <span class="task-count-detail" *ngIf="totalTasks() !== filteredTasks().length">
+              / {{ totalTasks() }} au total
+            </span>
+          </h2>
+        </div>
+        
+        <div class="header-controls">
+          <!-- Filtre par tags -->
+          <div class="filter-section">
+            <app-tag-input
+              [label]="'Filtrer par tags'"
+              [placeholder]="'Rechercher des tags...'"
+              [helpText]="''"
+              [maxTags]="5"
+              (tagsChange)="onFilterTagsChange($event)">
+            </app-tag-input>
+          </div>
+          
+          <!-- Filtre par statut -->
+          <select 
+            class="status-filter filter-select"
+            [(ngModel)]="statusFilter"
+            (change)="onStatusFilterChange()"
+            aria-label="Filtrer par statut">
+            <option value="">Tous les statuts</option>
+            <option value="pending">En attente</option>
+            <option value="in_progress">En cours</option>
+            <option value="completed">Terminé</option>
+            <option value="cancelled">Annulé</option>
+          </select>
+          
+          <!-- Tri -->
+          <select 
+            class="sort-select filter-select"
+            [(ngModel)]="sortBy"
+            (change)="onSortChange()"
+            aria-label="Trier par">
+            <option value="created_at">Date de création</option>
+            <option value="due_date">Date d'échéance</option>
+            <option value="title">Nom</option>
+            <option value="priority">Priorité</option>
+            <option value="status">Statut</option>
+          </select>
+          
+          <!-- Toggle vue grille/liste -->
+          <app-view-toggle 
+            (viewChange)="onViewModeChange($event)">
+          </app-view-toggle>
+        </div>
+      </div>
+
+      <!-- Indicateurs de filtres actifs -->
+      <div class="active-filters" *ngIf="hasActiveFilters()">
+        <span class="filter-label">Filtres actifs :</span>
+        <span 
+          *ngIf="statusFilter()" 
+          class="filter-tag status-tag">
+          Statut: {{ getStatusLabel(getCastedStatusFilter()) }}
+          <button (click)="clearStatusFilter()" class="filter-remove" aria-label="Effacer filtre statut">×</button>
+        </span>
+        <span 
+          *ngFor="let tag of filterTags()" 
+          class="filter-tag tag-tag">
+          Tag: {{ tag }}
+          <button (click)="removeFilterTag(tag)" class="filter-remove" [attr.aria-label]="'Effacer filtre tag ' + tag">×</button>
+        </span>
+        <button class="clear-all-filters" (click)="clearAllFilters()" *ngIf="filterTags().length > 0 || statusFilter()">
+          <mat-icon>delete_sweep</mat-icon> Effacer tous les filtres
+        </button>
+      </div>
+
+      <!-- Liste des tâches -->
+      <div class="tasks-container" [class]="'view-' + currentViewMode()">
+        <div 
+          *ngIf="filteredTasks().length === 0 && !loading()" 
+          class="empty-state">
+          <div class="empty-icon"><mat-icon>inbox</mat-icon></div>
+          <h3>{{ hasActiveFilters() ? 'Aucune tâche ne correspond aux filtres' : 'Aucune tâche pour le moment' }}</h3>
+          <p>{{ hasActiveFilters() ? 'Essayez de modifier vos critères de recherche ou de les effacer.' : 'Créez votre première tâche pour commencer à organiser votre travail !' }}</p>
+          <button 
+            *ngIf="!hasActiveFilters()" 
+            class="cta-button primary-action-btn"
+            (click)="navigateToNewTaskForm()">
+            <mat-icon>add_circle_outline</mat-icon> Créer une nouvelle tâche
+          </button>
+        </div>
+
+        <div *ngIf="loading()" class="loading-state">
+          <div class="loading-spinner"><mat-icon class="spin-icon">autorenew</mat-icon></div>
+          <p>Chargement des tâches...</p>
+        </div>
+
+        <!-- Vue grille -->
+        <div 
+          *ngIf="currentViewMode() === 'grid' && filteredTasks().length > 0" 
+          class="tasks-grid">
+          <div 
+            *ngFor="let task of filteredTasks(); trackBy: trackByTask"
+            class="task-card" 
+            [ngClass]="['priority-' + task.priority, 'status-border-' + task.status]"
+            role="article"
+            [attr.aria-labelledby]="'task-title-' + task.id">
+            
+            <div class="task-card-header">
+              <h3 class="task-title" [id]="'task-title-' + task.id" [title]="task.title">{{ task.title }}</h3>
+              <div class="task-priority-badge" [ngClass]="'priority-' + task.priority" [title]="'Priorité: ' + getPriorityLabel(task.priority)">
+                <mat-icon class="priority-icon">{{ getPriorityIcon(task.priority) }}</mat-icon> 
+                <span>{{ getPriorityLabel(task.priority) }}</span>
+              </div>
+            </div>
+
+            <div class="task-card-content">
+              <p class="task-description" *ngIf="task.description" [title]="task.description">
+                {{ task.description | slice:0:120 }}{{ (task.description.length || 0) > 120 ? '...' : '' }}
+              </p>
+              
+              <div class="task-tags" *ngIf="task.tags && task.tags.length > 0">
+                <mat-icon class="tag-icon">sell</mat-icon>
+                <span 
+                  *ngFor="let tag of task.tags.slice(0, 3)" 
+                  class="task-tag">
+                  {{ tag }}
+                </span>
+                <span *ngIf="task.tags.length > 3" class="more-tags" [title]="task.tags.slice(3).join(', ')">
+                  +{{ task.tags.length - 3 }}
+                </span>
+              </div>
+            </div>
+
+            <div class="task-card-footer">
+              <div class="task-meta">
+                <span class="task-status-badge" [ngClass]="'status-' + task.status">
+                  <mat-icon class="status-icon">{{ getStatusIcon(task.status) }}</mat-icon>
+                  <span>{{ getStatusLabel(task.status) }}</span>
+                </span>
+                <span class="task-assignee" *ngIf="task.assigned_to" title="Assigné à">
+                  <mat-icon>person_outline</mat-icon> {{ task.assigned_to }}
+                </span>
+                <span class="task-date" *ngIf="task.due_date" [title]="'Échéance: ' + (task.due_date | date:'fullDate')" [class.overdue]="isOverdue(task.due_date!)">
+                  <mat-icon>event</mat-icon> {{ task.due_date | date:'dd/MM/yy' }}
+                </span>
+                 <span class="task-id" *ngIf="task.id" title="ID de la tâche">
+                  <mat-icon>fingerprint</mat-icon> ...{{ task.id.slice(-6) }}
+                </span>
+              </div>
+              
+              <div class="task-actions">
+                <button 
+                  class="action-btn edit-btn"
+                  (click)="navigateToEditTaskForm(task)"
+                  [attr.aria-label]="'Modifier la tâche ' + task.title"
+                  title="Modifier la tâche">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button 
+                  class="action-btn delete-btn"
+                  (click)="deleteTask.emit(task)"
+                  [attr.aria-label]="'Supprimer la tâche ' + task.title"
+                  title="Supprimer la tâche">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vue liste -->
+        <div 
+          *ngIf="currentViewMode() === 'list' && filteredTasks().length > 0" 
+          class="tasks-list-view">
+          <div class="list-view-header-row">
+            <div class="col col-title">Titre</div>
+            <div class="col col-status">Statut</div>
+            <div class="col col-priority">Priorité</div>
+            <div class="col col-assignee">Assigné à</div>
+            <div class="col col-date">Échéance</div>
+            <div class="col col-tags">Tags</div>
+            <div class="col col-actions">Actions</div>
+          </div>
+          
+          <div 
+            *ngFor="let task of filteredTasks(); trackBy: trackByTask"
+            class="task-row" 
+            [ngClass]="['priority-' + task.priority, 'status-border-' + task.status]"
+            role="row">
+            
+            <div class="col col-title">
+              <div class="task-title-cell">
+                <h4 class="row-task-title" [title]="task.title">{{ task.title }}</h4>
+                <p class="row-task-description" *ngIf="task.description" [title]="task.description">
+                  {{ task.description | slice:0:60 }}{{ (task.description.length || 0) > 60 ? '...' : '' }}
+                </p>
+              </div>
+            </div>
+            
+            <div class="col col-status">
+              <span class="status-badge" [ngClass]="'status-' + task.status">
+                <mat-icon class="status-icon">{{ getStatusIcon(task.status) }}</mat-icon> 
+                <span>{{ getStatusLabel(task.status) }}</span>
+              </span>
+            </div>
+            
+            <div class="col col-priority">
+              <span class="priority-badge" [ngClass]="'priority-' + task.priority">
+                <mat-icon class="priority-icon">{{ getPriorityIcon(task.priority) }}</mat-icon> 
+                <span>{{ getPriorityLabel(task.priority) }}</span>
+              </span>
+            </div>
+            
+            <div class="col col-assignee">
+              <span *ngIf="task.assigned_to" class="assignee-name">
+                <mat-icon>person_outline</mat-icon> {{ task.assigned_to }}
+              </span>
+              <span *ngIf="!task.assigned_to" class="no-assignee">--</span>
+            </div>
+            
+            <div class="col col-date">
+              <span *ngIf="task.due_date" class="due-date" [class.overdue]="isOverdue(task.due_date!)">
+                <mat-icon>event</mat-icon> {{ task.due_date | date:'dd/MM/yy' }}
+              </span>
+              <span *ngIf="!task.due_date" class="no-date">--</span>
+            </div>
+
+            <div class="col col-tags">
+                <div class="row-task-tags" *ngIf="task.tags && task.tags.length > 0">
+                    <span 
+                      *ngFor="let tag of task.tags.slice(0, 2)" 
+                      class="row-task-tag">
+                      {{ tag }}
+                    </span>
+                    <span *ngIf="task.tags.length > 2" class="more-tags-small" [title]="task.tags.slice(2).join(', ')">
+                      +{{ task.tags.length - 2 }}
+                    </span>
+                  </div>
+                  <span *ngIf="!task.tags || task.tags.length === 0" class="no-tags">--</span>
+            </div>
+            
+            <div class="col col-actions">
+              <button 
+                class="row-action-btn edit-btn"
+                (click)="navigateToEditTaskForm(task)"
+                title="Modifier la tâche">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button 
+                class="row-action-btn delete-btn"
+                (click)="deleteTask.emit(task)"
+                title="Supprimer la tâche">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div> 

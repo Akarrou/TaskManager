@@ -49,6 +49,17 @@ export class AppComponent implements OnInit {
       console.log('📡 Test de connexion Supabase...');
       await this.testSupabaseConnection();
       
+      // ÉTAPE 2: Simuler une connexion utilisateur pour les tests
+      this.initStatus.set('👤 Authentification de l\'utilisateur de test...');
+      console.log('👤 Tentative de connexion de l\'utilisateur de test...');
+      const { user, error: authError } = await this.authService.signInWithEmail('jeromevalette31@gmail.com', 'Hyna.321');
+      if (authError || !user) {
+        console.warn('⚠️ Échec de la connexion de l\'utilisateur de test:', authError?.message);
+        // On peut décider de s'arrêter ici ou de continuer en mode "anonyme"
+      } else {
+        console.log(`✅ Utilisateur de test connecté: ${user.email}`);
+      }
+      
       this.initStatus.set('✅ Initialisation terminée !');
       console.log('✅ Initialisation réussie');
       

@@ -19,6 +19,20 @@ export interface Task {
   task_number?: number;
 }
 
+// Nouvelle interface pour les commentaires
+export interface TaskComment {
+  id?: string;
+  task_id: string;
+  user_id: string;
+  comment: string;
+  created_at?: string;
+  updated_at?: string;
+  users?: { // Correspond au nom de la table 'users' de auth
+    email?: string;
+    // Ajoutez d'autres champs si nécessaire, comme un raw_user_meta_data->>name
+  } | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -312,6 +326,97 @@ export class TaskService {
     } catch (error) {
       console.error('🔍 DEBUG: Erreur:', error);
       return { error };
+    }
+  }
+
+  // Nouvelle méthode pour récupérer une tâche par ID depuis Supabase
+  async fetchTaskById(id: string): Promise<Task | null> {
+    console.log(`🔍 TaskService: Récupération de la tâche ID: ${id} depuis Supabase...`);
+    this.loadingSignal.set(true);
+    this.errorSignal.set(null);
+    try {
+      const { data, error } = await this.supabaseService.tasks
+        .select('*')
+        .eq('id', id)
+        .single(); // .single() retourne un objet unique ou null, et une erreur si > 1 ligne
+
+      if (error && error.code !== 'PGRST116') { // PGRST116: 0 lignes retournées, géré par data étant null
+        const errorMessage = this.supabaseService.handleError(error);
+        console.error(`❌ TaskService: Erreur chargement tâche ${id}:`, errorMessage);
+        this.errorSignal.set(errorMessage);
+        return null;
+      }
+      if (data) {
+        console.log(`✅ TaskService: Tâche ${id} chargée:`, data);
+        return data as Task;
+      }
+      return null; // Aucune tâche trouvée
+    } catch (error) {
+      const errorMessage = 'Erreur inattendue lors du chargement de la tâche par ID';
+      console.error('💥 Erreur inattendue:', error);
+      this.errorSignal.set(errorMessage);
+      return null;
+    } finally {
+      this.loadingSignal.set(false);
+    }
+  }
+
+  // Nouvelle méthode pour récupérer les commentaires d'une tâche
+  async getCommentsForTask(taskId: string): Promise<TaskComment[] | null> {
+    console.log(`💬 TaskService: Récupération des commentaires pour la tâche ${taskId}`);
+    this.loadingSignal.set(true);
+    this.errorSignal.set(null);
+
+    try {
+      const { data, error } = await this.supabaseService.taskComments
+        .select(`
+          *,
+          users (
+            email
+          )
+        `)
+        .eq('task_id', taskId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        const errorMessage = this.supabaseService.handleError(error);
+        console.error('❌ TaskService: Erreur récupération commentaires:', errorMessage);
+        this.errorSignal.set(errorMessage);
+        return null;
+      } else {
+        console.log(`✅ TaskService: Commentaires récupérés pour la tâche ${taskId}:`, data?.length || 0);
+        return data || [];
+      }
+    } catch (error) {
+      const errorMessage = 'Erreur inattendue lors de la récupération des commentaires';
+      console.error('💥 Erreur inattendue:', error);
+      this.errorSignal.set(errorMessage);
+      return null;
+    } finally {
+      this.loadingSignal.set(false);
+    }
+  }
+
+  // Nouvelle méthode pour ajouter un commentaire à une tâche
+  async addCommentToTask(commentData: Omit<TaskComment, 'id' | 'created_at' | 'updated_at'>): Promise<TaskComment | null> {
+    console.log('TaskService: Ajout d\'un commentaire pour la tâche:', commentData.task_id);
+    // Idem, gestion loading/error locale ou signaux dédiés
+    try {
+      const { data, error } = await this.supabaseService.taskComments
+        .insert([commentData])
+        .select()
+        .single(); // Pour retourner le commentaire créé
+
+      if (error) {
+        const errorMessage = this.supabaseService.handleError(error);
+        console.error('TaskService: Erreur ajout commentaire:', errorMessage);
+        return null;
+      }
+      console.log('TaskService: Commentaire ajouté avec succès:', data);
+      return data as TaskComment;
+    } catch (error) {
+      console.error('TaskService: Erreur inattendue ajout commentaire:', error);
+      return null;
     }
   }
 }
