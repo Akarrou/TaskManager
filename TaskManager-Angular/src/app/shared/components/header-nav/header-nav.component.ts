@@ -2,19 +2,17 @@ import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
+import { LogoComponent } from '../logo/logo.component';
 
 @Component({
   selector: 'app-header-nav',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, LogoComponent],
   template: `
     <header class="header-nav">
       <div class="nav-container">
         <!-- Logo et titre -->
-        <div class="nav-brand">
-          <div class="logo">🌱</div>
-          <h1 class="brand-title">TaskManager</h1>
-        </div>
+        <app-logo></app-logo>
 
         <!-- Navigation principale -->
         <nav class="nav-menu" role="navigation" aria-label="Navigation principale">
@@ -125,27 +123,6 @@ import { AuthService } from '../../../core/services/auth';
       justify-content: space-between;
       padding: 0 2rem;
       height: 70px;
-    }
-
-    .nav-brand {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .logo {
-      font-size: 2rem;
-      line-height: 1;
-    }
-
-    .brand-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, #2563eb 0%, #16a34a 100%);
-      background-clip: text;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin: 0;
     }
 
     .nav-menu {
@@ -399,23 +376,11 @@ import { AuthService } from '../../../core/services/auth';
       .nav-actions {
         gap: 0.5rem;
       }
-
-      .brand-title {
-        font-size: 1.25rem;
-      }
     }
 
     @media (max-width: 480px) {
       .nav-container {
         padding: 0 1rem;
-      }
-
-      .nav-brand .logo {
-        font-size: 1.5rem;
-      }
-
-      .brand-title {
-        font-size: 1rem;
       }
     }
   `]
