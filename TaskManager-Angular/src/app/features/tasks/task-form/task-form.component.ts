@@ -9,6 +9,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DatePipe } from '@angular/common';
 import { ISubtask } from '../subtask.model';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDialog } from '@angular/material/dialog';
+import { EditSubtaskDialogComponent } from '../edit-subtask-dialog.component';
 
 @Component({
   selector: 'app-task-form',
@@ -32,6 +34,7 @@ export class TaskFormComponent implements OnInit {
   private authService = inject(AuthService);
   private userService = inject(UserService);
   private snackBar = inject(MatSnackBar);
+  private dialog = inject(MatDialog);
 
   isSubmitting = signal(false);
   pageTitle = signal('Nouvelle tâche');
@@ -310,16 +313,41 @@ export class TaskFormComponent implements OnInit {
     return item.id || index; // Utiliser l'id s'il existe, sinon l'index
   }
 
-  addSubtask(subtask?: Partial<ISubtask>) {
-    this.subtasksFormArray.push(this.fb.group({
-      id: [subtask?.id ?? null],
-      title: [subtask?.title ?? '', Validators.required],
-      description: [subtask?.description ?? ''],
-      status: [subtask?.status ?? 'pending', Validators.required]
-    }));
-  }
-
   removeSubtask(index: number) {
     this.subtasksFormArray.removeAt(index);
+  }
+
+  openEditSubtaskDialog(index: number) {
+    const subtask = this.subtasksFormArray.at(index).value;
+    const dialogRef = this.dialog.open(EditSubtaskDialogComponent, {
+      width: '600px',
+      data: { ...subtask },
+      autoFocus: true,
+      disableClose: false
+    });
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.subtasksFormArray.at(index).patchValue(result);
+      }
+    });
+  }
+
+  addSubtask() {
+    const dialogRef = this.dialog.open(EditSubtaskDialogComponent, {
+      width: '600px',
+      data: { title: '', description: '', status: 'pending' },
+      autoFocus: true,
+      disableClose: false
+    });
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.subtasksFormArray.push(this.fb.group({
+          id: [result.id ?? null],
+          title: [result.title, Validators.required],
+          description: [result.description],
+          status: [result.status, Validators.required]
+        }));
+      }
+    });
   }
 } 
