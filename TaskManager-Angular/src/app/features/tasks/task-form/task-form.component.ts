@@ -176,6 +176,7 @@ export class TaskFormComponent implements OnInit {
   }
 
   async onSubmit(): Promise<void> {
+
     if (this.taskForm.invalid) {
       this.snackBar.open('Veuillez corriger les erreurs du formulaire.', 'Fermer', { duration: 3000 });
       Object.values(this.taskForm.controls).forEach(control => {
@@ -215,8 +216,9 @@ export class TaskFormComponent implements OnInit {
       assigned_to: formValue.assigned_to ?? undefined,
       due_date: formValue.due_date ?? undefined,
       tags: tagsArray,
-      environment: formValue.environment
+      environment: formValue.environment ?? null
     };
+
 
     let success = false;
     const currentUserId = this.authService.getCurrentUserId();
@@ -401,29 +403,6 @@ export class TaskFormComponent implements OnInit {
     });
   }
 
-  onBackToDashboard() {
-    if (this.taskForm.dirty) {
-      const dialogRef = this.dialog.open(SaveChangesDialogComponent, {
-        width: '600px',
-        data: {
-          title: 'Modifications non enregistrées',
-          message: 'Des modifications non enregistrées existent. Voulez-vous enregistrer avant de quitter ?'
-        }
-      });
-      dialogRef.afterClosed().subscribe((result) => {
-        if (result === 'save') {
-          this.onSubmit().then(() => {
-            this.router.navigate(['/dashboard']);
-          });
-        } else if (result === 'discard') {
-          this.router.navigate(['/dashboard']);
-        }
-        // Si 'cancel', ne rien faire
-      });
-    } else {
-      this.router.navigate(['/dashboard']);
-    }
-  }
 
   // Gestion du clic en dehors du speed dial
   @HostListener('document:click', ['$event'])

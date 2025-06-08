@@ -125,17 +125,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: v.$space-4;
-  margin-bottom: v.$space-6;
+  width: 100%;
 
-  &__group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: v.$space-4;
-  }
-
-  &__more {
-    margin-left: auto;
-  }
 }
 
 // ==========================================================================
@@ -203,6 +194,29 @@
   word-break: break-word;
 }
 
+.c-table-column--env {
+  width: 5%;
+  text-align: center;
+}
+
+.env-badge {
+  display: inline-block;
+  min-width: 2.2em;
+  padding: 0.2em 0.7em;
+  font-size: 0.95em;
+  font-weight: 600;
+  border-radius: 9999px;
+  color: #fff;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+.env-badge--fe {
+  background: #22c55e; /* Tailwind green-500 */
+}
+.env-badge--be {
+  background: #8b5cf6; /* Tailwind violet-500 */
+}
+
 // ==========================================================================
 // Reusable Components
 // ==========================================================================
@@ -246,8 +260,6 @@
     }
   }
 }
-
-
 
 .c-badge {
   display: inline-flex;

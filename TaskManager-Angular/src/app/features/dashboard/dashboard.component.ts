@@ -37,15 +37,13 @@ export class DashboardComponent implements OnInit {
   currentSearchFilters = signal<SearchFilters>({
     searchText: '',
     status: '',
-    priority: ''
+    priority: '',
+    environment: ''
   });
 
   filteredTasks = computed(() => {
     const allTasks = this.tasks();
     const filters = this.currentSearchFilters();
-    if (!filters.searchText && !filters.status && !filters.priority) {
-      return allTasks;
-    }
     return allTasks.filter(task => {
       const searchTextMatch = filters.searchText 
         ? task.title.toLowerCase().includes(filters.searchText.toLowerCase()) || 
@@ -53,7 +51,8 @@ export class DashboardComponent implements OnInit {
         : true;
       const statusMatch = filters.status ? task.status === filters.status : true;
       const priorityMatch = filters.priority ? task.priority === filters.priority : true;
-      return searchTextMatch && statusMatch && priorityMatch;
+      const envMatch = filters.environment ? task.environment === filters.environment : true;
+      return searchTextMatch && statusMatch && priorityMatch && envMatch;
     });
   });
 

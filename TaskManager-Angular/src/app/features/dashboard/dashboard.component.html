@@ -25,7 +25,9 @@
           </section>
 
           <!-- Filtres interactifs -->
-          <app-task-search class="c-filters" (filtersChange)="onSearchFiltersChange($event)"></app-task-search>
+          <div class="c-filters">
+            <app-task-search class="c-filters" (filtersChange)="onSearchFiltersChange($event)"></app-task-search>
+          </div>
 
           <div class="c-tasks-container">
             <div class="c-tasks-table-wrapper">
@@ -33,6 +35,7 @@
                 <thead class="c-table__head">
                   <tr class="c-table__row">
                     <th class="c-table__header c-table-column--task-number" scope="col">N°</th>
+                    <th class="c-table__header c-table-column--env" scope="col">Env.</th>
                     <th class="c-table__header c-table-column--task" scope="col">Tâche</th>
                     <th class="c-table__header c-table-column--status" scope="col">Statut</th>
                     <th class="c-table__header c-table-column--priority" scope="col">Priorité</th>
@@ -44,6 +47,10 @@
                 <tbody class="c-table__body">
                   <tr class="c-table__row" *ngFor="let task of filteredTasks()"  (dblclick)="navigateToEditTaskForm(task)" class="cursor-pointer hover-line">
                     <td class="c-table__cell c-table-column--task-number">{{ task.task_number }}</td>
+                    <td class="c-table__cell c-table-column--env">
+                      <span *ngIf="task.environment === 'frontend'" class="env-badge env-badge--fe" aria-label="Frontend" title="Frontend">FE</span>
+                      <span *ngIf="task.environment === 'backend'" class="env-badge env-badge--be" aria-label="Backend" title="Backend">BE</span>
+                    </td>
                     <td class="c-table__cell c-table-column--task">{{ task.title }}</td>
                     <td class="c-table__cell c-table-column--status">
                       <span class="c-badge c-badge--status-{{ task.status }}">{{ getStatusLabel(task.status) }}</span>

@@ -9,6 +9,7 @@ export interface SearchFilters {
   searchText: string;
   status: string;
   priority: string;
+  environment: string;
 }
 
 @Component({
@@ -56,6 +57,20 @@ export interface SearchFilters {
             <option value="high">Haute</option>
             <option value="medium">Moyenne</option>
             <option value="low">Basse</option>
+          </select>
+        </div>
+
+        <!-- Filtre par environnement -->
+        <div class="filter-group">
+          <label class="filter-label">Environnement</label>
+          <select 
+            class="filter-select env-select"
+            [(ngModel)]="environmentFilter"
+            (change)="onFilterChange()"
+            aria-label="Filtrer par environnement">
+            <option value="">Tous</option>
+            <option value="frontend">Frontend</option>
+            <option value="backend">Backend</option>
           </select>
         </div>
 
@@ -215,6 +230,7 @@ export class TaskSearchComponent {
   searchText = '';
   statusFilter = '';
   priorityFilter = '';
+  environmentFilter = '';
 
   // Output pour notifier les changements
   filtersChange = output<SearchFilters>();
@@ -236,13 +252,15 @@ export class TaskSearchComponent {
     this.searchText = '';
     this.statusFilter = '';
     this.priorityFilter = '';
+    this.environmentFilter = '';
     this.emitFilters();
   }
 
   hasActiveFilters(): boolean {
     return this.searchText !== '' || 
            this.statusFilter !== '' || 
-           this.priorityFilter !== '';
+           this.priorityFilter !== '' ||
+           this.environmentFilter !== '';
   }
 
   getStatusLabel(status: string): string {
@@ -267,7 +285,8 @@ export class TaskSearchComponent {
     this.filtersChange.emit({
       searchText: this.searchText,
       status: this.statusFilter,
-      priority: this.priorityFilter
+      priority: this.priorityFilter,
+      environment: this.environmentFilter
     });
   }
 
@@ -282,6 +301,9 @@ export class TaskSearchComponent {
     if (filters.priority !== undefined) {
       this.priorityFilter = filters.priority;
     }
+    if (filters.environment !== undefined) {
+      this.environmentFilter = filters.environment;
+    }
     this.emitFilters();
   }
 
@@ -289,7 +311,8 @@ export class TaskSearchComponent {
     return {
       searchText: this.searchText,
       status: this.statusFilter,
-      priority: this.priorityFilter
+      priority: this.priorityFilter,
+      environment: this.environmentFilter
     };
   }
 } 

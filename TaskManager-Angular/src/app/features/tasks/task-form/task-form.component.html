@@ -39,9 +39,9 @@
     <div class="form-group">
       <label for="environment">Environnement *</label>
       <select id="environment" formControlName="environment" required [class.error]="taskForm.get('environment')?.invalid && taskForm.get('environment')?.touched">
-        <option [ngValue]="null" disabled selected hidden>Choisir l'environnement</option>
-        <option value="frontend">Frontend</option>
-        <option value="backend">Backend</option>
+        <option [ngValue]="null" disabled hidden>Choisir l'environnement</option>
+        <option [ngValue]="'frontend'">Frontend</option>
+        <option [ngValue]="'backend'">Backend</option>
       </select>
       <div class="error-message" *ngIf="taskForm.get('environment')?.invalid && taskForm.get('environment')?.touched">
         L'environnement est obligatoire
