@@ -40,17 +40,14 @@ export class AppComponent implements OnInit {
   private authService = inject(AuthService);
 
   async ngOnInit() {
-    console.log('🚀 Début de l\'initialisation...');
     this.initStatus.set('🚀 Démarrage de l\'application...');
     
     try {
       // ÉTAPE 1: Tester la connexion Supabase de base
       this.initStatus.set('📡 Connexion à Supabase...');
-      console.log('📡 Test de connexion Supabase...');
       await this.testSupabaseConnection();
       
       this.initStatus.set('✅ Initialisation terminée !');
-      console.log('✅ Initialisation réussie');
       
       // Petit délai pour voir le message de succès
       setTimeout(() => {
@@ -58,7 +55,6 @@ export class AppComponent implements OnInit {
       }, 500);
       
     } catch (error) {
-      console.error('❌ Erreur d\'initialisation:', error);
       console.log('🔄 Continuons quand même...');
       this.initStatus.set('⚠️ Initialisation avec erreurs...');
       
@@ -71,7 +67,9 @@ export class AppComponent implements OnInit {
   private async testSupabaseConnection() {
     try {
       const supabase = this.supabaseService.client;
-      console.log('🔌 Client Supabase créé:', !!supabase);
+      if (supabase) {
+        console.log('🔌 Client Supabase créé:', !!supabase);
+      }
       
       // Test simple avec la méthode healthCheck du service
       const { data, error } = await this.supabaseService.healthCheck();

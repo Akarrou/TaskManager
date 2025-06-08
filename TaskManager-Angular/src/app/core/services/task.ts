@@ -63,47 +63,27 @@ export class TaskService {
   );
 
   constructor() {
-    console.log('🔧 TaskService initialisé');
   }
 
   // ÉTAPE 2: Méthode simple pour charger les tâches
   async loadTasks(): Promise<void> {
-    console.log('📋 TaskService: Démarrage chargement des tâches...');
-    console.log('🔌 SupabaseService disponible:', !!this.supabaseService);
-    console.log('📊 Tasks table accessible:', !!this.supabaseService.tasks);
-    
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
 
     try {
-      console.log('🔍 TaskService: Exécution de la requête Supabase...');
       const { data, error } = await this.supabaseService.tasks
         .select('*')
         .order('created_at', { ascending: false });
 
-      console.log('📊 TaskService: Réponse Supabase reçue');
-      console.log('📊 TaskService: Error:', error);
-      console.log('📊 TaskService: Data:', data);
-      console.log('📊 TaskService: Data length:', data?.length);
-
       if (error) {
         const errorMessage = this.supabaseService.handleError(error);
-        console.error('❌ TaskService: Erreur chargement tâches:', errorMessage);
-        console.error('❌ TaskService: Détails erreur:', error);
         this.errorSignal.set(errorMessage);
         this.tasksSignal.set([]); // Reset en cas d'erreur
       } else {
-        console.log('✅ TaskService: Tâches chargées depuis Supabase:', data?.length || 0);
-        console.log('📋 TaskService: Première tâche:', data?.[0]);
-        console.log('📋 TaskService: Toutes les tâches:', data);
-        
-        // Mise à jour du signal avec les données
         this.tasksSignal.set(data || []);
-        console.log('📋 TaskService: Signal mis à jour, nouvelles tâches:', this.tasksSignal().length);
       }
     } catch (error) {
       const errorMessage = 'Erreur inattendue lors du chargement';
-      console.error('💥 Erreur inattendue:', error);
       this.errorSignal.set(errorMessage);
       this.tasksSignal.set([]);
     } finally {
@@ -126,7 +106,6 @@ export class TaskService {
 
   // ÉTAPE 3: Méthode pour créer des données de test
   async createSampleTasks(): Promise<void> {
-    console.log('🧪 Création de données de test...');
     this.loadingSignal.set(true);
     
     const sampleTasks: Omit<Task, 'id' | 'created_at' | 'updated_at'>[] = [
@@ -189,16 +168,12 @@ export class TaskService {
 
       if (error) {
         const errorMessage = this.supabaseService.handleError(error);
-        console.error('❌ Erreur création données test:', errorMessage);
         this.errorSignal.set(errorMessage);
       } else {
-        console.log('✅ Données de test créées:', data?.length || 0, 'tâches');
-        // Recharger les tâches après création
         await this.loadTasks();
       }
     } catch (error) {
       const errorMessage = 'Erreur inattendue lors de la création des données test';
-      console.error('💥 Erreur inattendue:', error);
       this.errorSignal.set(errorMessage);
          } finally {
        this.loadingSignal.set(false);
@@ -207,7 +182,6 @@ export class TaskService {
 
   // ÉTAPE 4: CRUD complet des tâches
   async createTask(task: Omit<Task, 'id' | 'created_at' | 'updated_at'>): Promise<boolean> {
-    console.log('➕ Création nouvelle tâche:', task.title);
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
 
@@ -222,18 +196,14 @@ export class TaskService {
 
       if (error) {
         const errorMessage = this.supabaseService.handleError(error);
-        console.error('❌ Erreur création tâche:', errorMessage);
         this.errorSignal.set(errorMessage);
         return false;
       } else {
-        console.log('✅ Tâche créée:', data.id);
-        // Recharger les tâches pour mettre à jour l'affichage
         await this.loadTasks();
         return true;
       }
     } catch (error) {
       const errorMessage = 'Erreur inattendue lors de la création';
-      console.error('💥 Erreur inattendue:', error);
       this.errorSignal.set(errorMessage);
       return false;
     } finally {
@@ -242,7 +212,6 @@ export class TaskService {
   }
 
   async updateTask(id: string, updates: Partial<Task>): Promise<boolean> {
-    console.log('📝 Mise à jour tâche:', id);
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
 
@@ -255,17 +224,14 @@ export class TaskService {
 
       if (error) {
         const errorMessage = this.supabaseService.handleError(error);
-        console.error('❌ Erreur mise à jour tâche:', errorMessage);
         this.errorSignal.set(errorMessage);
         return false;
       } else {
-        console.log('✅ Tâche mise à jour:', data.id);
         await this.loadTasks();
         return true;
       }
     } catch (error) {
       const errorMessage = 'Erreur inattendue lors de la mise à jour';
-      console.error('💥 Erreur inattendue:', error);
       this.errorSignal.set(errorMessage);
       return false;
     } finally {
@@ -274,7 +240,6 @@ export class TaskService {
   }
 
   async deleteTask(id: string): Promise<boolean> {
-    console.log('🗑️ Suppression tâche:', id);
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
 
@@ -285,17 +250,14 @@ export class TaskService {
 
       if (error) {
         const errorMessage = this.supabaseService.handleError(error);
-        console.error('❌ Erreur suppression tâche:', errorMessage);
         this.errorSignal.set(errorMessage);
         return false;
       } else {
-        console.log('✅ Tâche supprimée:', id);
         await this.loadTasks();
         return true;
       }
     } catch (error) {
       const errorMessage = 'Erreur inattendue lors de la suppression';
-      console.error('💥 Erreur inattendue:', error);
       this.errorSignal.set(errorMessage);
       return false;
     } finally {
@@ -320,16 +282,13 @@ export class TaskService {
 
   // Méthode de debug pour tester la connexion directe
   async debugLoadTasks(): Promise<any> {
-    console.log('🔍 DEBUG: Test direct de chargement des tâches...');
     try {
       const result = await this.supabaseService.tasks
         .select('*')
         .order('created_at', { ascending: false });
       
-      console.log('🔍 DEBUG: Résultat brut Supabase:', result);
       return result;
     } catch (error) {
-      console.error('🔍 DEBUG: Erreur:', error);
       return { error };
     }
   }
@@ -344,7 +303,6 @@ export class TaskService {
       .eq('task_id', taskId)
       .order('created_at', { ascending: true });
     if (error) {
-      console.error('Error loading subtasks:', error);
       return [];
     }
     return data as ISubtask[];
@@ -360,7 +318,6 @@ export class TaskService {
       .select()
       .single();
     if (error) {
-      console.error('Error creating subtask:', error);
       return null;
     }
     return data as ISubtask;
@@ -375,7 +332,6 @@ export class TaskService {
       .update(updates)
       .eq('id', id);
     if (error) {
-      console.error('Error updating subtask:', error);
       return false;
     }
     return true;
@@ -390,7 +346,6 @@ export class TaskService {
       .delete()
       .eq('id', id);
     if (error) {
-      console.error('Error deleting subtask:', error);
       return false;
     }
     return true;
@@ -405,7 +360,6 @@ export class TaskService {
       .eq('id', id)
       .single();
     if (error || !data) {
-      console.error('Error fetching task:', error);
       return null;
     }
     // Charger les sous-tâches associées
@@ -415,33 +369,44 @@ export class TaskService {
 
   // Nouvelle méthode pour récupérer les commentaires d'une tâche
   async getCommentsForTask(taskId: string): Promise<TaskComment[] | null> {
-    console.log(`💬 TaskService: Récupération des commentaires pour la tâche ${taskId}`);
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
 
     try {
-      const { data, error } = await this.supabaseService.taskComments
-        .select(`
-          *,
-          users (
-            email
-          )
-        `)
+      // 1. Récupérer les commentaires sans join
+      const { data: comments, error } = await this.supabaseService.taskComments
+        .select('*')
         .eq('task_id', taskId)
         .order('created_at', { ascending: true });
 
       if (error) {
         const errorMessage = this.supabaseService.handleError(error);
-        console.error('❌ TaskService: Erreur récupération commentaires:', errorMessage);
         this.errorSignal.set(errorMessage);
         return null;
-      } else {
-        console.log(`✅ TaskService: Commentaires récupérés pour la tâche ${taskId}:`, data?.length || 0);
-        return data || [];
       }
+      if (!comments || comments.length === 0) {
+        return [];
+      }
+      // 2. Récupérer les emails des utilisateurs distincts
+      const userIds = [...new Set(comments.map((c: any) => c.user_id).filter(Boolean))];
+      let usersMap: Record<string, { email: string }> = {};
+      if (userIds.length > 0) {
+        const { data: users, error: userError } = await this.supabaseService.client
+          .from('public_users')
+          .select('id, email')
+          .in('id', userIds);
+        if (!userError && users) {
+          usersMap = Object.fromEntries(users.map((u: any) => [u.id, { email: u.email }]));
+        }
+      }
+      // 3. Associer les emails aux commentaires
+      const commentsWithEmail = comments.map((c: any) => ({
+        ...c,
+        users: usersMap[c.user_id] ? { email: usersMap[c.user_id].email } : null
+      }));
+      return commentsWithEmail;
     } catch (error) {
       const errorMessage = 'Erreur inattendue lors de la récupération des commentaires';
-      console.error('💥 Erreur inattendue:', error);
       this.errorSignal.set(errorMessage);
       return null;
     } finally {
@@ -451,8 +416,6 @@ export class TaskService {
 
   // Nouvelle méthode pour ajouter un commentaire à une tâche
   async addCommentToTask(commentData: Omit<TaskComment, 'id' | 'created_at' | 'updated_at'>): Promise<TaskComment | null> {
-    console.log('TaskService: Ajout d\'un commentaire pour la tâche:', commentData.task_id);
-    // Idem, gestion loading/error locale ou signaux dédiés
     try {
       const { data, error } = await this.supabaseService.taskComments
         .insert([commentData])
@@ -461,13 +424,10 @@ export class TaskService {
 
       if (error) {
         const errorMessage = this.supabaseService.handleError(error);
-        console.error('TaskService: Erreur ajout commentaire:', errorMessage);
         return null;
       }
-      console.log('TaskService: Commentaire ajouté avec succès:', data);
       return data as TaskComment;
     } catch (error) {
-      console.error('TaskService: Erreur inattendue ajout commentaire:', error);
       return null;
     }
   }

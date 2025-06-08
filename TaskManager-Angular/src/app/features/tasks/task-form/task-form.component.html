@@ -90,28 +90,61 @@
     </div>
 
     <!-- Sous-tâches -->
-    <div class="form-group">
-      <label>Sous-tâches</label>
-      <div formArrayName="subtasks">
-        <div *ngFor="let subtaskCtrl of subtasksFormArray.controls; let i = index" [formGroupName]="i" class="subtask-item">
-          <div class="subtask-fields">
-            <input type="text" formControlName="title" placeholder="Titre de la sous-tâche" [class.error]="subtaskCtrl.get('title')?.invalid && subtaskCtrl.get('title')?.touched">
-            <input type="text" formControlName="description" placeholder="Description (optionnelle)">
-            <select formControlName="status">
-              <option value="pending">En attente</option>
-              <option value="in_progress">En cours</option>
-              <option value="completed">Terminée</option>
-              <option value="cancelled">Annulée</option>
-            </select>
-            <button type="button" (click)="removeSubtask(i)" class="btn-secondary" aria-label="Supprimer la sous-tâche"><span class="material-icons">delete</span></button>
+    <div class="subtasks-table-section">
+      <div class="c-tasks-container">
+        <div formArrayName="subtasks">
+          <div class="task-form-header">
+            <h3 class="text-lg font-semibold">Liste des sous-tâches</h3>
+            <button type="button" (click)="addSubtask()" class="cta-button primary-action-btn" aria-label="Ajouter une sous-tâche">
+              <span class="material-icons">add</span> Ajouter une sous-tâche
+            </button>
           </div>
-          <div class="error-message" *ngIf="subtaskCtrl.get('title')?.invalid && subtaskCtrl.get('title')?.touched">
-            Le titre de la sous-tâche est obligatoire
+          <div class="c-tasks-table-wrapper">
+            <table class="c-table">
+              <thead class="c-table__head">
+                <tr class="c-table__row">
+                  <th class="c-table__header c-table-column--task" scope="col">Titre</th>
+                  <th class="c-table__header c-table-column--subtask-desc" scope="col">Description</th>
+                  <th class="c-table__header" scope="col">Statut</th>
+                  <th class="c-table__header" scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="c-table__body">
+                <tr class="c-table__row" *ngFor="let subtaskCtrl of subtasksFormArray.controls; let i = index" [formGroupName]="i">
+                  <td class="c-table__cell c-table-column--subtask-title">{{ subtaskCtrl.get('title')?.value }}</td>
+                  <td class="c-table__cell c-table-column--subtask-desc">{{ subtaskCtrl.get('description')?.value }}</td>
+                  <td class="c-table__cell">
+                    <span class="c-badge c-badge--status-{{ subtaskCtrl.get('status')?.value }}">
+                      <mat-icon *ngIf="subtaskCtrl.get('status')?.value === 'pending'">hourglass_empty</mat-icon>
+                      <mat-icon *ngIf="subtaskCtrl.get('status')?.value === 'in_progress'">sync</mat-icon>
+                      <mat-icon *ngIf="subtaskCtrl.get('status')?.value === 'completed'">check_circle_outline</mat-icon>
+                      <mat-icon *ngIf="subtaskCtrl.get('status')?.value === 'cancelled'">cancel</mat-icon>
+                      <span>
+                        {{ subtaskCtrl.get('status')?.value === 'pending' ? 'En attente' :
+                           subtaskCtrl.get('status')?.value === 'in_progress' ? 'En cours' :
+                           subtaskCtrl.get('status')?.value === 'completed' ? 'Terminée' :
+                           subtaskCtrl.get('status')?.value === 'cancelled' ? 'Annulée' : '' }}
+                      </span>
+                    </span>
+                  </td>
+                  <td class="c-table__cell flex gap-2">
+                    <div class="c-table__actions">
+                      <button class="c-icon-button" aria-label="Modifier la tâche" (click)="openEditSubtaskDialog(i)">
+                        <span class="material-icons-outlined">edit</span>
+                      </button>
+                      <button class="c-icon-button c-icon-button--danger" aria-label="Supprimer la tâche" (click)="removeSubtask(i)">
+                        <span class="material-icons-outlined">delete</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
-        <button type="button" (click)="addSubtask()" class="btn-primary mt-2" aria-label="Ajouter une sous-tâche"><span class="material-icons">add</span> Ajouter une sous-tâche</button>
       </div>
     </div>
+
 
     <!-- Boutons d'action -->
     <div class="form-actions" role="group" aria-label="Actions du formulaire">
@@ -177,58 +210,15 @@
     </div>
   </div>
 
-  <!-- Tableau des sous-tâches (vue détail, style dashboard strict) -->
-  <div class="subtasks-table-section" *ngIf="subtasksFormArray.length > 0">
-    <div class="c-tasks-container">
-      <div class="flex items-center justify-between mt-8 mb-4">
-        <h3 class="text-lg font-semibold">Liste des sous-tâches</h3>
-        <button type="button" (click)="addSubtask()" class="btn-primary flex items-center gap-1" aria-label="Ajouter une sous-tâche">
-          <span class="material-icons">add</span> Ajouter une sous-tâche
-        </button>
-      </div>
-      <div class="c-tasks-table-wrapper">
-        <table class="c-table">
-          <thead class="c-table__head">
-            <tr class="c-table__row">
-              <th class="c-table__header c-table-column--task" scope="col">Titre</th>
-              <th class="c-table__header c-table-column--subtask-desc" scope="col">Description</th>
-              <th class="c-table__header" scope="col">Statut</th>
-              <th class="c-table__header" scope="col">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="c-table__body">
-            <tr class="c-table__row" *ngFor="let subtaskCtrl of subtasksFormArray.controls; let i = index" [formGroupName]="i">
-              <td class="c-table__cell c-table-column--subtask-title">{{ subtaskCtrl.get('title')?.value }}</td>
-              <td class="c-table__cell c-table-column--subtask-desc">{{ subtaskCtrl.get('description')?.value }}</td>
-              <td class="c-table__cell">
-                <span class="c-badge c-badge--status-{{ subtaskCtrl.get('status')?.value }}">
-                  <mat-icon *ngIf="subtaskCtrl.get('status')?.value === 'pending'">hourglass_empty</mat-icon>
-                  <mat-icon *ngIf="subtaskCtrl.get('status')?.value === 'in_progress'">sync</mat-icon>
-                  <mat-icon *ngIf="subtaskCtrl.get('status')?.value === 'completed'">check_circle_outline</mat-icon>
-                  <mat-icon *ngIf="subtaskCtrl.get('status')?.value === 'cancelled'">cancel</mat-icon>
-                  <span>
-                    {{ subtaskCtrl.get('status')?.value === 'pending' ? 'En attente' :
-                       subtaskCtrl.get('status')?.value === 'in_progress' ? 'En cours' :
-                       subtaskCtrl.get('status')?.value === 'completed' ? 'Terminée' :
-                       subtaskCtrl.get('status')?.value === 'cancelled' ? 'Annulée' : '' }}
-                  </span>
-                </span>
-              </td>
-              <td class="c-table__cell flex gap-2">
-                <div class="c-table__actions">
-                  <button class="c-icon-button" aria-label="Modifier la tâche" (click)="openEditSubtaskDialog(i)">
-                    <span class="material-icons-outlined">edit</span>
-                  </button>
-                  <button class="c-icon-button c-icon-button--danger" aria-label="Supprimer la tâche" (click)="removeSubtask(i)">
-                    <span class="material-icons-outlined">delete</span>
-                  </button>
-                </div>
- 
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+  <!-- Floating Action Button Retour Dashboard -->
+  <button
+    type="button"
+    class="return-dashboard-btn"
+    aria-label="Retour au Dashboard"
+    matTooltip="Retour au Dashboard"
+    (click)="onBackToDashboard()"
+  >
+    <span class="material-icons text-2xl">dashboard</span>
+  </button>
+
 </div> 

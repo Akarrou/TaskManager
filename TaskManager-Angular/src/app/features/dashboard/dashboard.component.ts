@@ -79,7 +79,6 @@ export class DashboardComponent implements OnInit {
       this.supabaseStatus.set('connected');
       this.statusMessage.set('Connecté à Supabase.');
     } catch (error: any) {
-      console.error('Erreur de connexion Supabase:', error);
       this.supabaseStatus.set('error');
       this.statusMessage.set(`Erreur de connexion: ${error.message || 'Vérifiez la console'}`);
     }

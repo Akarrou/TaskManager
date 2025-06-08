@@ -154,19 +154,37 @@
 .c-tasks-container {
   padding: 0 2.5rem;
 }
-
-.btn-action-icon {
-  @apply p-1 rounded-full bg-transparent hover:bg-gray-100 text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 transition;
-  min-width: 32px;
-  min-height: 32px;
-  height: 32px;
-  width: 32px;
+.task-form-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+.return-dashboard-btn {
+  position: fixed;
+  bottom: 72px;
+  right: 120px;
+  z-index: 1000;
+  width: 70px;
+  height: 70px;
+  min-width: 70px;
+  min-height: 70px;
+  background: v.$secondary-color;
+  color: v.$text-color-inverted;
+  border-radius: 50% !important;
+
+  border: 1px solid v.$border-color-light;
+  transition: all v.$transition-duration v.$transition-timing-function;
+  box-shadow: v.$shadow-md;
+  &:hover {
+    background: v.$secondary-color-dark;
+    box-shadow: v.$shadow-lg;
+  }
 }
 
-.btn-action-icon .material-icons {
-  font-size: 20px;
-  line-height: 1;
-}
+@media (max-width: 900px) {
+  .return-dashboard-btn {
+    right: 16px;
+    bottom: 16px;
+  }
+} 

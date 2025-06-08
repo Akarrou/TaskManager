@@ -1,4 +1,4 @@
-import { Component, inject, signal, effect, OnInit, computed } from '@angular/core';
+import { Component, inject, signal, effect, OnInit, computed, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormGroup, FormArray, FormControl } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -11,6 +11,8 @@ import { ISubtask } from '../subtask.model';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
 import { EditSubtaskDialogComponent } from '../edit-subtask-dialog.component';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { SaveChangesDialogComponent } from '../../../shared/components/save-changes-dialog/save-changes-dialog.component';
 
 @Component({
   selector: 'app-task-form',
@@ -35,6 +37,7 @@ export class TaskFormComponent implements OnInit {
   private userService = inject(UserService);
   private snackBar = inject(MatSnackBar);
   private dialog = inject(MatDialog);
+  private cdr = inject(ChangeDetectorRef);
 
   isSubmitting = signal(false);
   pageTitle = signal('Nouvelle tâche');
@@ -54,6 +57,8 @@ export class TaskFormComponent implements OnInit {
   canSubmitComment = computed(() => {
     return this.newCommentText().trim() !== '' && !!this.authService.getCurrentUserId();
   });
+
+  deletedSubtaskIds: string[] = [];
 
   constructor() {
     this.loadUsers();
@@ -139,7 +144,12 @@ export class TaskFormComponent implements OnInit {
     this.subtasksFormArray.clear();
     if (task.subtasks && task.subtasks.length > 0) {
       for (const subtask of task.subtasks) {
-        this.addSubtask(subtask);
+        this.subtasksFormArray.push(this.fb.group({
+          id: [subtask.id ?? null],
+          title: [subtask.title ?? '', Validators.required],
+          description: [subtask.description ?? ''],
+          status: [subtask.status ?? 'pending', Validators.required]
+        }));
       }
     }
   }
@@ -213,6 +223,11 @@ export class TaskFormComponent implements OnInit {
           await this.taskService.createSubtask({ ...subtask, task_id: this.currentTaskId()! } as any);
         }
       }
+      // Suppression des sous-tâches supprimées
+      for (const id of this.deletedSubtaskIds) {
+        await this.taskService.deleteSubtask(id);
+      }
+      this.deletedSubtaskIds = [];
     } else {
       if (!currentUserId) {
         this.snackBar.open('Utilisateur non connecté. Impossible de créer la tâche.', 'Fermer', { duration: 3000 });
@@ -239,7 +254,6 @@ export class TaskFormComponent implements OnInit {
 
     if (success) {
       this.snackBar.open(`Tâche ${this.currentTaskId() ? 'mise à jour' : 'créée'} avec succès!`, 'Fermer', { duration: 2000 });
-      this.router.navigate(['/dashboard']);
     } else {
       this.snackBar.open(`Échec de la ${this.currentTaskId() ? 'mise à jour' : 'création'} de la tâche.`, 'Fermer', { duration: 3000 });
     }
@@ -314,7 +328,23 @@ export class TaskFormComponent implements OnInit {
   }
 
   removeSubtask(index: number) {
-    this.subtasksFormArray.removeAt(index);
+    const subtask = this.subtasksFormArray.at(index).value;
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '350px',
+      data: {
+        title: 'Confirmer la suppression',
+        message: 'Voulez-vous vraiment supprimer cette sous-tâche ? Cette action est irréversible.'
+      }
+    });
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        if (subtask.id) {
+          this.deletedSubtaskIds.push(subtask.id);
+        }
+        this.subtasksFormArray.removeAt(index);
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   openEditSubtaskDialog(index: number) {
@@ -328,6 +358,7 @@ export class TaskFormComponent implements OnInit {
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.subtasksFormArray.at(index).patchValue(result);
+        this.cdr.detectChanges();
       }
     });
   }
@@ -342,12 +373,36 @@ export class TaskFormComponent implements OnInit {
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.subtasksFormArray.push(this.fb.group({
-          id: [result.id ?? null],
           title: [result.title, Validators.required],
           description: [result.description],
           status: [result.status, Validators.required]
         }));
+        this.taskForm.markAsDirty();
       }
     });
+  }
+
+  onBackToDashboard() {
+    if (this.taskForm.dirty) {
+      const dialogRef = this.dialog.open(SaveChangesDialogComponent, {
+        width: '600px',
+        data: {
+          title: 'Modifications non enregistrées',
+          message: 'Des modifications non enregistrées existent. Voulez-vous enregistrer avant de quitter ?'
+        }
+      });
+      dialogRef.afterClosed().subscribe((result) => {
+        if (result === 'save') {
+          this.onSubmit().then(() => {
+            this.router.navigate(['/dashboard']);
+          });
+        } else if (result === 'discard') {
+          this.router.navigate(['/dashboard']);
+        }
+        // Si 'cancel', ne rien faire
+      });
+    } else {
+      this.router.navigate(['/dashboard']);
+    }
   }
 } 

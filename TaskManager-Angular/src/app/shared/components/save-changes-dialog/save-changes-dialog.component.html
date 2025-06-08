@@ -1,0 +1,16 @@
+<h2 mat-dialog-title>{{ data.title }}</h2>
+<div mat-dialog-content>
+  <p>{{ data.message }}</p>
+</div>
+<div mat-dialog-actions class="btn-container">
+  <button type="button" mat-button class="cta-button primary-action-btn " (click)="onCancel()">
+    <mat-icon>cancel</mat-icon> Annuler
+  </button>
+  <button type="button" mat-button class="error-button primary-action-btn btn-small" (click)="onDiscard()">
+    <mat-icon>logout</mat-icon> Quitter
+  </button>
+  <button type="button" mat-button class="btn-primary primary-action-btn btn-small" (click)="onSave()">
+    <mat-icon>save</mat-icon> Enregistrer
+  </button>
+  
+</div> 

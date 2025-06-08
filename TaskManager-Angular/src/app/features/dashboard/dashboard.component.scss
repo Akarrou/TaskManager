@@ -247,26 +247,7 @@
   }
 }
 
-.c-icon-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: v.$space-2;
-  color: v.$text-color-light;
-  background: none;
-  border: none;
-  border-radius: v.$border-radius-full;
-  cursor: pointer;
-  transition: color v.$transition-duration v.$transition-timing-function;
 
-  &:hover {
-    color: v.$primary-color;
-  }
-
-  &--danger:hover {
-    color: v.$error-color;
-  }
-}
 
 .c-badge {
   display: inline-flex;
