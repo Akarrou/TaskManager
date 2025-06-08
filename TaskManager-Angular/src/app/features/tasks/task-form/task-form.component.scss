@@ -154,3 +154,19 @@
 .c-tasks-container {
   padding: 0 2.5rem;
 }
+
+.btn-action-icon {
+  @apply p-1 rounded-full bg-transparent hover:bg-gray-100 text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400 transition;
+  min-width: 32px;
+  min-height: 32px;
+  height: 32px;
+  width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-action-icon .material-icons {
+  font-size: 20px;
+  line-height: 1;
+}

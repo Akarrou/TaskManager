@@ -31,7 +31,8 @@
         id="description"
         formControlName="description"
         placeholder="Décrivez la tâche en détail..."
-        rows="3"></textarea>
+        rows="6">
+      </textarea>
     </div>
 
     <!-- Statut et Priorité -->
@@ -178,9 +179,13 @@
 
   <!-- Tableau des sous-tâches (vue détail, style dashboard strict) -->
   <div class="subtasks-table-section" *ngIf="subtasksFormArray.length > 0">
-   
     <div class="c-tasks-container">
-      <h3 class="mt-8 mb-4 text-lg font-semibold">Liste des sous-tâches</h3>
+      <div class="flex items-center justify-between mt-8 mb-4">
+        <h3 class="text-lg font-semibold">Liste des sous-tâches</h3>
+        <button type="button" (click)="addSubtask()" class="btn-primary flex items-center gap-1" aria-label="Ajouter une sous-tâche">
+          <span class="material-icons">add</span> Ajouter une sous-tâche
+        </button>
+      </div>
       <div class="c-tasks-table-wrapper">
         <table class="c-table">
           <thead class="c-table__head">
@@ -188,6 +193,7 @@
               <th class="c-table__header c-table-column--task" scope="col">Titre</th>
               <th class="c-table__header c-table-column--subtask-desc" scope="col">Description</th>
               <th class="c-table__header" scope="col">Statut</th>
+              <th class="c-table__header" scope="col">Actions</th>
             </tr>
           </thead>
           <tbody class="c-table__body">
@@ -207,6 +213,17 @@
                        subtaskCtrl.get('status')?.value === 'cancelled' ? 'Annulée' : '' }}
                   </span>
                 </span>
+              </td>
+              <td class="c-table__cell flex gap-2">
+                <div class="c-table__actions">
+                  <button class="c-icon-button" aria-label="Modifier la tâche" (click)="openEditSubtaskDialog(i)">
+                    <span class="material-icons-outlined">edit</span>
+                  </button>
+                  <button class="c-icon-button c-icon-button--danger" aria-label="Supprimer la tâche" (click)="removeSubtask(i)">
+                    <span class="material-icons-outlined">delete</span>
+                  </button>
+                </div>
+ 
               </td>
             </tr>
           </tbody>
