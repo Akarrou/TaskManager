@@ -409,4 +409,38 @@
     font-size: v.$font-size-sm;
     color: v.$text-color-light;
   }
+}
+
+.fab-create-task {
+  position: fixed;
+  bottom: 72px;
+  right: 120px;
+  z-index: 1000;
+  width: 70px;
+  height: 70px;
+  min-width: 70px;
+  min-height: 70px;
+  background: v.$primary-color;
+  color: v.$text-color-inverted;
+  border-radius: 50% !important;
+
+  border: 1px solid v.$border-color-light;
+  transition: all v.$transition-duration v.$transition-timing-function;
+  box-shadow: v.$shadow-md;
+  &:hover {
+    background: v.$primary-color-dark;
+    box-shadow: v.$shadow-lg;
+  }
+}
+
+@media (max-width: 900px) {
+  .fab-create-task {
+    right: 16px;
+    bottom: 16px;
+  }
 } 
+.hover-line:hover {
+  background-color: #cbcbd9;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}

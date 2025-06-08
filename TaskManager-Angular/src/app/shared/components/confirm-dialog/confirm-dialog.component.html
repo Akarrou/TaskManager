@@ -3,6 +3,22 @@
   <p *ngFor="let p of data.message.split('\\n')">{{ p }}</p>
 </div>
 <div mat-dialog-actions align="end">
-  <button mat-button (click)="onNoClick()">Annuler</button>
-  <button mat-button="outlined" color="warn" [mat-dialog-close]="true" cdkFocusInitial>Supprimer</button>
+  <button
+    type="button"
+    class="cta-button primary-action-btn"
+    (click)="onNoClick()"
+    mat-button
+  >
+  <mat-icon>cancel</mat-icon>
+    Annuler
+  </button>
+
+  <button 
+  type="button"
+  mat-button
+  class="error-button primary-action-btn"
+  [mat-dialog-close]="true"
+  cdkFocusInitial>
+  <mat-icon>delete</mat-icon> Supprimer
+</button>
 </div> 

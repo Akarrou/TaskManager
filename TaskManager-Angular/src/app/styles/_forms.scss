@@ -154,3 +154,56 @@ textarea {
     box-shadow: 0 0 0 3px rgba(v.$secondary-color-dark, 0.3);
   }
 } 
+
+.cta-button.primary-action-btn {
+  background-color: v.$secondary-color;
+  color: white !important;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+
+  mat-icon { font-size: 1.1rem; }
+
+  &:hover {
+    background-color: color.adjust(v.$secondary-color, $lightness: -8%);
+    transform: translateY(-1px);
+  }
+}
+
+.error-button.primary-action-btn {
+  background-color: v.$error-color;
+  color: white !important;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+
+  mat-icon { font-size: 1.1rem; }
+
+  &:hover {
+    background-color: color.adjust(v.$error-color, $lightness: -8%);
+    transform: translateY(-1px);
+  }
+}
+
+.c-table-column--task-number {
+  width: 5%;
+}
+
+.c-table-column--task {
+  width: 35%;
+  max-width: 250px;
+  white-space: normal;
+  word-break: break-word;
+}

@@ -42,7 +42,7 @@
                   </tr>
                 </thead>
                 <tbody class="c-table__body">
-                  <tr class="c-table__row" *ngFor="let task of filteredTasks()">
+                  <tr class="c-table__row" *ngFor="let task of filteredTasks()"  (dblclick)="navigateToEditTaskForm(task)" class="cursor-pointer hover-line">
                     <td class="c-table__cell c-table-column--task-number">{{ task.task_number }}</td>
                     <td class="c-table__cell c-table-column--task">{{ task.title }}</td>
                     <td class="c-table__cell c-table-column--status">
@@ -95,4 +95,9 @@
           <p class="c-footer__copyright">© 2024 TaskMaster. Tous droits réservés.</p>
         </div>
       </footer>
+
+      <!-- Bouton flottant pour créer une nouvelle tâche -->
+      <button  mat-button class="fab-create-task" (click)="navigateToNewTaskForm()">
+        <mat-icon class="text-white">add</mat-icon>
+      </button>
     </div> 

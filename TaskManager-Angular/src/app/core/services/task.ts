@@ -1,5 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { SupabaseService } from './supabase';
+import { ISubtask } from '../../features/tasks/subtask.model';
 
 export interface Task {
   id?: string;
@@ -17,6 +18,7 @@ export interface Task {
   estimated_hours?: number;
   actual_hours?: number;
   task_number?: number;
+  subtasks?: ISubtask[];
 }
 
 // Nouvelle interface pour les commentaires
@@ -332,36 +334,83 @@ export class TaskService {
     }
   }
 
-  // Nouvelle méthode pour récupérer une tâche par ID depuis Supabase
-  async fetchTaskById(id: string): Promise<Task | null> {
-    console.log(`🔍 TaskService: Récupération de la tâche ID: ${id} depuis Supabase...`);
-    this.loadingSignal.set(true);
-    this.errorSignal.set(null);
-    try {
-      const { data, error } = await this.supabaseService.tasks
-        .select('*')
-        .eq('id', id)
-        .single(); // .single() retourne un objet unique ou null, et une erreur si > 1 ligne
-
-      if (error && error.code !== 'PGRST116') { // PGRST116: 0 lignes retournées, géré par data étant null
-        const errorMessage = this.supabaseService.handleError(error);
-        console.error(`❌ TaskService: Erreur chargement tâche ${id}:`, errorMessage);
-        this.errorSignal.set(errorMessage);
-        return null;
-      }
-      if (data) {
-        console.log(`✅ TaskService: Tâche ${id} chargée:`, data);
-        return data as Task;
-      }
-      return null; // Aucune tâche trouvée
-    } catch (error) {
-      const errorMessage = 'Erreur inattendue lors du chargement de la tâche par ID';
-      console.error('💥 Erreur inattendue:', error);
-      this.errorSignal.set(errorMessage);
-      return null;
-    } finally {
-      this.loadingSignal.set(false);
+  /**
+   * Get all subtasks for a given task
+   */
+  async getSubtasksForTask(taskId: string): Promise<ISubtask[]> {
+    const { data, error } = await this.supabaseService.client
+      .from('subtasks')
+      .select('*')
+      .eq('task_id', taskId)
+      .order('created_at', { ascending: true });
+    if (error) {
+      console.error('Error loading subtasks:', error);
+      return [];
     }
+    return data as ISubtask[];
+  }
+
+  /**
+   * Create a new subtask
+   */
+  async createSubtask(subtask: Omit<ISubtask, 'id' | 'created_at' | 'updated_at'>): Promise<ISubtask | null> {
+    const { data, error } = await this.supabaseService.client
+      .from('subtasks')
+      .insert([subtask])
+      .select()
+      .single();
+    if (error) {
+      console.error('Error creating subtask:', error);
+      return null;
+    }
+    return data as ISubtask;
+  }
+
+  /**
+   * Update a subtask
+   */
+  async updateSubtask(id: string, updates: Partial<ISubtask>): Promise<boolean> {
+    const { error } = await this.supabaseService.client
+      .from('subtasks')
+      .update(updates)
+      .eq('id', id);
+    if (error) {
+      console.error('Error updating subtask:', error);
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Delete a subtask
+   */
+  async deleteSubtask(id: string): Promise<boolean> {
+    const { error } = await this.supabaseService.client
+      .from('subtasks')
+      .delete()
+      .eq('id', id);
+    if (error) {
+      console.error('Error deleting subtask:', error);
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Fetch a task by id, including its subtasks
+   */
+  async fetchTaskById(id: string): Promise<Task | null> {
+    const { data, error } = await this.supabaseService.tasks
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error || !data) {
+      console.error('Error fetching task:', error);
+      return null;
+    }
+    // Charger les sous-tâches associées
+    const subtasks = await this.getSubtasksForTask(id);
+    return { ...data, subtasks } as Task;
   }
 
   // Nouvelle méthode pour récupérer les commentaires d'une tâche

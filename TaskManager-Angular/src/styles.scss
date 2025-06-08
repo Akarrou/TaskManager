@@ -21,3 +21,75 @@ body {
 *, *::before, *::after {
   box-sizing: border-box;
 }
+
+// === TABLEAU DASHBOARD GLOBAL ===
+.c-tasks-container {
+  background-color: variables.$background-color-form;
+  border-radius: variables.$border-radius-lg;
+  border: variables.$border-width-1 solid variables.$border-color-light;
+  box-shadow: variables.$shadow-md;
+  overflow: hidden;
+}
+
+.c-tasks-table-wrapper {
+  overflow-x: auto;
+}
+
+.c-table {
+  width: 100%;
+  /* min-width: 600px; */
+  border-collapse: collapse;
+
+  &__header {
+    padding: variables.$space-3 variables.$space-6;
+    text-align: left;
+    font-size: variables.$font-size-xs;
+    font-weight: variables.$font-weight-bold;
+    color: variables.$text-color-light;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: variables.$border-width-1 solid variables.$border-color-light;
+  }
+
+  &__row:not(:last-child) {
+    border-bottom: variables.$border-width-1 solid variables.$border-color-light;
+  }
+
+  &__cell {
+    padding: variables.$space-4 variables.$space-6;
+    font-size: variables.$font-size-sm;
+    color: variables.$text-color-medium;
+    white-space: nowrap;
+
+    &:first-child {
+      font-weight: variables.$font-weight-medium;
+      color: variables.$text-color-dark;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: variables.$space-1;
+  }
+}
+
+.c-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: variables.$space-1 variables.$space-3;
+  border-radius: variables.$border-radius-full;
+  font-size: variables.$font-size-sm;
+  font-weight: variables.$font-weight-medium;
+  text-transform: capitalize;
+
+  &--status-in-progress { background-color: #e0f2fe; color: #0ea5e9; }
+  &--status-pending { background-color: #fef9c3; color: #f59e0b; }
+  &--status-completed { background-color: #dcfce7; color: #22c55e; }
+  &--priority-high { background-color: #fee2e2; color: #ef4444; }
+  &--priority-medium { background-color: #ffedd5; color: #f97316; }
+  &--priority-low { background-color: #e0e7ff; color: #818cf8; }
+}
+
+.c-table-column--subtask-title { width: 25%; }
+.c-table-column--subtask-desc { width: 25%; }

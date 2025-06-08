@@ -1,12 +1,14 @@
 import { Component, inject, signal, effect, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators, FormGroup, FormArray, FormControl } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TaskService, Task, TaskComment } from '../../../core/services/task';
 import { AuthService } from '../../../core/services/auth';
 import { UserService } from '../../../core/services/user.service';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DatePipe } from '@angular/common';
+import { ISubtask } from '../subtask.model';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-task-form',
@@ -16,7 +18,8 @@ import { DatePipe } from '@angular/common';
     RouterModule,
     ReactiveFormsModule,
     MatSnackBarModule,
-    DatePipe
+    DatePipe,
+    MatIconModule
   ],
   templateUrl: './task-form.component.html',
   styleUrls: ['./task-form.component.scss']
@@ -76,7 +79,8 @@ export class TaskFormComponent implements OnInit {
       priority: ['medium' as Task['priority'], Validators.required],
       assigned_to: [null as string | null],
       due_date: [null as string | null],
-      tagsInput: ['' as string | null]
+      tagsInput: ['' as string | null],
+      subtasks: this.fb.array([])
     });
   }
 
@@ -113,6 +117,10 @@ export class TaskFormComponent implements OnInit {
     this.router.navigate(['/dashboard']);
   }
 
+  get subtasksFormArray(): FormArray {
+    return this.taskForm.get('subtasks') as FormArray;
+  }
+
   private patchFormWithTask(task: Task) {
     this.taskForm.patchValue({
       id: task.id,
@@ -125,6 +133,12 @@ export class TaskFormComponent implements OnInit {
       due_date: task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : null,
       tagsInput: task.tags ? task.tags.join(', ') : ''
     });
+    this.subtasksFormArray.clear();
+    if (task.subtasks && task.subtasks.length > 0) {
+      for (const subtask of task.subtasks) {
+        this.addSubtask(subtask);
+      }
+    }
   }
 
   private resetForm() {
@@ -139,6 +153,7 @@ export class TaskFormComponent implements OnInit {
       due_date: null,
       tagsInput: ''
     });
+    this.subtasksFormArray.clear();
   }
 
   async onSubmit(): Promise<void> {
@@ -147,6 +162,7 @@ export class TaskFormComponent implements OnInit {
       Object.values(this.taskForm.controls).forEach(control => {
         control.markAsTouched();
       });
+      this.subtasksFormArray.controls.forEach(control => control.markAsTouched());
       return;
     }
 
@@ -186,6 +202,14 @@ export class TaskFormComponent implements OnInit {
 
     if (this.currentTaskId() && this.currentTaskId()) {
       success = await this.taskService.updateTask(this.currentTaskId()!, taskData);
+      const subtasks = this.subtasksFormArray.value as Partial<ISubtask>[];
+      for (const subtask of subtasks) {
+        if (subtask.id) {
+          await this.taskService.updateSubtask(subtask.id, subtask);
+        } else {
+          await this.taskService.createSubtask({ ...subtask, task_id: this.currentTaskId()! } as any);
+        }
+      }
     } else {
       if (!currentUserId) {
         this.snackBar.open('Utilisateur non connecté. Impossible de créer la tâche.', 'Fermer', { duration: 3000 });
@@ -202,6 +226,12 @@ export class TaskFormComponent implements OnInit {
         created_by: currentUserId
       };
       success = await this.taskService.createTask(taskToCreate);
+      if (success) {
+        const subtasks = this.subtasksFormArray.value as Partial<ISubtask>[];
+        for (const subtask of subtasks) {
+          await this.taskService.createSubtask({ ...subtask, task_id: success } as any);
+        }
+      }
     }
 
     if (success) {
@@ -278,5 +308,18 @@ export class TaskFormComponent implements OnInit {
   // Pour *ngFor trackBy
   commentTrackByFn(index: number, item: TaskComment) {
     return item.id || index; // Utiliser l'id s'il existe, sinon l'index
+  }
+
+  addSubtask(subtask?: Partial<ISubtask>) {
+    this.subtasksFormArray.push(this.fb.group({
+      id: [subtask?.id ?? null],
+      title: [subtask?.title ?? '', Validators.required],
+      description: [subtask?.description ?? ''],
+      status: [subtask?.status ?? 'pending', Validators.required]
+    }));
+  }
+
+  removeSubtask(index: number) {
+    this.subtasksFormArray.removeAt(index);
   }
 } 
