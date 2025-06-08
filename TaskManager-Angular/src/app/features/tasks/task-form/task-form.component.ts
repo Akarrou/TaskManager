@@ -90,6 +90,7 @@ export class TaskFormComponent implements OnInit {
       assigned_to: [null as string | null],
       due_date: [null as string | null],
       tagsInput: ['' as string | null],
+      environment: [null, Validators.required],
       subtasks: this.fb.array([])
     });
   }
@@ -141,7 +142,8 @@ export class TaskFormComponent implements OnInit {
       priority: task.priority,
       assigned_to: task.assigned_to,
       due_date: task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : null,
-      tagsInput: task.tags ? task.tags.join(', ') : ''
+      tagsInput: task.tags ? task.tags.join(', ') : '',
+      environment: task.environment ?? null
     });
     this.subtasksFormArray.clear();
     if (task.subtasks && task.subtasks.length > 0) {
@@ -150,7 +152,8 @@ export class TaskFormComponent implements OnInit {
           id: [subtask.id ?? null],
           title: [subtask.title ?? '', Validators.required],
           description: [subtask.description ?? ''],
-          status: [subtask.status ?? 'pending', Validators.required]
+          status: [subtask.status ?? 'pending', Validators.required],
+          environment: [subtask.environment ?? null, Validators.required]
         }));
       }
     }
@@ -166,7 +169,8 @@ export class TaskFormComponent implements OnInit {
       priority: 'medium',
       assigned_to: null,
       due_date: null,
-      tagsInput: ''
+      tagsInput: '',
+      environment: null
     });
     this.subtasksFormArray.clear();
   }
@@ -188,7 +192,8 @@ export class TaskFormComponent implements OnInit {
       priority: Task['priority'];
       assigned_to?: string | null;
       due_date?: string | null;
-      tagsInput?: string | null; // Doit correspondre à la définition du formulaire
+      tagsInput?: string | null;
+      environment: 'frontend' | 'backend' | null;
     };
 
     let tagsArray: string[] = [];
@@ -209,7 +214,8 @@ export class TaskFormComponent implements OnInit {
       priority: formValue.priority,
       assigned_to: formValue.assigned_to ?? undefined,
       due_date: formValue.due_date ?? undefined,
-      tags: tagsArray
+      tags: tagsArray,
+      environment: formValue.environment
     };
 
     let success = false;
@@ -243,6 +249,7 @@ export class TaskFormComponent implements OnInit {
         assigned_to: taskData.assigned_to,
         due_date: taskData.due_date,
         tags: taskData.tags,
+        environment: taskData.environment as 'frontend' | 'backend' | null,
         created_by: currentUserId
       };
       success = await this.taskService.createTask(taskToCreate);
@@ -361,7 +368,12 @@ export class TaskFormComponent implements OnInit {
     });
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.subtasksFormArray.at(index).patchValue(result);
+        this.subtasksFormArray.at(index).patchValue({
+          title: result.title,
+          description: result.description,
+          status: result.status,
+          environment: result.environment
+        });
         this.subtasksFormArray.at(index).markAsDirty();
         this.cdr.detectChanges();
       }
@@ -371,7 +383,7 @@ export class TaskFormComponent implements OnInit {
   addSubtask() {
     const dialogRef = this.dialog.open(EditSubtaskDialogComponent, {
       width: '600px',
-      data: { title: '', description: '', status: 'pending' },
+      data: { title: '', description: '', status: 'pending', environment: null },
       autoFocus: true,
       disableClose: false
     });
@@ -380,7 +392,8 @@ export class TaskFormComponent implements OnInit {
         this.subtasksFormArray.push(this.fb.group({
           title: [result.title, Validators.required],
           description: [result.description],
-          status: [result.status, Validators.required]
+          status: [result.status, Validators.required],
+          environment: [result.environment, Validators.required]
         }));
         this.subtasksFormArray.at(this.subtasksFormArray.length - 1).markAsDirty();
         this.taskForm.markAsDirty();

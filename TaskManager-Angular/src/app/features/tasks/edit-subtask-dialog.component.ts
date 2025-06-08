@@ -23,7 +23,8 @@ export class EditSubtaskDialogComponent {
       id: [data.id ?? null],
       title: [data.title ?? '', Validators.required],
       description: [data.description ?? ''],
-      status: [data.status ?? 'pending', Validators.required]
+      status: [data.status ?? 'pending', Validators.required],
+      environment: [data.environment ?? null, Validators.required]
     });
   }
 
