@@ -17,19 +17,6 @@ import { LogoComponent } from '../logo/logo.component';
         <!-- Navigation principale -->
         <nav class="nav-menu" role="navigation" aria-label="Navigation principale">
           <ul class="nav-list">
-            <li class="nav-item">
-              <a 
-                href="/dashboard" 
-                class="nav-link"
-                [class.active]="activeRoute() === 'dashboard'"
-                (click)="setActiveRoute('dashboard')"
-                aria-label="Tableau de bord">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
-                </svg>
-                Dashboard
-              </a>
-            </li>
           </ul>
         </nav>
 
@@ -84,9 +71,6 @@ import { LogoComponent } from '../logo/logo.component';
       <div class="mobile-nav" *ngIf="showMobileMenu()">
         <nav class="mobile-menu" role="navigation" aria-label="Navigation mobile">
           <ul class="mobile-nav-list">
-            <li><a href="/dashboard" class="mobile-nav-link" (click)="closeMobileMenu()">Dashboard</a></li>
-            <li><a href="/tasks" class="mobile-nav-link" (click)="closeMobileMenu()">Tâches</a></li>
-            <li><a href="/projects" class="mobile-nav-link" (click)="closeMobileMenu()">Projets</a></li>
             <li><a href="/profile" class="mobile-nav-link" (click)="closeMobileMenu()">Profil</a></li>
           </ul>
         </nav>

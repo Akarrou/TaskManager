@@ -1,4 +1,4 @@
-import { Component, inject, signal, effect, OnInit, computed, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, signal, effect, OnInit, computed, ChangeDetectorRef, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormGroup, FormArray, FormControl } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -59,6 +59,8 @@ export class TaskFormComponent implements OnInit {
   });
 
   deletedSubtaskIds: string[] = [];
+  speedDialOpen = signal(false);
+  @ViewChild('fabGroup', { static: false }) fabGroupRef?: ElementRef;
 
   constructor() {
     this.loadUsers();
@@ -342,6 +344,8 @@ export class TaskFormComponent implements OnInit {
           this.deletedSubtaskIds.push(subtask.id);
         }
         this.subtasksFormArray.removeAt(index);
+        this.subtasksFormArray.markAsDirty();
+        this.taskForm.markAsDirty();
         this.cdr.detectChanges();
       }
     });
@@ -358,6 +362,7 @@ export class TaskFormComponent implements OnInit {
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.subtasksFormArray.at(index).patchValue(result);
+        this.subtasksFormArray.at(index).markAsDirty();
         this.cdr.detectChanges();
       }
     });
@@ -377,6 +382,7 @@ export class TaskFormComponent implements OnInit {
           description: [result.description],
           status: [result.status, Validators.required]
         }));
+        this.subtasksFormArray.at(this.subtasksFormArray.length - 1).markAsDirty();
         this.taskForm.markAsDirty();
       }
     });
@@ -404,5 +410,45 @@ export class TaskFormComponent implements OnInit {
     } else {
       this.router.navigate(['/dashboard']);
     }
+  }
+
+  // Gestion du clic en dehors du speed dial
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    if (this.speedDialOpen() && this.fabGroupRef && !this.fabGroupRef.nativeElement.contains(event.target)) {
+      this.speedDialOpen.set(false);
+    }
+  }
+
+  isFormOrSubtasksDirty(): boolean {
+    if (this.taskForm.dirty) {
+      return true;
+    }
+    for (const control of this.subtasksFormArray.controls) {
+      if (control.dirty) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  toggleSpeedDial() {
+    if (!this.isFormOrSubtasksDirty()) {
+      this.router.navigate(['/dashboard']);
+      return;
+    }
+    this.speedDialOpen.update(open => !open);
+  }
+
+  onSaveAndBack() {
+    this.onSubmit().then(() => {
+      this.router.navigate(['/dashboard']);
+      this.speedDialOpen.set(false);
+    });
+  }
+
+  onBackWithoutSave() {
+    this.router.navigate(['/dashboard']);
+    this.speedDialOpen.set(false);
   }
 } 

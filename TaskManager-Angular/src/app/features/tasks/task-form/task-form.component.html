@@ -110,7 +110,7 @@
                 </tr>
               </thead>
               <tbody class="c-table__body">
-                <tr class="c-table__row" *ngFor="let subtaskCtrl of subtasksFormArray.controls; let i = index" [formGroupName]="i">
+                <tr class="c-table__row hover-line" *ngFor="let subtaskCtrl of subtasksFormArray.controls; let i = index" [formGroupName]="i" (dblclick)="openEditSubtaskDialog(i)">
                   <td class="c-table__cell c-table-column--subtask-title">{{ subtaskCtrl.get('title')?.value }}</td>
                   <td class="c-table__cell c-table-column--subtask-desc">{{ subtaskCtrl.get('description')?.value }}</td>
                   <td class="c-table__cell">
@@ -143,27 +143,6 @@
           </div>
         </div>
       </div>
-    </div>
-
-
-    <!-- Boutons d'action -->
-    <div class="form-actions" role="group" aria-label="Actions du formulaire">
-      <button 
-        type="button" 
-        class="btn-secondary" 
-        (click)="handleCancel()"
-        aria-label="Annuler et fermer le formulaire">
-        Annuler
-      </button>
-      <button 
-        type="submit" 
-        class="btn-primary"
-        [disabled]="taskForm.invalid"
-        [attr.aria-label]="currentTaskId() ? 'Sauvegarder les modifications de la tâche' : 'Créer une nouvelle tâche'">
-        <span>
-          {{ currentTaskId() ? 'Sauvegarder' : 'Créer' }}
-        </span>
-      </button>
     </div>
   </form>
 
@@ -211,14 +190,46 @@
   </div>
 
   <!-- Floating Action Button Retour Dashboard -->
-  <button
-    type="button"
-    class="return-dashboard-btn"
-    aria-label="Retour au Dashboard"
-    matTooltip="Retour au Dashboard"
-    (click)="onBackToDashboard()"
-  >
-    <span class="material-icons text-2xl">dashboard</span>
-  </button>
+  <div #fabGroup class="fixed bottom-6 right-6 flex flex-col items-end z-50">
+    <ng-container *ngIf="speedDialOpen()">
+      <button
+        type="button"
+        class="save-and-back-btn"
+        aria-label="Enregistrer et retourner au Dashboard"
+        matTooltip="Enregistrer et retourner au Dashboard"
+        (click)="onSaveAndBack()"
+        tabindex="0"
+      >
+        <span class="material-icons">save</span>
+      </button>
+      <button
+        type="button"
+        class="back-btn"
+        aria-label="Retourner sans enregistrer"
+        matTooltip="Retourner sans enregistrer"
+        (click)="onBackWithoutSave()"
+        tabindex="0"
+      >
+        <span class="material-icons">logout</span>
+      </button>
+    </ng-container>
+    <button
+      type="button"
+      class="return-dashboard-btn"
+      [ngClass]="{'return-dashboard-btn-active': isFormOrSubtasksDirty()}"
+      aria-label="Retour au Dashboard"
+      matTooltip="Actions Dashboard"
+      (click)="toggleSpeedDial()"
+      tabindex="0"
+    >
+    @if (isFormOrSubtasksDirty()) {
+      <span class="material-icons text-2xl">
+        add_task
+        </span>
+    } @else {
+      <span class="material-icons text-2xl">dashboard</span>
+    }
+    </button>
+  </div>
 
 </div> 

@@ -181,6 +181,16 @@
     box-shadow: v.$shadow-lg;
   }
 }
+.return-dashboard-btn-active {
+  background: v.$primary-color;
+  color: v.$text-color-inverted;
+  box-shadow: v.$shadow-lg;
+  &:hover {
+    background: v.$primary-color-dark;
+    box-shadow: v.$shadow-lg;
+  }
+}
+
 
 @media (max-width: 900px) {
   .return-dashboard-btn {
@@ -188,3 +198,51 @@
     bottom: 16px;
   }
 } 
+.save-and-back-btn {
+  position: fixed;
+  bottom: 140px;
+  right: 100px;
+  z-index: 1000;
+  width: 50px;
+  height: 50px;
+  min-width: 50px;
+  min-height: 50px;
+  background: v.$primary-color;
+  color: v.$text-color-inverted;
+  border-radius: 50% !important;
+
+  border: 1px solid v.$border-color-light;
+  transition: all v.$transition-duration v.$transition-timing-function;
+  box-shadow: v.$shadow-md;
+  &:hover {
+    background: v.$primary-color-dark;
+    box-shadow: v.$shadow-lg;
+  }
+}
+
+.back-btn {
+  position: fixed;
+  bottom: 140px;
+  right: 170px;
+  z-index: 1000;
+  width: 50px;
+  height: 50px;
+  min-width: 50px;
+  min-height: 50px;
+  background: v.$error-color;
+  color: v.$text-color-inverted;
+  border-radius: 50% !important;
+
+  border: 1px solid v.$border-color-light;
+  transition: all v.$transition-duration v.$transition-timing-function;
+  box-shadow: v.$shadow-md;
+  &:hover {
+    background: color.adjust(v.$error-color, $lightness: -8%);
+    box-shadow: v.$shadow-lg;
+  }
+}
+.hover-line:hover {
+  background-color: #cbcbd9;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
