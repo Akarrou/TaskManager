@@ -263,3 +263,28 @@ textarea {
   padding: 0.5rem  !important;
 
 }
+.env-badge {
+  display: inline-block;
+  min-width: 2.2em;
+  padding: 0.2em 0.7em;
+  font-size: 0.95em;
+  font-weight: 600;
+  border-radius: 9999px;
+  color: #fff;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+.env-badge--fe {
+  background: #22c55e; /* Tailwind green-500 */
+}
+.env-badge--be {
+  background: #8b5cf6; /* Tailwind violet-500 */
+}
+.env-badge--all {
+  background: #2563eb; /* Tailwind blue-600 */
+  color: #fff;
+  font-weight: 700;
+}
+.env-badge--ops {
+  background-color: #f59e0b;
+}

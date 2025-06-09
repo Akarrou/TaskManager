@@ -126,6 +126,7 @@
             <table class="c-table">
               <thead class="c-table__head">
                 <tr class="c-table__row">
+                  <th class="c-table__header c-table-column--env" scope="col">Env</th>
                   <th class="c-table__header c-table-column--task" scope="col">Titre</th>
                   <th class="c-table__header c-table-column--subtask-desc" scope="col">Description</th>
                   <th class="c-table__header" scope="col">Statut</th>
@@ -134,6 +135,11 @@
               </thead>
               <tbody class="c-table__body">
                 <tr class="c-table__row hover-line" *ngFor="let subtaskCtrl of subtasksFormArray.controls; let i = index" [formGroupName]="i" (dblclick)="openEditSubtaskDialog(i)">
+                  <td class="c-table__cell c-table-column--env">
+                    <span *ngIf="subtaskCtrl.get('environment')?.value === 'frontend'" class="env-badge env-badge--fe" aria-label="Frontend" title="Frontend">FE</span>
+                    <span *ngIf="subtaskCtrl.get('environment')?.value === 'backend'" class="env-badge env-badge--be" aria-label="Backend" title="Backend">BE</span>
+                    <span *ngIf="subtaskCtrl.get('environment')?.value === 'OPS'" class="env-badge env-badge--ops" aria-label="OPS" title="OPS">OPS</span>
+                  </td>
                   <td class="c-table__cell c-table-column--subtask-title">{{ subtaskCtrl.get('title')?.value }}</td>
                   <td class="c-table__cell c-table-column--subtask-desc">{{ subtaskCtrl.get('description')?.value }}</td>
                   <td class="c-table__cell">
