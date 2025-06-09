@@ -1,0 +1,13 @@
+node_modules
+pnpm-lock.yaml*
+dist
+.git
+.gitignore
+Dockerfile
+OBS/
+*.log
+npm-debug.log
+.idea
+.vscode
+coverage
+.env 
