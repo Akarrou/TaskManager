@@ -34,6 +34,7 @@
       <option [ngValue]="null" disabled selected hidden>Choisir l'environnement</option>
       <option value="frontend">Frontend</option>
       <option value="backend">Backend</option>
+      <option value="OPS">OPS</option>
     </select>
     <div class="error-message" *ngIf="subtaskForm.get('environment')?.invalid && subtaskForm.get('environment')?.touched">
       L'environnement est obligatoire

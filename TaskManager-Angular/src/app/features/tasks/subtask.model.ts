@@ -6,5 +6,5 @@ export interface ISubtask {
   status: string;
   created_at: string;
   updated_at: string;
-  environment: 'frontend' | 'backend' | null;
+  environment: 'frontend' | 'backend' | 'OPS' | null;
 } 

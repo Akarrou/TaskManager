@@ -100,10 +100,33 @@ export class TaskFormComponent implements OnInit {
       tagsInput: ['' as string | null],
       environment: this.fb.group({
         frontend: [false],
-        backend: [false]
+        backend: [false],
+        ops: [false]
       }, { validators: [atLeastOneCheckboxCheckedValidator()] }),
       subtasks: this.fb.array([])
     });
+
+    // Ajout de la logique d'exclusivité
+    const envGroup = this.taskForm.get('environment') as FormGroup;
+    if (envGroup) {
+      envGroup.valueChanges.subscribe((value) => {
+        // Si OPS est coché, décocher les deux autres
+        if (value.ops) {
+          if (value.frontend || value.backend) {
+            envGroup.patchValue({ frontend: false, backend: false }, { emitEvent: false });
+          }
+        } else {
+          // Si l'un des deux autres est coché alors que OPS l'est, décocher OPS
+          if ((value.frontend || value.backend) && value.ops) {
+            envGroup.patchValue({ ops: false }, { emitEvent: false });
+          }
+        }
+        // Impossible d'avoir les trois cochés
+        if (value.frontend && value.backend && value.ops) {
+          envGroup.patchValue({ ops: false }, { emitEvent: false });
+        }
+      });
+    }
   }
 
   async loadUsers(): Promise<void> {
@@ -156,7 +179,8 @@ export class TaskFormComponent implements OnInit {
       tagsInput: task.tags ? task.tags.join(', ') : '',
       environment: {
         frontend: Array.isArray(task.environment) ? task.environment.includes('frontend') : false,
-        backend: Array.isArray(task.environment) ? task.environment.includes('backend') : false
+        backend: Array.isArray(task.environment) ? task.environment.includes('backend') : false,
+        ops: Array.isArray(task.environment) ? task.environment.includes('OPS') : false
       }
     });
     this.subtasksFormArray.clear();
@@ -184,7 +208,7 @@ export class TaskFormComponent implements OnInit {
       assigned_to: null,
       due_date: null,
       tagsInput: '',
-      environment: { frontend: false, backend: false }
+      environment: { frontend: false, backend: false, ops: false }
     });
     this.subtasksFormArray.clear();
   }
@@ -212,9 +236,15 @@ export class TaskFormComponent implements OnInit {
 
     // Conversion des cases cochées en tableau de string
     const envGroup = formValue.environment;
-    const environment: string[] = [];
-    if (envGroup.frontend) environment.push('frontend');
-    if (envGroup.backend) environment.push('backend');
+    let environment: string[] = [];
+    if (envGroup.ops) {
+      environment = ['OPS'];
+    } else if (envGroup.frontend && envGroup.backend) {
+      environment = ['All'];
+    } else {
+      if (envGroup.frontend) environment.push('frontend');
+      if (envGroup.backend) environment.push('backend');
+    }
 
     const taskData: Partial<Task> = {
       title: formValue.title,
@@ -462,6 +492,7 @@ function atLeastOneCheckboxCheckedValidator(): ValidatorFn {
     const group = control as FormGroup;
     const frontend = group.get('frontend')?.value;
     const backend = group.get('backend')?.value;
-    return frontend || backend ? null : { atLeastOne: true };
+    const ops = group.get('ops')?.value;
+    return frontend || backend || ops ? null : { atLeastOne: true };
   };
 } 

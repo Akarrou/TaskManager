@@ -44,9 +44,10 @@
                   <tr class="c-table__row" *ngFor="let task of filteredTasks()"  (dblclick)="navigateToEditTaskForm(task)" class="cursor-pointer hover-line">
                     <td class="c-table__cell c-table-column--task-number">{{ task.task_number }}</td>
                     <td class="c-table__cell c-table-column--env">
-                      <span *ngIf="task.environment?.length === 2 && task.environment.includes('frontend') && task.environment.includes('backend')" class="env-badge env-badge--all" aria-label="Frontend et Backend" title="Frontend et Backend">ALL</span>
+                      <span *ngIf="(task.environment?.length === 2 && task.environment.includes('frontend') && task.environment.includes('backend')) || (task.environment?.length === 1 && task.environment[0] === 'All')" class="env-badge env-badge--all" aria-label="Frontend et Backend" title="Frontend et Backend">ALL</span>
                       <span *ngIf="task.environment?.length === 1 && task.environment[0] === 'frontend'" class="env-badge env-badge--fe" aria-label="Frontend" title="Frontend">FE</span>
                       <span *ngIf="task.environment?.length === 1 && task.environment[0] === 'backend'" class="env-badge env-badge--be" aria-label="Backend" title="Backend">BE</span>
+                      <span *ngIf="task.environment?.length === 1 && task.environment[0] === 'OPS'" class="env-badge env-badge--ops bg-orange-500 text-white" aria-label="OPS" title="OPS">OPS</span>
                     </td>
                     <td class="c-table__cell c-table-column--task">{{ task.title }}</td>
                     <td class="c-table__cell c-table-column--status">

@@ -48,6 +48,10 @@
           <input type="checkbox" formControlName="backend" />
           <span>Backend</span>
         </label>
+        <label class="inline-flex items-center gap-2">
+          <input type="checkbox" formControlName="ops" />
+          <span>OPS</span>
+        </label>
       </div>
       <div class="error-message" *ngIf="environmentGroup.invalid && (environmentGroup.touched || environmentGroup.dirty)">
         Veuillez cocher au moins un environnement
