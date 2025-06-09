@@ -34,17 +34,23 @@
         rows="6">
       </textarea>
     </div>
+    
 
     <!-- Environnement -->
     <div class="form-group">
-      <label for="environment">Environnement *</label>
-      <select id="environment" formControlName="environment" required [class.error]="taskForm.get('environment')?.invalid && taskForm.get('environment')?.touched">
-        <option [ngValue]="null" disabled hidden>Choisir l'environnement</option>
-        <option [ngValue]="'frontend'">Frontend</option>
-        <option [ngValue]="'backend'">Backend</option>
-      </select>
-      <div class="error-message" *ngIf="taskForm.get('environment')?.invalid && taskForm.get('environment')?.touched">
-        L'environnement est obligatoire
+      <label class="block font-medium mb-1">Environnement *</label>
+      <div [formGroup]="environmentGroup" class="flex gap-6">
+        <label class="inline-flex items-center gap-2">
+          <input type="checkbox" formControlName="frontend" />
+          <span>Frontend</span>
+        </label>
+        <label class="inline-flex items-center gap-2">
+          <input type="checkbox" formControlName="backend" />
+          <span>Backend</span>
+        </label>
+      </div>
+      <div class="error-message" *ngIf="environmentGroup.invalid && (environmentGroup.touched || environmentGroup.dirty)">
+        Veuillez cocher au moins un environnement
       </div>
     </div>
 

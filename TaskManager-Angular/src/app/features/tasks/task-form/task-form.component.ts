@@ -1,6 +1,6 @@
 import { Component, inject, signal, effect, OnInit, computed, ChangeDetectorRef, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators, FormGroup, FormArray, FormControl } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators, FormGroup, FormArray, FormControl, ValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TaskService, Task, TaskComment } from '../../../core/services/task';
 import { AuthService } from '../../../core/services/auth';
@@ -13,6 +13,10 @@ import { MatDialog } from '@angular/material/dialog';
 import { EditSubtaskDialogComponent } from '../edit-subtask-dialog.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { SaveChangesDialogComponent } from '../../../shared/components/save-changes-dialog/save-changes-dialog.component';
+import { MatSelectModule } from '@angular/material/select';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 
 @Component({
   selector: 'app-task-form',
@@ -23,7 +27,11 @@ import { SaveChangesDialogComponent } from '../../../shared/components/save-chan
     ReactiveFormsModule,
     MatSnackBarModule,
     DatePipe,
-    MatIconModule
+    MatIconModule,
+    MatSelectModule,
+    MatChipsModule,
+    MatFormFieldModule,
+    MatInputModule
   ],
   templateUrl: './task-form.component.html',
   styleUrls: ['./task-form.component.scss']
@@ -90,7 +98,10 @@ export class TaskFormComponent implements OnInit {
       assigned_to: [null as string | null],
       due_date: [null as string | null],
       tagsInput: ['' as string | null],
-      environment: [null, Validators.required],
+      environment: this.fb.group({
+        frontend: [false],
+        backend: [false]
+      }, { validators: [atLeastOneCheckboxCheckedValidator()] }),
       subtasks: this.fb.array([])
     });
   }
@@ -143,7 +154,10 @@ export class TaskFormComponent implements OnInit {
       assigned_to: task.assigned_to,
       due_date: task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : null,
       tagsInput: task.tags ? task.tags.join(', ') : '',
-      environment: task.environment ?? null
+      environment: {
+        frontend: Array.isArray(task.environment) ? task.environment.includes('frontend') : false,
+        backend: Array.isArray(task.environment) ? task.environment.includes('backend') : false
+      }
     });
     this.subtasksFormArray.clear();
     if (task.subtasks && task.subtasks.length > 0) {
@@ -170,13 +184,12 @@ export class TaskFormComponent implements OnInit {
       assigned_to: null,
       due_date: null,
       tagsInput: '',
-      environment: null
+      environment: { frontend: false, backend: false }
     });
     this.subtasksFormArray.clear();
   }
 
   async onSubmit(): Promise<void> {
-
     if (this.taskForm.invalid) {
       this.snackBar.open('Veuillez corriger les erreurs du formulaire.', 'Fermer', { duration: 3000 });
       Object.values(this.taskForm.controls).forEach(control => {
@@ -186,27 +199,22 @@ export class TaskFormComponent implements OnInit {
       return;
     }
 
-    const formValue = this.taskForm.value as {
-      title: string;
-      description?: string;
-      status: Task['status'];
-      priority: Task['priority'];
-      assigned_to?: string | null;
-      due_date?: string | null;
-      tagsInput?: string | null;
-      environment: 'frontend' | 'backend' | null;
-    };
+    const formValue = this.taskForm.value as any;
 
     let tagsArray: string[] = [];
     const rawTagsInput: string | null | undefined = formValue.tagsInput;
-
     if (rawTagsInput && typeof rawTagsInput === 'string' && rawTagsInput.trim() !== '') {
-      // Assigner à une variable explicitement typée après la vérification
       const tagsString: string = rawTagsInput;
       tagsArray = tagsString.split(',')
         .map((tag: string) => tag.trim())
         .filter((tag: string) => tag !== '');
     }
+
+    // Conversion des cases cochées en tableau de string
+    const envGroup = formValue.environment;
+    const environment: string[] = [];
+    if (envGroup.frontend) environment.push('frontend');
+    if (envGroup.backend) environment.push('backend');
 
     const taskData: Partial<Task> = {
       title: formValue.title,
@@ -216,9 +224,8 @@ export class TaskFormComponent implements OnInit {
       assigned_to: formValue.assigned_to ?? undefined,
       due_date: formValue.due_date ?? undefined,
       tags: tagsArray,
-      environment: formValue.environment ?? null
+      environment
     };
-
 
     let success = false;
     const currentUserId = this.authService.getCurrentUserId();
@@ -251,7 +258,7 @@ export class TaskFormComponent implements OnInit {
         assigned_to: taskData.assigned_to,
         due_date: taskData.due_date,
         tags: taskData.tags,
-        environment: taskData.environment as 'frontend' | 'backend' | null,
+        environment: taskData.environment ?? [],
         created_by: currentUserId
       };
       success = await this.taskService.createTask(taskToCreate);
@@ -443,4 +450,18 @@ export class TaskFormComponent implements OnInit {
     this.router.navigate(['/dashboard']);
     this.speedDialOpen.set(false);
   }
+
+  get environmentGroup(): FormGroup {
+    return this.taskForm.get('environment') as FormGroup;
+  }
+}
+
+// Validateur personnalisé : au moins une case cochée
+function atLeastOneCheckboxCheckedValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const group = control as FormGroup;
+    const frontend = group.get('frontend')?.value;
+    const backend = group.get('backend')?.value;
+    return frontend || backend ? null : { atLeastOne: true };
+  };
 } 

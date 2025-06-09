@@ -216,6 +216,11 @@
 .env-badge--be {
   background: #8b5cf6; /* Tailwind violet-500 */
 }
+.env-badge--all {
+  background: #2563eb; /* Tailwind blue-600 */
+  color: #fff;
+  font-weight: 700;
+}
 
 // ==========================================================================
 // Reusable Components

@@ -14,7 +14,7 @@ import { TaskSearchComponent } from '../../shared/components/task-search/task-se
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatDialogModule, RouterLink, TaskSearchComponent],
+  imports: [CommonModule, MatIconModule, MatDialogModule,TaskSearchComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -51,7 +51,7 @@ export class DashboardComponent implements OnInit {
         : true;
       const statusMatch = filters.status ? task.status === filters.status : true;
       const priorityMatch = filters.priority ? task.priority === filters.priority : true;
-      const envMatch = filters.environment ? task.environment === filters.environment : true;
+      const envMatch = filters.environment ? (Array.isArray(task.environment) && task.environment.includes(filters.environment)) : true;
       return searchTextMatch && statusMatch && priorityMatch && envMatch;
     });
   });

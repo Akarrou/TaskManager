@@ -19,7 +19,7 @@ export interface Task {
   actual_hours?: number;
   task_number?: number;
   subtasks?: ISubtask[];
-  environment: 'frontend' | 'backend' | null;
+  environment: string[];
 }
 
 // Nouvelle interface pour les commentaires
@@ -119,7 +119,7 @@ export class TaskService {
         created_by: 'system',
         due_date: '2024-01-15',
         tags: ['tomates', 'serre', 'urgent'],
-        environment: 'frontend'
+        environment: ['frontend']
       },
       {
         title: '💧 Vérification du système d\'irrigation',
@@ -130,7 +130,7 @@ export class TaskService {
         created_by: 'system',
         due_date: '2024-01-20',
         tags: ['irrigation', 'maintenance'],
-        environment: 'backend'
+        environment: ['backend']
       },
       {
         title: '🚜 Entretien tracteur',
@@ -141,7 +141,7 @@ export class TaskService {
         created_by: 'system',
         due_date: '2024-01-25',
         tags: ['tracteur', 'mécanique'],
-        environment: 'frontend'
+        environment: ['frontend']
       },
       {
         title: '📊 Rapport mensuel',
@@ -152,10 +152,10 @@ export class TaskService {
         created_by: 'system',
         due_date: '2024-01-30',
         tags: ['rapport', 'production'],
-        environment: 'backend'
+        environment: ['backend']
       },
       {
-        title: '�� Inspection qualité récolte',
+        title: 'Inspection qualité récolte',
         description: 'Vérifier la qualité des légumes récoltés',
         status: 'completed',
         priority: 'high',
@@ -163,7 +163,7 @@ export class TaskService {
         created_by: 'system',
         due_date: '2024-01-10',
         tags: ['inspection', 'qualité', 'récolte'],
-        environment: 'frontend'
+        environment: ['frontend']
       }
     ];
 

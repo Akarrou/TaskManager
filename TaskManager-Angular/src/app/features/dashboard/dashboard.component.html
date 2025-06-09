@@ -6,10 +6,6 @@
               <h1 class="c-main-content__title">Tableau de bord des tâches</h1>
               <p class="c-main-content__subtitle">Aperçu de toutes les tâches et de leurs états actuels.</p>
             </div>
-            <button class="c-button c-button--primary" routerLink="/tasks/new">
-              <span class="material-icons-outlined">add</span>
-              <span>Nouvelle tâche</span>
-            </button>
           </div>
 
           <section class="c-stats-grid">
@@ -48,8 +44,9 @@
                   <tr class="c-table__row" *ngFor="let task of filteredTasks()"  (dblclick)="navigateToEditTaskForm(task)" class="cursor-pointer hover-line">
                     <td class="c-table__cell c-table-column--task-number">{{ task.task_number }}</td>
                     <td class="c-table__cell c-table-column--env">
-                      <span *ngIf="task.environment === 'frontend'" class="env-badge env-badge--fe" aria-label="Frontend" title="Frontend">FE</span>
-                      <span *ngIf="task.environment === 'backend'" class="env-badge env-badge--be" aria-label="Backend" title="Backend">BE</span>
+                      <span *ngIf="task.environment?.length === 2 && task.environment.includes('frontend') && task.environment.includes('backend')" class="env-badge env-badge--all" aria-label="Frontend et Backend" title="Frontend et Backend">ALL</span>
+                      <span *ngIf="task.environment?.length === 1 && task.environment[0] === 'frontend'" class="env-badge env-badge--fe" aria-label="Frontend" title="Frontend">FE</span>
+                      <span *ngIf="task.environment?.length === 1 && task.environment[0] === 'backend'" class="env-badge env-badge--be" aria-label="Backend" title="Backend">BE</span>
                     </td>
                     <td class="c-table__cell c-table-column--task">{{ task.title }}</td>
                     <td class="c-table__cell c-table-column--status">
