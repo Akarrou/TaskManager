@@ -178,8 +178,8 @@ export class TaskFormComponent implements OnInit {
       due_date: task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : null,
       tagsInput: task.tags ? task.tags.join(', ') : '',
       environment: {
-        frontend: Array.isArray(task.environment) ? task.environment.includes('frontend') : false,
-        backend: Array.isArray(task.environment) ? task.environment.includes('backend') : false,
+        frontend: Array.isArray(task.environment) ? (task.environment.includes('frontend') || (task.environment.includes('All'))) : false,
+        backend: Array.isArray(task.environment) ? (task.environment.includes('backend') || (task.environment.includes('All'))) : false,
         ops: Array.isArray(task.environment) ? task.environment.includes('OPS') : false
       }
     });
@@ -239,8 +239,6 @@ export class TaskFormComponent implements OnInit {
     let environment: string[] = [];
     if (envGroup.ops) {
       environment = ['OPS'];
-    } else if (envGroup.frontend && envGroup.backend) {
-      environment = ['All'];
     } else {
       if (envGroup.frontend) environment.push('frontend');
       if (envGroup.backend) environment.push('backend');
