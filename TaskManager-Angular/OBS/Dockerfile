@@ -9,24 +9,25 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # Copier les fichiers nécessaires
 COPY ../package.json ../pnpm-lock.yaml ./
 COPY ../angular.json ../tsconfig.json ./
-COPY ../tsconfig.app.json ../tsconfig.base.json ./
-COPY ../tsconfig.spec.json ./
+COPY ../tsconfig.app.json ../tsconfig.spec.json ./
 COPY ../tailwind.config.js ./
-COPY ../.npmrc ./
 COPY ../src ./src
 
 # Installer les dépendances et builder l'app
 RUN pnpm install --frozen-lockfile
-RUN pnpm run build --filter TaskManager-Angular
+RUN pnpm run build
 
 # Étape 2 : Image finale pour servir le build
 FROM nginx:alpine
 
 # Copier le build Angular dans nginx
-COPY --from=builder /app/dist/TaskManager-Angular /usr/share/nginx/html
+COPY --from=builder /app/dist/TaskManager-Angular/browser /usr/share/nginx/html
 
-# Copier la config nginx custom si besoin (optionnel)
-# COPY nginx.conf /etc/nginx/nginx.conf
+# Renommer index.csr.html en index.html pour Nginx
+RUN mv /usr/share/nginx/html/index.csr.html /usr/share/nginx/html/index.html
 
-EXPOSE 80
+# Copier la config nginx custom (port 4210)
+COPY OBS/nginx.conf /etc/nginx/nginx.conf
+
+EXPOSE 4010
 CMD ["nginx", "-g", "daemon off;"] 

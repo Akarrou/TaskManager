@@ -3,177 +3,229 @@
     <h2>{{ pageTitle() }}</h2>
   </div>
 
-  <form [formGroup]="taskForm" (ngSubmit)="onSubmit()" class="task-form">
-    <!-- Task Number -->
-    <div class="c-form__field" *ngIf="isEditMode()">
-      <label for="task_number" class="c-form__label">Numéro de la Tâche</label>
-      <input id="task_number" type="text" formControlName="task_number" class="c-form__input" readonly>
-    </div>
-
-    <!-- Titre -->
-    <div class="form-group">
-      <label for="title">Titre de la tâche *</label>
-      <input 
-        id="title"
-        type="text" 
-        formControlName="title"
-        placeholder="ex: Plantation de tomates"
-        [class.error]="taskForm.get('title')?.invalid && taskForm.get('title')?.touched">
-      <div class="error-message" *ngIf="taskForm.get('title')?.invalid && taskForm.get('title')?.touched">
-        Le titre est obligatoire
-      </div>
-    </div>
-
-    <!-- Description -->
-    <div class="form-group">
-      <label for="description">Description</label>
-      <textarea 
-        id="description"
-        formControlName="description"
-        placeholder="Décrivez la tâche en détail..."
-        rows="6">
-      </textarea>
-    </div>
-    
-
-    <!-- Environnement -->
-    <div class="form-group">
-      <label class="block font-medium mb-1">Environnement *</label>
-      <div [formGroup]="environmentGroup" class="flex gap-6">
-        <label class="inline-flex items-center gap-2">
-          <input type="checkbox" formControlName="frontend" />
-          <span>Frontend</span>
-        </label>
-        <label class="inline-flex items-center gap-2">
-          <input type="checkbox" formControlName="backend" />
-          <span>Backend</span>
-        </label>
-        <label class="inline-flex items-center gap-2">
-          <input type="checkbox" formControlName="ops" />
-          <span>OPS</span>
-        </label>
-      </div>
-      <div class="error-message" *ngIf="environmentGroup.invalid && (environmentGroup.touched || environmentGroup.dirty)">
-        Veuillez cocher au moins un environnement
-      </div>
-    </div>
-
-    <!-- Statut et Priorité -->
-    <div class="form-row">
-      <div class="form-group">
-        <label for="status">Statut *</label>
-        <select id="status" formControlName="status">
-          <option value="pending">En attente</option>
-          <option value="in_progress">En cours</option>
-          <option value="completed">Terminée</option>
-          <option value="cancelled">Annulée</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="priority">Priorité *</label>
-        <select id="priority" formControlName="priority">
-          <option value="low">Faible</option>
-          <option value="medium">Moyenne</option>
-          <option value="high">Élevée</option>
-          <option value="urgent">Urgente</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Assignation et Date -->
-    <div class="form-row">
-      <div class="form-group">
-        <label for="assigned_to">Assigné à</label>
-        <select id="assigned_to" formControlName="assigned_to">
-          <option [ngValue]="null">Non assigné</option>
-          @for (user of users(); track user.id) {
-            <option [value]="user.id">{{ user.email }}</option>
-          }
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="due_date">Date d'échéance</label>
-        <input 
-          id="due_date"
-          type="date" 
-          formControlName="due_date">
-      </div>
-    </div>
-
-    <!-- Tags -->
-    <div class="form-group">
-      <label for="tags">Tags (séparés par des virgules)</label>
-      <input 
-        id="tags"
-        type="text" 
-        formControlName="tagsInput"
-        placeholder="ex: urgent, serre, irrigation">
-    </div>
-
-    <!-- Sous-tâches -->
-    <div class="subtasks-table-section">
-      <div class="c-tasks-container">
-        <div formArrayName="subtasks">
-          <div class="task-form-header">
-            <h3 class="text-lg font-semibold">Liste des sous-tâches</h3>
-            <button type="button" (click)="addSubtask()" class="cta-button primary-action-btn" aria-label="Ajouter une sous-tâche">
-              <span class="material-icons">add</span> Ajouter une sous-tâche
-            </button>
+  <mat-horizontal-stepper [linear]="true" #stepper>
+    <!-- Étape 1 : Informations principales -->
+    <mat-step [stepControl]="mainInfoForm" label="Informations principales">
+      <form [formGroup]="mainInfoForm">
+        <!-- Titre, description, environnement, statut, priorité -->
+        <!-- ... (reprendre les champs correspondants) ... -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="title">Titre de la tâche *</label>
+            <input id="title" type="text" formControlName="title" placeholder="ex: Plantation de tomates" [class.error]="mainInfoForm.get('title')?.invalid && mainInfoForm.get('title')?.touched">
+            <div class="error-message" *ngIf="mainInfoForm.get('title')?.invalid && mainInfoForm.get('title')?.touched">Le titre est obligatoire</div>
           </div>
-          <div class="c-tasks-table-wrapper">
-            <table class="c-table">
-              <thead class="c-table__head">
-                <tr class="c-table__row">
-                  <th class="c-table__header c-table-column--env" scope="col">Env</th>
-                  <th class="c-table__header c-table-column--task" scope="col">Titre</th>
-                  <th class="c-table__header c-table-column--subtask-desc" scope="col">Description</th>
-                  <th class="c-table__header" scope="col">Statut</th>
-                  <th class="c-table__header" scope="col">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="c-table__body">
-                <tr class="c-table__row hover-line" *ngFor="let subtaskCtrl of subtasksFormArray.controls; let i = index" [formGroupName]="i" (dblclick)="openEditSubtaskDialog(i)">
-                  <td class="c-table__cell c-table-column--env">
-                    <span *ngIf="subtaskCtrl.get('environment')?.value === 'frontend'" class="env-badge env-badge--fe" aria-label="Frontend" title="Frontend">FE</span>
-                    <span *ngIf="subtaskCtrl.get('environment')?.value === 'backend'" class="env-badge env-badge--be" aria-label="Backend" title="Backend">BE</span>
-                    <span *ngIf="subtaskCtrl.get('environment')?.value === 'OPS'" class="env-badge env-badge--ops" aria-label="OPS" title="OPS">OPS</span>
-                  </td>
-                  <td class="c-table__cell c-table-column--subtask-title">{{ subtaskCtrl.get('title')?.value }}</td>
-                  <td class="c-table__cell c-table-column--subtask-desc">{{ subtaskCtrl.get('description')?.value }}</td>
-                  <td class="c-table__cell">
-                    <span class="c-badge c-badge--status-{{ subtaskCtrl.get('status')?.value }}">
-                      <mat-icon *ngIf="subtaskCtrl.get('status')?.value === 'pending'">hourglass_empty</mat-icon>
-                      <mat-icon *ngIf="subtaskCtrl.get('status')?.value === 'in_progress'">sync</mat-icon>
-                      <mat-icon *ngIf="subtaskCtrl.get('status')?.value === 'completed'">check_circle_outline</mat-icon>
-                      <mat-icon *ngIf="subtaskCtrl.get('status')?.value === 'cancelled'">cancel</mat-icon>
-                      <span>
-                        {{ subtaskCtrl.get('status')?.value === 'pending' ? 'En attente' :
-                           subtaskCtrl.get('status')?.value === 'in_progress' ? 'En cours' :
-                           subtaskCtrl.get('status')?.value === 'completed' ? 'Terminée' :
-                           subtaskCtrl.get('status')?.value === 'cancelled' ? 'Annulée' : '' }}
-                      </span>
-                    </span>
-                  </td>
-                  <td class="c-table__cell flex gap-2">
-                    <div class="c-table__actions">
-                      <button class="c-icon-button" aria-label="Modifier la tâche" (click)="openEditSubtaskDialog(i)">
-                        <span class="material-icons-outlined">edit</span>
-                      </button>
-                      <button class="c-icon-button c-icon-button--danger" aria-label="Supprimer la tâche" (click)="removeSubtask(i)">
-                        <span class="material-icons-outlined">delete</span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="form-group">
+            <label for="priority">Priorité *</label>
+            <select id="priority" formControlName="priority">
+              <option value="low">Faible</option>
+              <option value="medium">Moyenne</option>
+              <option value="high">Élevée</option>
+              <option value="urgent">Urgente</option>
+            </select>
           </div>
         </div>
-      </div>
-    </div>
-  </form>
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" formControlName="description" placeholder="Décrivez la tâche en détail..." rows="4"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="block font-medium mb-1">Environnement *</label>
+          <div [formGroup]="environmentGroup" class="flex gap-6">
+            <label class="inline-flex items-center gap-2">
+              <input type="checkbox" formControlName="frontend" />
+              <span>Frontend</span>
+            </label>
+            <label class="inline-flex items-center gap-2">
+              <input type="checkbox" formControlName="backend" />
+              <span>Backend</span>
+            </label>
+            <label class="inline-flex items-center gap-2">
+              <input type="checkbox" formControlName="ops" />
+              <span>OPS</span>
+            </label>
+          </div>
+          <div class="error-message" *ngIf="mainInfoForm.get('environment')?.invalid && (mainInfoForm.get('environment')?.touched || mainInfoForm.get('environment')?.dirty)">
+            Veuillez cocher au moins un environnement
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="status">Statut *</label>
+            <select id="status" formControlName="status">
+              <option value="pending">En attente</option>
+              <option value="in_progress">En cours</option>
+              <option value="completed">Terminée</option>
+              <option value="cancelled">Annulée</option>
+            </select>
+          </div>
+        </div>
+        <div class="step-actions">
+          <button  type="button"
+          class="btn-primary"matStepperNext [disabled]="mainInfoForm.invalid">Suivant</button>
+        </div>
+      </form>
+    </mat-step>
+
+    <!-- Étape 2 : Affectation & échéance -->
+    <mat-step [stepControl]="assignForm" label="Affectation & échéance">
+      <form [formGroup]="assignForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="assigned_to">Assigné à</label>
+            <select id="assigned_to" formControlName="assigned_to">
+              <option [ngValue]="null">Non assigné</option>
+              @for (user of users(); track user.id) {
+                <option [value]="user.id">{{ user.email }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="due_date">Date d'échéance</label>
+            <input id="due_date" type="date" formControlName="due_date">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="tags">Tags (séparés par des virgules)</label>
+          <input id="tags" type="text" formControlName="tagsInput" placeholder="ex: urgent, serre, irrigation">
+        </div>
+        <div class="step-actions">
+          <button type="button"
+          class="btn-secondary" matStepperPrevious>Précédent</button>
+          <button type="button"
+          class="btn-primary" matStepperNext [disabled]="assignForm.invalid">Suivant</button>
+        </div>
+      </form>
+    </mat-step>
+
+    <!-- Étape 3 : Détails avancés -->
+    <mat-step [stepControl]="advancedForm" label="Détails avancés">
+      <form [formGroup]="advancedForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="slug">Slug *</label>
+            <input id="slug" type="text" formControlName="slug" placeholder="ex: plantation-tomates" [class.error]="advancedForm.get('slug')?.invalid && advancedForm.get('slug')?.touched" [readonly]="isSlugReadonly()">
+            <div class="error-message" *ngIf="advancedForm.get('slug')?.invalid && advancedForm.get('slug')?.touched">Le slug est obligatoire</div>
+          </div>
+          <div class="form-group">
+            <label for="prd_slug">PRD Slug *</label>
+            <input id="prd_slug" type="text" formControlName="prd_slug" placeholder="ex: prd-plantation-tomates" [class.error]="advancedForm.get('prd_slug')?.invalid && advancedForm.get('prd_slug')?.touched" [readonly]="isPrdSlugReadonly()">
+            <div class="error-message" *ngIf="advancedForm.get('prd_slug')?.invalid && advancedForm.get('prd_slug')?.touched">Le PRD slug est obligatoire</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="estimated_hours">Heures estimées</label>
+            <input id="estimated_hours" type="text" min="0" step="1" formControlName="estimated_hours" placeholder="ex: 2.5">
+          </div>
+          <div class="form-group">
+            <label for="actual_hours">Heures réelles</label>
+            <input id="actual_hours" type="text" min="0" step="1" formControlName="actual_hours" placeholder="ex: 2">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="guideline_refs">Références de guidelines (séparées par des virgules)</label>
+          <input id="guideline_refs" type="text" formControlName="guideline_refsInput" placeholder="ex: ref1, ref2, ref3">
+        </div>
+        <div class="form-group">
+          <label for="type">Type *</label>
+          <select id="type" formControlName="type">
+            <option value="task">Tâche</option>
+            <option value="feature">Fonctionnalité</option>
+            <option value="epic">Épopée</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="parent_task_id">Tâche parente</label>
+          <select id="parent_task_id" formControlName="parent_task_id">
+            <option [ngValue]="null">Aucune</option>
+            @for (task of tasks(); track task.id) {
+              <option [value]="task.id">{{ task.title }}</option>
+            }
+          </select>
+        </div>
+        <div class="step-actions">
+          <button type="button"
+          class="btn-secondary" matStepperPrevious>Précédent</button>
+          <button type="button"
+          class="btn-primary" matStepperNext [disabled]="advancedForm.invalid">Suivant</button>
+        </div>
+      </form>
+    </mat-step>
+
+    <!-- Étape 4 : Sous-tâches -->
+    <mat-step [stepControl]="subtaskForm" label="Sous-tâches">
+      <form [formGroup]="subtaskForm">
+        <!-- Réutiliser la table des sous-tâches existante -->
+        <div class="subtasks-table-section">
+          <div class="c-tasks-container">
+            <div formArrayName="subtasks">
+              <div class="task-form-header">
+                <h3 class="text-lg font-semibold">Liste des sous-tâches</h3>
+                <button type="button" (click)="addSubtask()" class="cta-button primary-action-btn" aria-label="Ajouter une sous-tâche">
+                  <span class="material-icons">add</span> Ajouter une sous-tâche
+                </button>
+              </div>
+              <div class="c-tasks-table-wrapper">
+                <table class="c-table">
+                  <thead class="c-table__head">
+                    <tr class="c-table__row">
+                      <th class="c-table__header c-table-column--env" scope="col">Env</th>
+                      <th class="c-table__header c-table-column--task" scope="col">Titre</th>
+                      <th class="c-table__header c-table-column--subtask-desc" scope="col">Description</th>
+                      <th class="c-table__header" scope="col">Statut</th>
+                      <th class="c-table__header" scope="col">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="c-table__body">
+                    <tr class="c-table__row hover-line" *ngFor="let subtaskCtrl of subtasksFormArray.controls; let i = index" [formGroupName]="i" (dblclick)="openEditSubtaskDialog(i)">
+                      <td class="c-table__cell c-table-column--env">
+                        <span *ngIf="subtaskCtrl.get('environment')?.value === 'frontend'" class="env-badge env-badge--fe" aria-label="Frontend" title="Frontend">FE</span>
+                        <span *ngIf="subtaskCtrl.get('environment')?.value === 'backend'" class="env-badge env-badge--be" aria-label="Backend" title="Backend">BE</span>
+                        <span *ngIf="subtaskCtrl.get('environment')?.value === 'OPS'" class="env-badge env-badge--ops" aria-label="OPS" title="OPS">OPS</span>
+                      </td>
+                      <td class="c-table__cell c-table-column--subtask-title">{{ subtaskCtrl.get('title')?.value }}</td>
+                      <td class="c-table__cell c-table-column--subtask-desc">{{ subtaskCtrl.get('description')?.value }}</td>
+                      <td class="c-table__cell">
+                        <span class="c-badge c-badge--status-{{ subtaskCtrl.get('status')?.value }}">
+                          <mat-icon *ngIf="subtaskCtrl.get('status')?.value === 'pending'">hourglass_empty</mat-icon>
+                          <mat-icon *ngIf="subtaskCtrl.get('status')?.value === 'in_progress'">sync</mat-icon>
+                          <mat-icon *ngIf="subtaskCtrl.get('status')?.value === 'completed'">check_circle_outline</mat-icon>
+                          <mat-icon *ngIf="subtaskCtrl.get('status')?.value === 'cancelled'">cancel</mat-icon>
+                          <span>
+                            {{ subtaskCtrl.get('status')?.value === 'pending' ? 'En attente' :
+                               subtaskCtrl.get('status')?.value === 'in_progress' ? 'En cours' :
+                               subtaskCtrl.get('status')?.value === 'completed' ? 'Terminée' :
+                               subtaskCtrl.get('status')?.value === 'cancelled' ? 'Annulée' : '' }}
+                          </span>
+                        </span>
+                      </td>
+                      <td class="c-table__cell flex gap-2">
+                        <div class="c-table__actions">
+                          <button class="c-icon-button" aria-label="Modifier la tâche" (click)="openEditSubtaskDialog(i)">
+                            <span class="material-icons-outlined">edit</span>
+                          </button>
+                          <button class="c-icon-button c-icon-button--danger" aria-label="Supprimer la tâche" (click)="removeSubtask(i)">
+                            <span class="material-icons-outlined">delete</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step-actions">
+          <button type="button"
+          class="btn-secondary" matStepperPrevious>Précédent</button>
+          <button type="button"
+          class="btn-primary" (click)="onSubmit()" [disabled]="subtaskForm.invalid">Valider</button>
+        </div>
+      </form>
+    </mat-step>
+  </mat-horizontal-stepper>
 
   <!-- Section des Commentaires -->
   <div *ngIf="currentTaskId()" class="comments-section">

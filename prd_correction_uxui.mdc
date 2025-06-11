@@ -1,0 +1,356 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# PRD - Correction UX/UI TaskManager (2024-07-26)
+
+## MÉMOIRE_LONG_TERME  
+Résumé global :  
+TaskManager est une application Angular modulaire, utilisant Angular Material, Tailwind CSS, NgRx, et Supabase. L'audit UX/UI du 26/07/2024 a identifié des axes d'amélioration majeurs sur l'ergonomie, l'accessibilité, la cohérence visuelle et la performance perçue. Ce PRD vise à corriger ces points pour atteindre un score UX/UI > 85/100.
+
+---
+
+## MÉMOIRE_SÉQUENTIELLE  
+- L'audit UX/UI a identifié 2 problèmes critiques et 8 améliorations prioritaires sur l'ergonomie, la lisibilité, l'accessibilité et la cohérence des composants.
+- Le PRD cible la correction des recommandations d'audit, en priorisant les phases et en structurant les actions par lot cohérent.
+
+---
+
+## ÉTAPE_COURANTE  
+Vision & problème
+
+---
+
+### COGITO:  
+La vision doit répondre à la nécessité d'une expérience utilisateur fluide, accessible, moderne et cohérente, en corrigeant les points faibles identifiés par l'audit.  
+Le problème principal est la présence de frictions UX (boutons désactivés, feedback absent, accessibilité partielle, manque d'harmonisation visuelle) qui freinent l'adoption et la satisfaction utilisateur.
+
+---
+
+### PRD: Vision & Problème
+
+**Vision**  
+Offrir une expérience TaskManager moderne, accessible et harmonieuse, où chaque interaction est fluide, intuitive et valorise la productivité des utilisateurs, sur desktop comme sur mobile.
+
+**Problème à résoudre**  
+- Frictions UX/UI (boutons désactivés, feedback absent, navigation peu optimisée)
+- Manque d'harmonisation visuelle et de design system
+- Accessibilité partielle (focus, navigation clavier)
+- Formulaires complexes et peu engageants
+- Responsive à fiabiliser sur tous les parcours
+
+---
+
+**Synthèse** :  
+La vision cible une expérience utilisateur sans friction, accessible et cohérente, en corrigeant les faiblesses UX/UI identifiées.
+
+---
+
+## ÉTAPE_COURANTE  
+Objectifs SMART & KPIs
+
+---
+
+### COGITO :  
+Pour répondre efficacement à l'audit, il faut définir des objectifs mesurables, temporellement bornés et alignés sur les axes d'amélioration UX/UI. Les KPIs doivent permettre de suivre l'impact des corrections (création de tâches, feedback utilisateur, accessibilité, performance, etc.). Les objectifs doivent être atteignables en 1 à 2 mois, avec un suivi précis.
+
+---
+
+### PRD : Objectifs SMART & KPIs
+
+| Objectif SMART | Détail | KPI associé | Échéance |
+|----------------|--------|-------------|----------|
+| Atteindre un score UX/UI ≥ 85/100 | Améliorer l'ergonomie, la cohérence visuelle et l'accessibilité | Score audit UX/UI | 2 mois |
+| Réduire le taux d'abandon sur les formulaires longs de 30% | Simplification, feedback, actions sticky | Taux d'abandon formulaires | 1 mois |
+| Augmenter de 20% l'utilisation des filtres/recherche | Hiérarchie visuelle, feedback sur tri | Taux d'utilisation filtres/recherche | 1 mois |
+| Doubler le nombre moyen de commentaires par tâche | Correction bouton, éditeur riche | Nombre moyen de commentaires/tâche | 1,5 mois |
+| Atteindre un score Lighthouse accessibilité ≥ 90 | Focus visible, navigation clavier, contraste | Score Lighthouse accessibilité | 2 mois |
+| Garantir un affichage responsive sur 100% des parcours critiques | Tests flows mobile/tablette | % de flows validés responsive | 2 mois |
+
+---
+
+**Synthèse** :  
+Les objectifs sont mesurables, priorisés et alignés sur les recommandations de l'audit, avec des KPIs précis pour piloter l'amélioration.
+
+---
+
+## ÉTAPE_COURANTE  
+Personae & parcours
+
+---
+
+### COGITO :  
+Pour maximiser l'impact des corrections, il faut cibler les personae principaux (ex : chef de projet, collaborateur, manager) et cartographier leurs parcours sur les écrans clés (connexion, dashboard, gestion de tâches, commentaires, recherche/filtre, formulaires). Cela permettra de prioriser les améliorations UX sur les flows à plus forte valeur.
+
+---
+
+### PRD : Personae & Parcours
+
+#### Personae principaux
+
+| Persona         | Objectif principal                | Points de friction actuels (audit)         |
+|-----------------|----------------------------------|--------------------------------------------|
+| Chef de projet  | Suivre l'avancement, assigner     | Tableaux peu lisibles, feedback tri absent |
+| Collaborateur   | Créer/éditer tâches, commenter    | Formulaires complexes, bouton commentaire  |
+| Manager         | Analyser, filtrer, exporter       | Recherche peu visible, filtres peu utilisés|
+
+#### Parcours utilisateurs clés
+
+1. **Connexion**  
+   - Saisie des identifiants → bouton actif dès que les champs sont remplis → accès dashboard
+
+2. **Dashboard & Tableaux**  
+   - Visualisation des tâches → zébrures, feedback tri, gestion cellules vides, actions principales accessibles
+
+3. **Gestion de tâche**  
+   - Création/édition via formulaire (à simplifier, actions sticky, champ tags moderne)  
+   - Ajout de commentaires (bouton actif, éditeur riche)
+
+4. **Recherche & Filtres**  
+   - Barre de recherche proéminente, feedback sur tri, taux d'utilisation à suivre
+
+5. **Navigation & Accessibilité**  
+   - Focus visible, navigation clavier, responsive sur tous les flows
+
+---
+
+**Synthèse** :  
+Les personae et parcours clés sont alignés sur les axes d'amélioration de l'audit, pour maximiser l'impact UX sur les utilisateurs cibles.
+
+---
+
+## ÉTAPE_COURANTE  
+User stories détaillées
+
+---
+
+### COGITO :  
+Pour garantir la couverture des besoins, il faut détailler les user stories pour chaque flow critique identifié (connexion, dashboard, gestion de tâche, commentaires, recherche/filtre, accessibilité). Chaque user story doit être claire, testable et liée à un critère d'acceptation, en lien direct avec les recommandations de l'audit.
+
+---
+
+### PRD : User stories détaillées
+
+#### Connexion
+- En tant qu'utilisateur, je veux que le bouton de connexion soit activé dès que les champs sont remplis, afin de ne pas être bloqué inutilement.
+
+#### Dashboard & Tableaux
+- En tant que chef de projet, je veux voir des zébrures sur les tableaux et "N/A" pour les cellules vides, afin d'améliorer la lisibilité.
+- En tant qu'utilisateur, je veux que les en-têtes de colonnes soient triables avec un feedback visuel, pour mieux organiser mes tâches.
+
+#### Gestion de tâche
+- En tant que collaborateur, je veux un formulaire de tâche simplifié (wizard ou accordéon), pour ne pas être découragé par la complexité.
+- En tant qu'utilisateur, je veux que les boutons d'action principaux restent visibles (sticky) lors du scroll dans les formulaires longs.
+- En tant qu'utilisateur, je veux un champ tags moderne (chip input) pour ajouter des tags facilement.
+
+#### Commentaires
+- En tant qu'utilisateur, je veux que le bouton "Ajouter le commentaire" soit activé dès qu'un texte est saisi.
+- En tant qu'utilisateur, je veux pouvoir saisir des commentaires avec un éditeur de texte riche.
+
+#### Recherche & Filtres
+- En tant qu'utilisateur, je veux une barre de recherche proéminente et un feedback sur le tri, pour trouver rapidement une tâche.
+
+#### Accessibilité & Navigation
+- En tant qu'utilisateur, je veux que tous les éléments interactifs aient un focus visible et soient accessibles au clavier.
+- En tant qu'utilisateur, je veux que l'application soit responsive sur tous les parcours critiques.
+
+---
+
+**Synthèse** :  
+Les user stories couvrent tous les flows critiques et traduisent les recommandations de l'audit en besoins utilisateurs concrets.
+
+---
+
+## ÉTAPE_COURANTE  
+Spécifications fonctionnelles
+
+---
+
+### COGITO :  
+Les spécifications fonctionnelles doivent traduire chaque user story en exigences concrètes, détaillant les comportements attendus, les interactions UI, les règles de gestion et les contraintes techniques. Elles doivent être suffisamment précises pour guider le développement et les tests, tout en restant alignées sur les recommandations de l'audit.
+
+---
+
+### PRD : Spécifications fonctionnelles
+
+1. **Activation dynamique des boutons**  
+   - Les boutons de connexion et d'ajout de commentaire sont activés dès que les champs requis sont remplis (validation en temps réel).
+
+2. **Tableaux améliorés**  
+   - Zébrures alternées sur toutes les lignes des tableaux.
+   - Affichage "N/A" pour toute cellule vide.
+   - En-têtes de colonnes cliquables, tri visuel (icône, couleur), feedback immédiat.
+
+3. **Formulaires de tâche**  
+   - Refondre le formulaire en accordéon ou wizard (étapes claires, navigation fluide).
+   - Actions principales (sauvegarder, annuler) sticky en haut/bas du formulaire.
+   - Champ tags : remplacer par un chip input Angular Material moderne.
+
+4. **Commentaires**  
+   - Bouton "Ajouter le commentaire" activé dès qu'un texte est saisi.
+   - Intégration d'un éditeur de texte riche (Angular Material ou composant tiers validé).
+
+5. **Recherche & Filtres**  
+   - Barre de recherche proéminente (taille, contraste, position).
+   - Feedback visuel sur le tri (icône, animation).
+   - Statistiques d'utilisation des filtres/recherche à logguer.
+
+6. **Accessibilité & Navigation**  
+   - Focus visible sur tous les éléments interactifs (outline, contraste AA).
+   - Navigation clavier complète (tabindex, aria-labels, skip links).
+   - Responsive garanti sur tous les écrans (test flows critiques).
+
+7. **Design System**  
+   - Uniformisation des composants (inputs, boutons, tables, chips) avec Angular Material + Tailwind.
+   - Palette de couleurs accessible (contraste AA minimum).
+   - Utilisation de composants réutilisables pour formulaires, listes, modales.
+
+---
+
+**Synthèse** :  
+Les spécifications fonctionnelles détaillent les comportements attendus pour chaque amélioration UX/UI, en assurant traçabilité et testabilité.
+
+---
+
+## ÉTAPE_COURANTE  
+Spécifications non-fonctionnelles (perf, sécurité, i18n…)
+
+---
+
+### COGITO :  
+Les exigences non-fonctionnelles sont essentielles pour garantir la robustesse, la performance, la sécurité et l'accessibilité de l'application. Elles doivent couvrir la performance perçue, la sécurité des données, l'internationalisation, la compatibilité navigateur et l'accessibilité avancée.
+
+---
+
+### PRD : Spécifications non-fonctionnelles
+
+1. **Performance**  
+   - Score Lighthouse performance ≥ 90 sur tous les écrans critiques.
+   - Lazy loading systématique des modules non essentiels.
+   - Optimisation des images (NgOptimizedImage, formats adaptés).
+
+2. **Sécurité**  
+   - Validation stricte des entrées utilisateur côté client et serveur.
+   - Protection contre les attaques XSS/CSRF (Angular par défaut + vérifications).
+   - Gestion sécurisée de l'authentification (Supabase, tokens, expiration).
+
+3. **Internationalisation (i18n)**  
+   - Préparer l'application à la traduction (clés i18n, fichiers de langue).
+   - Prise en charge du formatage localisé (dates, nombres).
+
+4. **Compatibilité & Accessibilité avancée**  
+   - Support des navigateurs modernes (Chrome, Firefox, Edge, Safari).
+   - Respect des standards WCAG 2.1 AA (contraste, navigation, aria-labels).
+   - Tests d'accessibilité automatisés (axe, Lighthouse).
+
+5. **Observabilité & Suivi**  
+   - Intégration d'outils de suivi (Sentry, Google Analytics, logs custom UX).
+   - Suivi des KPIs UX définis (tableaux de bord, alertes).
+
+---
+
+**Synthèse** :  
+Les exigences non-fonctionnelles garantissent la robustesse, la sécurité, la performance et l'accessibilité de l'application sur tous les parcours critiques.
+
+---
+
+## ÉTAPE_COURANTE  
+Dépendances & risques
+
+---
+
+### COGITO :  
+Il est crucial d'identifier les dépendances techniques (librairies, outils, API) et les risques projet (techniques, humains, organisationnels) pour anticiper les obstacles et sécuriser la roadmap.
+
+---
+
+### PRD : Dépendances & risques
+
+#### Dépendances principales
+- Angular 20+, Angular Material, Tailwind CSS, NgRx, Supabase
+- Librairies d'éditeur riche (ex : ngx-quill, Angular Material Rich Text)
+- Outils de tests (Jest, Karma, Cypress, axe)
+- Outils d'observabilité (Sentry, Google Analytics)
+
+#### Risques identifiés
+- **Techniques** :
+  - Incompatibilité de certaines librairies avec Angular 20+
+  - Difficulté d'intégration d'un éditeur riche accessible
+  - Risque de régression sur le responsive ou l'accessibilité
+- **Organisationnels** :
+  - Charge de travail sous-estimée pour la refonte des formulaires
+  - Dépendance à la disponibilité de l'équipe UX/UI
+- **Humains** :
+  - Adoption des nouveaux patterns par l'équipe
+  - Risque de résistance au changement sur les workflows
+
+#### Actions de mitigation
+- Prototypage rapide des composants critiques
+- Tests utilisateurs intermédiaires
+- Documentation et formation interne
+- Suivi régulier des KPIs et feedbacks
+
+---
+
+**Synthèse** :  
+Les dépendances et risques sont identifiés et des actions de mitigation sont prévues pour sécuriser la réussite du projet.
+
+---
+
+## ÉTAPE_COURANTE  
+Roadmap & jalons
+
+---
+
+### COGITO :  
+La roadmap doit organiser les actions en phases cohérentes, avec des jalons clairs pour piloter l'avancement et garantir la livraison incrémentale des améliorations UX/UI.
+
+---
+
+### PRD : Roadmap & jalons
+
+| Phase         | Actions principales                                                                 | Jalon/Date cible      |
+|---------------|-------------------------------------------------------------------------------------|-----------------------|
+| Phase 1       | Corrections critiques (boutons, feedback, accessibilité focus)                     | +1 semaine            |
+| Phase 2       | Améliorations UX (tableaux, recherche, tri, sticky actions, champ tags)            | +2-3 semaines         |
+| Phase 3       | Refondre formulaire tâche (wizard/accordéon), éditeur riche, responsive avancé     | +1-2 mois             |
+| Phase 4       | Tests utilisateurs, suivi KPIs, documentation, audit de suivi                      | +3 mois (audit suivi) |
+
+---
+
+**Synthèse** :  
+La roadmap structure la mise en œuvre en phases, avec des jalons clairs pour piloter l'amélioration continue.
+
+---
+
+## ÉTAPE_COURANTE  
+Critères d'acceptation
+
+---
+
+### COGITO :  
+Les critères d'acceptation doivent permettre de valider objectivement la réussite de chaque lot d'amélioration, en s'appuyant sur les KPIs, les tests utilisateurs et les audits automatisés.
+
+---
+
+### PRD : Critères d'acceptation
+
+- Score UX/UI ≥ 85/100 lors de l'audit de suivi
+- Score Lighthouse accessibilité et performance ≥ 90 sur tous les écrans critiques
+- Taux d'abandon des formulaires longs réduit de 30%
+- Nombre moyen de commentaires par tâche doublé
+- 100% des flows critiques validés responsive et accessibles (tests utilisateurs)
+- Feedback utilisateur positif lors des tests intermédiaires
+- Aucun bug bloquant ou régression majeure sur les parcours clés
+
+---
+
+**Synthèse** :  
+Les critères d'acceptation sont mesurables, objectifs et alignés sur les objectifs du projet, garantissant la réussite UX/UI.
+
+---
+
+# Fin du PRD
+
+---

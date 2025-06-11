@@ -26,7 +26,10 @@ export class EditSubtaskDialogComponent {
       title: [data.title ?? '', Validators.required],
       description: [data.description ?? ''],
       status: [data.status ?? 'pending', Validators.required],
-      environment: [data.environment ?? null, Validators.required]
+      environment: [data.environment ?? null, Validators.required],
+      slug: [data.slug ?? '', Validators.required],
+      estimated_hours: [data.estimated_hours ?? null],
+      guideline_refsInput: [data.guideline_refs ? data.guideline_refs.join(', ') : '']
     });
   }
 
@@ -36,7 +39,13 @@ export class EditSubtaskDialogComponent {
 
   onSave() {
     if (this.subtaskForm.valid) {
-      this.dialogRef.close(this.subtaskForm.value);
+      const formValue = this.subtaskForm.value;
+      const guidelineRefsArray = formValue.guideline_refsInput ? formValue.guideline_refsInput.split(',').map((t: string) => t.trim()).filter((t: string) => t) : [];
+      const subtaskData = {
+        ...formValue,
+        guideline_refs: guidelineRefsArray
+      };
+      this.dialogRef.close(subtaskData);
     } else {
       this.subtaskForm.markAllAsTouched();
     }

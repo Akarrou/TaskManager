@@ -15,11 +15,16 @@ export interface Task {
   updated_at?: string;
   completed_at?: string;
   tags?: string[];
+  slug: string;
+  prd_slug: string;
   estimated_hours?: number;
   actual_hours?: number;
   task_number?: number;
   subtasks?: ISubtask[];
   environment: string[];
+  guideline_refs: string[];
+  type: 'epic' | 'feature' | 'task';
+  parent_task_id?: string | null;
 }
 
 // Nouvelle interface pour les commentaires
@@ -119,7 +124,14 @@ export class TaskService {
         created_by: 'system',
         due_date: '2024-01-15',
         tags: ['tomates', 'serre', 'urgent'],
-        environment: ['frontend']
+        environment: ['frontend'],
+        slug: '',
+        prd_slug: '',
+        estimated_hours: 2,
+        actual_hours: 2,
+        type: 'task',
+        guideline_refs: [],
+        parent_task_id: null
       },
       {
         title: '💧 Vérification du système d\'irrigation',
@@ -130,7 +142,14 @@ export class TaskService {
         created_by: 'system',
         due_date: '2024-01-20',
         tags: ['irrigation', 'maintenance'],
-        environment: ['backend']
+        environment: ['backend'],
+        slug: '',
+        prd_slug: '',
+        estimated_hours: 1,
+        actual_hours: 0.5,
+        type: 'task',
+        guideline_refs: [],
+        parent_task_id: null
       },
       {
         title: '🚜 Entretien tracteur',
@@ -141,7 +160,14 @@ export class TaskService {
         created_by: 'system',
         due_date: '2024-01-25',
         tags: ['tracteur', 'mécanique'],
-        environment: ['frontend']
+        environment: ['frontend'],
+        slug: '',
+        prd_slug: '',
+        estimated_hours: 3,
+        actual_hours: 2,
+        type: 'task',
+        guideline_refs: [],
+        parent_task_id: null
       },
       {
         title: '📊 Rapport mensuel',
@@ -152,7 +178,14 @@ export class TaskService {
         created_by: 'system',
         due_date: '2024-01-30',
         tags: ['rapport', 'production'],
-        environment: ['backend']
+        environment: ['backend'],
+        slug: '',
+        prd_slug: '',
+        estimated_hours: 4,
+        actual_hours: 3,
+        type: 'task',
+        guideline_refs: [],
+        parent_task_id: null
       },
       {
         title: 'Inspection qualité récolte',
@@ -163,7 +196,14 @@ export class TaskService {
         created_by: 'system',
         due_date: '2024-01-10',
         tags: ['inspection', 'qualité', 'récolte'],
-        environment: ['frontend']
+        environment: ['frontend'],
+        slug: '',
+        prd_slug: '',
+        estimated_hours: 1,
+        actual_hours: 1,
+        type: 'task',
+        guideline_refs: [],
+        parent_task_id: null
       }
     ];
 

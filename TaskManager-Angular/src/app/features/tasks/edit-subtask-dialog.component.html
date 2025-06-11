@@ -40,6 +40,21 @@
       L'environnement est obligatoire
     </div>
   </div>
+  <div class="form-group">
+    <label for="subtask-slug">Slug *</label>
+    <input id="subtask-slug" type="text" formControlName="slug" class="form-control" [class.error]="subtaskForm.get('slug')?.invalid && subtaskForm.get('slug')?.touched">
+    <div class="error-message" *ngIf="subtaskForm.get('slug')?.invalid && subtaskForm.get('slug')?.touched">
+      Le slug est obligatoire
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="subtask-estimated-hours">Heures estimées</label>
+    <input id="subtask-estimated-hours" type="number" min="0" step="0.1" formControlName="estimated_hours" class="form-control">
+  </div>
+  <div class="form-group">
+    <label for="subtask-guideline-refs">Références de guidelines (séparées par des virgules)</label>
+    <input id="subtask-guideline-refs" type="text" formControlName="guideline_refsInput" class="form-control" placeholder="ex: ref1, ref2, ref3">
+  </div>
   <div class="btn-container">
     <button type="button" class="btn-secondary" (click)="onCancel()">Annuler</button>
     <button type="submit" class="btn-primary" [disabled]="subtaskForm.invalid">Valider</button>

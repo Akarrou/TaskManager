@@ -17,6 +17,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatStepperModule } from '@angular/material/stepper';
 
 @Component({
   selector: 'app-task-form',
@@ -31,7 +32,8 @@ import { MatInputModule } from '@angular/material/input';
     MatSelectModule,
     MatChipsModule,
     MatFormFieldModule,
-    MatInputModule
+    MatInputModule,
+    MatStepperModule
   ],
   templateUrl: './task-form.component.html',
   styleUrls: ['./task-form.component.scss']
@@ -50,7 +52,11 @@ export class TaskFormComponent implements OnInit {
   isSubmitting = signal(false);
   pageTitle = signal('Nouvelle tâche');
   currentTaskId = signal<string | null>(null);
-  taskForm!: FormGroup;
+  mainInfoForm!: FormGroup;
+  assignForm!: FormGroup;
+  advancedForm!: FormGroup;
+  subtaskForm!: FormGroup;
+  stepperForm!: FormGroup;
 
   isEditMode = computed(() => !!this.currentTaskId());
 
@@ -70,6 +76,8 @@ export class TaskFormComponent implements OnInit {
   speedDialOpen = signal(false);
   @ViewChild('fabGroup', { static: false }) fabGroupRef?: ElementRef;
 
+  tasks = signal<Task[]>([]);
+
   constructor() {
     this.loadUsers();
   }
@@ -88,26 +96,48 @@ export class TaskFormComponent implements OnInit {
       }
     });
 
-    this.taskForm = this.fb.group({
-      id: [null as string | null],
-      task_number: [{ value: null as number | null, disabled: true }],
+    // Groupes pour chaque étape
+    this.mainInfoForm = this.fb.group({
       title: ['', Validators.required],
       description: [''],
-      status: ['pending' as Task['status'], Validators.required],
-      priority: ['medium' as Task['priority'], Validators.required],
-      assigned_to: [null as string | null],
-      due_date: [null as string | null],
-      tagsInput: ['' as string | null],
       environment: this.fb.group({
         frontend: [false],
         backend: [false],
         ops: [false]
       }, { validators: [atLeastOneCheckboxCheckedValidator()] }),
+      status: ['pending', Validators.required],
+      priority: ['medium', Validators.required]
+    });
+    this.assignForm = this.fb.group({
+      assigned_to: [null],
+      due_date: [null],
+      tagsInput: ['']
+    });
+    this.advancedForm = this.fb.group({
+      slug: ['', Validators.required],
+      prd_slug: ['', Validators.required],
+      estimated_hours: [null],
+      actual_hours: [null],
+      guideline_refsInput: [''],
+      type: ['task', Validators.required],
+      parent_task_id: [null]
+    });
+    this.subtaskForm = this.fb.group({
       subtasks: this.fb.array([])
     });
+    // FormGroup parent pour le stepper
+    this.stepperForm = this.fb.group({
+      mainInfo: this.mainInfoForm,
+      assign: this.assignForm,
+      advanced: this.advancedForm,
+      subtasks: this.subtaskForm
+    });
+
+    // Charger la liste des tâches pour le select parent_task_id
+    this.loadAllTasks();
 
     // Ajout de la logique d'exclusivité
-    const envGroup = this.taskForm.get('environment') as FormGroup;
+    const envGroup = this.mainInfoForm.get('environment') as FormGroup;
     if (envGroup) {
       envGroup.valueChanges.subscribe((value) => {
         // Si OPS est coché, décocher les deux autres
@@ -163,24 +193,35 @@ export class TaskFormComponent implements OnInit {
   }
 
   get subtasksFormArray(): FormArray {
-    return this.taskForm.get('subtasks') as FormArray;
+    return this.stepperForm.get('subtasks.subtasks') as FormArray;
   }
 
   private patchFormWithTask(task: Task) {
-    this.taskForm.patchValue({
-      id: task.id,
-      task_number: task.task_number,
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      priority: task.priority,
-      assigned_to: task.assigned_to,
-      due_date: task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : null,
-      tagsInput: task.tags ? task.tags.join(', ') : '',
-      environment: {
-        frontend: Array.isArray(task.environment) ? (task.environment.includes('frontend') || (task.environment.includes('All'))) : false,
-        backend: Array.isArray(task.environment) ? (task.environment.includes('backend') || (task.environment.includes('All'))) : false,
-        ops: Array.isArray(task.environment) ? task.environment.includes('OPS') : false
+    this.stepperForm.patchValue({
+      mainInfo: {
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        environment: {
+          frontend: Array.isArray(task.environment) ? (task.environment.includes('frontend') || (task.environment.includes('All'))) : false,
+          backend: Array.isArray(task.environment) ? (task.environment.includes('backend') || (task.environment.includes('All'))) : false,
+          ops: Array.isArray(task.environment) ? task.environment.includes('OPS') : false
+        }
+      },
+      assign: {
+        assigned_to: task.assigned_to,
+        due_date: task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : null,
+        tagsInput: task.tags ? task.tags.join(', ') : ''
+      },
+      advanced: {
+        slug: task.slug || '',
+        prd_slug: task.prd_slug || '',
+        estimated_hours: task.estimated_hours ?? null,
+        actual_hours: task.actual_hours ?? null,
+        guideline_refsInput: task.guideline_refs ? task.guideline_refs.join(', ') : '',
+        type: task.type || 'task',
+        parent_task_id: task.parent_task_id ?? null
       }
     });
     this.subtasksFormArray.clear();
@@ -198,35 +239,46 @@ export class TaskFormComponent implements OnInit {
   }
 
   private resetForm() {
-    this.taskForm.reset({
-      id: null,
-      task_number: null,
-      title: '',
-      description: '',
-      status: 'pending',
-      priority: 'medium',
-      assigned_to: null,
-      due_date: null,
-      tagsInput: '',
-      environment: { frontend: false, backend: false, ops: false }
+    this.stepperForm.reset({
+      mainInfo: {
+        title: '',
+        description: '',
+        status: 'pending',
+        priority: 'medium',
+        environment: { frontend: false, backend: false, ops: false }
+      },
+      assign: {
+        assigned_to: null,
+        due_date: null,
+        tagsInput: ''
+      },
+      advanced: {
+        slug: '',
+        prd_slug: '',
+        estimated_hours: null,
+        actual_hours: null,
+        guideline_refsInput: '',
+        type: 'task',
+        parent_task_id: null
+      }
     });
     this.subtasksFormArray.clear();
   }
 
   async onSubmit(): Promise<void> {
-    if (this.taskForm.invalid) {
+    if (this.stepperForm.invalid) {
       this.snackBar.open('Veuillez corriger les erreurs du formulaire.', 'Fermer', { duration: 3000 });
-      Object.values(this.taskForm.controls).forEach(control => {
+      Object.values(this.stepperForm.controls).forEach(control => {
         control.markAsTouched();
       });
       this.subtasksFormArray.controls.forEach(control => control.markAsTouched());
       return;
     }
 
-    const formValue = this.taskForm.value as any;
+    const formValue = this.stepperForm.value as any;
 
     let tagsArray: string[] = [];
-    const rawTagsInput: string | null | undefined = formValue.tagsInput;
+    const rawTagsInput: string | null | undefined = formValue.assign.tagsInput;
     if (rawTagsInput && typeof rawTagsInput === 'string' && rawTagsInput.trim() !== '') {
       const tagsString: string = rawTagsInput;
       tagsArray = tagsString.split(',')
@@ -235,7 +287,7 @@ export class TaskFormComponent implements OnInit {
     }
 
     // Conversion des cases cochées en tableau de string
-    const envGroup = formValue.environment;
+    const envGroup = formValue.mainInfo.environment;
     let environment: string[] = [];
     if (envGroup.ops) {
       environment = ['OPS'];
@@ -243,15 +295,22 @@ export class TaskFormComponent implements OnInit {
       if (envGroup.frontend) environment.push('frontend');
       if (envGroup.backend) environment.push('backend');
     }
-
+    const guidelineRefsArray = formValue.advanced.guideline_refsInput ? formValue.advanced.guideline_refsInput.split(',').map((t: string) => t.trim()).filter((t: string) => t) : [];
     const taskData: Partial<Task> = {
-      title: formValue.title,
-      description: formValue.description ?? undefined,
-      status: formValue.status,
-      priority: formValue.priority,
-      assigned_to: formValue.assigned_to ?? undefined,
-      due_date: formValue.due_date ?? undefined,
+      title: formValue.mainInfo.title,
+      description: formValue.mainInfo.description ?? undefined,
+      status: formValue.mainInfo.status,
+      priority: formValue.mainInfo.priority,
+      assigned_to: formValue.assign.assigned_to ?? undefined,
+      due_date: formValue.assign.due_date ?? undefined,
       tags: tagsArray,
+      slug: formValue.advanced.slug as string,
+      prd_slug: formValue.advanced.prd_slug as string,
+      estimated_hours: formValue.advanced.estimated_hours ?? undefined,
+      actual_hours: formValue.advanced.actual_hours ?? undefined,
+      guideline_refs: guidelineRefsArray,
+      type: formValue.advanced.type as 'task' | 'epic' | 'feature',
+      parent_task_id: formValue.advanced.parent_task_id ?? null,
       environment
     };
 
@@ -286,6 +345,13 @@ export class TaskFormComponent implements OnInit {
         assigned_to: taskData.assigned_to,
         due_date: taskData.due_date,
         tags: taskData.tags,
+        slug: taskData.slug as string,
+        prd_slug: taskData.prd_slug as string,
+        estimated_hours: taskData.estimated_hours ?? undefined,
+        actual_hours: taskData.actual_hours ?? undefined,
+        guideline_refs: taskData.guideline_refs ?? [],
+        type: taskData.type as 'task' | 'epic' | 'feature',
+        parent_task_id: taskData.parent_task_id ?? null,
         environment: taskData.environment ?? [],
         created_by: currentUserId
       };
@@ -311,9 +377,11 @@ export class TaskFormComponent implements OnInit {
     // Charger les détails de la tâche
     const task = await this.taskService.fetchTaskById(taskId);
     if (task) {
-      this.taskForm.patchValue({
-        ...task,
-        tags: task.tags || [] // S'assurer que c'est un tableau
+      this.stepperForm.patchValue({
+        mainInfo: {
+          ...task,
+          tags: task.tags || [] // S'assurer que c'est un tableau
+        }
       });
     } else {
       this.snackBar.open('Tâche non trouvée.', 'Fermer', { duration: 3000 });
@@ -389,7 +457,7 @@ export class TaskFormComponent implements OnInit {
         }
         this.subtasksFormArray.removeAt(index);
         this.subtasksFormArray.markAsDirty();
-        this.taskForm.markAsDirty();
+        this.stepperForm.markAsDirty();
         this.cdr.detectChanges();
       }
     });
@@ -433,11 +501,10 @@ export class TaskFormComponent implements OnInit {
           environment: [result.environment, Validators.required]
         }));
         this.subtasksFormArray.at(this.subtasksFormArray.length - 1).markAsDirty();
-        this.taskForm.markAsDirty();
+        this.stepperForm.markAsDirty();
       }
     });
   }
-
 
   // Gestion du clic en dehors du speed dial
   @HostListener('document:click', ['$event'])
@@ -448,7 +515,7 @@ export class TaskFormComponent implements OnInit {
   }
 
   isFormOrSubtasksDirty(): boolean {
-    if (this.taskForm.dirty) {
+    if (this.stepperForm.dirty) {
       return true;
     }
     for (const control of this.subtasksFormArray.controls) {
@@ -480,7 +547,19 @@ export class TaskFormComponent implements OnInit {
   }
 
   get environmentGroup(): FormGroup {
-    return this.taskForm.get('environment') as FormGroup;
+    return this.mainInfoForm.get('environment') as FormGroup;
+  }
+
+  isSlugReadonly(): boolean {
+    return this.isEditMode() && !!this.stepperForm?.get('advanced')?.get('slug')?.value;
+  }
+  isPrdSlugReadonly(): boolean {
+    return this.isEditMode() && !!this.stepperForm?.get('advanced')?.get('prd_slug')?.value;
+  }
+
+  async loadAllTasks() {
+    await this.taskService.loadTasks();
+    this.tasks.set(this.taskService.tasks());
   }
 }
 
