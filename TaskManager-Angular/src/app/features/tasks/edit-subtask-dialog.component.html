@@ -1,59 +1,60 @@
 <div class="c-tasks-container">
 <h2 class="text-xl font-semibold mb-4">Modifier la sous-tâche</h2>
 <form [formGroup]="subtaskForm" (ngSubmit)="onSave()" class="space-y-4">
-  <div class="form-group">
-    <label for="subtask-title">Titre *</label>
-    <input id="subtask-title" type="text" formControlName="title" class="form-control" [class.error]="subtaskForm.get('title')?.invalid && subtaskForm.get('title')?.touched">
-    
-    <div class="error-message" *ngIf="subtaskForm.get('title')?.invalid && subtaskForm.get('title')?.touched">
-      Le titre est obligatoire
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <div class="form-group">
+        <label for="subtask-title">Titre *</label>
+        <input id="subtask-title" type="text" formControlName="title" class="form-control" [class.error]="subtaskForm.get('title')?.invalid && subtaskForm.get('title')?.touched">
+        <div class="error-message" *ngIf="subtaskForm.get('title')?.invalid && subtaskForm.get('title')?.touched">
+          Le titre est obligatoire
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="subtask-description">Description</label>
+        <textarea class="form-control" id="subtask-description" formControlName="description" placeholder="Décrivez la tâche en détail..." rows="3"></textarea>
+      </div>
+    </div>
+    <div>
+      <div class="form-group">
+        <label for="subtask-status">Statut *</label>
+        <select id="subtask-status" formControlName="status" class="form-control">
+          <option value="pending">En attente</option>
+          <option value="in_progress">En cours</option>
+          <option value="completed">Terminée</option>
+          <option value="cancelled">Annulée</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="subtask-environment">Environnement *</label>
+        <select id="subtask-environment" formControlName="environment" class="form-control" required [class.error]="subtaskForm.get('environment')?.invalid && subtaskForm.get('environment')?.touched">
+          <option [ngValue]="null" disabled selected hidden>Choisir l'environnement</option>
+          <option value="frontend">Frontend</option>
+          <option value="backend">Backend</option>
+          <option value="OPS">OPS</option>
+        </select>
+        <div class="error-message" *ngIf="subtaskForm.get('environment')?.invalid && subtaskForm.get('environment')?.touched">
+          L'environnement est obligatoire
+        </div>
+      </div>
     </div>
   </div>
-  <div class="form-group">
-    <label for="subtask-description">Description</label>
-    <textarea 
-    class="form-control"
-    id="subtask-description" 
-    formControlName="description"
-    placeholder="Décrivez la tâche en détail..."
-    rows="6">
-  </textarea>
-  </div>
-  <div class="form-group">
-    <label for="subtask-status">Statut *</label>
-    <select id="subtask-status" formControlName="status" class="form-control">
-      <option value="pending">En attente</option>
-      <option value="in_progress">En cours</option>
-      <option value="completed">Terminée</option>
-      <option value="cancelled">Annulée</option>
-    </select>
-  </div>
-  <div class="form-group">
-    <label for="subtask-environment">Environnement *</label>
-    <select id="subtask-environment" formControlName="environment" class="form-control" required [class.error]="subtaskForm.get('environment')?.invalid && subtaskForm.get('environment')?.touched">
-      <option [ngValue]="null" disabled selected hidden>Choisir l'environnement</option>
-      <option value="frontend">Frontend</option>
-      <option value="backend">Backend</option>
-      <option value="OPS">OPS</option>
-    </select>
-    <div class="error-message" *ngIf="subtaskForm.get('environment')?.invalid && subtaskForm.get('environment')?.touched">
-      L'environnement est obligatoire
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="form-group">
+      <label for="subtask-slug">Slug *</label>
+      <input id="subtask-slug" type="text" formControlName="slug" class="form-control" [class.error]="subtaskForm.get('slug')?.invalid && subtaskForm.get('slug')?.touched">
+      <div class="error-message" *ngIf="subtaskForm.get('slug')?.invalid && subtaskForm.get('slug')?.touched">
+        Le slug est obligatoire
+      </div>
     </div>
-  </div>
-  <div class="form-group">
-    <label for="subtask-slug">Slug *</label>
-    <input id="subtask-slug" type="text" formControlName="slug" class="form-control" [class.error]="subtaskForm.get('slug')?.invalid && subtaskForm.get('slug')?.touched">
-    <div class="error-message" *ngIf="subtaskForm.get('slug')?.invalid && subtaskForm.get('slug')?.touched">
-      Le slug est obligatoire
+    <div class="form-group">
+      <label for="subtask-estimated-hours">Heures estimées</label>
+      <input id="subtask-estimated-hours" type="number" min="0" step="0.1" formControlName="estimated_hours" class="form-control">
     </div>
-  </div>
-  <div class="form-group">
-    <label for="subtask-estimated-hours">Heures estimées</label>
-    <input id="subtask-estimated-hours" type="number" min="0" step="0.1" formControlName="estimated_hours" class="form-control">
-  </div>
-  <div class="form-group">
-    <label for="subtask-guideline-refs">Références de guidelines (séparées par des virgules)</label>
-    <input id="subtask-guideline-refs" type="text" formControlName="guideline_refsInput" class="form-control" placeholder="ex: ref1, ref2, ref3">
+    <div class="form-group">
+      <label for="subtask-guideline-refs">Références de guidelines</label>
+      <input id="subtask-guideline-refs" type="text" formControlName="guideline_refsInput" class="form-control" placeholder="ex: ref1, ref2, ref3">
+    </div>
   </div>
   <div class="btn-container">
     <button type="button" class="btn-secondary" (click)="onCancel()">Annuler</button>

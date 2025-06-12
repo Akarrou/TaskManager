@@ -100,11 +100,7 @@ export class TaskFormComponent implements OnInit {
     this.mainInfoForm = this.fb.group({
       title: ['', Validators.required],
       description: [''],
-      environment: this.fb.group({
-        frontend: [false],
-        backend: [false],
-        ops: [false]
-      }, { validators: [atLeastOneCheckboxCheckedValidator()] }),
+      environment: this.fb.control([], [Validators.required, atLeastOneSelectedValidator]),
       status: ['pending', Validators.required],
       priority: ['medium', Validators.required]
     });
@@ -203,11 +199,7 @@ export class TaskFormComponent implements OnInit {
         description: task.description,
         status: task.status,
         priority: task.priority,
-        environment: {
-          frontend: Array.isArray(task.environment) ? (task.environment.includes('frontend') || (task.environment.includes('All'))) : false,
-          backend: Array.isArray(task.environment) ? (task.environment.includes('backend') || (task.environment.includes('All'))) : false,
-          ops: Array.isArray(task.environment) ? task.environment.includes('OPS') : false
-        }
+        environment: Array.isArray(task.environment) ? task.environment : []
       },
       assign: {
         assigned_to: task.assigned_to,
@@ -245,7 +237,7 @@ export class TaskFormComponent implements OnInit {
         description: '',
         status: 'pending',
         priority: 'medium',
-        environment: { frontend: false, backend: false, ops: false }
+        environment: []
       },
       assign: {
         assigned_to: null,
@@ -287,14 +279,7 @@ export class TaskFormComponent implements OnInit {
     }
 
     // Conversion des cases cochées en tableau de string
-    const envGroup = formValue.mainInfo.environment;
-    let environment: string[] = [];
-    if (envGroup.ops) {
-      environment = ['OPS'];
-    } else {
-      if (envGroup.frontend) environment.push('frontend');
-      if (envGroup.backend) environment.push('backend');
-    }
+    const environment: string[] = formValue.mainInfo.environment || [];
     const guidelineRefsArray = formValue.advanced.guideline_refsInput ? formValue.advanced.guideline_refsInput.split(',').map((t: string) => t.trim()).filter((t: string) => t) : [];
     const taskData: Partial<Task> = {
       title: formValue.mainInfo.title,
@@ -564,12 +549,7 @@ export class TaskFormComponent implements OnInit {
 }
 
 // Validateur personnalisé : au moins une case cochée
-function atLeastOneCheckboxCheckedValidator(): ValidatorFn {
-  return (control: AbstractControl): ValidationErrors | null => {
-    const group = control as FormGroup;
-    const frontend = group.get('frontend')?.value;
-    const backend = group.get('backend')?.value;
-    const ops = group.get('ops')?.value;
-    return frontend || backend || ops ? null : { atLeastOne: true };
-  };
+function atLeastOneSelectedValidator(control: AbstractControl): ValidationErrors | null {
+  const value = control.value;
+  return Array.isArray(value) && value.length > 0 ? null : { atLeastOne: true };
 } 

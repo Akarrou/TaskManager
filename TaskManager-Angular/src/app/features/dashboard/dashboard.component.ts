@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { SupabaseService } from '../../core/services/supabase';
 import { TaskService, Task } from '../../core/services/task';
@@ -44,16 +44,17 @@ export class DashboardComponent implements OnInit {
   filteredTasks = computed(() => {
     const allTasks = this.tasks();
     const filters = this.currentSearchFilters();
-    return allTasks.filter(task => {
-      const searchTextMatch = filters.searchText 
-        ? task.title.toLowerCase().includes(filters.searchText.toLowerCase()) || 
-          (task.description && task.description.toLowerCase().includes(filters.searchText.toLowerCase()))
-        : true;
-      const statusMatch = filters.status ? task.status === filters.status : true;
-      const priorityMatch = filters.priority ? task.priority === filters.priority : true;
-      const envMatch = filters.environment ? (Array.isArray(task.environment) && task.environment.includes(filters.environment)) : true;
-      return searchTextMatch && statusMatch && priorityMatch && envMatch;
-    });
+    return allTasks
+      .filter(task => {
+        const searchTextMatch = filters.searchText 
+          ? task.title.toLowerCase().includes(filters.searchText.toLowerCase()) || 
+            (task.description && task.description.toLowerCase().includes(filters.searchText.toLowerCase()))
+          : true;
+        const statusMatch = filters.status ? task.status === filters.status : true;
+        const priorityMatch = filters.priority ? task.priority === filters.priority : true;
+        const envMatch = filters.environment ? (Array.isArray(task.environment) && task.environment.includes(filters.environment)) : true;
+        return searchTextMatch && statusMatch && priorityMatch && envMatch;
+      });
   });
 
   stats = computed(() => {

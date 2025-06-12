@@ -29,27 +29,21 @@
           <label for="description">Description</label>
           <textarea id="description" formControlName="description" placeholder="Décrivez la tâche en détail..." rows="4"></textarea>
         </div>
+        <div class="form-row">
         <div class="form-group">
           <label class="block font-medium mb-1">Environnement *</label>
-          <div [formGroup]="environmentGroup" class="flex gap-6">
-            <label class="inline-flex items-center gap-2">
-              <input type="checkbox" formControlName="frontend" />
-              <span>Frontend</span>
-            </label>
-            <label class="inline-flex items-center gap-2">
-              <input type="checkbox" formControlName="backend" />
-              <span>Backend</span>
-            </label>
-            <label class="inline-flex items-center gap-2">
-              <input type="checkbox" formControlName="ops" />
-              <span>OPS</span>
-            </label>
-          </div>
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-select formControlName="environment" multiple placeholder="Sélectionner l'environnement">
+              <mat-option value="frontend">Frontend</mat-option>
+              <mat-option value="backend">Backend</mat-option>
+              <mat-option value="OPS">OPS</mat-option>
+            </mat-select>
+          </mat-form-field>
           <div class="error-message" *ngIf="mainInfoForm.get('environment')?.invalid && (mainInfoForm.get('environment')?.touched || mainInfoForm.get('environment')?.dirty)">
-            Veuillez cocher au moins un environnement
+            Veuillez sélectionner au moins un environnement.
           </div>
         </div>
-        <div class="form-row">
+       
           <div class="form-group">
             <label for="status">Statut *</label>
             <select id="status" formControlName="status">
