@@ -112,10 +112,10 @@ export class TaskFormComponent implements OnInit {
         this.resetForm();
         // Pré-remplir type et parent si création contextuelle
         if (this.contextType) {
-          this.advancedForm?.get('type')?.setValue(this.contextType);
+          this.mainInfoForm?.get('type')?.setValue(this.contextType);
         }
         if (this.contextParentId) {
-          this.advancedForm?.get('parent_task_id')?.setValue(this.contextParentId);
+          this.mainInfoForm?.get('parent_task_id')?.setValue(this.contextParentId);
         }
         // Générer automatiquement le slug si possible
         this.generateSlug();
@@ -128,7 +128,8 @@ export class TaskFormComponent implements OnInit {
       description: [''],
       environment: this.fb.control([], [Validators.required, atLeastOneSelectedValidator]),
       status: ['pending', Validators.required],
-      priority: ['medium', Validators.required]
+      priority: ['medium', Validators.required],
+      type: ['task', Validators.required]
     });
     this.assignForm = this.fb.group({
       assigned_to: [null],
@@ -141,7 +142,6 @@ export class TaskFormComponent implements OnInit {
       estimated_hours: [null],
       actual_hours: [null],
       guideline_refsInput: [''],
-      type: ['task', Validators.required],
       parent_task_id: [null]
     });
     this.subtaskForm = this.fb.group({
@@ -184,10 +184,10 @@ export class TaskFormComponent implements OnInit {
     this.mainInfoForm?.get('title')?.valueChanges.subscribe(() => {
       this.generateSlug();
     });
-    this.advancedForm?.get('type')?.valueChanges.subscribe(() => {
+    this.mainInfoForm?.get('type')?.valueChanges.subscribe(() => {
       this.generateSlug();
     });
-    this.advancedForm?.get('parent_task_id')?.valueChanges.subscribe(() => {
+    this.mainInfoForm?.get('parent_task_id')?.valueChanges.subscribe(() => {
       this.generateSlug();
     });
     // Synchroniser le PRD slug à chaque changement du slug
@@ -240,7 +240,8 @@ export class TaskFormComponent implements OnInit {
         description: task.description,
         status: task.status,
         priority: task.priority,
-        environment: Array.isArray(task.environment) ? task.environment : []
+        environment: Array.isArray(task.environment) ? task.environment : [],
+        type: task.type || 'task'
       },
       assign: {
         assigned_to: task.assigned_to,
@@ -253,7 +254,6 @@ export class TaskFormComponent implements OnInit {
         estimated_hours: task.estimated_hours ?? null,
         actual_hours: task.actual_hours ?? null,
         guideline_refsInput: task.guideline_refs ? task.guideline_refs.join(', ') : '',
-        type: task.type || 'task',
         parent_task_id: task.parent_task_id ?? null
       }
     });
@@ -272,30 +272,34 @@ export class TaskFormComponent implements OnInit {
   }
 
   private resetForm() {
-    this.stepperForm.reset({
-      mainInfo: {
-        title: '',
-        description: '',
-        status: 'pending',
-        priority: 'medium',
-        environment: []
-      },
-      assign: {
-        assigned_to: null,
-        due_date: null,
-        tagsInput: ''
-      },
-      advanced: {
-        slug: '',
-        prd_slug: '',
-        estimated_hours: null,
-        actual_hours: null,
-        guideline_refsInput: '',
-        type: 'task',
-        parent_task_id: null
-      }
-    });
-    this.subtasksFormArray.clear();
+    if (this.stepperForm) {
+      this.stepperForm.reset({
+        mainInfo: {
+          title: '',
+          description: '',
+          status: 'pending',
+          priority: 'medium',
+          environment: [],
+          type: 'task'
+        },
+        assign: {
+          assigned_to: null,
+          due_date: null,
+          tagsInput: ''
+        },
+        advanced: {
+          slug: '',
+          prd_slug: '',
+          estimated_hours: null,
+          actual_hours: null,
+          guideline_refsInput: '',
+          parent_task_id: null
+        }
+      });
+    }
+    if (this.subtaskForm && this.subtaskForm.get('subtasks')) {
+      (this.subtaskForm.get('subtasks') as FormArray).clear();
+    }
   }
 
   async onSubmit(): Promise<void> {
@@ -335,7 +339,7 @@ export class TaskFormComponent implements OnInit {
       estimated_hours: formValue.advanced.estimated_hours ?? undefined,
       actual_hours: formValue.advanced.actual_hours ?? undefined,
       guideline_refs: guidelineRefsArray,
-      type: formValue.advanced.type as 'task' | 'epic' | 'feature',
+      type: formValue.mainInfo.type as 'task' | 'epic' | 'feature',
       parent_task_id: formValue.advanced.parent_task_id ?? null,
       environment
     };
@@ -590,9 +594,9 @@ export class TaskFormComponent implements OnInit {
 
   // Génération automatique du slug/PRD slug selon la convention
   generateSlug() {
-    const type = this.advancedForm?.get('type')?.value;
+    const type = this.mainInfoForm?.get('type')?.value;
     const title = this.mainInfoForm?.get('title')?.value;
-    const parentId = this.advancedForm?.get('parent_task_id')?.value;
+    const parentId = this.mainInfoForm?.get('parent_task_id')?.value;
     if (!title) return;
     let slug = this.slugify(title);
     if (type === 'feature' && parentId) {
@@ -600,6 +604,7 @@ export class TaskFormComponent implements OnInit {
     } else if (type === 'task' && parentId) {
       slug = `${parentId}:${slug}`;
     }
+    this.mainInfoForm?.get('slug')?.setValue(slug);
     this.advancedForm?.get('slug')?.setValue(slug);
     this.advancedForm?.get('prd_slug')?.setValue(`prd-${slug}`);
   }
@@ -615,7 +620,7 @@ export class TaskFormComponent implements OnInit {
 
   // Adapter dynamiquement les champs selon le type
   isParentFieldVisible(): boolean {
-    const type = this.advancedForm?.get('type')?.value;
+    const type = this.mainInfoForm?.get('type')?.value;
     return type === 'feature' || type === 'task';
   }
 

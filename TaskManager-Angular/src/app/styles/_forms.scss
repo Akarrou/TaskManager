@@ -234,7 +234,7 @@ textarea {
   padding: v.$space-2;
   color: v.$text-color-light;
   background: none;
-  border: none;
+  border: v.$border-width-1 solid v.$border-color-medium;
   border-radius: v.$border-radius-full;
   cursor: pointer;
   transition: color v.$transition-duration v.$transition-timing-function;

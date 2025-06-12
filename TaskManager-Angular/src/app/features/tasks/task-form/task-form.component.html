@@ -24,6 +24,14 @@
               <option value="urgent">Urgente</option>
             </select>
           </div>
+          <div class="form-group">
+            <label for="type">Type *</label>
+            <select id="type" formControlName="type" [disabled]="isTypeFieldLocked()">
+              <option value="task">Tâche</option>
+              <option value="feature">Fonctionnalité</option>
+              <option value="epic">Épopée</option>
+            </select>
+          </div>
         </div>
         <div class="form-group">
           <label for="description">Description</label>
@@ -62,7 +70,7 @@
     </mat-step>
 
     <!-- Étape 2 : Affectation & échéance -->
-    <mat-step [stepControl]="assignForm" label="Affectation & échéance">
+    <mat-step [stepControl]="assignForm" label="Affectation & échéance" *ngIf="advancedForm.get('type')?.value !== 'epic'">
       <form [formGroup]="assignForm">
         <div class="form-row">
           <div class="form-group">
@@ -94,10 +102,10 @@
 
     <!-- Étape 3 : Détails avancés -->
     <mat-step [stepControl]="advancedForm" label="Détails avancés">
-      <form [formGroup]="advancedForm">
+      <form [formGroup]="advancedForm" (ngSubmit)="onSubmit()">
         <div *ngIf="isTypeFieldLocked() || contextParentId" class="context-info">
           <mat-icon>info</mat-icon>
-          <span *ngIf="isTypeFieldLocked()">Type pré-rempli : <b>{{ advancedForm.get('type')?.value }}</b></span>
+          <span *ngIf="isTypeFieldLocked()">Type pré-rempli : <b>{{ mainInfoForm.get('type')?.value }}</b></span>
           <span *ngIf="contextParentId">Parent pré-rempli : <b>{{ contextParentId }}</b></span>
         </div>
         <div class="form-row">
@@ -126,34 +134,29 @@
           <label for="guideline_refs">Références de guidelines (séparées par des virgules)</label>
           <input id="guideline_refs" type="text" formControlName="guideline_refsInput" placeholder="ex: ref1, ref2, ref3">
         </div>
-        <div class="form-group">
-          <label for="type">Type *</label>
-          <select id="type" formControlName="type" [disabled]="isTypeFieldLocked()">
-            <option value="task">Tâche</option>
-            <option value="feature">Fonctionnalité</option>
-            <option value="epic">Épopée</option>
-          </select>
-        </div>
-        <div class="form-group" *ngIf="isParentFieldVisible()">
+        <div class="form-group" *ngIf="advancedForm.get('type')?.value !== 'epic' && isParentFieldVisible()">
           <label for="parent_task_id">Tâche parente</label>
           <select id="parent_task_id" formControlName="parent_task_id">
             <option [ngValue]="null">Aucune</option>
             @for (task of tasks(); track task.id) {
-              <option [value]="task.id">{{ task.title }}</option>
+              <option *ngIf="advancedForm.get('type')?.value === 'feature' ? task.type === 'epic' : task.type === 'feature'" [value]="task.id">{{ task.title }}</option>
             }
           </select>
         </div>
         <div class="step-actions">
           <button type="button"
-          class="btn-secondary" matStepperPrevious>Précédent</button>
-          <button type="button"
-          class="btn-primary" matStepperNext [disabled]="advancedForm.invalid">Suivant</button>
+            class="btn-secondary" matStepperPrevious>Précédent</button>
+          <button *ngIf="mainInfoForm.get('type')?.value !== 'epic'" type="button"
+            class="btn-primary" matStepperNext [disabled]="advancedForm.invalid">Suivant</button>
+          <button *ngIf="mainInfoForm.get('type')?.value === 'epic'" type="submit" class="btn-primary" [disabled]="stepperForm.invalid">
+            {{ isEditMode() ? 'Mettre à jour' : 'Créer' }}
+          </button>
         </div>
       </form>
     </mat-step>
 
     <!-- Étape 4 : Sous-tâches -->
-    <mat-step [stepControl]="subtaskForm" label="Sous-tâches">
+    <mat-step [stepControl]="subtaskForm" label="Sous-tâches" *ngIf="advancedForm.get('type')?.value === 'feature'">
       <form [formGroup]="subtaskForm">
         <!-- Réutiliser la table des sous-tâches existante -->
         <div class="subtasks-table-section">

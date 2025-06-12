@@ -21,21 +21,25 @@
 
 <ng-template #recursive let-node>
   <div class="tree-node" cdkDrag>
-    <mat-icon class="type-icon">{{ getTypeIcon(node.type) }}</mat-icon>
+    <div class="tree-node-content">
+          <mat-icon class="type-icon">{{ getTypeIcon(node.type) }}</mat-icon>
     <span class="badge badge-{{ node.type }}">{{ node.type }}</span>
     <span class="title">{{ node.title }}</span>
     <span class="slug">({{ node.slug }})</span>
     <span *ngIf="node.estimated_hours" class="estimation">~{{ node.estimated_hours }}h</span>
-    <button *ngIf="node.type === 'epic'" class="c-icon-button" (click)="onAddChild(node, 'feature'); $event.stopPropagation();">
-      <span class="material-icons-outlined">add</span>
-    </button>
+    </div>
 
-    <button *ngIf="node.type === 'feature'"  class="c-icon-button"  (click)="onAddChild(node, 'task'); $event.stopPropagation();">
-      <span class="material-icons-outlined">add</span>
+    <div class="btn-actions">
+    <button *ngIf="node.type === 'epic'" class="c-icon-button" (click)="onAddChild(node, 'feature'); $event.stopPropagation();">
+      <mat-icon>add</mat-icon>
+    </button>
+    <button *ngIf="node.type === 'feature'" class="c-icon-button"  (click)="onAddChild(node, 'task'); $event.stopPropagation();">
+      <mat-icon>add</mat-icon>
     </button>
     <button  class="c-icon-button"  (click)="onNodeClick(node); $event.stopPropagation();">
-      <span class="material-icons-outlined">edit</span>
+      <mat-icon>edit</mat-icon>
     </button>
+    </div>
   </div>
   <div class="children" *ngIf="node.children && node.children.length > 0" cdkDropList [cdkDropListData]="node.children" (cdkDropListDropped)="drop($event, node)">
     <ng-container *ngFor="let child of node.children">

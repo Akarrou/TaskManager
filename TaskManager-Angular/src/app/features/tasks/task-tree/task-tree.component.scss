@@ -1,3 +1,5 @@
+@use '../../../styles/variables' as v;
+
 .task-tree-container {
   padding: 2rem 1rem;
   background: #fff;
@@ -19,10 +21,12 @@
 .tree-node {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0.5rem 0.5rem 1.5rem;
-  border-radius: 0.5rem;
+  gap: v.$space-2;
+  padding: v.$space-2;
+  border-radius: v.$border-radius-full;
+  border: v.$border-width-1 solid v.$border-color-medium;
   cursor: pointer;
+  margin-bottom: v.$space-4;
   transition: background 0.15s;
   &:hover {
     background: #f1f5f9;
@@ -61,8 +65,22 @@
   border-left: 2px dashed #e5e7eb;
   padding-left: 0.7rem;
 }
+
 @media (max-width: 600px) {
   .task-tree-container { padding: 1rem 0.2rem; }
   .tree-node { padding-left: 0.5rem; }
   .children { margin-left: 1rem; }
 } 
+
+.btn-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.tree-node-content {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+}
