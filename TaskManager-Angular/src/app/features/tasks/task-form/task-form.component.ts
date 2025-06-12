@@ -78,11 +78,28 @@ export class TaskFormComponent implements OnInit {
 
   tasks = signal<Task[]>([]);
 
+  contextType: 'epic' | 'feature' | 'task' | null = null;
+  contextParentId: string | null = null;
+  isTypeLocked = false;
+
   constructor() {
     this.loadUsers();
   }
 
   ngOnInit(): void {
+    // Lire les query params pour la création contextuelle
+    this.route.queryParams.subscribe(params => {
+      const type = params['type'] as 'epic' | 'feature' | 'task' | undefined;
+      const parentId = params['parent_task_id'] as string | undefined;
+      if (type) {
+        this.contextType = type;
+        this.isTypeLocked = true;
+      }
+      if (parentId) {
+        this.contextParentId = parentId;
+      }
+    });
+
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
       if (id) {
@@ -93,6 +110,15 @@ export class TaskFormComponent implements OnInit {
         this.currentTaskId.set(null);
         this.pageTitle.set('Nouvelle tâche');
         this.resetForm();
+        // Pré-remplir type et parent si création contextuelle
+        if (this.contextType) {
+          this.advancedForm?.get('type')?.setValue(this.contextType);
+        }
+        if (this.contextParentId) {
+          this.advancedForm?.get('parent_task_id')?.setValue(this.contextParentId);
+        }
+        // Générer automatiquement le slug si possible
+        this.generateSlug();
       }
     });
 
@@ -153,6 +179,21 @@ export class TaskFormComponent implements OnInit {
         }
       });
     }
+
+    // Ajout des écouteurs dynamiques pour la génération du slug et PRD slug
+    this.mainInfoForm?.get('title')?.valueChanges.subscribe(() => {
+      this.generateSlug();
+    });
+    this.advancedForm?.get('type')?.valueChanges.subscribe(() => {
+      this.generateSlug();
+    });
+    this.advancedForm?.get('parent_task_id')?.valueChanges.subscribe(() => {
+      this.generateSlug();
+    });
+    // Synchroniser le PRD slug à chaque changement du slug
+    this.advancedForm?.get('slug')?.valueChanges.subscribe((slug: string) => {
+      this.advancedForm?.get('prd_slug')?.setValue(`prd-${slug}`);
+    });
   }
 
   async loadUsers(): Promise<void> {
@@ -545,6 +586,41 @@ export class TaskFormComponent implements OnInit {
   async loadAllTasks() {
     await this.taskService.loadTasks();
     this.tasks.set(this.taskService.tasks());
+  }
+
+  // Génération automatique du slug/PRD slug selon la convention
+  generateSlug() {
+    const type = this.advancedForm?.get('type')?.value;
+    const title = this.mainInfoForm?.get('title')?.value;
+    const parentId = this.advancedForm?.get('parent_task_id')?.value;
+    if (!title) return;
+    let slug = this.slugify(title);
+    if (type === 'feature' && parentId) {
+      slug = `${parentId}:${slug}`;
+    } else if (type === 'task' && parentId) {
+      slug = `${parentId}:${slug}`;
+    }
+    this.advancedForm?.get('slug')?.setValue(slug);
+    this.advancedForm?.get('prd_slug')?.setValue(`prd-${slug}`);
+  }
+
+  slugify(str: string): string {
+    return str
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  // Adapter dynamiquement les champs selon le type
+  isParentFieldVisible(): boolean {
+    const type = this.advancedForm?.get('type')?.value;
+    return type === 'feature' || type === 'task';
+  }
+
+  isTypeFieldLocked(): boolean {
+    return this.isTypeLocked;
   }
 }
 

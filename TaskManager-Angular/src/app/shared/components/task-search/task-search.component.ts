@@ -10,6 +10,9 @@ export interface SearchFilters {
   status: string;
   priority: string;
   environment: string;
+  type?: string;
+  prd_slug?: string;
+  tag?: string;
 }
 
 @Component({
@@ -30,6 +33,16 @@ export interface SearchFilters {
 
       <!-- Filtres rapides -->
       <div class="filters-quick" style="display: flex; align-items: flex-end; gap: 1rem; width: 100%;">
+        <!-- Filtre par type -->
+        <div class="filter-group">
+          <label class="filter-label">Type</label>
+          <select class="filter-select" [(ngModel)]="typeFilter" (change)="onFilterChange()" aria-label="Filtrer par type">
+            <option value="">Tous</option>
+            <option value="epic">Epic</option>
+            <option value="feature">Feature</option>
+            <option value="task">Task</option>
+          </select>
+        </div>
         <!-- Filtre par statut -->
         <div class="filter-group">
           <label class="filter-label">Statut</label>
@@ -44,7 +57,6 @@ export interface SearchFilters {
             <option value="completed">Terminé</option>
           </select>
         </div>
-
         <!-- Filtre par priorité -->
         <div class="filter-group">
           <label class="filter-label">Priorité</label>
@@ -59,7 +71,6 @@ export interface SearchFilters {
             <option value="low">Basse</option>
           </select>
         </div>
-
         <!-- Filtre par environnement -->
         <div class="filter-group">
           <label class="filter-label">Environnement</label>
@@ -73,7 +84,16 @@ export interface SearchFilters {
             <option value="backend">Backend</option>
           </select>
         </div>
-
+        <!-- Filtre par PRD Slug -->
+        <div class="filter-group">
+          <label class="filter-label">PRD Slug</label>
+          <input class="filter-select" type="text" [(ngModel)]="prdSlugFilter" (input)="onFilterChange()" placeholder="ex: prd-gestion-roles">
+        </div>
+        <!-- Filtre par tag -->
+        <div class="filter-group">
+          <label class="filter-label">Tag</label>
+          <input class="filter-select" type="text" [(ngModel)]="tagFilter" (input)="onFilterChange()" placeholder="ex: urgent">
+        </div>
         <div style="flex:1;"></div>
         <!-- Bouton reset aligné à droite -->
         <button 
@@ -94,11 +114,20 @@ export interface SearchFilters {
                      <span *ngIf="searchText" class="active-filter">
              Texte: "{{ searchText }}"
            </span>
+           <span *ngIf="typeFilter" class="active-filter">
+             Type: {{ typeFilter }}
+           </span>
            <span *ngIf="statusFilter" class="active-filter">
              Statut: {{ getStatusLabel(statusFilter) }}
            </span>
            <span *ngIf="priorityFilter" class="active-filter">
              Priorité: {{ getPriorityLabel(priorityFilter) }}
+           </span>
+           <span *ngIf="prdSlugFilter" class="active-filter">
+             PRD: {{ prdSlugFilter }}
+           </span>
+           <span *ngIf="tagFilter" class="active-filter">
+             Tag: {{ tagFilter }}
            </span>
         </span>
       </div>
@@ -231,6 +260,9 @@ export class TaskSearchComponent {
   statusFilter = '';
   priorityFilter = '';
   environmentFilter = '';
+  typeFilter = '';
+  prdSlugFilter = '';
+  tagFilter = '';
 
   // Output pour notifier les changements
   filtersChange = output<SearchFilters>();
@@ -253,6 +285,9 @@ export class TaskSearchComponent {
     this.statusFilter = '';
     this.priorityFilter = '';
     this.environmentFilter = '';
+    this.typeFilter = '';
+    this.prdSlugFilter = '';
+    this.tagFilter = '';
     this.emitFilters();
   }
 
@@ -260,7 +295,10 @@ export class TaskSearchComponent {
     return this.searchText !== '' || 
            this.statusFilter !== '' || 
            this.priorityFilter !== '' ||
-           this.environmentFilter !== '';
+           this.environmentFilter !== '' ||
+           this.typeFilter !== '' ||
+           this.prdSlugFilter !== '' ||
+           this.tagFilter !== '';
   }
 
   getStatusLabel(status: string): string {
@@ -286,7 +324,10 @@ export class TaskSearchComponent {
       searchText: this.searchText,
       status: this.statusFilter,
       priority: this.priorityFilter,
-      environment: this.environmentFilter
+      environment: this.environmentFilter,
+      type: this.typeFilter,
+      prd_slug: this.prdSlugFilter,
+      tag: this.tagFilter
     });
   }
 
@@ -304,6 +345,15 @@ export class TaskSearchComponent {
     if (filters.environment !== undefined) {
       this.environmentFilter = filters.environment;
     }
+    if (filters.type !== undefined) {
+      this.typeFilter = filters.type;
+    }
+    if (filters.prd_slug !== undefined) {
+      this.prdSlugFilter = filters.prd_slug;
+    }
+    if (filters.tag !== undefined) {
+      this.tagFilter = filters.tag;
+    }
     this.emitFilters();
   }
 
@@ -312,7 +362,10 @@ export class TaskSearchComponent {
       searchText: this.searchText,
       status: this.statusFilter,
       priority: this.priorityFilter,
-      environment: this.environmentFilter
+      environment: this.environmentFilter,
+      type: this.typeFilter,
+      prd_slug: this.prdSlugFilter,
+      tag: this.tagFilter
     };
   }
 } 

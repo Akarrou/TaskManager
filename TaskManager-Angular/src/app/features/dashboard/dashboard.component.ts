@@ -10,11 +10,12 @@ import { SearchFilters } from '../../shared/components/task-search/task-search.c
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { UserService } from '../../core/services/user.service';
 import { TaskSearchComponent } from '../../shared/components/task-search/task-search.component';
+import { TaskTreeComponent } from '../tasks/task-tree/task-tree.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatDialogModule,TaskSearchComponent],
+  imports: [CommonModule, MatIconModule, MatDialogModule,TaskSearchComponent, TaskTreeComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -41,21 +42,7 @@ export class DashboardComponent implements OnInit {
     environment: ''
   });
 
-  filteredTasks = computed(() => {
-    const allTasks = this.tasks();
-    const filters = this.currentSearchFilters();
-    return allTasks
-      .filter(task => {
-        const searchTextMatch = filters.searchText 
-          ? task.title.toLowerCase().includes(filters.searchText.toLowerCase()) || 
-            (task.description && task.description.toLowerCase().includes(filters.searchText.toLowerCase()))
-          : true;
-        const statusMatch = filters.status ? task.status === filters.status : true;
-        const priorityMatch = filters.priority ? task.priority === filters.priority : true;
-        const envMatch = filters.environment ? (Array.isArray(task.environment) && task.environment.includes(filters.environment)) : true;
-        return searchTextMatch && statusMatch && priorityMatch && envMatch;
-      });
-  });
+  filteredTasks = signal<Task[]>([]);
 
   stats = computed(() => {
     const taskStats = this.getTaskStats();
@@ -182,7 +169,52 @@ export class DashboardComponent implements OnInit {
   }
 
   onSearchFiltersChange(filters: SearchFilters) {
-    this.currentSearchFilters.set(filters);
+    const allTasks = this.tasks();
+    let filtered = allTasks;
+    if (filters.searchText) {
+      const search = filters.searchText.toLowerCase();
+      filtered = filtered.filter(task =>
+        task.title.toLowerCase().includes(search) ||
+        (task.slug && task.slug.toLowerCase().includes(search)) ||
+        (task.prd_slug && task.prd_slug.toLowerCase().includes(search))
+      );
+    }
+    if (filters.status) {
+      filtered = filtered.filter(task => task.status === filters.status);
+    }
+    if (filters.priority) {
+      filtered = filtered.filter(task => task.priority === filters.priority);
+    }
+    if (filters.environment) {
+      filtered = filtered.filter(task => task.environment && task.environment.includes(filters.environment));
+    }
+    if (filters.type) {
+      filtered = filtered.filter(task => task.type === filters.type);
+    }
+    if (filters.prd_slug && typeof filters.prd_slug === 'string') {
+      filtered = filtered.filter(task => task.prd_slug && task.prd_slug.toLowerCase().includes(filters.prd_slug!.toLowerCase()));
+    }
+    if (filters.tag && typeof filters.tag === 'string') {
+      filtered = filtered.filter(task => task.tags && task.tags.some(tag => tag.toLowerCase().includes(filters.tag!.toLowerCase())));
+    }
+
+    if (filters.type === 'epic' || filters.type === 'feature') {
+      const descendants = new Set<string>();
+      function collectDescendants(task: Task) {
+        descendants.add(task.id!);
+        for (const child of allTasks) {
+          if (child.parent_task_id === task.id) {
+            collectDescendants(child);
+          }
+        }
+      }
+      for (const root of filtered) {
+        collectDescendants(root);
+      }
+      filtered = allTasks.filter(t => descendants.has(t.id!));
+    }
+
+    this.filteredTasks.set(filtered);
   }
 
   getStatusLabel(status: string): string {
@@ -203,5 +235,101 @@ export class DashboardComponent implements OnInit {
       urgent: 'Urgente'
     };
     return priorityMap[priority] || priority;
+  }
+
+  // --- Export roadmap amélioré ---
+  private buildTaskTree(tasks: Task[]): any[] {
+    const nodeMap = new Map<string, any>();
+    const roots: any[] = [];
+    for (const task of tasks) {
+      nodeMap.set(task.id!, { ...task, children: [] });
+    }
+    for (const node of nodeMap.values()) {
+      if (node.parent_task_id && nodeMap.has(node.parent_task_id)) {
+        nodeMap.get(node.parent_task_id)!.children.push(node);
+      } else {
+        roots.push(node);
+      }
+    }
+    return roots;
+  }
+
+  exportRoadmapMarkdown() {
+    const tasks = this.filteredTasks();
+    if (!tasks.length) {
+      this.downloadFile('# Roadmap (aucune tâche filtrée)\n', 'roadmap.md', 'text/markdown');
+      return;
+    }
+    const tree = this.buildTaskTree(tasks);
+    let md = '# Roadmap filtrée\n\n';
+    const renderNode = (node: any, level = 1) => {
+      const indent = '  '.repeat(level - 1);
+      const typeEmoji = node.type === 'epic' ? '⭐' : node.type === 'feature' ? '🔧' : '✅';
+      md += `${indent}${'#'.repeat(level)} ${typeEmoji} ${node.title}  `;
+      if (node.slug) md += `\`[${node.slug}]\``;
+      if (node.prd_slug) md += `  _(PRD: ${node.prd_slug})_`;
+      if (node.guideline_refs && node.guideline_refs.length)
+        md += `  _[Guidelines: ${node.guideline_refs.join(', ')}]_`;
+      if (node.estimated_hours) md += `  ⏱️${node.estimated_hours}h`;
+      md += '\n';
+      if (node.children && node.children.length) {
+        for (const child of node.children) renderNode(child, level + 1);
+      }
+    };
+    for (const root of tree) renderNode(root);
+    this.downloadFile(md, 'roadmap.md', 'text/markdown');
+  }
+
+  exportRoadmapJson() {
+    const tasks = this.filteredTasks();
+    if (!tasks.length) {
+      this.downloadFile(JSON.stringify({ message: 'Aucune tâche filtrée.' }, null, 2), 'roadmap.json', 'application/json');
+      return;
+    }
+    const tree = this.buildTaskTree(tasks);
+    const json = JSON.stringify(tree, null, 2);
+    this.downloadFile(json, 'roadmap.json', 'application/json');
+  }
+
+  private downloadFile(content: string, filename: string, mime: string) {
+    const blob = new Blob([content], { type: mime });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  /**
+   * Retourne la liste des racines à afficher dans l'arborescence :
+   * - Si aucun filtre sur type, retourne l'arbre complet filtré
+   * - Si filtre sur epic ou feature, retourne le sous-arbre complet pour chaque tâche filtrée
+   */
+  getFilteredTreeTasks(): Task[] {
+    const allTasks = this.tasks();
+    const filtered = this.filteredTasks();
+    if (!filtered.length) return [];
+    // Si filtre sur type epic ou feature, on veut afficher le sous-arbre complet pour chaque racine filtrée
+    if (this.currentSearchFilters().type === 'epic' || this.currentSearchFilters().type === 'feature') {
+      // Pour chaque tâche filtrée, récupérer tous ses descendants
+      const descendants = new Set<string>();
+      const idToTask = new Map(allTasks.map(t => [t.id, t]));
+      function collectDescendants(task: Task) {
+        descendants.add(task.id!);
+        for (const child of allTasks) {
+          if (child.parent_task_id === task.id) {
+            collectDescendants(child);
+          }
+        }
+      }
+      for (const root of filtered) {
+        collectDescendants(root);
+      }
+      // Retourner toutes les tâches concernées (racines + descendants)
+      return allTasks.filter(t => descendants.has(t.id!));
+    }
+    // Sinon, comportement par défaut : on affiche la liste filtrée
+    return filtered;
   }
 }

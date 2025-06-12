@@ -1,0 +1,68 @@
+.task-tree-container {
+  padding: 2rem 1rem;
+  background: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  min-height: 300px;
+}
+
+.loading, .error-message, .empty-message {
+  text-align: center;
+  color: #64748b;
+  font-size: 1.1rem;
+  margin: 2rem 0;
+}
+.error-message {
+  color: #ef4444;
+}
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.5rem 0.5rem 1.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover {
+    background: #f1f5f9;
+  }
+}
+.type-icon {
+  font-size: 1.2rem;
+  color: #3b82f6;
+}
+.badge {
+  display: inline-block;
+  padding: 0.15em 0.7em;
+  border-radius: 9999px;
+  font-size: 0.85em;
+  font-weight: 600;
+  text-transform: uppercase;
+  &.badge-epic { background: #f59e0b; color: #fff; }
+  &.badge-feature { background: #2563eb; color: #fff; }
+  &.badge-task { background: #22c55e; color: #fff; }
+}
+.title {
+  font-weight: 500;
+  color: #1e293b;
+}
+.slug {
+  color: #64748b;
+  font-size: 0.95em;
+}
+.estimation {
+  color: #0ea5e9;
+  font-size: 0.95em;
+  margin-left: 0.5em;
+}
+.children {
+  margin-left: 2.2rem;
+  border-left: 2px dashed #e5e7eb;
+  padding-left: 0.7rem;
+}
+@media (max-width: 600px) {
+  .task-tree-container { padding: 1rem 0.2rem; }
+  .tree-node { padding-left: 0.5rem; }
+  .children { margin-left: 1rem; }
+} 
