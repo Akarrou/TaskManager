@@ -1,4 +1,4 @@
-import { Component, signal, output } from '@angular/core';
+import { Component, signal, output, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -254,7 +254,7 @@ export interface SearchFilters {
     }
   `]
 })
-export class TaskSearchComponent {
+export class TaskSearchComponent implements OnChanges {
   // État des filtres (propriétés simples)
   searchText = '';
   statusFilter = '';
@@ -266,6 +266,20 @@ export class TaskSearchComponent {
 
   // Output pour notifier les changements
   filtersChange = output<SearchFilters>();
+
+  @Input() filters: SearchFilters | null = null;
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['filters'] && this.filters) {
+      this.searchText = this.filters.searchText || '';
+      this.statusFilter = this.filters.status || '';
+      this.priorityFilter = this.filters.priority || '';
+      this.environmentFilter = this.filters.environment || '';
+      this.typeFilter = this.filters.type || '';
+      this.prdSlugFilter = this.filters.prd_slug || '';
+      this.tagFilter = this.filters.tag || '';
+    }
+  }
 
   onSearchChange() {
     this.emitFilters();

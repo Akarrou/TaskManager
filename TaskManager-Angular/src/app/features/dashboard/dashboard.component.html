@@ -32,7 +32,7 @@
 
           <!-- Filtres interactifs -->
           <div class="c-filters">
-            <app-task-search class="c-filters" (filtersChange)="onSearchFiltersChange($event)"></app-task-search>
+            <app-task-search class="c-filters" (filtersChange)="onSearchFiltersChange($event)" [filters]="currentSearchFilters()"></app-task-search>
           </div>
       <!-- Vue arborescente des tâches -->
       <app-task-tree [tasks]="getFilteredTreeTasks()"></app-task-tree>

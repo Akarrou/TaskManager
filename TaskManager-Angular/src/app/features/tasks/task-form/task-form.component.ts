@@ -89,10 +89,12 @@ export class TaskFormComponent implements OnInit {
   ngOnInit(): void {
     // Lire les query params pour la création contextuelle
     this.route.queryParams.subscribe(params => {
+      console.log('queryParams', params); // debug
       const type = params['type'] as 'epic' | 'feature' | 'task' | undefined;
       const parentId = params['parent_task_id'] as string | undefined;
       if (type) {
         this.contextType = type;
+        console.log('contextType', this.contextType);
         this.isTypeLocked = true;
       }
       if (parentId) {
@@ -102,6 +104,7 @@ export class TaskFormComponent implements OnInit {
 
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
+      console.log('paramMap id', id); // debug
       if (id) {
         this.currentTaskId.set(id);
         this.pageTitle.set('Modifier la tâche');
@@ -117,7 +120,6 @@ export class TaskFormComponent implements OnInit {
         if (this.contextParentId) {
           this.mainInfoForm?.get('parent_task_id')?.setValue(this.contextParentId);
         }
-        // Générer automatiquement le slug si possible
         this.generateSlug();
       }
     });
@@ -194,6 +196,14 @@ export class TaskFormComponent implements OnInit {
     this.advancedForm?.get('slug')?.valueChanges.subscribe((slug: string) => {
       this.advancedForm?.get('prd_slug')?.setValue(`prd-${slug}`);
     });
+
+    // Après initialisation des formulaires et patch éventuel des valeurs :
+    if (this.contextType) {
+      this.mainInfoForm?.get('type')?.setValue(this.contextType);
+      this.mainInfoForm?.get('type')?.disable({ onlySelf: true });
+    } else {
+      this.mainInfoForm?.get('type')?.enable({ onlySelf: true });
+    }
   }
 
   async loadUsers(): Promise<void> {
@@ -213,6 +223,26 @@ export class TaskFormComponent implements OnInit {
       if (task) {
         this.patchFormWithTask(task);
         this.loadTaskDetailsAndComments(id);
+        // Verrouillage du type pour epic ou feature avec enfants
+        const allTasks = (!this.tasks() || this.tasks().length === 0) ? (await this.loadAllTasks(), this.tasks()) : this.tasks();
+        const typeControl = this.mainInfoForm.get('type');
+        if (task.type === 'epic') {
+          const hasFeatureChild = allTasks.some(t => t.parent_task_id === task.id && t.type === 'feature');
+          if (hasFeatureChild) {
+            typeControl?.disable({ onlySelf: true });
+          } else {
+            typeControl?.enable({ onlySelf: true });
+          }
+        } else if (task.type === 'feature') {
+          const hasTaskChild = allTasks.some(t => t.parent_task_id === task.id && t.type === 'task');
+          if (hasTaskChild) {
+            typeControl?.disable({ onlySelf: true });
+          } else {
+            typeControl?.enable({ onlySelf: true });
+          }
+        } else {
+          typeControl?.enable({ onlySelf: true });
+        }
       } else {
         console.error('Tâche non trouvée pour modification:', id);
         this.router.navigate(['/dashboard']);
@@ -236,16 +266,16 @@ export class TaskFormComponent implements OnInit {
   private patchFormWithTask(task: Task) {
     this.stepperForm.patchValue({
       mainInfo: {
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
+        title: task.title || '',
+        description: task.description || '',
+        status: task.status || 'pending',
+        priority: task.priority || 'medium',
         environment: Array.isArray(task.environment) ? task.environment : [],
         type: task.type || 'task'
       },
       assign: {
-        assigned_to: task.assigned_to,
-        due_date: task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : null,
+        assigned_to: task.assigned_to ?? null,
+        due_date: task.due_date ?? null,
         tagsInput: task.tags ? task.tags.join(', ') : ''
       },
       advanced: {
@@ -325,7 +355,9 @@ export class TaskFormComponent implements OnInit {
 
     // Conversion des cases cochées en tableau de string
     const environment: string[] = formValue.mainInfo.environment || [];
+    console.log('environment', formValue.advanced);
     const guidelineRefsArray = formValue.advanced.guideline_refsInput ? formValue.advanced.guideline_refsInput.split(',').map((t: string) => t.trim()).filter((t: string) => t) : [];
+    console.log('this.contextType', this.contextType);
     const taskData: Partial<Task> = {
       title: formValue.mainInfo.title,
       description: formValue.mainInfo.description ?? undefined,
@@ -339,9 +371,9 @@ export class TaskFormComponent implements OnInit {
       estimated_hours: formValue.advanced.estimated_hours ?? undefined,
       actual_hours: formValue.advanced.actual_hours ?? undefined,
       guideline_refs: guidelineRefsArray,
-      type: formValue.mainInfo.type as 'task' | 'epic' | 'feature',
-      parent_task_id: formValue.advanced.parent_task_id ?? null,
-      environment
+      type: this.contextType  as 'task' | 'epic' | 'feature',
+      parent_task_id: formValue.advanced.parent_task_id ?? this.contextParentId,
+      environment: environment
     };
 
     let success = false;
@@ -367,6 +399,7 @@ export class TaskFormComponent implements OnInit {
         this.snackBar.open('Utilisateur non connecté. Impossible de créer la tâche.', 'Fermer', { duration: 3000 });
         return;
       }
+      console.log('taskData', taskData);
       const taskToCreate: Omit<Task, 'id' | 'created_at' | 'updated_at'> = {
         title: taskData.title!,
         description: taskData.description,
@@ -385,6 +418,7 @@ export class TaskFormComponent implements OnInit {
         environment: taskData.environment ?? [],
         created_by: currentUserId
       };
+ 
       success = await this.taskService.createTask(taskToCreate);
       if (success) {
         const subtasks = this.subtasksFormArray.value as Partial<ISubtask>[];

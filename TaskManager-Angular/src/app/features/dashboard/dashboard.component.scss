@@ -420,3 +420,8 @@
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.1s ease;
 }
+
+.export-roadmap-btns {
+  display: flex;
+  gap: v.$space-2;
+}

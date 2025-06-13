@@ -230,13 +230,36 @@ export class TaskService {
   async createTask(task: Omit<Task, 'id' | 'created_at' | 'updated_at'>): Promise<boolean> {
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
+    console.log('task', task);
+    // On retire task_number et subtasks si présents
+    // On s'assure que les champs array sont bien formatés
+    const { task_number, subtasks, ...taskWithoutNumber } = task;
+   
+    // Nettoyage du payload : suppression des clés undefined
+    const cleanedPayload: Record<string, any> = {};
+    Object.entries(taskWithoutNumber).forEach(([key, value]) => {
+      if (value !== undefined) {
+        cleanedPayload[key] = value;
+      }
+    });
 
-    // On retire task_number si présent
-    const { task_number, ...taskWithoutNumber } = task;
+    // Vérification obligatoire pour type
+    if (!cleanedPayload['type']) {
+      this.errorSignal.set('Le champ "type" est obligatoire et doit être défini (epic, feature ou task)');
+      this.loadingSignal.set(false);
+      return false;
+    }
+    // Vérification obligatoire pour parent_task_id (doit exister, même si null)
+    if (!('parent_task_id' in cleanedPayload)) {
+      cleanedPayload['parent_task_id'] = null;
+    }
+
+    // Log du payload nettoyé
+    console.log('Payload nettoyé envoyé à Supabase:', cleanedPayload);
 
     try {
       const { data, error } = await this.supabaseService.tasks
-        .insert([taskWithoutNumber])
+        .insert([cleanedPayload])
         .select()
         .single();
 

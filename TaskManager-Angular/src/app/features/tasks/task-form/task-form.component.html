@@ -26,7 +26,7 @@
           </div>
           <div class="form-group">
             <label for="type">Type *</label>
-            <select id="type" formControlName="type" [disabled]="isTypeFieldLocked()">
+            <select id="type" formControlName="type">
               <option value="task">Tâche</option>
               <option value="feature">Fonctionnalité</option>
               <option value="epic">Épopée</option>
@@ -156,7 +156,7 @@
     </mat-step>
 
     <!-- Étape 4 : Sous-tâches -->
-    <mat-step [stepControl]="subtaskForm" label="Sous-tâches" *ngIf="advancedForm.get('type')?.value === 'feature'">
+    <mat-step [stepControl]="subtaskForm" label="Sous-tâches" *ngIf="mainInfoForm.get('type')?.value === 'feature' || mainInfoForm.get('type')?.value === 'task'">
       <form [formGroup]="subtaskForm">
         <!-- Réutiliser la table des sous-tâches existante -->
         <div class="subtasks-table-section">

@@ -57,6 +57,17 @@ export class DashboardComponent implements OnInit {
   async ngOnInit() {
     await this.checkSupabaseConnection();
     await this.loadUsers();
+    // Lecture des filtres depuis localStorage (après chargement des tâches)
+    const savedFilters = localStorage.getItem('dashboardFilters');
+    if (savedFilters) {
+      try {
+        const parsed = JSON.parse(savedFilters);
+        this.currentSearchFilters.set(parsed);
+        this.onSearchFiltersChange(parsed);
+      } catch (e) {
+        // Si parsing échoue, ignorer
+      }
+    }
   }
 
   private async checkSupabaseConnection() {
@@ -169,6 +180,8 @@ export class DashboardComponent implements OnInit {
   }
 
   onSearchFiltersChange(filters: SearchFilters) {
+    // Sauvegarde dans localStorage
+    localStorage.setItem('dashboardFilters', JSON.stringify(filters));
     const allTasks = this.tasks();
     let filtered = allTasks;
     if (filters.searchText) {
