@@ -187,7 +187,7 @@ export interface ToastMessage {
     }
 
     .toast-success .toast-progress-bar {
-      background: #10b981;
+      background: #10b981 !important;
     }
 
     .toast-error .toast-progress-bar {
@@ -195,11 +195,11 @@ export interface ToastMessage {
     }
 
     .toast-warning .toast-progress-bar {
-      background: #f59e0b;
+      background: #f59e0b !important;
     }
 
     .toast-info .toast-progress-bar {
-      background: #3b82f6;
+      background: #3b82f6 !important  ;
     }
 
     @keyframes slideIn {

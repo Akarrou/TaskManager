@@ -212,7 +212,7 @@ export class TaskFormComponent implements OnInit {
       this.users.set(userList);
     } catch (error) {
       console.error("Erreur lors du chargement de la liste des utilisateurs", error);
-      this.snackBar.open("Impossible de charger la liste des utilisateurs.", 'Fermer', { duration: 3000 });
+      this.snackBar.open("Impossible de charger la liste des utilisateurs.", 'Fermer', { duration: 3000, panelClass: 'red-snackbar' });
     }
   }
 
@@ -334,7 +334,7 @@ export class TaskFormComponent implements OnInit {
 
   async onSubmit(): Promise<void> {
     if (this.stepperForm.invalid) {
-      this.snackBar.open('Veuillez corriger les erreurs du formulaire.', 'Fermer', { duration: 3000 });
+      this.snackBar.open('Veuillez corriger les erreurs du formulaire.', 'Fermer', { duration: 3000, panelClass: 'red-snackbar' });
       Object.values(this.stepperForm.controls).forEach(control => {
         control.markAsTouched();
       });
@@ -355,9 +355,9 @@ export class TaskFormComponent implements OnInit {
 
     // Conversion des cases cochées en tableau de string
     const environment: string[] = formValue.mainInfo.environment || [];
-    console.log('environment', formValue.advanced);
+
     const guidelineRefsArray = formValue.advanced.guideline_refsInput ? formValue.advanced.guideline_refsInput.split(',').map((t: string) => t.trim()).filter((t: string) => t) : [];
-    console.log('this.contextType', this.contextType);
+   
     const taskData: Partial<Task> = {
       title: formValue.mainInfo.title,
       description: formValue.mainInfo.description ?? undefined,
@@ -371,7 +371,7 @@ export class TaskFormComponent implements OnInit {
       estimated_hours: formValue.advanced.estimated_hours ?? undefined,
       actual_hours: formValue.advanced.actual_hours ?? undefined,
       guideline_refs: guidelineRefsArray,
-      type: this.contextType  as 'task' | 'epic' | 'feature',
+      type: this.contextType ? this.contextType as 'task' | 'epic' | 'feature' : formValue.mainInfo.type as 'task' | 'epic' | 'feature',
       parent_task_id: formValue.advanced.parent_task_id ?? this.contextParentId,
       environment: environment
     };
@@ -396,10 +396,9 @@ export class TaskFormComponent implements OnInit {
       this.deletedSubtaskIds = [];
     } else {
       if (!currentUserId) {
-        this.snackBar.open('Utilisateur non connecté. Impossible de créer la tâche.', 'Fermer', { duration: 3000 });
+        this.snackBar.open('Utilisateur non connecté. Impossible de créer la tâche.', 'Fermer', { duration: 3000, panelClass: 'red-snackbar' });
         return;
       }
-      console.log('taskData', taskData);
       const taskToCreate: Omit<Task, 'id' | 'created_at' | 'updated_at'> = {
         title: taskData.title!,
         description: taskData.description,
@@ -425,13 +424,14 @@ export class TaskFormComponent implements OnInit {
         for (const subtask of subtasks) {
           await this.taskService.createSubtask({ ...subtask, task_id: success } as any);
         }
+        this.router.navigate(['/dashboard']);
       }
     }
 
     if (success) {
-      this.snackBar.open(`Tâche ${this.currentTaskId() ? 'mise à jour' : 'créée'} avec succès!`, 'Fermer', { duration: 2000 });
+      this.snackBar.open(`Tâche ${this.currentTaskId() ? 'mise à jour' : 'créée'} avec succès!`, 'Fermer', { duration: 2000, panelClass: 'green-snackbar' });
     } else {
-      this.snackBar.open(`Échec de la ${this.currentTaskId() ? 'mise à jour' : 'création'} de la tâche.`, 'Fermer', { duration: 3000 });
+      this.snackBar.open(`Échec de la ${this.currentTaskId() ? 'mise à jour' : 'création'} de la tâche.`, 'Fermer', { duration: 3000, panelClass: 'red-snackbar' });
     }
   }
 
@@ -448,7 +448,7 @@ export class TaskFormComponent implements OnInit {
         }
       });
     } else {
-      this.snackBar.open('Tâche non trouvée.', 'Fermer', { duration: 3000 });
+      this.snackBar.open('Tâche non trouvée.', 'Fermer', { duration: 3000, panelClass: 'red-snackbar' });
       this.router.navigate(['/dashboard']); // Rediriger si la tâche n'est pas trouvée
       return; // Sortir tôt si la tâche n'est pas trouvée
     }
@@ -471,15 +471,15 @@ export class TaskFormComponent implements OnInit {
     const currentUserId = this.authService.getCurrentUserId();
 
     if (!commentText) {
-      this.snackBar.open('Le commentaire ne peut pas être vide.', 'Fermer', { duration: 2000 });
+      this.snackBar.open('Le commentaire ne peut pas être vide.', 'Fermer', { duration: 2000, panelClass: 'red-snackbar' });
       return;
     }
     if (!currentTaskId) {
-      this.snackBar.open('ID de tâche manquant, impossible d\'ajouter un commentaire.', 'Fermer', { duration: 3000 });
+      this.snackBar.open('ID de tâche manquant, impossible d\'ajouter un commentaire.', 'Fermer', { duration: 3000, panelClass: 'red-snackbar' });
       return;
     }
     if (!currentUserId) {
-      this.snackBar.open('Utilisateur non connecté. Veuillez vous connecter pour commenter.', 'Fermer', { duration: 3000 });
+      this.snackBar.open('Utilisateur non connecté. Veuillez vous connecter pour commenter.', 'Fermer', { duration: 3000, panelClass: 'red-snackbar' });
       return;
     }
 
@@ -492,11 +492,11 @@ export class TaskFormComponent implements OnInit {
     const newComment = await this.taskService.addCommentToTask(commentData);
 
     if (newComment) {
-      this.snackBar.open('Commentaire ajouté avec succès!', 'Fermer', { duration: 2000 });
+      this.snackBar.open('Commentaire ajouté avec succès!', 'Fermer', { duration: 2000, panelClass: 'green-snackbar' });
       this.taskComments.update(comments => [...comments, newComment]);
       this.newCommentText.set(''); // Réinitialiser le champ de commentaire
     } else {
-      this.snackBar.open('Échec de l\'ajout du commentaire.', 'Fermer', { duration: 3000 });
+      this.snackBar.open('Échec de l\'ajout du commentaire.', 'Fermer', { duration: 3000, panelClass: 'red-snackbar' });
     }
   }
 
@@ -579,7 +579,7 @@ export class TaskFormComponent implements OnInit {
   }
 
   isFormOrSubtasksDirty(): boolean {
-    if (this.stepperForm.dirty) {
+    if (this.stepperForm.dirty && !this.stepperForm.invalid) {
       return true;
     }
     for (const control of this.subtasksFormArray.controls) {

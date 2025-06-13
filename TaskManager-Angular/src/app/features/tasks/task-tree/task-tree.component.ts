@@ -6,6 +6,8 @@ import { Router } from '@angular/router';
 import { TaskService, Task } from '../../../core/services/task';
 import { ISubtask } from '../subtask.model';
 import { CdkDropList, CdkDrag, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { MatDialog } from '@angular/material/dialog';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 interface TaskTreeNode {
   id: string;
@@ -29,42 +31,35 @@ export class TaskTreeComponent implements OnInit, OnChanges {
   private taskService = inject(TaskService);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
-
-  @Input() tasks: Task[] | null = null;
+  private dialog = inject(MatDialog);
 
   treeData: TaskTreeNode[] = [];
   loading = true;
   error: string | null = null;
 
   async ngOnInit() {
-    if (!this.tasks) {
-      this.loading = true;
+    await this.initTree();
+  }
+
+  async initTree() {
+    this.loading = true;
+    this.cdr.detectChanges();
+    try {
+      await this.taskService.loadTasks();
+      const tasks = this.taskService.tasks();
+      this.treeData = this.buildTaskTree(tasks);
       this.cdr.detectChanges();
-      try {
-        await this.taskService.loadTasks();
-        const tasks = this.taskService.tasks();
-        this.treeData = this.buildTaskTree(tasks);
-        this.cdr.detectChanges();
-      } catch (e) {
-        this.error = 'Erreur lors du chargement des tâches.';
-        this.cdr.detectChanges();
-      } finally {
-        this.loading = false;
-        this.cdr.detectChanges();
-      }
-    } else {
-      this.treeData = this.buildTaskTree(this.tasks);
+    } catch (e) {
+      this.error = 'Erreur lors du chargement des tâches.';
+      this.cdr.detectChanges();
+    } finally {
       this.loading = false;
       this.cdr.detectChanges();
     }
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['tasks'] && this.tasks) {
-      this.treeData = this.buildTaskTree(this.tasks);
-      this.loading = false;
-      this.cdr.detectChanges();
-    }
+    // Plus besoin de gérer les changements d'@Input tasks
   }
 
   buildTaskTree(tasks: Task[]): TaskTreeNode[] {
@@ -148,5 +143,55 @@ export class TaskTreeComponent implements OnInit, OnChanges {
     if (dragged.type === 'feature' && newParent.type === 'epic') return true;
     if (dragged.type === 'task' && newParent.type === 'feature') return true;
     return false;
+  }
+
+  onDeleteNode(node: TaskTreeNode) {
+    // 1. Vérification métier
+    if (node.type === 'epic' && node.children && node.children.some(child => child.type === 'feature')) {
+      // Epic avec features → suppression interdite
+      this.dialog.open(ConfirmDialogComponent, {
+        data: {
+          title: 'Suppression impossible',
+          message: `Impossible de supprimer l'épopée "${node.title}" car elle contient des features. Supprime d'abord les features associées.`
+        } as ConfirmDialogData
+      });
+      return;
+    }
+    if (node.type === 'feature' && node.children && node.children.some(child => child.type === 'task')) {
+      // Feature avec tasks → suppression interdite
+      this.dialog.open(ConfirmDialogComponent, {
+        data: {
+          title: 'Suppression impossible',
+          message: `Impossible de supprimer la feature "${node.title}" car elle contient des tâches. Supprime d'abord les tâches associées.`
+        } as ConfirmDialogData
+      });
+      return;
+    }
+
+    // 2. Confirmation classique
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Confirmation',
+        message: `Voulez-vous vraiment supprimer "${node.title}" ?`
+      } as ConfirmDialogData
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.taskService.deleteTask(node.id).then(() => {
+          this.initTree(); // Rafraîchir l'arbre après suppression
+        });
+      }
+    });
+  }
+
+  canDeleteNode(node: TaskTreeNode): boolean {
+    if (node.type === 'epic' && node.children && node.children.some(child => child.type === 'feature')) {
+      return false;
+    }
+    if (node.type === 'feature' && node.children && node.children.some(child => child.type === 'task')) {
+      return false;
+    }
+    return true;
   }
 } 

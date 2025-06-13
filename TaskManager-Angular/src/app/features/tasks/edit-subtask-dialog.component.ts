@@ -7,6 +7,7 @@ import { ISubtask } from './subtask.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-edit-subtask-dialog',
@@ -18,6 +19,7 @@ import { MatInputModule } from '@angular/material/input';
 export class EditSubtaskDialogComponent {
   private fb = inject(FormBuilder);
   private dialogRef = inject(MatDialogRef<EditSubtaskDialogComponent>);
+  private snackBar = inject(MatSnackBar);
   subtaskForm: FormGroup;
 
   constructor(@Inject(MAT_DIALOG_DATA) public data: Partial<ISubtask>) {
@@ -45,8 +47,10 @@ export class EditSubtaskDialogComponent {
         ...formValue,
         guideline_refs: guidelineRefsArray
       };
+      this.snackBar.open('Sous-tâche mise à jour avec succès!', 'Fermer', { duration: 2000, panelClass: 'green-snackbar' });
       this.dialogRef.close(subtaskData);
     } else {
+      this.snackBar.open('Veuillez corriger les erreurs du formulaire.', 'Fermer', { duration: 3000, panelClass: 'red-snackbar' });
       this.subtaskForm.markAllAsTouched();
     }
   }

@@ -39,6 +39,9 @@
     <button  class="c-icon-button"  (click)="onNodeClick(node); $event.stopPropagation();">
       <mat-icon>edit</mat-icon>
     </button>
+    <button *ngIf="canDeleteNode(node)" class="c-icon-button"  (click)="onDeleteNode(node); $event.stopPropagation();">
+      <mat-icon>delete</mat-icon>
+    </button>
     </div>
   </div>
   <div class="children" *ngIf="node.children && node.children.length > 0" cdkDropList [cdkDropListData]="node.children" (cdkDropListDropped)="drop($event, node)">
