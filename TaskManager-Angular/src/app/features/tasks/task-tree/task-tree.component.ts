@@ -16,6 +16,7 @@ interface TaskTreeNode {
   type: 'epic' | 'feature' | 'task';
   status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   estimated_hours?: number;
+  task_number?: number;
   children?: TaskTreeNode[];
   parent_task_id?: string | null;
   subtasks?: ISubtask[];
@@ -92,6 +93,7 @@ export class TaskTreeComponent implements OnInit, OnChanges {
         type: task.type,
         status: task.status,
         estimated_hours: task.estimated_hours,
+        task_number: task.task_number,
         parent_task_id: task.parent_task_id ?? null,
         children: [],
         subtasks: task.subtasks ?? []

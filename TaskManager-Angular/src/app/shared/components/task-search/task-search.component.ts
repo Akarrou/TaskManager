@@ -25,10 +25,10 @@ export interface SearchFilters {
       <div style="margin-bottom: 1rem; margin-top: 1rem;">
           <input matInput
             type="text"
-            placeholder="Rechercher des tâches..."
+            placeholder="Rechercher par titre, slug, PRD ou numéro (#123)..."
             [(ngModel)]="searchText"
             (input)="onSearchChange()"
-            aria-label="Rechercher des tâches">
+            aria-label="Rechercher des tâches par titre, slug, PRD ou numéro">
       </div>
 
       <!-- Filtres complets -->
@@ -114,7 +114,7 @@ export interface SearchFilters {
         <span class="results-text">
           Filtres actifs : 
           <span *ngIf="searchText" class="active-filter">
-            Texte: "{{ searchText }}"
+            {{ isSearchNumber(searchText) ? 'Numéro: #' + searchText : 'Texte: "' + searchText + '"' }}
           </span>
           <span *ngIf="typeFilter" class="active-filter">
             Type: {{ typeFilter }}
@@ -389,5 +389,9 @@ export class TaskSearchComponent implements OnChanges {
       prd_slug: this.prdSlugFilter,
       tag: this.tagFilter
     };
+  }
+
+  isSearchNumber(text: string): boolean {
+    return !isNaN(Number(text)) && text.length > 0;
   }
 } 

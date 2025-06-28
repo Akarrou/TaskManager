@@ -210,7 +210,8 @@ export class DashboardComponent implements OnInit {
       filtered = filtered.filter(task =>
         task.title.toLowerCase().includes(search) ||
         (task.slug && task.slug.toLowerCase().includes(search)) ||
-        (task.prd_slug && task.prd_slug.toLowerCase().includes(search))
+        (task.prd_slug && task.prd_slug.toLowerCase().includes(search)) ||
+        (task.task_number && task.task_number.toString().includes(search))
       );
     }
     
