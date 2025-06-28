@@ -41,7 +41,10 @@ export class DashboardComponent implements OnInit {
     searchText: '',
     status: '',
     priority: '',
-    environment: ''
+    environment: '',
+    type: '',
+    prd_slug: '',
+    tag: ''
   });
 
   filteredTasks = signal<Task[]>([]);
@@ -59,15 +62,22 @@ export class DashboardComponent implements OnInit {
   async ngOnInit() {
     await this.checkSupabaseConnection();
     await this.loadUsers();
-    // Lecture des filtres depuis localStorage (après chargement des tâches)
-    const savedFilters = localStorage.getItem('dashboardFilters');
-    if (savedFilters) {
-      try {
-        const parsed = JSON.parse(savedFilters);
-        this.currentSearchFilters.set(parsed);
-        this.onSearchFiltersChange(parsed);
-      } catch (e) {
-        // Si parsing échoue, ignorer
+    
+    // Attendre que les tâches soient chargées, puis initialiser
+    if (this.tasks().length > 0) {
+      // Initialiser filteredTasks avec toutes les tâches
+      this.filteredTasks.set(this.tasks());
+      
+      // Lecture des filtres depuis localStorage
+      const savedFilters = localStorage.getItem('dashboardFilters');
+      if (savedFilters) {
+        try {
+          const parsed = JSON.parse(savedFilters);
+          this.currentSearchFilters.set(parsed);
+          this.onSearchFiltersChange(parsed);
+        } catch (e) {
+          // Si parsing échoue, ignorer
+        }
       }
     }
   }
@@ -78,6 +88,10 @@ export class DashboardComponent implements OnInit {
       await this.taskService.loadTasks();
       this.supabaseStatus.set('connected');
       this.statusMessage.set('Connecté à Supabase.');
+      
+      // Initialiser filteredTasks après le chargement des tâches
+      const loadedTasks = this.tasks();
+      this.filteredTasks.set(loadedTasks);
     } catch (error: any) {
       this.supabaseStatus.set('error');
       this.statusMessage.set(`Erreur de connexion: ${error.message || 'Vérifiez la console'}`);
@@ -182,10 +196,15 @@ export class DashboardComponent implements OnInit {
   }
 
   onSearchFiltersChange(filters: SearchFilters) {
+    // Mettre à jour le signal des filtres actuels
+    this.currentSearchFilters.set(filters);
+    
     // Sauvegarde dans localStorage
     localStorage.setItem('dashboardFilters', JSON.stringify(filters));
+    
     const allTasks = this.tasks();
-    let filtered = allTasks;
+    let filtered = [...allTasks]; // Créer une copie pour éviter les mutations
+    
     if (filters.searchText) {
       const search = filters.searchText.toLowerCase();
       filtered = filtered.filter(task =>
@@ -194,25 +213,32 @@ export class DashboardComponent implements OnInit {
         (task.prd_slug && task.prd_slug.toLowerCase().includes(search))
       );
     }
+    
     if (filters.status) {
       filtered = filtered.filter(task => task.status === filters.status);
     }
+    
     if (filters.priority) {
       filtered = filtered.filter(task => task.priority === filters.priority);
     }
+    
     if (filters.environment) {
       filtered = filtered.filter(task => task.environment && task.environment.includes(filters.environment));
     }
+    
     if (filters.type) {
       filtered = filtered.filter(task => task.type === filters.type);
     }
-    if (filters.prd_slug && typeof filters.prd_slug === 'string') {
+    
+    if (filters.prd_slug && typeof filters.prd_slug === 'string' && filters.prd_slug.trim()) {
       filtered = filtered.filter(task => task.prd_slug && task.prd_slug.toLowerCase().includes(filters.prd_slug!.toLowerCase()));
     }
-    if (filters.tag && typeof filters.tag === 'string') {
+    
+    if (filters.tag && typeof filters.tag === 'string' && filters.tag.trim()) {
       filtered = filtered.filter(task => task.tags && task.tags.some(tag => tag.toLowerCase().includes(filters.tag!.toLowerCase())));
     }
 
+    // Logique pour inclure les descendants si on filtre par epic ou feature
     if (filters.type === 'epic' || filters.type === 'feature') {
       const descendants = new Set<string>();
       function collectDescendants(task: Task) {
@@ -322,29 +348,6 @@ export class DashboardComponent implements OnInit {
    * - Si filtre sur epic ou feature, retourne le sous-arbre complet pour chaque tâche filtrée
    */
   getFilteredTreeTasks(): Task[] {
-    const allTasks = this.tasks();
-    const filtered = this.filteredTasks();
-    if (!filtered.length) return [];
-    // Si filtre sur type epic ou feature, on veut afficher le sous-arbre complet pour chaque racine filtrée
-    if (this.currentSearchFilters().type === 'epic' || this.currentSearchFilters().type === 'feature') {
-      // Pour chaque tâche filtrée, récupérer tous ses descendants
-      const descendants = new Set<string>();
-      const idToTask = new Map(allTasks.map(t => [t.id, t]));
-      function collectDescendants(task: Task) {
-        descendants.add(task.id!);
-        for (const child of allTasks) {
-          if (child.parent_task_id === task.id) {
-            collectDescendants(child);
-          }
-        }
-      }
-      for (const root of filtered) {
-        collectDescendants(root);
-      }
-      // Retourner toutes les tâches concernées (racines + descendants)
-      return allTasks.filter(t => descendants.has(t.id!));
-    }
-    // Sinon, comportement par défaut : on affiche la liste filtrée
-    return filtered;
+    return this.filteredTasks();
   }
 }

@@ -10,9 +10,9 @@ export interface SearchFilters {
   status: string;
   priority: string;
   environment: string;
-  type?: string;
-  prd_slug?: string;
-  tag?: string;
+  type: string;
+  prd_slug: string;
+  tag: string;
 }
 
 @Component({
@@ -31,7 +31,7 @@ export interface SearchFilters {
             aria-label="Rechercher des tâches">
       </div>
 
-      <!-- Filtres rapides -->
+      <!-- Filtres complets -->
       <div class="filters-quick" style="display: flex; align-items: flex-end; gap: 1rem; width: 100%;">
         <!-- Filtre par type -->
         <div class="filter-group">
@@ -55,6 +55,7 @@ export interface SearchFilters {
             <option value="pending">En attente</option>
             <option value="in_progress">En cours</option>
             <option value="completed">Terminé</option>
+            <option value="cancelled">Annulé</option>
           </select>
         </div>
         <!-- Filtre par priorité -->
@@ -66,9 +67,10 @@ export interface SearchFilters {
             (change)="onFilterChange()"
             aria-label="Filtrer par priorité">
             <option value="">Toutes</option>
-            <option value="high">Haute</option>
-            <option value="medium">Moyenne</option>
             <option value="low">Basse</option>
+            <option value="medium">Moyenne</option>
+            <option value="high">Haute</option>
+            <option value="urgent">Urgente</option>
           </select>
         </div>
         <!-- Filtre par environnement -->
@@ -111,24 +113,27 @@ export interface SearchFilters {
       <div class="search-results" *ngIf="hasActiveFilters()">
         <span class="results-text">
           Filtres actifs : 
-                     <span *ngIf="searchText" class="active-filter">
-             Texte: "{{ searchText }}"
-           </span>
-           <span *ngIf="typeFilter" class="active-filter">
-             Type: {{ typeFilter }}
-           </span>
-           <span *ngIf="statusFilter" class="active-filter">
-             Statut: {{ getStatusLabel(statusFilter) }}
-           </span>
-           <span *ngIf="priorityFilter" class="active-filter">
-             Priorité: {{ getPriorityLabel(priorityFilter) }}
-           </span>
-           <span *ngIf="prdSlugFilter" class="active-filter">
-             PRD: {{ prdSlugFilter }}
-           </span>
-           <span *ngIf="tagFilter" class="active-filter">
-             Tag: {{ tagFilter }}
-           </span>
+          <span *ngIf="searchText" class="active-filter">
+            Texte: "{{ searchText }}"
+          </span>
+          <span *ngIf="typeFilter" class="active-filter">
+            Type: {{ typeFilter }}
+          </span>
+          <span *ngIf="statusFilter" class="active-filter">
+            Statut: {{ getStatusLabel(statusFilter) }}
+          </span>
+          <span *ngIf="priorityFilter" class="active-filter">
+            Priorité: {{ getPriorityLabel(priorityFilter) }}
+          </span>
+          <span *ngIf="environmentFilter" class="active-filter">
+            Environnement: {{ environmentFilter }}
+          </span>
+          <span *ngIf="prdSlugFilter" class="active-filter">
+            PRD: {{ prdSlugFilter }}
+          </span>
+          <span *ngIf="tagFilter" class="active-filter">
+            Tag: {{ tagFilter }}
+          </span>
         </span>
       </div>
     </div>
@@ -319,22 +324,24 @@ export class TaskSearchComponent implements OnChanges {
     const labels: Record<string, string> = {
       pending: 'En attente',
       in_progress: 'En cours',
-      completed: 'Terminé'
+      completed: 'Terminé',
+      cancelled: 'Annulé'
     };
     return labels[status] || status;
   }
 
   getPriorityLabel(priority: string): string {
     const labels: Record<string, string> = {
-      high: 'Haute',
+      low: 'Basse',
       medium: 'Moyenne',
-      low: 'Basse'
+      high: 'Haute',
+      urgent: 'Urgente'
     };
     return labels[priority] || priority;
   }
 
   private emitFilters() {
-    this.filtersChange.emit({
+    const filters = {
       searchText: this.searchText,
       status: this.statusFilter,
       priority: this.priorityFilter,
@@ -342,7 +349,8 @@ export class TaskSearchComponent implements OnChanges {
       type: this.typeFilter,
       prd_slug: this.prdSlugFilter,
       tag: this.tagFilter
-    });
+    };
+    this.filtersChange.emit(filters);
   }
 
   // Méthodes publiques pour contrôle externe

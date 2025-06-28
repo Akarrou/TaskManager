@@ -34,6 +34,8 @@ export class TaskTreeComponent implements OnInit, OnChanges {
   private cdr = inject(ChangeDetectorRef);
   private dialog = inject(MatDialog);
 
+  @Input() tasks: Task[] = [];
+
   treeData: TaskTreeNode[] = [];
   loading = true;
   error: string | null = null;
@@ -45,14 +47,24 @@ export class TaskTreeComponent implements OnInit, OnChanges {
   async initTree() {
     this.loading = true;
     this.cdr.detectChanges();
+    
     try {
-      await this.taskService.loadTasks();
-      const tasks = this.taskService.tasks();
-      this.treeData = this.buildTaskTree(tasks);
-      this.cdr.detectChanges();
+      let tasksToUse: Task[];
+      
+      // Utiliser en priorité les tâches passées en input
+      if (this.tasks && this.tasks.length >= 0) { // Accepter même un tableau vide
+        tasksToUse = this.tasks;
+      } else {
+        // Fallback : charger depuis le service
+        await this.taskService.loadTasks();
+        tasksToUse = this.taskService.tasks();
+      }
+      
+      this.treeData = this.buildTaskTree(tasksToUse);
+      
     } catch (e) {
+      console.error('TaskTree: Erreur lors du chargement:', e);
       this.error = 'Erreur lors du chargement des tâches.';
-      this.cdr.detectChanges();
     } finally {
       this.loading = false;
       this.cdr.detectChanges();
@@ -60,7 +72,10 @@ export class TaskTreeComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    // Plus besoin de gérer les changements d'@Input tasks
+    // Reconstruire l'arbre quand les tâches changent
+    if (changes['tasks']) {
+      this.initTree();
+    }
   }
 
   buildTaskTree(tasks: Task[]): TaskTreeNode[] {
