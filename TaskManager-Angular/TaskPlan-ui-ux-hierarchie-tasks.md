@@ -2,27 +2,27 @@
 
 ## Vue synthétique (tableau)
 
-| Niveau   | Slug                                         | Titre                                      | Env       | Est. |
-|----------|----------------------------------------------|---------------------------------------------|-----------|------|
-| Epic     | prd-ui-ux-hierarchie-tasks                   | Refonte UI/UX gestion hiérarchique des tâches | frontend  | –    |
-| Feature  | prd-ui-ux-hierarchie-tasks:frontend:1        | Vue arborescente des tâches (tree view)     | frontend  | –    |
-| Task     | prd-ui-ux-hierarchie-tasks:frontend:1:1      | Composant Angular Material Tree             | frontend  | 8    |
-| Sub-task | prd-ui-ux-hierarchie-tasks:frontend:1:1:1    | Afficher Epic > Feature > Task > Sub-task   | frontend  | 4    |
-| Sub-task | prd-ui-ux-hierarchie-tasks:frontend:1:1:2    | Navigation parent/enfant dans l'arborescence| frontend  | 2    |
-| Feature  | prd-ui-ux-hierarchie-tasks:frontend:2        | Formulaire création/édition contextuelle    | frontend  | –    |
-| Task     | prd-ui-ux-hierarchie-tasks:frontend:2:1      | Sélecteur de type de tâche                  | frontend  | 4    |
-| Task     | prd-ui-ux-hierarchie-tasks:frontend:2:2      | Génération automatique des slugs/PRD slugs  | frontend  | 4    |
-| Task     | prd-ui-ux-hierarchie-tasks:frontend:2:3      | Création contextuelle (parent pré-rempli)   | frontend  | 2    |
-| Feature  | prd-ui-ux-hierarchie-tasks:frontend:3        | Filtres avancés et recherche multi-critères | frontend  | –    |
-| Task     | prd-ui-ux-hierarchie-tasks:frontend:3:1      | Filtres par type, parent, PRD, tag          | frontend  | 4    |
-| Task     | prd-ui-ux-hierarchie-tasks:frontend:3:2      | Recherche textuelle globale                 | frontend  | 2    |
-| Feature  | prd-ui-ux-hierarchie-tasks:frontend:4        | Vue Roadmap synthétique exportable          | frontend  | –    |
-| Task     | prd-ui-ux-hierarchie-tasks:frontend:4:1      | Tableau exportable Markdown/JSON            | frontend  | 4    |
-| Feature  | prd-ui-ux-hierarchie-tasks:frontend:5        | Modification de la hiérarchie (drag & drop) | frontend  | –    |
-| Task     | prd-ui-ux-hierarchie-tasks:frontend:5:1      | Drag & drop pour changer le parent          | frontend  | 6    |
-| Task     | prd-ui-ux-hierarchie-tasks:frontend:5:2      | Mise à jour automatique des slugs enfants   | frontend  | 2    |
-| Feature  | prd-ui-ux-hierarchie-tasks:frontend:6        | Améliorations ergonomiques                  | frontend  | –    |
-| Task     | prd-ui-ux-hierarchie-tasks:frontend:6:1      | Breadcrumb, badges, info-bulles, navigation rapide | frontend | 4    |
+| Niveau   | Slug                                      | Titre                                              | Env      | Est. |
+| -------- | ----------------------------------------- | -------------------------------------------------- | -------- | ---- |
+| Epic     | prd-ui-ux-hierarchie-tasks                | Refonte UI/UX gestion hiérarchique des tâches      | frontend | –    |
+| Feature  | prd-ui-ux-hierarchie-tasks:frontend:1     | Vue arborescente des tâches (tree view)            | frontend | –    |
+| Task     | prd-ui-ux-hierarchie-tasks:frontend:1:1   | Composant Angular Material Tree                    | frontend | 8    |
+| Sub-task | prd-ui-ux-hierarchie-tasks:frontend:1:1:1 | Afficher Epic > Feature > Task > Sub-task          | frontend | 4    |
+| Sub-task | prd-ui-ux-hierarchie-tasks:frontend:1:1:2 | Navigation parent/enfant dans l'arborescence       | frontend | 2    |
+| Feature  | prd-ui-ux-hierarchie-tasks:frontend:2     | Formulaire création/édition contextuelle           | frontend | –    |
+| Task     | prd-ui-ux-hierarchie-tasks:frontend:2:1   | Sélecteur de type de tâche                         | frontend | 4    |
+| Task     | prd-ui-ux-hierarchie-tasks:frontend:2:2   | Génération automatique des slugs/PRD slugs         | frontend | 4    |
+| Task     | prd-ui-ux-hierarchie-tasks:frontend:2:3   | Création contextuelle (parent pré-rempli)          | frontend | 2    |
+| Feature  | prd-ui-ux-hierarchie-tasks:frontend:3     | Filtres avancés et recherche multi-critères        | frontend | –    |
+| Task     | prd-ui-ux-hierarchie-tasks:frontend:3:1   | Filtres par type, parent, PRD, tag                 | frontend | 4    |
+| Task     | prd-ui-ux-hierarchie-tasks:frontend:3:2   | Recherche textuelle globale                        | frontend | 2    |
+| Feature  | prd-ui-ux-hierarchie-tasks:frontend:4     | Vue Roadmap synthétique exportable                 | frontend | –    |
+| Task     | prd-ui-ux-hierarchie-tasks:frontend:4:1   | Tableau exportable Markdown/JSON                   | frontend | 4    |
+| Feature  | prd-ui-ux-hierarchie-tasks:frontend:5     | Modification de la hiérarchie (drag & drop)        | frontend | –    |
+| Task     | prd-ui-ux-hierarchie-tasks:frontend:5:1   | Drag & drop pour changer le parent                 | frontend | 6    |
+| Task     | prd-ui-ux-hierarchie-tasks:frontend:5:2   | Mise à jour automatique des slugs enfants          | frontend | 2    |
+| Feature  | prd-ui-ux-hierarchie-tasks:frontend:6     | Améliorations ergonomiques                         | frontend | –    |
+| Task     | prd-ui-ux-hierarchie-tasks:frontend:6:1   | Breadcrumb, badges, info-bulles, navigation rapide | frontend | 4    |
 
 ---
 
@@ -213,4 +213,4 @@
     }
   ]
 }
-``` 
+```

@@ -11,11 +11,13 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
 import { UserService } from '../../core/services/user.service';
 import { TaskSearchComponent } from '../../shared/components/task-search/task-search.component';
 import { TaskTreeComponent } from '../tasks/task-tree/task-tree.component';
+import { MinimalDndComponent } from '../tasks/minimal-dnd.component';
+
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatDialogModule,TaskSearchComponent, TaskTreeComponent],
+  imports: [CommonModule, MatIconModule, MatDialogModule,TaskSearchComponent, TaskTreeComponent, MinimalDndComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })

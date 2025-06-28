@@ -22,19 +22,43 @@
   display: flex;
   align-items: center;
   gap: v.$space-2;
-  padding: v.$space-2;
+  padding: v.$space-3 v.$space-4;
   border-radius: v.$border-radius-full;
   border: v.$border-width-1 solid v.$border-color-medium;
   cursor: pointer;
   margin-bottom: v.$space-4;
-  transition: background 0.15s;
+  transition: all 0.15s ease-in-out;
   &:hover {
     background: #f1f5f9;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   }
 }
 .type-icon {
   font-size: 1.2rem;
   color: #3b82f6;
+}
+.status-icon {
+  font-size: 1.1rem;
+  transition: all 0.2s ease-in-out;
+  &.status-completed { 
+    color: #22c55e; 
+    &:hover { color: #15803d; }
+  }
+  &.status-in_progress { 
+    color: #f59e0b; 
+    animation: pulse 2s infinite;
+    &:hover { color: #d97706; }
+  }
+  &.status-pending { 
+    color: #64748b; 
+    &:hover { color: #475569; }
+  }
+  &.status-cancelled { 
+    color: #ef4444; 
+    &:hover { color: #dc2626; }
+  }
 }
 .badge {
   display: inline-block;
@@ -46,6 +70,52 @@
   &.badge-epic { background: #f59e0b; color: #fff; }
   &.badge-feature { background: #2563eb; color: #fff; }
   &.badge-task { background: #22c55e; color: #fff; }
+}
+.badge-status {
+  display: inline-block;
+  padding: 0.12em 0.6em;
+  border-radius: 9999px;
+  font-size: 0.75em;
+  font-weight: 500;
+  text-transform: capitalize;
+  transition: all 0.2s ease-in-out;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+  
+  &.badge-status-completed { 
+    background: rgba(34, 197, 94, 0.1); 
+    color: #15803d; 
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    &:hover {
+      background: rgba(34, 197, 94, 0.15);
+    }
+  }
+  &.badge-status-in_progress { 
+    background: rgba(245, 158, 11, 0.1); 
+    color: #d97706; 
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    &:hover {
+      background: rgba(245, 158, 11, 0.15);
+    }
+  }
+  &.badge-status-pending { 
+    background: rgba(100, 116, 139, 0.1); 
+    color: #475569; 
+    border: 1px solid rgba(100, 116, 139, 0.2);
+    &:hover {
+      background: rgba(100, 116, 139, 0.15);
+    }
+  }
+  &.badge-status-cancelled { 
+    background: rgba(239, 68, 68, 0.1); 
+    color: #dc2626; 
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    &:hover {
+      background: rgba(239, 68, 68, 0.15);
+    }
+  }
 }
 .title {
   font-weight: 500;
@@ -68,8 +138,21 @@
 
 @media (max-width: 600px) {
   .task-tree-container { padding: 1rem 0.2rem; }
-  .tree-node { padding-left: 0.5rem; }
+  .tree-node { 
+    padding: v.$space-2 v.$space-3; 
+    flex-direction: column;
+    align-items: flex-start;
+    gap: v.$space-2;
+  }
+  .tree-node-content {
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
   .children { margin-left: 1rem; }
+  .badge-status {
+    font-size: 0.7em;
+    padding: 0.1em 0.5em;
+  }
 } 
 
 .btn-actions {
@@ -83,4 +166,11 @@
   display: flex;
   flex-direction: row;
   gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }

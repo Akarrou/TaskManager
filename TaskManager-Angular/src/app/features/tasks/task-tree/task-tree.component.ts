@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { Router } from '@angular/router';
 import { TaskService, Task } from '../../../core/services/task';
 import { ISubtask } from '../subtask.model';
-import { CdkDropList, CdkDrag, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { CdkDropList, CdkDrag, CdkDragDrop, moveItemInArray, DragDropModule } from '@angular/cdk/drag-drop';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
@@ -14,6 +14,7 @@ interface TaskTreeNode {
   title: string;
   slug: string;
   type: 'epic' | 'feature' | 'task';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   estimated_hours?: number;
   children?: TaskTreeNode[];
   parent_task_id?: string | null;
@@ -23,7 +24,7 @@ interface TaskTreeNode {
 @Component({
   selector: 'app-task-tree',
   standalone: true,
-  imports: [CommonModule, MatTreeModule, MatIconModule, CdkDropList, CdkDrag],
+  imports: [CommonModule, MatTreeModule, MatIconModule, DragDropModule],
   templateUrl: './task-tree.component.html',
   styleUrls: ['./task-tree.component.scss']
 })
@@ -74,6 +75,7 @@ export class TaskTreeComponent implements OnInit, OnChanges {
         title: task.title,
         slug: task.slug,
         type: task.type,
+        status: task.status,
         estimated_hours: task.estimated_hours,
         parent_task_id: task.parent_task_id ?? null,
         children: [],
@@ -104,6 +106,26 @@ export class TaskTreeComponent implements OnInit, OnChanges {
     }
   }
 
+  getStatusIcon(status: string): string {
+    switch (status) {
+      case 'completed': return 'check_circle';
+      case 'in_progress': return 'hourglass_empty';
+      case 'pending': return 'radio_button_unchecked';
+      case 'cancelled': return 'cancel';
+      default: return 'help_outline';
+    }
+  }
+
+  getStatusLabel(status: string): string {
+    switch (status) {
+      case 'completed': return 'Terminé';
+      case 'in_progress': return 'En cours';
+      case 'pending': return 'En attente';
+      case 'cancelled': return 'Annulé';
+      default: return 'Inconnu';
+    }
+  }
+
   onNodeClick(node: TaskTreeNode) {
     // Naviguer vers la page d'édition de la tâche
     this.router.navigate(['/tasks', node.id, 'edit']);
@@ -120,29 +142,19 @@ export class TaskTreeComponent implements OnInit, OnChanges {
   }
 
   // Drag & drop
-  drop(event: CdkDragDrop<TaskTreeNode[]>, parentNode: TaskTreeNode | null = null) {
-    if (event.previousContainer === event.container) {
-      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
-    } else {
-      // Vérification métier :
-      const dragged = event.previousContainer.data[event.previousIndex];
-      const newParent = parentNode;
-      if (!this.isValidMove(dragged, newParent)) {
-        alert('Déplacement non autorisé (règle métier)');
-        return;
-      }
-      // Mettre à jour le parent_task_id
-      this.taskService.updateTask(dragged.id, { parent_task_id: newParent ? newParent.id : null }).then(() => {
-        this.ngOnInit(); // Rafraîchir l'arbre
-      });
-    }
-  }
+  async drop(event: CdkDragDrop<TaskTreeNode[]>, parentNode: TaskTreeNode | null = null) {
+    console.log('DROP EVENT', event, parentNode); // DEBUG
+    const dragged = event.item.data;
+    const newParent = parentNode;
+    console.log('dragged:', dragged, 'newParent:', newParent, 'parentNode:', parentNode); // DEBUG
 
-  isValidMove(dragged: TaskTreeNode, newParent: TaskTreeNode | null): boolean {
-    if (!newParent) return dragged.type === 'epic'; // Seul un epic peut être à la racine
-    if (dragged.type === 'feature' && newParent.type === 'epic') return true;
-    if (dragged.type === 'task' && newParent.type === 'feature') return true;
-    return false;
+    if (dragged.type === 'task' && newParent && newParent.type === 'feature') {
+      await this.taskService.updateTask(dragged.id, { parent_task_id: newParent.id });
+      await this.initTree();
+      return;
+    }
+
+    alert('Déplacement non autorisé (seules les tâches peuvent être déplacées sous une feature)');
   }
 
   onDeleteNode(node: TaskTreeNode) {
@@ -193,5 +205,48 @@ export class TaskTreeComponent implements OnInit, OnChanges {
       return false;
     }
     return true;
+  }
+
+  getConnectedDropLists(nodes: TaskTreeNode[]): string[] {
+    if (!nodes) return [];
+    let ids: string[] = [];
+    for (const node of nodes) {
+      ids.push('dropList-' + node.id);
+      if (node.children && node.children.length > 0) {
+        ids = ids.concat(this.getConnectedDropLists(node.children));
+      }
+    }
+    return ids;
+  }
+
+  getAllDropListIds(nodes: TaskTreeNode[] = this.treeData): string[] {
+    let ids: string[] = [];
+    for (const node of nodes) {
+      ids.push('dropList-' + node.id);
+      if (node.children && node.children.length > 0) {
+        ids = ids.concat(this.getAllDropListIds(node.children));
+      }
+    }
+    return ids;
+  }
+
+  findNodeById(nodes: TaskTreeNode[], id: string): TaskTreeNode | null {
+    for (const node of nodes) {
+      if (node.id === id) return node;
+      if (node.children) {
+        const found = this.findNodeById(node.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  getSiblingDropListIds(node: TaskTreeNode): string[] {
+    if (!node.parent_task_id) return [];
+    const parent = this.findNodeById(this.treeData, node.parent_task_id);
+    if (!parent || !parent.children) return [];
+    return parent.children
+      .filter(child => child.id !== node.id)
+      .map(child => 'dropList-' + child.id);
   }
 } 

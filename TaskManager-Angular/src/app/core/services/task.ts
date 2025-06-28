@@ -285,6 +285,7 @@ export class TaskService {
     this.errorSignal.set(null);
 
     try {
+      console.log('updateTask - id:', id, 'updates:', updates); // DEBUG
       const { data, error } = await this.supabaseService.tasks
         .update(updates)
         .eq('id', id)
@@ -294,14 +295,17 @@ export class TaskService {
       if (error) {
         const errorMessage = this.supabaseService.handleError(error);
         this.errorSignal.set(errorMessage);
+        console.error('updateTask - error:', error); // DEBUG
         return false;
       } else {
         await this.loadTasks();
+        console.log('updateTask - success:', data); // DEBUG
         return true;
       }
     } catch (error) {
       const errorMessage = 'Erreur inattendue lors de la mise à jour';
       this.errorSignal.set(errorMessage);
+      console.error('updateTask - catch error:', error); // DEBUG
       return false;
     } finally {
       this.loadingSignal.set(false);
