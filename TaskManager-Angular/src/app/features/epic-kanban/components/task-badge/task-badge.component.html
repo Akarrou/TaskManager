@@ -1,0 +1,50 @@
+<div class="task-badge" 
+     [class]="priorityColor"
+     [matTooltip]="task.title"
+     (click)="onClick()">
+  
+  <!-- Section gauche : Statut et numéro -->
+  <div class="task-left">
+    <!-- Icône de statut cliquable -->
+    <button mat-icon-button 
+            class="status-button"
+            [class]="statusColor"
+            (click)="onStatusToggle(); $event.stopPropagation()"
+            [matTooltip]="'Changer le statut'"
+            *ngIf="showActions">
+      <mat-icon class="status-icon">{{ statusIcon }}</mat-icon>
+    </button>
+    
+    <!-- Icône de statut non-cliquable -->
+    <mat-icon class="status-icon" 
+              [class]="statusColor"
+              *ngIf="!showActions">
+      {{ statusIcon }}
+    </mat-icon>
+    
+    <!-- Numéro de tâche -->
+    <span class="task-number">#T{{ task.task_number }}</span>
+  </div>
+
+  <!-- Section centrale : Titre -->
+  <div class="task-content">
+    <span class="task-title">{{ truncatedTitle }}</span>
+    
+    <!-- Priorité en mode compact -->
+    <span class="priority-indicator" 
+          *ngIf="compact && task.priority !== 'medium'"
+          [class]="'priority-' + task.priority">
+      {{ task.priority === 'urgent' ? '!!!' : task.priority === 'high' ? '!!' : '!' }}
+    </span>
+  </div>
+
+  <!-- Section droite : Actions (optionnel) -->
+  <div class="task-actions" *ngIf="showActions">
+    <button mat-icon-button 
+            class="action-button"
+            [matTooltip]="'Modifier la tâche'"
+            (click)="onClick(); $event.stopPropagation()">
+      <mat-icon>edit</mat-icon>
+    </button>
+  </div>
+</div> 

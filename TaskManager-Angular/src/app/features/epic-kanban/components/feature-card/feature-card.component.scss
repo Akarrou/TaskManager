@@ -1,0 +1,197 @@
+.feature-card {
+  @apply bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200;
+  margin-bottom: 12px;
+  cursor: pointer;
+
+  &:hover {
+    @apply shadow-lg border-blue-200;
+    transform: translateY(-1px);
+  }
+
+  &.expanded {
+    @apply shadow-lg border-blue-300;
+  }
+}
+
+.feature-header {
+  @apply p-3 pb-2;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  .mat-mdc-card-title {
+    @apply text-sm font-medium text-gray-800 leading-tight;
+    flex: 1;
+    margin: 0;
+    line-height: 1.4;
+  }
+}
+
+.feature-number {
+  flex-shrink: 0;
+  
+  .feature-badge {
+    @apply inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+  }
+}
+
+.feature-actions {
+  flex-shrink: 0;
+  margin-left: auto;
+
+  .mat-mdc-icon-button {
+    @apply w-8 h-8;
+    
+    .mat-icon {
+      @apply text-gray-500;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover .mat-icon {
+      @apply text-gray-700;
+    }
+  }
+}
+
+.feature-content {
+  @apply p-3 pt-0;
+}
+
+.feature-metadata {
+  margin-bottom: 12px;
+
+  .mat-mdc-chip-set {
+    @apply flex flex-wrap gap-1;
+  }
+
+  .mat-mdc-chip {
+    @apply text-xs;
+    min-height: 24px;
+    
+    &.status-chip {
+      @apply bg-gray-100 text-gray-700;
+    }
+  }
+}
+
+.progress-section {
+  @apply mb-3;
+  
+  .progress-header {
+    @apply flex justify-between items-center mb-2;
+    
+    .progress-text {
+      @apply text-xs text-gray-600 font-medium;
+    }
+    
+    .progress-percentage {
+      @apply text-xs text-blue-600 font-semibold;
+    }
+  }
+  
+  .progress-bar {
+    @apply w-full bg-gray-200 rounded-full h-2 overflow-hidden;
+    
+    .progress-fill {
+      @apply h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300;
+      border-radius: inherit;
+    }
+  }
+}
+
+.expand-section {
+  @apply border-t border-gray-100 pt-2 mt-2;
+  
+  .expand-button {
+    @apply w-full text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50;
+    min-height: 32px;
+    padding: 4px 8px;
+    
+    .mat-icon {
+      @apply mr-1;
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+.tasks-list {
+  @apply border-t border-gray-100 pt-3 mt-2;
+  max-height: 200px;
+  overflow-y: auto;
+  
+  .task-item {
+    @apply mb-2 last:mb-0;
+    
+    &:hover {
+      @apply bg-gray-50 rounded;
+    }
+  }
+}
+
+// Menu actions spécifiques
+.delete-action {
+  @apply text-red-600;
+  
+  .mat-icon {
+    @apply text-red-600;
+  }
+  
+  &:hover {
+    @apply bg-red-50;
+  }
+}
+
+// États responsive
+@media (max-width: 768px) {
+  .feature-card {
+    margin-bottom: 8px;
+  }
+  
+  .feature-header {
+    @apply p-2 pb-1;
+    gap: 8px;
+    
+    .mat-mdc-card-title {
+      @apply text-sm;
+    }
+  }
+  
+  .feature-content {
+    @apply p-2 pt-0;
+  }
+  
+  .feature-metadata .mat-mdc-chip {
+    @apply text-xs;
+    min-height: 20px;
+  }
+}
+
+// Animation pour l'expansion
+.tasks-list {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 200px;
+  }
+}
+
+// Focus et accessibilité
+.feature-card:focus-within {
+  @apply outline-none ring-2 ring-blue-500 ring-opacity-50;
+}
+
+.expand-button:focus {
+  @apply outline-none ring-2 ring-blue-500 ring-opacity-50 rounded;
+} 

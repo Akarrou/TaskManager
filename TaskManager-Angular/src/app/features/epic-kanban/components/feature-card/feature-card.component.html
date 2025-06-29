@@ -1,0 +1,77 @@
+<mat-card class="feature-card" [class.expanded]="isExpanded">
+  <!-- Header avec numéro et titre -->
+  <mat-card-header class="feature-header">
+    <div class="feature-number">
+      <span class="number-badge feature-badge">#F{{ feature.task_number }}</span>
+    </div>
+    
+    <mat-card-title class="feature-title">
+      {{ feature.title }}
+    </mat-card-title>
+
+    <!-- Menu actions -->
+    <div class="feature-actions">
+      <button mat-icon-button [matMenuTriggerFor]="featureMenu" 
+              matTooltip="Actions">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      
+      <mat-menu #featureMenu="matMenu">
+        <button mat-menu-item (click)="onEditFeature()">
+          <mat-icon>edit</mat-icon>
+          <span>Modifier</span>
+        </button>
+        <button mat-menu-item (click)="onDeleteFeature()" class="delete-action">
+          <mat-icon>delete</mat-icon>
+          <span>Supprimer</span>
+        </button>
+      </mat-menu>
+    </div>
+  </mat-card-header>
+
+  <!-- Contenu principal -->
+  <mat-card-content class="feature-content">
+    <!-- Priorité et statut -->
+    <div class="feature-metadata">
+      <mat-chip-set>
+        <mat-chip [color]="priorityColor" selected>
+          {{ feature.priority | titlecase }}
+        </mat-chip>
+        <mat-chip class="status-chip">
+          {{ feature.status | titlecase }}
+        </mat-chip>
+      </mat-chip-set>
+    </div>
+
+    <!-- Progression des tâches -->
+    <div class="progress-section" *ngIf="totalTasks > 0">
+      <div class="progress-header">
+        <span class="progress-text">
+          {{ completedTasks.length }}/{{ totalTasks }} tâches
+        </span>
+        <span class="progress-percentage">{{ progressPercentage }}%</span>
+      </div>
+      
+      <div class="progress-bar">
+        <div class="progress-fill" 
+             [style.width.%]="progressPercentage">
+        </div>
+      </div>
+    </div>
+
+    <!-- Bouton expand/collapse pour voir les tâches -->
+    <div class="expand-section" *ngIf="totalTasks > 0">
+      <button mat-button (click)="onToggleExpand()" class="expand-button">
+        <mat-icon>{{ isExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+        <span>{{ isExpanded ? 'Masquer' : 'Voir' }} les tâches</span>
+      </button>
+    </div>
+
+    <!-- Liste des tâches (collapsed par défaut) -->
+    <div class="tasks-list" *ngIf="isExpanded && totalTasks > 0">
+      <div class="task-item" *ngFor="let task of tasks" (click)="onTaskClick(task)">
+        <app-task-badge [task]="task"></app-task-badge>
+      </div>
+    </div>
+  </mat-card-content>
+</mat-card> 

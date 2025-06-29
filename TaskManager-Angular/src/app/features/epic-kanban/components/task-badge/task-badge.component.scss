@@ -1,0 +1,187 @@
+.task-badge {
+  @apply flex items-center gap-2 p-2 rounded border cursor-pointer transition-all duration-200;
+  min-height: 32px;
+
+  &:hover {
+    @apply shadow-sm;
+    transform: translateY(-1px);
+  }
+
+  // États de priorité (couleurs de fond)
+  &.border-green-200 {
+    @apply border-green-200 bg-green-50 hover:bg-green-100;
+  }
+
+  &.border-yellow-200 {
+    @apply border-yellow-200 bg-yellow-50 hover:bg-yellow-100;
+  }
+
+  &.border-orange-200 {
+    @apply border-orange-200 bg-orange-50 hover:bg-orange-100;
+  }
+
+  &.border-red-200 {
+    @apply border-red-200 bg-red-50 hover:bg-red-100;
+  }
+
+  &.border-gray-200 {
+    @apply border-gray-200 bg-gray-50 hover:bg-gray-100;
+  }
+}
+
+.task-left {
+  @apply flex items-center gap-2 flex-shrink-0;
+
+  .status-icon {
+    @apply text-lg;
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+
+  .status-button {
+    @apply w-6 h-6 p-0;
+    min-width: 24px;
+    
+    .status-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+
+    &:hover {
+      @apply bg-white bg-opacity-50;
+    }
+  }
+
+  .task-number {
+    @apply text-xs font-mono font-medium text-gray-600;
+    min-width: fit-content;
+  }
+}
+
+.task-content {
+  @apply flex-1 flex items-center gap-1 overflow-hidden;
+
+  .task-title {
+    @apply text-xs text-gray-800 font-medium truncate;
+    line-height: 1.3;
+  }
+
+  .priority-indicator {
+    @apply text-xs font-bold flex-shrink-0;
+    
+    &.priority-low {
+      @apply text-green-600;
+    }
+    
+    &.priority-high {
+      @apply text-orange-600;
+    }
+    
+    &.priority-urgent {
+      @apply text-red-600;
+    }
+  }
+}
+
+.task-actions {
+  @apply flex-shrink-0;
+
+  .action-button {
+    @apply w-6 h-6 p-0 text-gray-500 hover:text-gray-700;
+    min-width: 24px;
+    
+    .mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+
+    &:hover {
+      @apply bg-white bg-opacity-50;
+    }
+  }
+}
+
+// Couleurs de statut
+.text-green-500 {
+  @apply text-green-500;
+}
+
+.text-orange-500 {
+  @apply text-orange-500;
+}
+
+.text-blue-500 {
+  @apply text-blue-500;
+}
+
+.text-gray-400 {
+  @apply text-gray-400;
+}
+
+.text-red-500 {
+  @apply text-red-500;
+}
+
+// Mode compact amélioré
+.task-badge {
+  &.compact {
+    @apply p-1.5;
+    min-height: 28px;
+    
+    .task-left {
+      gap: 1px;
+      
+      .task-number {
+        @apply text-xs;
+      }
+    }
+    
+    .task-content .task-title {
+      @apply text-xs;
+    }
+  }
+}
+
+// États responsive
+@media (max-width: 768px) {
+  .task-badge {
+    @apply p-1.5;
+    min-height: 28px;
+    
+    .task-left {
+      gap: 4px;
+      
+      .task-number {
+        @apply text-xs;
+      }
+    }
+    
+    .task-content .task-title {
+      @apply text-xs;
+    }
+    
+    .task-actions .action-button {
+      @apply w-5 h-5;
+      min-width: 20px;
+      
+      .mat-icon {
+        font-size: 12px;
+        width: 12px;
+        height: 12px;
+      }
+    }
+  }
+}
+
+// Focus et accessibilité
+.task-badge:focus {
+  @apply outline-none ring-2 ring-blue-500 ring-opacity-50;
+}
+
+.status-button:focus,
+.action-button:focus {
+  @apply outline-none ring-1 ring-blue-500 ring-opacity-50 rounded;
+} 
