@@ -329,6 +329,39 @@
         </div>
       </div>
       
+      <!-- RÉSUMÉ & PROJECTIONS - Visible dans les deux modes -->
+      <div class="summary-section">
+        <mat-divider class="summary-divider"></mat-divider>
+        <mat-card class="summary-card">
+          <mat-card-header>
+            <div class="summary-header">
+              <mat-icon>insights</mat-icon>
+              <h3>Résumé & Projections</h3>
+            </div>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="summary-stats">
+              <div class="summary-item">
+                <div class="summary-value text-blue-600">{{ taskMetrics().remaining }}</div>
+                <div class="summary-label">tâches restantes à terminer</div>
+              </div>
+              <div class="summary-item">
+                <div class="summary-value text-orange-500">{{ velocityStats().daysRemaining }}</div>
+                <div class="summary-label">jours estimés pour terminer</div>
+              </div>
+              <div class="summary-item" *ngIf="velocityStats().projectedCompletion">
+                <div class="summary-value text-purple-600">{{ velocityStats().projectedCompletion | date:'dd/MM' }}</div>
+                <div class="summary-label">fin projetée</div>
+              </div>
+              <div class="summary-item">
+                <div class="summary-value text-green-600">{{ velocityStats().sprintVelocity }}</div>
+                <div class="summary-label">pts vélocité sprint</div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+      
     </div>
   </mat-expansion-panel>
 
@@ -378,42 +411,6 @@
         </mat-card-content>
       </mat-card>
     </div>
-  </mat-expansion-panel>
-
-  <!-- RÉSUMÉ & PROJECTIONS -->
-  <mat-expansion-panel class="summary-panel" [expanded]="true">
-    <mat-expansion-panel-header>
-      <mat-panel-title>
-        <mat-icon>insights</mat-icon>
-        Résumé & Projections
-      </mat-panel-title>
-      <mat-panel-description>
-        Vue d'ensemble et estimations
-      </mat-panel-description>
-    </mat-expansion-panel-header>
-
-    <mat-card class="summary-card">
-      <mat-card-content>
-        <div class="summary-stats">
-          <div class="summary-item">
-            <div class="summary-value text-blue-600">{{ taskMetrics().remaining }}</div>
-            <div class="summary-label">tâches restantes à terminer</div>
-          </div>
-          <div class="summary-item">
-            <div class="summary-value text-orange-500">{{ velocityStats().daysRemaining }}</div>
-            <div class="summary-label">jours estimés pour terminer</div>
-          </div>
-          <div class="summary-item" *ngIf="velocityStats().projectedCompletion">
-            <div class="summary-value text-purple-600">{{ velocityStats().projectedCompletion | date:'dd/MM' }}</div>
-            <div class="summary-label">fin projetée</div>
-          </div>
-          <div class="summary-item">
-            <div class="summary-value text-green-600">{{ velocityStats().sprintVelocity }}</div>
-            <div class="summary-label">pts vélocité sprint</div>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
   </mat-expansion-panel>
 
 </div> 
