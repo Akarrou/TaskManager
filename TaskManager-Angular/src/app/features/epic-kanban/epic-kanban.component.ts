@@ -5,12 +5,15 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Store } from '@ngrx/store';
 import { Subject, takeUntil } from 'rxjs';
 
 import { EpicHeaderComponent } from './components/epic-header/epic-header.component';
 import { KanbanColumnComponent } from './components/kanban-column/kanban-column.component';
 import { EpicMetricsComponent } from './components/epic-metrics/epic-metrics.component';
+import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 
 import { TaskService, Task } from '../../core/services/task';
 import { EpicKanbanService } from './services/epic-kanban.service';
@@ -40,9 +43,12 @@ import {
     MatButtonModule,
     MatIconModule,
     MatCardModule,
+    MatDialogModule,
+    MatSnackBarModule,
     EpicHeaderComponent,
     KanbanColumnComponent,
-    EpicMetricsComponent
+    EpicMetricsComponent,
+    ConfirmDialogComponent
   ],
   templateUrl: './epic-kanban.component.html',
   styleUrls: ['./epic-kanban.component.scss']
@@ -71,6 +77,12 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   
   // Current epic ID
   epicId: string | null = null;
+
+  // Permissions
+  get canEditEpic(): boolean {
+    // TODO: Implémenter la logique de permissions réelle
+    return true; // Pour l'instant, autoriser l'édition
+  }
 
   ngOnInit(): void {
     this.loadEpicFromRoute();
@@ -179,5 +191,161 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   onFeatureClick(feature: Task): void {
     this.router.navigate(['/tasks', feature.id, 'edit']);
   }
+
+  // === ACTIONS EPIC HEADER (T007) ===
+
+  onEditEpic(epic: Task): void {
+    // Navigation vers le formulaire d'édition de l'epic
+    this.router.navigate(['/tasks', epic.id, 'edit']);
+  }
+
+  onSaveEpic(epicData: Partial<Task>): void {
+    // Dispatch action pour sauvegarder l'epic
+    this.store.dispatch(EpicKanbanActions.updateEpic({ 
+      epic: epicData 
+    }));
+    
+    // Notification de succès
+    this.snackBar.open('Epic mis à jour avec succès', 'Fermer', {
+      duration: 3000,
+      horizontalPosition: 'right',
+      verticalPosition: 'top'
+    });
+  }
+
+  onDeleteEpic(epic: Task): void {
+    // Ouvrir dialog de confirmation
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Supprimer l\'epic',
+        message: `Êtes-vous sûr de vouloir supprimer l'epic "${epic.title}" ? Cette action est irréversible.`,
+        confirmText: 'Supprimer',
+        cancelText: 'Annuler',
+        confirmColor: 'warn'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result && epic.id) {
+        // Utiliser TaskService pour supprimer l'epic
+        this.taskService.deleteTask(epic.id).then(
+          (success: boolean) => {
+            if (success) {
+              // Navigation vers le dashboard après suppression
+              this.router.navigate(['/dashboard']);
+              
+              this.snackBar.open('Epic supprimé avec succès', 'Fermer', {
+                duration: 3000,
+                horizontalPosition: 'right',
+                verticalPosition: 'top'
+              });
+            }
+          }
+        ).catch((error: any) => {
+          console.error('Erreur lors de la suppression:', error);
+          this.snackBar.open('Erreur lors de la suppression de l\'epic', 'Fermer', {
+            duration: 5000,
+            horizontalPosition: 'right',
+            verticalPosition: 'top'
+          });
+        });
+      }
+    });
+  }
+
+  onExportBoard(): void {
+    // Export du tableau en format JSON
+    this.currentEpic$.pipe(takeUntil(this.destroy$)).subscribe(epic => {
+      if (!epic) return;
+
+      const exportData = {
+        epic: epic,
+        exportDate: new Date().toISOString(),
+        features: [], // TODO: Récupérer les features depuis le store
+        tasks: []     // TODO: Récupérer les tasks depuis le store
+      };
+
+      // Création et téléchargement du fichier
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `epic-${epic.task_number || epic.id}-kanban-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      this.snackBar.open('Tableau exporté avec succès', 'Fermer', {
+        duration: 3000,
+        horizontalPosition: 'right',
+        verticalPosition: 'top'
+      });
+    });
+  }
+
+  onShareBoard(): void {
+    // Création d'un lien de partage (URL actuelle)
+    const shareUrl = window.location.href;
+    
+    // Utiliser l'API Web Share si disponible
+    if (navigator.share) {
+      navigator.share({
+        title: 'Epic Kanban Board',
+        text: 'Consultez ce tableau Kanban Epic',
+        url: shareUrl,
+      }).then(() => {
+        this.snackBar.open('Lien partagé avec succès', 'Fermer', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }).catch(err => {
+        console.log('Erreur lors du partage:', err);
+        this.fallbackCopyToClipboard(shareUrl);
+      });
+    } else {
+      // Fallback: copier dans le presse-papier
+      this.fallbackCopyToClipboard(shareUrl);
+    }
+  }
+
+  private fallbackCopyToClipboard(text: string): void {
+    // Méthode de secours pour copier dans le presse-papier
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        this.snackBar.open('Lien copié dans le presse-papier', 'Fermer', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }).catch(() => {
+        this.showShareUrlDialog(text);
+      });
+    } else {
+      this.showShareUrlDialog(text);
+    }
+  }
+
+  private showShareUrlDialog(url: string): void {
+    // Afficher une boîte de dialogue avec l'URL à copier manuellement
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '500px',
+      data: {
+        title: 'Partager le tableau',
+        message: `Copiez ce lien pour partager le tableau :\n\n${url}`,
+        confirmText: 'Fermer',
+        hideCancel: true
+      }
+    });
+  }
+
+  // === INJECTION DE DÉPENDANCES ===
+  private dialog = inject(MatDialog);
+  private snackBar = inject(MatSnackBar);
+  private taskService = inject(TaskService);
 
 } 

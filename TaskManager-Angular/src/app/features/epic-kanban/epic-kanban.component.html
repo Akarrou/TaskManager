@@ -29,8 +29,14 @@
       *ngIf="(currentEpic$ | async) && (metrics$ | async)"
       [epic]="(currentEpic$ | async)!"
       [metrics]="(metrics$ | async)!"
+      [canEdit]="canEditEpic"
       (navigateBack)="onNavigateBack()"
-      (refreshBoard)="onRefreshBoard()">
+      (refreshBoard)="onRefreshBoard()"
+      (editEpic)="onEditEpic($event)"
+      (saveEpic)="onSaveEpic($event)"
+      (deleteEpic)="onDeleteEpic($event)"
+      (exportBoard)="onExportBoard()"
+      (shareBoard)="onShareBoard()">
     </app-epic-header>
 
     <!-- Kanban Board Content -->
