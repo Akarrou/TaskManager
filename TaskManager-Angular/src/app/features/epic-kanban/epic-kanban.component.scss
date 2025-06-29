@@ -83,7 +83,7 @@
       // METRICS PANEL (SIDEBAR)
       // ========================================================================
       .metrics-panel {
-        @apply w-80 flex-shrink-0;
+        @apply w-96 flex-shrink-0;
       }
     }
   }
@@ -103,7 +103,7 @@
         }
         
         .metrics-panel {
-          @apply w-80;
+          @apply w-96;
         }
       }
     }

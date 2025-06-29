@@ -1,6 +1,9 @@
 // T012 - Epic Metrics Dashboard Analytics Styles
 .epic-metrics {
-  @apply flex flex-col gap-4 p-4;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
   min-height: 100vh;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 
@@ -8,52 +11,92 @@
   // HEADER AVANCÉ
   // ==========================================================================
   .metrics-header {
-    @apply flex items-center justify-between p-4 bg-white rounded-lg shadow-sm border border-gray-200;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
     background: linear-gradient(90deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
 
     .header-title {
-      @apply flex items-center gap-3;
+      display: flex;
+      align-items: center;
+      gap: 12px;
 
       mat-icon {
-        @apply text-blue-600 text-2xl;
+        color: #2563eb;
+        font-size: 2rem;
       }
 
       h2 {
-        @apply text-xl font-semibold text-gray-800 m-0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin: 0;
       }
 
       .status-chip {
-        @apply text-xs font-medium px-2 py-1 rounded-full;
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 4px 12px;
+        border-radius: 9999px;
 
-        &.status-pending { @apply bg-gray-100 text-gray-700; }
-        &.status-in_progress { @apply bg-blue-100 text-blue-700; }
-        &.status-review { @apply bg-purple-100 text-purple-700; }
-        &.status-completed { @apply bg-green-100 text-green-700; }
-        &.status-cancelled { @apply bg-red-100 text-red-700; }
-        &.status-unknown { @apply bg-gray-100 text-gray-500; }
+        &.status-pending { 
+          background-color: #f3f4f6; 
+          color: #4b5563; 
+        }
+        &.status-in_progress { 
+          background-color: #dbeafe; 
+          color: #1d4ed8; 
+        }
+        &.status-review { 
+          background-color: #e9d5ff; 
+          color: #7c3aed; 
+        }
+        &.status-completed { 
+          background-color: #dcfce7; 
+          color: #166534; 
+        }
+        &.status-cancelled { 
+          background-color: #fecaca; 
+          color: #dc2626; 
+        }
+        &.status-unknown { 
+          background-color: #f3f4f6; 
+          color: #6b7280; 
+        }
       }
     }
 
     .header-actions {
-      @apply flex items-center gap-2;
+      display: flex;
+      align-items: center;
+      gap: 8px;
 
       .last-update {
-        @apply flex items-center gap-1 text-xs text-gray-500 mr-2;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-right: 8px;
 
         mat-icon {
-          @apply text-sm;
+          font-size: 0.875rem;
         }
       }
 
       .refresh-button {
-        @apply transition-transform duration-200;
+        transition: transform 0.2s ease;
 
         &.refreshing {
-          @apply animate-spin;
+          animation: spin 1s linear infinite;
         }
 
         &:hover {
-          @apply transform scale-110;
+          transform: scale(1.1);
         }
       }
     }
@@ -131,15 +174,18 @@
 
       .kpi-row {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        margin-bottom: 32px;
 
         @media (max-width: 768px) {
           grid-template-columns: 1fr;
+          gap: 16px;
         }
 
         @media (min-width: 1024px) {
           grid-template-columns: repeat(4, 1fr);
+          gap: 20px;
         }
 
         .kpi-card {
@@ -157,14 +203,14 @@
           .kpi-content {
             display: flex;
             align-items: center;
-            gap: 16px;
-            padding: 16px;
+            gap: 20px;
+            padding: 24px;
 
             .kpi-chart {
               position: relative;
               flex-shrink: 0;
-              width: 80px;
-              height: 80px;
+              width: 100px;
+              height: 100px;
 
               .chart-center-value {
                 position: absolute;
@@ -278,14 +324,36 @@
 
       .velocity-chart-card {
         background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         border: 1px solid #e5e7eb;
+        margin-top: 32px;
+
+        .chart-header {
+          padding: 20px 24px 0;
+          border-bottom: 1px solid #f3f4f6;
+
+          h3 {
+            margin: 0 0 8px 0;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+
+          .chart-subtitle {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin: 0;
+          }
+        }
 
         .chart-container {
-          height: 120px;
+          height: 160px;
           position: relative;
-          padding: 16px;
+          padding: 24px;
 
           canvas {
             max-width: 100%;
@@ -301,93 +369,152 @@
   // ==========================================================================
   .detailed-section {
     .metrics-grid-detailed {
-      @apply grid grid-cols-1 lg:grid-cols-2 gap-6;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+
+      @media (min-width: 1024px) {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 32px;
+      }
 
       .metric-card {
-        @apply bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200;
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e5e7eb;
+        transition: all 0.2s ease-in-out;
+        padding: 24px;
+
+        &:hover {
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+          transform: translateY(-2px);
+        }
 
         .card-header {
-          @apply flex items-center justify-between;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 20px;
 
           .card-icon {
-            @apply text-2xl flex-shrink-0;
+            font-size: 2rem;
+            flex-shrink: 0;
           }
 
           .card-title {
-            @apply flex-1 min-w-0 ml-3;
+            flex: 1;
+            min-width: 0;
+            margin-left: 16px;
 
             h3 {
-              @apply text-lg font-semibold text-gray-800 m-0;
+              font-size: 1.125rem;
+              font-weight: 600;
+              color: #1f2937;
+              margin: 0;
             }
 
             .card-subtitle {
-              @apply text-sm text-gray-500;
+              font-size: 0.875rem;
+              color: #6b7280;
+              margin-top: 4px;
             }
           }
 
           .card-percentage {
-            @apply text-2xl font-bold;
+            font-size: 2rem;
+            font-weight: bold;
           }
         }
 
         // Progress Card
         &.progress-card {
           .main-progress {
-            @apply w-full h-2 rounded-full mb-4;
+            width: 100%;
+            height: 8px;
+            border-radius: 9999px;
+            margin-bottom: 16px;
+            background-color: #f3f4f6;
+            overflow: hidden;
+
+            .progress-fill {
+              height: 100%;
+              background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+              border-radius: 9999px;
+              transition: width 0.3s ease;
+            }
           }
 
           .progress-breakdown {
-            @apply grid grid-cols-2 gap-3;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
 
             .breakdown-item {
-              @apply flex items-center gap-2 p-2 rounded bg-gray-50;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              padding: 12px;
+              border-radius: 8px;
+              background-color: #f9fafb;
 
               mat-icon {
-                @apply text-lg;
+                font-size: 1.125rem;
               }
 
               .count {
-                @apply font-semibold;
+                font-weight: 600;
+                font-size: 1.125rem;
               }
 
               .label {
-                @apply text-sm text-gray-600;
+                font-size: 0.875rem;
+                color: #4b5563;
               }
 
               &.completed {
-                @apply bg-green-50;
-                mat-icon { @apply text-green-600; }
-                .count { @apply text-green-600; }
+                background-color: #ecfdf5;
+                mat-icon { color: #059669; }
+                .count { color: #059669; }
               }
 
               &.in-progress {
-                @apply bg-blue-50;
-                mat-icon { @apply text-blue-600; }
-                .count { @apply text-blue-600; }
+                background-color: #eff6ff;
+                mat-icon { color: #2563eb; }
+                .count { color: #2563eb; }
               }
 
               &.review {
-                @apply bg-purple-50;
-                mat-icon { @apply text-purple-600; }
-                .count { @apply text-purple-600; }
+                background-color: #f3e8ff;
+                mat-icon { color: #7c3aed; }
+                .count { color: #7c3aed; }
               }
 
               &.pending {
-                @apply bg-gray-50;
-                mat-icon { @apply text-gray-600; }
-                .count { @apply text-gray-600; }
+                background-color: #f9fafb;
+                mat-icon { color: #4b5563; }
+                .count { color: #4b5563; }
               }
             }
           }
 
           .progress-alerts {
-            @apply mt-4;
+            margin-top: 16px;
 
             .overdue-chip {
-              @apply bg-red-100 text-red-700 flex items-center gap-1;
+              background-color: #fef2f2;
+              color: #dc2626;
+              display: flex;
+              align-items: center;
+              gap: 4px;
+              padding: 8px 12px;
+              border-radius: 9999px;
+              font-size: 0.875rem;
+              font-weight: 500;
 
               mat-icon {
-                @apply text-sm animate-pulse;
+                font-size: 1rem;
+                animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
               }
             }
           }
