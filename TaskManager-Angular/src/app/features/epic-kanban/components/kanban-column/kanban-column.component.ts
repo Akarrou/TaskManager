@@ -37,7 +37,10 @@ export class KanbanColumnComponent {
   @Output() featureEdit = new EventEmitter<Task>();
   @Output() featureDelete = new EventEmitter<Task>();
   @Output() toggleExpansion = new EventEmitter<string>();
-  @Output() taskStatusChange = new EventEmitter<{ task: Task; newStatus: string }>();
+  @Output() taskStatusChange = new EventEmitter<{ task: Task, newStatus: string }>();
+  @Output() taskPriorityChange = new EventEmitter<{ task: Task, newPriority: string }>();
+  @Output() taskEdit = new EventEmitter<Task>();
+  @Output() taskDelete = new EventEmitter<Task>();
   @Output() featureDrop = new EventEmitter<CdkDragDrop<Task[]>>();
 
   onToggleCollapse(): void {
@@ -93,8 +96,20 @@ export class KanbanColumnComponent {
     this.toggleExpansion.emit(featureId);
   }
 
-  onTaskStatusChanged(event: { task: Task; newStatus: string }): void {
+  onTaskStatusChanged(event: { task: Task, newStatus: string }): void {
     this.taskStatusChange.emit(event);
+  }
+
+  onTaskPriorityChanged(event: { task: Task, newPriority: string }): void {
+    this.taskPriorityChange.emit(event);
+  }
+
+  onTaskEdit(task: Task): void {
+    this.taskEdit.emit(task);
+  }
+
+  onTaskDelete(task: Task): void {
+    this.taskDelete.emit(task);
   }
 
   onDrop(event: CdkDragDrop<Task[]>): void {

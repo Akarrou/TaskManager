@@ -8,8 +8,10 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
+import { trigger, state, style, transition, animate } from '@angular/animations';
 
 import { Task } from '../../../../core/services/task';
+import { TaskBadgeComponent } from '../task-badge/task-badge.component';
 
 @Component({
   selector: 'app-feature-card',
@@ -23,10 +25,32 @@ import { Task } from '../../../../core/services/task';
     MatMenuModule,
     MatProgressBarModule,
     MatTooltipModule,
-    MatDividerModule
+    MatDividerModule,
+    TaskBadgeComponent
   ],
   templateUrl: './feature-card.component.html',
-  styleUrls: ['./feature-card.component.scss']
+  styleUrls: ['./feature-card.component.scss'],
+  animations: [
+    trigger('expandCollapse', [
+      state('collapsed', style({
+        height: '0px',
+        opacity: 0,
+        overflow: 'hidden',
+        paddingTop: '0px',
+        paddingBottom: '0px'
+      })),
+      state('expanded', style({
+        height: '*',
+        opacity: 1,
+        overflow: 'visible',
+        paddingTop: '*',
+        paddingBottom: '*'
+      })),
+      transition('collapsed <=> expanded', [
+        animate('300ms cubic-bezier(0.4, 0.0, 0.2, 1)')
+      ])
+    ])
+  ]
 })
 export class FeatureCardComponent {
   @Input() feature!: Task;
@@ -40,6 +64,10 @@ export class FeatureCardComponent {
   @Output() featureDelete = new EventEmitter<Task>();
   @Output() toggleExpansion = new EventEmitter<string>();
   @Output() taskStatusChange = new EventEmitter<{ task: Task; newStatus: string }>();
+  @Output() taskPriorityChange = new EventEmitter<{ task: Task; newPriority: string }>();
+  @Output() taskEdit = new EventEmitter<Task>();
+  @Output() taskDelete = new EventEmitter<Task>();
+  @Output() featureToggleExpanded = new EventEmitter<Task>();
 
   get featureProgress(): { completed: number; total: number; percentage: number } {
     const total = this.tasks.length;
@@ -177,17 +205,15 @@ export class FeatureCardComponent {
     }
   }
 
-  onTaskClick(task: Task, event: Event): void {
-    event.stopPropagation();
+  onTaskClick(task: Task): void {
     this.featureClick.emit(task);
   }
 
   /**
-   * T011 - Méthode pour changer le statut d'une tâche depuis la carte feature
+   * T018 - Méthode pour changer le statut d'une tâche depuis TaskBadge
    */
-  onTaskStatusChange(task: Task, newStatus: string, event: Event): void {
-    event.stopPropagation();
-    this.taskStatusChange.emit({ task, newStatus });
+  onTaskStatusChange(event: { task: Task, newStatus: string }): void {
+    this.taskStatusChange.emit(event);
   }
 
   formatDate(dateString: string): string {
@@ -242,5 +268,20 @@ export class FeatureCardComponent {
    */
   trackTag(index: number, tag: string): string {
     return tag || index.toString();
+  }
+
+  // T018 - Handle task priority change
+  onTaskPriorityChange(event: { task: Task, newPriority: string }): void {
+    this.taskPriorityChange.emit(event);
+  }
+
+  // T018 - Handle task edit
+  onTaskEdit(task: Task): void {
+    this.taskEdit.emit(task);
+  }
+
+  // T018 - Handle task delete
+  onTaskDelete(task: Task): void {
+    this.taskDelete.emit(task);
   }
 } 

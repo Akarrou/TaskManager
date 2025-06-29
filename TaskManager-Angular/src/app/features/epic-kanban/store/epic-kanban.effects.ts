@@ -6,7 +6,7 @@ import { of, from } from 'rxjs';
 
 import { EpicKanbanActions } from './epic-kanban.actions';
 import { EpicKanbanService } from '../services/epic-kanban.service';
-import { TaskService } from '../../../core/services/task';
+import { TaskService, Task } from '../../../core/services/task';
 
 @Injectable()
 export class EpicKanbanEffects {
@@ -148,6 +148,67 @@ export class EpicKanbanEffects {
   autoRefreshAfterBulkUpdate$ = createEffect(() =>
     this.actions$.pipe(
       ofType(EpicKanbanActions.bulkUpdateFeaturesSuccess),
+      map(() => EpicKanbanActions.refreshMetrics())
+    )
+  );
+
+  // T018 - Update Task
+  updateTask$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(EpicKanbanActions.updateTask),
+      switchMap(({ task }) =>
+        from(this.taskService.updateTask(task.id!, task)).pipe(
+          map(() => EpicKanbanActions.updateTaskSuccess({ task })),
+          catchError(error => of(EpicKanbanActions.updateTaskFailure({ 
+            error: error?.message || 'Erreur lors de la mise à jour de la tâche' 
+          })))
+        )
+      )
+    )
+  );
+
+  // T018 - Delete Task
+  deleteTask$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(EpicKanbanActions.deleteTask),
+      switchMap(({ taskId }) =>
+        from(this.taskService.deleteTask(taskId)).pipe(
+          map(() => EpicKanbanActions.deleteTaskSuccess({ taskId })),
+          catchError(error => of(EpicKanbanActions.deleteTaskFailure({ 
+            error: error?.message || 'Erreur lors de la suppression de la tâche' 
+          })))
+        )
+      )
+    )
+  );
+
+  // T018 - Create Task
+  createTask$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(EpicKanbanActions.createTask),
+      switchMap(({ task }) => {
+        const taskToCreate = {
+          ...task,
+          priority: task.priority || 'medium' as const
+        };
+        return from(this.taskService.createTask(taskToCreate as any)).pipe(
+          map(success => EpicKanbanActions.createTaskSuccess({ task: task as Task })),
+          catchError(error => of(EpicKanbanActions.createTaskFailure({ 
+            error: error?.message || 'Erreur lors de la création de la tâche' 
+          })))
+        );
+      })
+    )
+  );
+
+  // T018 - Auto-refresh après operations sur tasks  
+  autoRefreshAfterTaskOperations$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(
+        EpicKanbanActions.updateTaskSuccess,
+        EpicKanbanActions.deleteTaskSuccess,
+        EpicKanbanActions.createTaskSuccess
+      ),
       map(() => EpicKanbanActions.refreshMetrics())
     )
   );

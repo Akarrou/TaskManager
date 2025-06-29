@@ -41,13 +41,6 @@
           <mat-icon>edit</mat-icon>
           <span>Modifier</span>
         </button>
-        <button mat-menu-item 
-                (click)="onToggleExpansion($event)" 
-                *ngIf="tasks.length > 0"
-                [attr.aria-label]="isExpanded ? 'Réduire les tâches' : 'Développer les tâches'">
-          <mat-icon>{{ isExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
-          <span>{{ isExpanded ? 'Réduire' : 'Développer' }} ({{ tasks.length }})</span>
-        </button>
         <mat-divider></mat-divider>
         <button mat-menu-item 
                 (click)="onDeleteClick($event)" 
@@ -116,20 +109,31 @@
       </div>
     </div>
 
-    <!-- Progress Bar (if has tasks) -->
-    <div *ngIf="showProgress && tasks.length > 0" class="mb-3">
-      <div class="flex justify-between items-center mb-1">
-        <span class="text-xs text-gray-600">Progression</span>
-        <span class="text-xs font-medium text-gray-900"
-              [matTooltip]="completionRate">
-          {{ featureProgress.completed }}/{{ featureProgress.total }} 
-          ({{ featureProgress.percentage }}%)
-        </span>
+    <!-- Progress Bar & Expand Button -->
+    <div *ngIf="showProgress && tasks.length > 0" class="progress-section">
+      <div class="progress-header">
+        <span class="progress-label">Progression</span>
+        <div class="progress-actions">
+          <span class="progress-count" [matTooltip]="completionRate">
+            {{ featureProgress.completed }}/{{ featureProgress.total }} 
+            ({{ featureProgress.percentage }}%)
+          </span>
+          <button mat-icon-button 
+                  class="expand-button"
+                  (click)="onToggleExpansion($event)"
+                  [matTooltip]="isExpanded ? 'Réduire les tâches' : 'Voir les tâches (' + tasks.length + ')'"
+                  [attr.aria-label]="isExpanded ? 'Réduire les tâches' : 'Développer les tâches'"
+                  [attr.aria-expanded]="isExpanded">
+            <mat-icon class="expand-icon" [class.expanded]="isExpanded">
+              {{ isExpanded ? 'expand_less' : 'expand_more' }}
+            </mat-icon>
+          </button>
+        </div>
       </div>
       <mat-progress-bar 
         mode="determinate" 
         [value]="featureProgress.percentage"
-        class="h-2 rounded-full"
+        class="progress-bar"
         [class.progress-completed]="featureProgress.percentage === 100"
         [class.progress-active]="hasActiveTasks"
         [attr.aria-label]="'Progression: ' + featureProgress.percentage + '%'">
@@ -153,72 +157,37 @@
 
   </mat-card-content>
 
-  <!-- Expanded Tasks (if expanded) -->
-  <mat-card-content *ngIf="isExpanded && tasks.length > 0" 
-                    class="px-3 pt-0 pb-3 border-t border-gray-100 bg-gray-50/30">
+  <!-- Expanded Tasks Section -->
+  <div class="feature-card__tasks" [@expandCollapse]="isExpanded ? 'expanded' : 'collapsed'">
+    <div class="feature-card__tasks-header">
+      <h4 class="feature-card__tasks-title">
+        <mat-icon class="feature-card__tasks-icon">assignment</mat-icon>
+        Tâches associées ({{ tasks.length }})
+      </h4>
+      <p class="feature-card__tasks-subtitle">Cliquez sur une tâche pour voir les détails</p>
+    </div>
     
-    <div class="text-xs font-medium text-gray-700 mb-2 flex items-center justify-between">
-      <span>Tâches ({{ tasks.length }})</span>
-      <span class="text-gray-500">{{ completionRate }}</span>
+    <div class="feature-card__tasks-list" *ngIf="tasks.length > 0; else noTasks">
+      <app-task-badge
+        *ngFor="let task of tasks; trackBy: trackTask"
+        [task]="task"
+        [showQuickActions]="true"
+        [enableNavigation]="true"
+        (taskClick)="onTaskClick($event)"
+        (statusChange)="onTaskStatusChange($event)"
+        (priorityChange)="onTaskPriorityChange($event)"
+        (taskEdit)="onTaskEdit($event)"
+        (taskDelete)="onTaskDelete($event)"
+        class="feature-card__task-item">
+      </app-task-badge>
     </div>
 
-    <div class="space-y-2">
-      <div *ngFor="let task of tasks; trackBy: trackTask"
-           class="group flex items-center justify-between p-2 bg-white rounded-md hover:bg-gray-100 cursor-pointer transition-all duration-200 border border-transparent hover:border-gray-200"
-           (click)="onTaskClick(task, $event)"
-           [attr.aria-label]="'Tâche: ' + task.title"
-           role="button"
-           tabindex="0">
-        
-        <div class="flex items-center gap-2 min-w-0 flex-1">
-          <!-- Task Status Icon -->
-          <mat-icon class="text-sm {{ getTaskStatusConfig(task).color }} transition-colors"
-                    [matTooltip]="getTaskStatusConfig(task).label">
-            {{ getTaskStatusConfig(task).icon }}
-          </mat-icon>
-          
-          <!-- Task Title & Number -->
-          <div class="min-w-0 flex-1">
-            <span class="text-xs text-gray-700 truncate block font-medium">
-              {{ task.title }}
-            </span>
-            <span *ngIf="task.task_number" 
-                  class="text-xs font-mono text-gray-400">
-              #{{ task.task_number }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Task Metadata -->
-        <div class="flex items-center gap-2 flex-shrink-0">
-          <!-- Task Priority -->
-          <mat-icon *ngIf="task.priority && task.priority !== 'medium'"
-                    class="text-sm {{ getTaskPriorityConfig(task).color }}"
-                    [matTooltip]="'Priorité: ' + getTaskPriorityConfig(task).label">
-            {{ getTaskPriorityConfig(task).icon }}
-          </mat-icon>
-          
-          <!-- Task Assignee -->
-          <span *ngIf="task.assigned_to" 
-                class="text-xs text-gray-500 flex items-center gap-1 max-w-16 truncate"
-                [matTooltip]="'Assigné à: ' + task.assigned_to">
-            <mat-icon class="text-sm flex-shrink-0">person</mat-icon>
-            <span class="truncate">{{ formatAssignee(task.assigned_to) }}</span>
-          </span>
-          
-          <!-- Task Due Date -->
-          <span *ngIf="task.due_date" 
-                class="text-xs text-gray-500 flex items-center gap-1"
-                [class.text-red-600]="isTaskOverdue(task)"
-                [class.font-medium]="isTaskOverdue(task)"
-                [matTooltip]="'Échéance: ' + formatDate(task.due_date)">
-            <mat-icon class="text-sm flex-shrink-0" 
-                      [class.text-red-600]="isTaskOverdue(task)">event</mat-icon>
-            <span class="hidden sm:inline">{{ formatDate(task.due_date) }}</span>
-          </span>
-        </div>
+    <ng-template #noTasks>
+      <div class="feature-card__no-tasks">
+        <mat-icon class="feature-card__no-tasks-icon">inbox</mat-icon>
+        <p class="feature-card__no-tasks-text">Aucune tâche associée à cette feature</p>
       </div>
-    </div>
-  </mat-card-content>
+    </ng-template>
+  </div>
 
 </mat-card> 

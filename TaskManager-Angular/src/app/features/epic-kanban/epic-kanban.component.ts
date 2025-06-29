@@ -396,4 +396,42 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   private snackBar = inject(MatSnackBar);
   private taskService = inject(TaskService);
 
+  // T018 - Handle task priority change
+  onTaskPriorityChange(event: { task: Task, newPriority: string }): void {
+    console.log('🔄 Changement de priorité task:', event.task.id, 'Nouvelle priorité:', event.newPriority);
+    
+    this.store.dispatch(EpicKanbanActions.updateTask({ 
+      task: { 
+        ...event.task, 
+        priority: event.newPriority as 'low' | 'medium' | 'high' | 'urgent'
+      } 
+    }));
+  }
+
+  // T018 - Handle task edit - Navigate to task edit or open modal
+  onTaskEdit(task: Task): void {
+    console.log('✏️ Édition task:', task.id);
+    
+    // Option 1: Navigation vers page d'édition
+    // this.router.navigate(['/tasks', task.id, 'edit']);
+    
+    // Option 2: Modal d'édition (à implémenter plus tard)
+    // this.openTaskEditModal(task);
+    
+    // Pour l'instant, on log seulement
+    console.log('Task edit modal à implémenter:', task);
+  }
+
+  // T018 - Handle task delete
+  onTaskDelete(task: Task): void {
+    console.log('🗑️ Suppression task:', task.id);
+    
+    // Confirmation avant suppression
+    const confirmed = confirm(`Êtes-vous sûr de vouloir supprimer la tâche "${task.title}" ?`);
+    
+    if (confirmed) {
+      this.store.dispatch(EpicKanbanActions.deleteTask({ taskId: task.id! }));
+    }
+  }
+
 } 

@@ -294,5 +294,68 @@ export const epicKanbanReducer = createReducer(
     ...state,
     saving: false,
     error
+  })),
+
+  // T018 - Task CRUD Operations
+  on(EpicKanbanActions.updateTask, (state) => ({
+    ...state,
+    saving: true,
+    error: null
+  })),
+
+  on(EpicKanbanActions.updateTaskSuccess, (state, { task }) => ({
+    ...state,
+    tasks: state.tasks.map(t =>
+      t.id === task.id ? { ...t, ...task } : t
+    ),
+    saving: false,
+    error: null,
+    lastUpdated: new Date()
+  })),
+
+  on(EpicKanbanActions.updateTaskFailure, (state, { error }) => ({
+    ...state,
+    saving: false,
+    error
+  })),
+
+  on(EpicKanbanActions.deleteTask, (state) => ({
+    ...state,
+    saving: true,
+    error: null
+  })),
+
+  on(EpicKanbanActions.deleteTaskSuccess, (state, { taskId }) => ({
+    ...state,
+    tasks: state.tasks.filter(task => task.id !== taskId),
+    saving: false,
+    error: null,
+    lastUpdated: new Date()
+  })),
+
+  on(EpicKanbanActions.deleteTaskFailure, (state, { error }) => ({
+    ...state,
+    saving: false,
+    error
+  })),
+
+  on(EpicKanbanActions.createTask, (state) => ({
+    ...state,
+    saving: true,
+    error: null
+  })),
+
+  on(EpicKanbanActions.createTaskSuccess, (state, { task }) => ({
+    ...state,
+    tasks: [...state.tasks, task],
+    saving: false,
+    error: null,
+    lastUpdated: new Date()
+  })),
+
+  on(EpicKanbanActions.createTaskFailure, (state, { error }) => ({
+    ...state,
+    saving: false,
+    error
   }))
 ); 

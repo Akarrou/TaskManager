@@ -80,5 +80,18 @@ export const EpicKanbanActions = createActionGroup({
       updatedFeatures: Task[] 
     }>(),
     'Bulk Update Features Failure': props<{ error: string }>(),
+
+    // T018 - Task CRUD Actions
+    'Update Task': props<{ task: Task }>(),
+    'Update Task Success': props<{ task: Task }>(),
+    'Update Task Failure': props<{ error: string }>(),
+
+    'Delete Task': props<{ taskId: string }>(),
+    'Delete Task Success': props<{ taskId: string }>(),
+    'Delete Task Failure': props<{ error: string }>(),
+
+    'Create Task': props<{ task: Partial<Task> }>(),
+    'Create Task Success': props<{ task: Task }>(),
+    'Create Task Failure': props<{ error: string }>(),
   }
 }); 
