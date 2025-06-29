@@ -1,3 +1,92 @@
+// ============================================================================
+// ACCORDÉON EPIC HEADER PANEL
+// ============================================================================
+.epic-header-panel {
+  margin-bottom: 24px !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #e5e7eb !important;
+
+  .mat-expansion-panel-header {
+    padding: 16px 24px !important;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+    border-radius: 12px 12px 0 0 !important;
+    
+    &:hover {
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+    }
+    
+    .mat-expansion-panel-header-title {
+      align-items: center !important;
+      gap: 12px !important;
+      font-weight: 600 !important;
+      color: #374151 !important;
+      
+      mat-icon {
+        color: #6366f1 !important;
+        font-size: 20px !important;
+      }
+      
+      .epic-status-chip {
+        margin-left: auto !important;
+        font-size: 11px !important;
+        font-weight: 500 !important;
+        padding: 4px 8px !important;
+        border-radius: 6px !important;
+        
+        &.status-completed {
+          background-color: #dcfce7 !important;
+          color: #166534 !important;
+        }
+        
+        &.status-in_progress {
+          background-color: #fef3c7 !important;
+          color: #d97706 !important;
+        }
+        
+        &.status-pending {
+          background-color: #f3f4f6 !important;
+          color: #6b7280 !important;
+        }
+        
+        &.status-cancelled {
+          background-color: #fecaca !important;
+          color: #dc2626 !important;
+        }
+        
+        &.status-unknown {
+          background-color: #e5e7eb !important;
+          color: #6b7280 !important;
+        }
+      }
+    }
+    
+    .mat-expansion-panel-header-description {
+      color: #6b7280 !important;
+      font-size: 13px !important;
+      margin-right: 16px !important;
+    }
+  }
+  
+  .mat-expansion-panel-content {
+    .mat-expansion-panel-body {
+      padding: 0 !important;
+    }
+  }
+  
+  &.mat-expanded {
+    .mat-expansion-panel-header {
+      border-radius: 12px 12px 0 0 !important;
+    }
+  }
+  
+  &:not(.mat-expanded) {
+    .mat-expansion-panel-header {
+      border-radius: 12px !important;
+    }
+  }
+}
+
 .epic-header {
   @apply mb-6;
 

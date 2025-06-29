@@ -11,6 +11,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatExpansionModule } from '@angular/material/expansion';
 
 import { Task } from '../../../../core/services/task';
 import { EpicMetrics } from '../../models/epic-board.model';
@@ -30,7 +31,8 @@ import { EpicMetrics } from '../../models/epic-board.model';
     MatFormFieldModule,
     MatMenuModule,
     MatTooltipModule,
-    MatDividerModule
+    MatDividerModule,
+    MatExpansionModule
   ],
   templateUrl: './epic-header.component.html',
   styleUrls: ['./epic-header.component.scss']

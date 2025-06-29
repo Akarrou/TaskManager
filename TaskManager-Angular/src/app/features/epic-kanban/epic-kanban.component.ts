@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+
 import { Store } from '@ngrx/store';
 import { Subject, takeUntil } from 'rxjs';
 
@@ -45,6 +46,7 @@ import {
     MatCardModule,
     MatDialogModule,
     MatSnackBarModule,
+
     EpicHeaderComponent,
     KanbanColumnComponent,
     EpicMetricsComponent
