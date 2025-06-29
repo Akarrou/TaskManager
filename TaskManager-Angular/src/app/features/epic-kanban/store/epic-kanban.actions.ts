@@ -1,6 +1,6 @@
 import { createActionGroup, emptyProps, props } from '@ngrx/store';
 import { Task } from '../../../core/services/task';
-import { EpicBoard, KanbanColumn } from '../models/epic-board.model';
+import { EpicBoard, KanbanColumn, EpicMetrics, TaskMoveEvent } from '../models/epic-board.model';
 
 export const EpicKanbanActions = createActionGroup({
   source: 'Epic Kanban',
@@ -63,7 +63,22 @@ export const EpicKanbanActions = createActionGroup({
 
     // Métriques
     'Refresh Metrics': emptyProps(),
-    'Refresh Metrics Success': props<{ metrics: any }>(),
+    'Refresh Metrics Success': props<{ metrics: EpicMetrics }>(),
     'Refresh Metrics Failure': props<{ error: string }>(),
+
+    // Actions drag & drop enrichies
+    'Start Feature Drag': props<{ featureId: string }>(),
+    'End Feature Drag': emptyProps(),
+    'Move Feature Complete': props<{ moveEvent: TaskMoveEvent }>(),
+
+    // Actions batch
+    'Bulk Update Features': props<{ 
+      featureIds: string[]; 
+      updates: Partial<Task> 
+    }>(),
+    'Bulk Update Features Success': props<{ 
+      updatedFeatures: Task[] 
+    }>(),
+    'Bulk Update Features Failure': props<{ error: string }>(),
   }
 }); 

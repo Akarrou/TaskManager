@@ -2,66 +2,226 @@
   
   <!-- Header Actions -->
   <div class="header-actions">
-    <button mat-icon-button (click)="onNavigateBack()" class="back-button">
-      <mat-icon>arrow_back</mat-icon>
-    </button>
-    <button mat-icon-button (click)="onRefreshBoard()" class="refresh-button">
-      <mat-icon>refresh</mat-icon>
-    </button>
+    <div class="left-actions">
+      <button mat-icon-button 
+              (click)="onNavigateBack()" 
+              class="back-button"
+              matTooltip="Retour au Dashboard">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+    </div>
+
+    <div class="right-actions">
+      <button mat-icon-button 
+              (click)="onRefreshBoard()" 
+              class="refresh-button"
+              matTooltip="Actualiser le tableau">
+        <mat-icon>refresh</mat-icon>
+      </button>
+      
+      <!-- Actions contextuelles -->
+      <button mat-icon-button 
+              [matMenuTriggerFor]="actionsMenu"
+              class="actions-menu"
+              matTooltip="Actions">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      
+      <mat-menu #actionsMenu="matMenu">
+        <button mat-menu-item (click)="onEditEpic()" *ngIf="canEdit">
+          <mat-icon>edit</mat-icon>
+          <span>Modifier l'epic</span>
+        </button>
+        <mat-divider></mat-divider>
+        <button mat-menu-item (click)="onExportBoard()">
+          <mat-icon>download</mat-icon>
+          <span>Exporter le tableau</span>
+        </button>
+        <button mat-menu-item (click)="onShareBoard()">
+          <mat-icon>share</mat-icon>
+          <span>Partager</span>
+        </button>
+        <mat-divider *ngIf="canEdit"></mat-divider>
+        <button mat-menu-item 
+                (click)="onDeleteEpic()" 
+                class="delete-action"
+                *ngIf="canEdit">
+          <mat-icon>delete</mat-icon>
+          <span>Supprimer l'epic</span>
+        </button>
+      </mat-menu>
+    </div>
   </div>
 
   <!-- Epic Info Card -->
   <mat-card class="epic-info-card">
     <mat-card-header>
-      <div class="epic-title-section">
-        <div class="epic-title">
-          <mat-icon [class]="'status-icon ' + getStatusColor()">{{ getStatusIcon() }}</mat-icon>
-          <h1>{{ epic.title || 'Epic sans titre' }}</h1>
-          <mat-chip-set *ngIf="epic.task_number" class="task-number-chip">
-            <mat-chip class="epic-number">#{{ epic.task_number }}</mat-chip>
-          </mat-chip-set>
+      <div class="epic-header-content">
+        
+        <!-- Epic Number (coloré) -->
+        <div class="epic-number-badge" *ngIf="epic.task_number">
+          <span [class]="epicNumberConfig.color + ' ' + epicNumberConfig.bgColor" 
+                class="epic-number-chip">
+            #E{{ epic.task_number }}
+          </span>
+          <span class="epic-type-label">{{ epicNumberConfig.label }}</span>
         </div>
-        <p class="epic-description" *ngIf="epic.description">{{ epic.description }}</p>
+
+        <!-- Epic Title Section -->
+        <div class="epic-title-section">
+          
+          <!-- Status Icon & Title -->
+          <div class="title-row">
+            <mat-icon [class]="'status-icon ' + getStatusColor()">{{ getStatusIcon() }}</mat-icon>
+            
+            <!-- Titre éditable inline -->
+            <div class="title-container" *ngIf="!isEditingTitle(); else editingTitle">
+              <h1 class="epic-title" 
+                  (click)="startEditingTitle()" 
+                  [class.editable]="canEdit"
+                  [matTooltip]="canEdit ? 'Cliquer pour modifier' : ''">
+                {{ epic.title || 'Epic sans titre' }}
+              </h1>
+            </div>
+            
+            <ng-template #editingTitle>
+              <mat-form-field class="title-edit-field" appearance="outline">
+                <input matInput 
+                       [(ngModel)]="editedTitle"
+                       (keydown)="onTitleKeydown($event)"
+                       (blur)="saveTitle()"
+                       placeholder="Titre de l'epic..."
+                       #titleInput>
+                <button mat-icon-button 
+                        matSuffix 
+                        (click)="saveTitle()"
+                        matTooltip="Sauvegarder">
+                  <mat-icon>check</mat-icon>
+                </button>
+                <button mat-icon-button 
+                        matSuffix 
+                        (click)="cancelEditingTitle()"
+                        matTooltip="Annuler">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </mat-form-field>
+            </ng-template>
+
+            <!-- Status Badge -->
+            <mat-chip-set class="status-badge">
+              <mat-chip [class]="getStatusColor()">
+                <mat-icon matChipAvatar>{{ getStatusIcon() }}</mat-icon>
+                {{ getStatusLabel() }}
+              </mat-chip>
+            </mat-chip-set>
+          </div>
+
+          <!-- Description -->
+          <p class="epic-description" *ngIf="epic.description">{{ epic.description }}</p>
+        </div>
       </div>
     </mat-card-header>
 
     <mat-card-content>
-      <!-- Progress Section -->
+      <!-- Progress Section enrichie -->
       <div class="progress-section">
-        <div class="progress-info">
-          <span class="progress-label">Progression</span>
-          <span class="progress-value">{{ metrics.progressPercentage || 0 }}%</span>
+        <div class="progress-header">
+          <div class="progress-info">
+            <span class="progress-label">Progression globale</span>
+            <span class="progress-value" [class]="'text-' + progressColor">
+              {{ metrics.progressPercentage || 0 }}%
+            </span>
+          </div>
+          <div class="progress-stats">
+            <span class="completed-tasks">{{ metrics.completedTasks || 0 }}</span>
+            <span class="separator">/</span>
+            <span class="total-tasks">{{ metrics.totalTasks || 0 }}</span>
+            <span class="tasks-label">tâches</span>
+          </div>
         </div>
+        
         <mat-progress-bar 
           mode="determinate" 
           [value]="metrics.progressPercentage || 0"
+          [color]="progressColor"
           class="progress-bar">
         </mat-progress-bar>
-        <div class="progress-details">
-          <span>{{ metrics.completedTasks || 0 }} / {{ metrics.totalTasks || 0 }} tâches terminées</span>
-        </div>
+        
+                 <div class="progress-breakdown">
+           <div class="breakdown-item">
+             <span class="count">{{ metrics.completedTasks || 0 }}</span>
+             <span class="label text-green-600">Tâches terminées</span>
+           </div>
+           <div class="breakdown-item">
+             <span class="count">{{ metrics.inProgressTasks || 0 }}</span>
+             <span class="label text-orange-500">En cours</span>
+           </div>
+           <div class="breakdown-item">
+             <span class="count">{{ metrics.pendingTasks || 0 }}</span>
+             <span class="label text-gray-500">En attente</span>
+           </div>
+           <div class="breakdown-item" *ngIf="metrics.cancelledTasks > 0">
+             <span class="count">{{ metrics.cancelledTasks }}</span>
+             <span class="label text-red-500">Annulées</span>
+           </div>
+         </div>
       </div>
 
-      <!-- Meta Information -->
+      <!-- Time Tracking (si disponible) -->
+      <div class="time-tracking-section" *ngIf="hasTimeTracking">
+        <div class="time-info">
+          <span class="time-label">Suivi temporel</span>
+          <div class="time-details">
+            <span class="estimated">{{ epic.estimated_hours || 0 }}h estimées</span>
+            <span class="actual">{{ epic.actual_hours || 0 }}h réelles</span>
+          </div>
+        </div>
+        <mat-progress-bar 
+          mode="determinate" 
+          [value]="timeTrackingProgress"
+          class="time-progress">
+        </mat-progress-bar>
+      </div>
+
+      <!-- Meta Information enrichie -->
       <div class="meta-info">
         <div class="meta-item" *ngIf="epic.due_date">
-          <mat-icon>event</mat-icon>
-          <span>Échéance: {{ epic.due_date | date:'dd/MM/yyyy' }}</span>
+          <mat-icon [class]="isOverdue ? 'text-red-500' : 'text-gray-500'">event</mat-icon>
+          <span [class]="isOverdue ? 'text-red-600 font-semibold' : ''">
+            Échéance: {{ formatDate(epic.due_date) }}
+            <mat-icon class="ml-1 text-red-500" *ngIf="isOverdue">warning</mat-icon>
+          </span>
         </div>
+        
         <div class="meta-item" *ngIf="epic.assigned_to">
           <mat-icon>person</mat-icon>
           <span>Assigné à: {{ epic.assigned_to }}</span>
         </div>
+        
         <div class="meta-item" *ngIf="epic.priority">
-          <mat-icon>flag</mat-icon>
-          <span>Priorité: {{ epic.priority }}</span>
+          <mat-icon [class]="getPriorityColor()">{{ getPriorityIcon() }}</mat-icon>
+          <span [class]="getPriorityColor()">{{ getPriorityLabel() }}</span>
+        </div>
+
+        <div class="meta-item" *ngIf="epic.prd_slug">
+          <mat-icon>description</mat-icon>
+          <span>PRD: {{ epic.prd_slug }}</span>
+        </div>
+
+        <div class="meta-item" *ngIf="epic.environment && epic.environment.length > 0">
+          <mat-icon>computer</mat-icon>
+          <span>Environnements: {{ epic.environment.join(', ') }}</span>
         </div>
       </div>
 
-      <!-- Tags Section -->
+      <!-- Tags Section améliorée -->
       <div class="tags-section" *ngIf="epic.tags && epic.tags.length > 0">
-        <mat-chip-set>
-          <mat-chip *ngFor="let tag of epic.tags">{{ tag }}</mat-chip>
+        <div class="tags-header">
+          <mat-icon>local_offer</mat-icon>
+          <span class="tags-label">Tags</span>
+        </div>
+        <mat-chip-set class="tags-list">
+          <mat-chip *ngFor="let tag of epic.tags" class="tag-chip">{{ tag }}</mat-chip>
         </mat-chip-set>
       </div>
 

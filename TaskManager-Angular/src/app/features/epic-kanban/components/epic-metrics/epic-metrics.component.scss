@@ -1,191 +1,453 @@
 .epic-metrics {
-  @apply w-full max-w-sm;
+  @apply w-full space-y-4;
+  
+  // ============================================================================
+  // HEADER SECTION
+  // ============================================================================
+  .metrics-header {
+    @apply flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-gray-200;
 
-  .metrics-card {
-    @apply h-fit sticky top-4;
+    .header-title {
+      @apply flex items-center gap-2;
 
-    mat-card-header {
-      mat-card-title {
-        @apply flex items-center gap-2 text-lg font-semibold text-gray-800;
+      mat-icon {
+        @apply text-blue-600 text-lg;
+      }
+
+      h2 {
+        @apply text-base font-bold text-gray-800 m-0;
+      }
+    }
+
+    .header-actions {
+      @apply flex items-center gap-2;
+
+      .last-update {
+        @apply flex items-center gap-1 text-xs text-gray-600;
 
         mat-icon {
-          @apply text-blue-600;
+          @apply text-sm;
         }
+      }
+
+      .refresh-button {
+        @apply hover:bg-white hover:bg-opacity-50 transition-all duration-200;
+        @apply w-8 h-8;
+
+        mat-icon {
+          @apply text-lg;
+        }
+      }
+    }
+  }
+
+  // ============================================================================
+  // METRICS GRID - Layout vertical pour sidebar
+  // ============================================================================
+  .metrics-grid {
+    @apply space-y-4;
+
+    .metric-card {
+      @apply shadow-sm hover:shadow-md transition-all duration-300 border border-gray-200 rounded-lg overflow-hidden;
+      @apply w-full;
+
+      // Card types avec couleurs spécifiques
+      &.progress-card {
+        @apply border-l-4 border-blue-500 bg-blue-50;
+      }
+
+      &.feature-card {
+        @apply border-l-4 border-purple-500 bg-purple-50;
+      }
+
+      &.time-card {
+        @apply border-l-4 border-green-500 bg-green-50;
+      }
+
+      &.velocity-card {
+        @apply border-l-4 border-orange-500 bg-orange-50;
+      }
+
+      mat-card-header {
+        @apply p-3 pb-2;
+
+        .card-header {
+          @apply flex items-center gap-2 w-full;
+
+          .card-icon {
+            @apply text-lg flex-shrink-0;
+          }
+
+          .card-title {
+            @apply flex-1 min-w-0;
+
+            h3 {
+              @apply text-sm font-bold text-gray-800 m-0 mb-1 leading-tight;
+            }
+
+            .card-subtitle {
+              @apply text-xs text-gray-600 leading-tight;
+            }
+          }
+
+          .card-percentage {
+            @apply text-lg font-bold flex-shrink-0;
+          }
+
+          .card-trend {
+            @apply flex-shrink-0;
+
+            mat-icon {
+              @apply text-lg;
+            }
+          }
+        }
+      }
+
+      mat-card-content {
+        @apply p-3 pt-0 space-y-3;
+
+        // Progress bar styling
+        .main-progress, .feature-progress {
+          @apply rounded-full h-2;
+
+          ::ng-deep .mat-progress-bar-fill::after {
+            border-radius: 4px;
+          }
+
+          ::ng-deep .mat-progress-bar-buffer {
+            border-radius: 4px;
+          }
+        }
+
+        // Progress breakdown - Layout compact
+        .progress-breakdown {
+          @apply grid grid-cols-2 gap-2 text-xs;
+
+          .breakdown-item {
+            @apply flex items-center gap-1;
+
+            mat-icon {
+              @apply text-sm;
+            }
+
+            .count {
+              @apply font-bold;
+            }
+
+            .label {
+              @apply text-gray-600 truncate;
+            }
+
+            &.completed {
+              .count { @apply text-green-600; }
+              mat-icon { @apply text-green-500; }
+            }
+
+            &.in-progress {
+              .count { @apply text-orange-500; }
+              mat-icon { @apply text-orange-500; }
+            }
+
+            &.pending {
+              .count { @apply text-gray-500; }
+              mat-icon { @apply text-gray-400; }
+            }
+
+            &.cancelled {
+              .count { @apply text-red-500; }
+              mat-icon { @apply text-red-500; }
+            }
+          }
+        }
+
+        // Feature stats - Layout compact
+        .feature-stats {
+          @apply grid grid-cols-3 gap-2 text-center text-xs;
+
+          .stat-item {
+            @apply flex flex-col gap-1;
+
+            .stat-value {
+              @apply text-base font-bold;
+            }
+
+            .stat-label {
+              @apply text-xs text-gray-600 leading-tight;
+            }
+          }
+        }
+
+        // Time breakdown - Layout compact
+        .time-breakdown {
+          @apply space-y-1 text-xs;
+
+          .time-item {
+            @apply flex justify-between items-center;
+
+            .time-label {
+              @apply text-gray-600;
+            }
+
+            .time-value {
+              @apply font-semibold;
+            }
+          }
+        }
+
+        // Efficiency badges
+        .efficiency-badges {
+          @apply mt-2;
+
+          mat-chip-set {
+            @apply flex flex-wrap gap-1;
+          }
+
+          mat-chip {
+            @apply text-xs h-6;
+            
+            &.warning-chip {
+              @apply bg-orange-100 text-orange-800;
+            }
+
+            &.success-chip {
+              @apply bg-green-100 text-green-800;
+            }
+          }
+        }
+
+        // Velocity stats - Layout compact
+        .velocity-stats {
+          @apply space-y-2 text-xs;
+
+          .velocity-item {
+            @apply flex justify-between items-center;
+
+            .velocity-label {
+              @apply text-gray-600;
+            }
+
+            .velocity-value {
+              @apply font-semibold;
+            }
+
+            mat-chip {
+              @apply text-xs h-6;
+              
+              &.trend-increasing {
+                @apply bg-green-100 text-green-800;
+              }
+
+              &.trend-decreasing {
+                @apply bg-red-100 text-red-800;
+              }
+
+              &.trend-stable {
+                @apply bg-blue-100 text-blue-800;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // ============================================================================
+  // SUMMARY CARD
+  // ============================================================================
+  .summary-card {
+    @apply shadow-sm rounded-lg overflow-hidden border border-gray-200 bg-gray-50;
+
+    mat-card-header {
+      @apply p-3 pb-2;
+    }
+
+    .summary-header {
+      @apply flex items-center gap-2;
+
+      mat-icon {
+        @apply text-gray-600 text-lg;
+      }
+
+      h3 {
+        @apply text-sm font-bold text-gray-800 m-0;
       }
     }
 
     mat-card-content {
-      .metric-section {
-        @apply py-4;
+      @apply p-3 pt-0;
+    }
 
-        .metric-header {
-          @apply flex items-center gap-2 mb-3;
+    .summary-grid {
+      @apply space-y-3 mb-4;
 
-          mat-icon {
-            @apply text-gray-600 text-lg;
+      .summary-item {
+        @apply text-center p-3 bg-white rounded-lg shadow-sm;
+
+        .summary-metric {
+          @apply flex items-baseline justify-center gap-1 mb-1;
+
+          .metric-number {
+            @apply text-xl font-bold text-blue-600;
           }
 
-          h4 {
-            @apply text-base font-semibold text-gray-700 m-0;
-          }
-        }
-
-        // Progress Overview Styles
-        .progress-overview {
-          @apply flex items-center gap-4;
-
-          .progress-circle {
-            @apply relative w-16 h-16 rounded-full border-4 border-blue-200 bg-blue-50 flex items-center justify-center;
-
-            .progress-percentage {
-              @apply text-sm font-bold text-blue-700;
-            }
-          }
-
-          .progress-details {
-            @apply flex-1 space-y-1;
-
-            .detail-item {
-              @apply flex justify-between items-center text-sm;
-
-              .label {
-                @apply text-gray-600;
-              }
-
-              .value {
-                @apply font-semibold text-gray-800;
-
-                &.completed {
-                  @apply text-green-600;
-                }
-
-                &.in-progress {
-                  @apply text-orange-600;
-                }
-              }
-            }
+          .metric-unit {
+            @apply text-xs text-gray-500;
           }
         }
 
-        // Velocity Styles
-        .velocity-info {
-          @apply flex items-baseline gap-2;
-
-          .velocity-value {
-            @apply text-2xl font-bold text-gray-800;
-          }
-
-          .velocity-unit {
-            @apply text-sm text-gray-500;
-          }
-        }
-
-        // Blocked Tasks Styles
-        .blocked-tasks {
-          mat-list {
-            @apply p-0;
-
-            mat-list-item {
-              @apply border-l-2 border-red-200 pl-2 mb-2;
-
-              .mat-mdc-list-item-icon {
-                @apply text-red-500;
-              }
-            }
-          }
-
-          .more-blocked {
-            @apply text-xs text-gray-500 italic mt-2;
-          }
-        }
-
-        // Team Load Styles
-        .team-load {
-          @apply space-y-2;
-
-          .team-member {
-            @apply flex justify-between items-center p-2 bg-gray-50 rounded;
-
-            .member-info {
-              @apply flex-1;
-
-              .member-email {
-                @apply block text-sm font-medium text-gray-700;
-              }
-
-              .member-tasks {
-                @apply block text-xs text-gray-500;
-              }
-            }
-
-            .workload-indicator {
-              @apply px-2 py-1 rounded text-xs font-semibold;
-
-              &.workload-low {
-                @apply bg-green-100 text-green-800;
-              }
-
-              &.workload-medium {
-                @apply bg-yellow-100 text-yellow-800;
-              }
-
-              &.workload-high {
-                @apply bg-orange-100 text-orange-800;
-              }
-
-              &.workload-overloaded {
-                @apply bg-red-100 text-red-800;
-              }
-            }
-          }
-        }
-
-        // Epic Details Styles
-        .epic-details {
-          @apply space-y-2;
-
-          .detail-item {
-            @apply flex justify-between items-center text-sm;
-
-            .label {
-              @apply text-gray-600;
-            }
-
-            .value {
-              @apply font-medium text-gray-800;
-            }
-          }
+        .metric-description {
+          @apply text-xs text-gray-600 leading-tight;
         }
       }
+    }
 
-      mat-divider {
-        @apply my-4;
+    // Alerts section
+    .alerts-section {
+      @apply space-y-2;
+
+      .alert-item {
+        @apply flex items-start gap-2 p-2 rounded-lg text-xs;
+
+        mat-icon {
+          @apply flex-shrink-0 text-sm;
+        }
+
+        &.warning {
+          @apply bg-orange-50 text-orange-800 border border-orange-200;
+
+          mat-icon {
+            @apply text-orange-600;
+          }
+        }
+
+        &.info {
+          @apply bg-blue-50 text-blue-800 border border-blue-200;
+
+          mat-icon {
+            @apply text-blue-600;
+          }
+        }
       }
     }
   }
 }
 
-// Responsive
+// ============================================================================
+// RESPONSIVE DESIGN
+// ============================================================================
 @media (max-width: 1024px) {
   .epic-metrics {
-    @apply max-w-full;
-
-    .metrics-card {
-      mat-card-content {
-        .metric-section {
-          .progress-overview {
-            @apply flex-col items-start gap-3;
-
-            .progress-circle {
-              @apply w-12 h-12;
-
-              .progress-percentage {
-                @apply text-xs;
-              }
-            }
-          }
+    .metrics-grid .metric-card {
+      mat-card-header .card-header {
+        .card-title h3 {
+          @apply text-xs;
         }
       }
     }
   }
+}
+
+@media (max-width: 768px) {
+  .epic-metrics {
+    .metrics-header {
+      @apply flex-col gap-2 items-start;
+
+      .header-actions {
+        @apply w-full justify-between;
+      }
+    }
+
+    .summary-card .summary-grid {
+      @apply space-y-2;
+    }
+  }
+}
+
+// ============================================================================
+// ANIMATIONS SIMPLES
+// ============================================================================
+.metric-card {
+  transition: all 0.2s ease;
+
+  &:hover {
+    @apply shadow-md;
+  }
+}
+
+.refresh-button.loading {
+  mat-icon {
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// ============================================================================
+// DARK MODE SUPPORT
+// ============================================================================
+@media (prefers-color-scheme: dark) {
+  .epic-metrics {
+    .metrics-header {
+      @apply bg-gradient-to-r from-gray-800 to-gray-900 border-gray-700;
+
+      .header-title h2 {
+        @apply text-gray-100;
+      }
+
+      .header-actions .last-update {
+        @apply text-gray-300;
+      }
+    }
+
+    .metric-card {
+      @apply bg-gray-800 border-gray-700;
+
+      &.progress-card {
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      }
+
+      &.feature-card {
+        background: linear-gradient(135deg, #312e81 0%, #3730a3 100%);
+      }
+
+      &.time-card {
+        background: linear-gradient(135deg, #14532d 0%, #166534 100%);
+      }
+
+      &.velocity-card {
+        background: linear-gradient(135deg, #9a3412 0%, #c2410c 100%);
+      }
+
+      mat-card-header .card-header .card-title h3 {
+        @apply text-gray-100;
+      }
+    }
+
+    .summary-card {
+      @apply bg-gray-800 border-gray-700;
+      background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+
+      .summary-header h3 {
+        @apply text-gray-100;
+      }
+
+      .summary-grid .summary-item {
+        @apply bg-gray-700;
+      }
+    }
+  }
+}
+
+// ============================================================================
+// CUSTOM PROPERTIES POUR THEMING
+// ============================================================================
+.epic-metrics {
+  --metric-card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --metric-card-hover-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --progress-bar-height: 12px;
+  --border-radius: 12px;
 } 

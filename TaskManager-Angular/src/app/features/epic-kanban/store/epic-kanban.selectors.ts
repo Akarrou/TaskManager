@@ -149,6 +149,104 @@ export const selectEpicProgress = createSelector(
   }
 );
 
+// Selectors avancés pour métriques
+export const selectVelocityMetrics = createSelector(
+  selectMetrics,
+  (metrics) => metrics?.velocity
+);
+
+export const selectBurndownData = createSelector(
+  selectMetrics,
+  (metrics) => metrics?.burndown
+);
+
+export const selectTeamWorkload = createSelector(
+  selectMetrics,
+  (metrics) => metrics?.teamLoad || []
+);
+
+export const selectBlockedTasks = createSelector(
+  selectMetrics,
+  (metrics) => metrics?.blockedTasks || []
+);
+
+// Selectors pour performance
+export const selectColumnWithTaskCounts = createSelector(
+  selectFeaturesByColumn,
+  selectTasks,
+  (columnFeatures, tasks) => 
+    columnFeatures.map(column => ({
+      ...column,
+      taskCount: column.features.reduce((total, feature) => {
+        const featureTasks = tasks.filter(task => task.parent_task_id === feature.id);
+        return total + featureTasks.length;
+      }, 0)
+    }))
+);
+
+export const selectWipLimitWarnings = createSelector(
+  selectColumnWithTaskCounts,
+  (columns) => 
+    columns.filter(column => 
+      column.wipLimit && column.features.length >= (column.wipLimit * 0.8)
+    )
+);
+
+export const selectEpicBoardSummary = createSelector(
+  selectCurrentEpic,
+  selectFeatures,
+  selectTasks,
+  selectMetrics,
+  (epic, features, tasks, metrics) => ({
+    epic,
+    totalFeatures: features.length,
+    totalTasks: tasks.length,
+    completionPercentage: metrics?.progressPercentage || 0,
+    avgVelocity: metrics?.velocity?.averageVelocity || 0,
+    blockedItems: (metrics?.blockedTasks?.length || 0),
+    overdueItems: features.concat(tasks).filter(item => 
+      item.due_date && new Date(item.due_date) < new Date() && item.status !== 'completed'
+    ).length
+  })
+);
+
+// Selectors pour recherche et filtrage avancé
+export const selectUniqueAssignees = createSelector(
+  selectFeatures,
+  selectTasks,
+  (features, tasks) => {
+    const assignees = new Set<string>();
+    [...features, ...tasks].forEach(item => {
+      if (item.assigned_to) assignees.add(item.assigned_to);
+    });
+    return Array.from(assignees).sort();
+  }
+);
+
+export const selectUniqueEnvironments = createSelector(
+  selectFeatures,
+  selectTasks,
+  (features, tasks) => {
+    const environments = new Set<string>();
+    [...features, ...tasks].forEach(item => {
+      item.environment?.forEach(env => environments.add(env));
+    });
+    return Array.from(environments).sort();
+  }
+);
+
+export const selectUniqueTags = createSelector(
+  selectFeatures,
+  selectTasks,
+  (features, tasks) => {
+    const tags = new Set<string>();
+    [...features, ...tasks].forEach(item => {
+      item.tags?.forEach(tag => tags.add(tag));
+    });
+    return Array.from(tags).sort();
+  }
+);
+
 // Fonction utilitaire pour appliquer les filtres
 function applyFilters(features: any[], filters: any) {
   return features.filter(feature => {

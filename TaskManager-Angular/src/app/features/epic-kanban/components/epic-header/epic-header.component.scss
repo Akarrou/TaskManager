@@ -1,96 +1,264 @@
 .epic-header {
   @apply mb-6;
 
+  // ============================================================================
+  // HEADER ACTIONS
+  // ============================================================================
   .header-actions {
     @apply flex justify-between items-center mb-4;
 
-    .back-button, .refresh-button {
-      @apply hover:bg-gray-100 transition-colors;
+    .left-actions, .right-actions {
+      @apply flex items-center gap-2;
+    }
+
+    .back-button, .refresh-button, .actions-menu {
+      @apply hover:bg-gray-100 transition-colors duration-200;
+      
+      &:hover {
+        @apply transform scale-105;
+      }
+    }
+
+    .actions-menu {
+      @apply ml-2;
+    }
+
+    // Actions du menu contextuel
+    .delete-action {
+      @apply text-red-600;
+      
+      mat-icon {
+        @apply text-red-500;
+      }
     }
   }
 
+  // ============================================================================
+  // EPIC INFO CARD
+  // ============================================================================
   .epic-info-card {
-    @apply shadow-lg;
+    @apply shadow-lg rounded-lg overflow-hidden;
+    @apply border border-gray-100;
 
-    .epic-title-section {
-      @apply w-full;
+    .epic-header-content {
+      @apply w-full space-y-4;
 
-      .epic-title {
-        @apply flex items-center gap-3 mb-2;
+      // Epic Number Badge
+      .epic-number-badge {
+        @apply flex items-center gap-3 mb-3;
 
-        .status-icon {
-          @apply text-2xl;
-          
-          &.success {
-            @apply text-green-600;
-          }
-          
-          &.primary {
-            @apply text-blue-600;
-          }
-          
-          &.warn {
-            @apply text-orange-600;
-          }
+        .epic-number-chip {
+          @apply px-3 py-1 rounded-full text-sm font-bold border-2;
+          @apply transition-all duration-200 hover:scale-105;
         }
 
-        h1 {
-          @apply text-2xl font-bold text-gray-800 m-0 flex-1;
-        }
-
-        .task-number-chip {
-          .epic-number {
-            @apply bg-red-100 text-red-800 text-sm font-semibold;
-          }
+        .epic-type-label {
+          @apply text-xs text-gray-500 uppercase tracking-wide font-medium;
         }
       }
 
-      .epic-description {
-        @apply text-gray-600 text-base leading-relaxed m-0;
+      // Title Section
+      .epic-title-section {
+        @apply space-y-3;
+
+        .title-row {
+          @apply flex items-center gap-3 flex-wrap;
+
+          .status-icon {
+            @apply text-2xl flex-shrink-0;
+            @apply transition-colors duration-200;
+          }
+
+          .title-container {
+            @apply flex-1 min-w-0;
+
+            .epic-title {
+              @apply text-2xl font-bold text-gray-800 m-0 cursor-default;
+              @apply transition-all duration-200;
+              @apply truncate;
+
+              &.editable {
+                @apply cursor-pointer hover:text-blue-600 hover:bg-blue-50;
+                @apply px-2 py-1 rounded transition-all duration-200;
+              }
+            }
+          }
+
+          .title-edit-field {
+            @apply flex-1 min-w-0;
+
+            mat-form-field {
+              @apply w-full;
+            }
+
+            input {
+              @apply text-xl font-bold;
+            }
+          }
+
+          .status-badge {
+            @apply flex-shrink-0;
+
+            mat-chip {
+              @apply font-medium text-sm;
+              @apply transition-all duration-200;
+            }
+          }
+        }
+
+        .epic-description {
+          @apply text-gray-600 text-base leading-relaxed m-0;
+          @apply bg-gray-50 p-3 rounded-lg;
+        }
       }
     }
 
+    // ============================================================================
+    // CARD CONTENT
+    // ============================================================================
     mat-card-content {
+      @apply space-y-6;
+
+      // Progress Section
       .progress-section {
-        @apply mb-6;
+        @apply space-y-4;
 
-        .progress-info {
-          @apply flex justify-between items-center mb-2;
+        .progress-header {
+          @apply flex justify-between items-center flex-wrap gap-3;
 
-          .progress-label {
-            @apply text-sm font-medium text-gray-700;
+          .progress-info {
+            @apply flex items-center gap-3;
+
+            .progress-label {
+              @apply text-sm font-medium text-gray-700;
+            }
+
+            .progress-value {
+              @apply text-lg font-bold;
+              @apply transition-colors duration-200;
+            }
           }
 
-          .progress-value {
-            @apply text-sm font-bold text-blue-600;
+          .progress-stats {
+            @apply flex items-center gap-1 text-sm text-gray-600;
+
+            .completed-tasks {
+              @apply font-semibold text-green-600;
+            }
+
+            .separator {
+              @apply mx-1 text-gray-400;
+            }
+
+            .total-tasks {
+              @apply font-semibold;
+            }
+
+            .tasks-label {
+              @apply ml-1 text-gray-500;
+            }
           }
         }
 
         .progress-bar {
-          @apply mb-2;
+          @apply rounded-full h-2;
+          @apply transition-all duration-500;
         }
 
-        .progress-details {
-          @apply text-xs text-gray-500;
+        .progress-breakdown {
+          @apply flex gap-4 flex-wrap;
+
+          .breakdown-item {
+            @apply flex items-center gap-2 text-sm;
+
+            .count {
+              @apply font-bold text-lg;
+            }
+
+            .label {
+              @apply font-medium;
+            }
+          }
         }
       }
 
+      // Time Tracking Section
+      .time-tracking-section {
+        @apply bg-blue-50 p-4 rounded-lg space-y-3;
+
+        .time-info {
+          @apply flex justify-between items-center;
+
+          .time-label {
+            @apply text-sm font-medium text-blue-800;
+          }
+
+          .time-details {
+            @apply flex gap-4 text-sm;
+
+            .estimated {
+              @apply text-blue-600 font-medium;
+            }
+
+            .actual {
+              @apply text-blue-800 font-semibold;
+            }
+          }
+        }
+
+        .time-progress {
+          @apply rounded-full h-2;
+        }
+      }
+
+      // Meta Information
       .meta-info {
-        @apply flex flex-wrap gap-4 mb-4;
+        @apply grid grid-cols-1 md:grid-cols-2 gap-3;
 
         .meta-item {
           @apply flex items-center gap-2 text-sm text-gray-600;
+          @apply p-2 rounded-lg bg-gray-50;
+          @apply transition-all duration-200 hover:bg-gray-100;
+
+          mat-icon {
+            @apply text-base flex-shrink-0;
+          }
+
+          span {
+            @apply truncate;
+          }
+
+          // Overdue styling
+          &.overdue {
+            @apply bg-red-50 text-red-600;
+
+            mat-icon {
+              @apply text-red-500;
+            }
+          }
+        }
+      }
+
+      // Tags Section
+      .tags-section {
+        @apply space-y-3;
+
+        .tags-header {
+          @apply flex items-center gap-2 text-sm font-medium text-gray-700;
 
           mat-icon {
             @apply text-base text-gray-500;
           }
         }
-      }
 
-      .tags-section {
-        mat-chip-set {
-          mat-chip {
+        .tags-list {
+          @apply flex flex-wrap gap-2;
+
+          .tag-chip {
             @apply bg-blue-50 text-blue-700 text-xs;
+            @apply border border-blue-200;
+            @apply transition-all duration-200 hover:bg-blue-100;
+            @apply hover:scale-105;
           }
         }
       }
@@ -98,25 +266,160 @@
   }
 }
 
-// Responsive
+// ============================================================================
+// RESPONSIVE DESIGN
+// ============================================================================
 @media (max-width: 768px) {
   .epic-header {
-    .epic-info-card {
-      .epic-title-section {
-        .epic-title {
-          @apply flex-wrap;
+    .header-actions {
+      @apply gap-2;
 
-          h1 {
-            @apply text-xl;
+      .right-actions {
+        @apply gap-1;
+      }
+    }
+
+    .epic-info-card {
+      .epic-header-content {
+        .epic-number-badge {
+          @apply flex-col items-start gap-1;
+        }
+
+        .epic-title-section {
+          .title-row {
+            @apply flex-col items-start gap-2;
+
+            .epic-title {
+              @apply text-xl;
+            }
+
+            .status-badge {
+              @apply self-start;
+            }
+          }
+        }
+      }
+
+      mat-card-content {
+        .progress-section {
+          .progress-header {
+            @apply flex-col items-start gap-2;
+          }
+
+          .progress-breakdown {
+            @apply grid grid-cols-2 gap-2;
+          }
+        }
+
+        .meta-info {
+          @apply grid-cols-1;
+        }
+      }
+    }
+  }
+}
+
+// ============================================================================
+// ANIMATIONS ET TRANSITIONS
+// ============================================================================
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes scale-in {
+  0% { transform: scale(0.95); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+// Animations pour les statuts en cours
+.status-icon.text-orange-500 {
+  animation: pulse-soft 2s infinite;
+}
+
+// Animation d'apparition pour la carte
+.epic-info-card {
+  animation: scale-in 0.3s ease-out;
+}
+
+// Hover effects pour les éléments interactifs
+.epic-title.editable:hover,
+.meta-item:hover,
+.tag-chip:hover,
+.breakdown-item:hover {
+  @apply transform translate-y-[-1px];
+}
+
+// ============================================================================
+// DARK MODE SUPPORT (préparation)
+// ============================================================================
+@media (prefers-color-scheme: dark) {
+  .epic-header {
+    .epic-info-card {
+      @apply bg-gray-800 border-gray-700;
+
+      .epic-header-content {
+        .epic-title-section {
+          .title-row {
+            .epic-title {
+              @apply text-gray-100;
+
+              &.editable:hover {
+                @apply text-blue-400 bg-blue-900;
+              }
+            }
+          }
+
+          .epic-description {
+            @apply bg-gray-700 text-gray-300;
           }
         }
       }
 
       mat-card-content {
         .meta-info {
-          @apply flex-col gap-2;
+          .meta-item {
+            @apply bg-gray-700 text-gray-300;
+
+            &:hover {
+              @apply bg-gray-600;
+            }
+          }
+        }
+
+        .time-tracking-section {
+          @apply bg-blue-900 text-blue-100;
+        }
+
+        .tags-section {
+          .tag-chip {
+            @apply bg-blue-900 text-blue-200 border-blue-700;
+
+            &:hover {
+              @apply bg-blue-800;
+            }
+          }
         }
       }
     }
+  }
+}
+
+// ============================================================================
+// CUSTOM PROPERTIES POUR THEMING
+// ============================================================================
+.epic-header {
+  --epic-primary-color: theme('colors.blue.600');
+  --epic-bg-color: theme('colors.white');
+  --epic-text-color: theme('colors.gray.800');
+  --epic-border-color: theme('colors.gray.200');
+}
+
+// Epic number colors par type
+.epic-number-chip {
+  // Epic (rouge)
+  &.text-red-700.bg-red-100 {
+    @apply shadow-md;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);
   }
 } 

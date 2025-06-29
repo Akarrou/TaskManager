@@ -8,23 +8,23 @@
   }
 
   // États de priorité (couleurs de fond)
-  &.border-green-200 {
+  &.priority-low {
     @apply border-green-200 bg-green-50 hover:bg-green-100;
   }
 
-  &.border-yellow-200 {
+  &.priority-medium {
     @apply border-yellow-200 bg-yellow-50 hover:bg-yellow-100;
   }
 
-  &.border-orange-200 {
+  &.priority-high {
     @apply border-orange-200 bg-orange-50 hover:bg-orange-100;
   }
 
-  &.border-red-200 {
+  &.priority-urgent {
     @apply border-red-200 bg-red-50 hover:bg-red-100;
   }
 
-  &.border-gray-200 {
+  &.priority-default {
     @apply border-gray-200 bg-gray-50 hover:bg-gray-100;
   }
 }
@@ -104,26 +104,8 @@
   }
 }
 
-// Couleurs de statut
-.text-green-500 {
-  @apply text-green-500;
-}
-
-.text-orange-500 {
-  @apply text-orange-500;
-}
-
-.text-blue-500 {
-  @apply text-blue-500;
-}
-
-.text-gray-400 {
-  @apply text-gray-400;
-}
-
-.text-red-500 {
-  @apply text-red-500;
-}
+// Les couleurs de statut sont déjà définies par Tailwind CSS
+// Pas besoin de redéfinir ces classes
 
 // Mode compact amélioré
 .task-badge {

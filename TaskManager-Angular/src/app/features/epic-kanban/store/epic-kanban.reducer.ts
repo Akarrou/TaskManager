@@ -249,5 +249,50 @@ export const epicKanbanReducer = createReducer(
   // Reset state
   on(EpicKanbanActions.resetEpicKanbanState, () => ({
     ...initialState
+  })),
+
+  // Drag & Drop state
+  on(EpicKanbanActions.startFeatureDrag, (state, { featureId }) => ({
+    ...state,
+    // Peut ajouter un état de drag si nécessaire
+  })),
+
+  on(EpicKanbanActions.endFeatureDrag, (state) => ({
+    ...state,
+    // Reset drag state si nécessaire
+  })),
+
+  on(EpicKanbanActions.moveFeatureComplete, (state, { moveEvent }) => ({
+    ...state,
+    features: state.features.map(feature =>
+      feature.id === moveEvent.taskId 
+        ? { ...feature, status: moveEvent.newStatus as any }
+        : feature
+    ),
+    lastUpdated: new Date()
+  })),
+
+  // Bulk operations
+  on(EpicKanbanActions.bulkUpdateFeatures, (state) => ({
+    ...state,
+    saving: true,
+    error: null
+  })),
+
+  on(EpicKanbanActions.bulkUpdateFeaturesSuccess, (state, { updatedFeatures }) => ({
+    ...state,
+    features: state.features.map(feature => {
+      const updated = updatedFeatures.find(u => u.id === feature.id);
+      return updated || feature;
+    }),
+    saving: false,
+    error: null,
+    lastUpdated: new Date()
+  })),
+
+  on(EpicKanbanActions.bulkUpdateFeaturesFailure, (state, { error }) => ({
+    ...state,
+    saving: false,
+    error
   }))
 ); 

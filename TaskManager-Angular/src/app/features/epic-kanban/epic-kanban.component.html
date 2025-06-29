@@ -59,7 +59,9 @@
         <app-epic-metrics 
           *ngIf="(metrics$ | async) && (currentEpic$ | async)"
           [metrics]="(metrics$ | async)!"
-          [epic]="(currentEpic$ | async)!">
+          [epic]="(currentEpic$ | async)!"
+          [features]="(features$ | async) || []"
+          [tasks]="(tasks$ | async) || []">
         </app-epic-metrics>
       </div>
 
