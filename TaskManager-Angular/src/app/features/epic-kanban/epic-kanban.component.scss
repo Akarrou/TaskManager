@@ -64,26 +64,26 @@
   .epic-board {
     @apply max-w-full;
 
+    // ========================================================================
+    // METRICS PANEL HORIZONTAL (NEW LAYOUT)
+    // ========================================================================
+    .metrics-panel-horizontal {
+      @apply w-full mb-6;
+    }
+
     .kanban-board-content {
-      @apply flex gap-6 mt-6;
+      @apply mt-6;
 
       // ========================================================================
       // KANBAN COLUMNS CONTAINER (DESKTOP DEFAULT)
       // ========================================================================
       .kanban-columns-container {
-        @apply grid grid-cols-4 gap-4 flex-1;
-        min-height: calc(100vh - 300px);
+        @apply grid grid-cols-4 gap-4;
+        min-height: calc(100vh - 400px); // Adjusted for metrics above
 
         .kanban-column {
-          @apply w-full; // Remove flex-shrink-0 for grid
+          @apply w-full;
         }
-      }
-
-      // ========================================================================
-      // METRICS PANEL (SIDEBAR)
-      // ========================================================================
-      .metrics-panel {
-        @apply w-96 flex-shrink-0;
       }
     }
   }
@@ -97,13 +97,13 @@
 @media (min-width: 1201px) {
   .epic-kanban-container {
     .epic-board {
+      .metrics-panel-horizontal {
+        @apply w-full mb-8;
+      }
+
       .kanban-board-content {
         .kanban-columns-container {
           @apply grid-cols-4 gap-6;
-        }
-        
-        .metrics-panel {
-          @apply w-96;
         }
       }
     }
@@ -116,17 +116,14 @@
     @apply p-3;
     
     .epic-board {
-      .kanban-board-content {
-        @apply flex-col gap-4;
+      .metrics-panel-horizontal {
+        @apply w-full mb-6;
+      }
 
+      .kanban-board-content {
         .kanban-columns-container {
           @apply grid-cols-2 gap-4;
-          min-height: calc(100vh - 250px);
-        }
-
-        .metrics-panel {
-          @apply w-full order-first;
-          // Metrics en haut sur tablet
+          min-height: calc(100vh - 350px);
         }
       }
     }
@@ -139,16 +136,14 @@
     @apply p-2;
 
     .epic-board {
-      .kanban-board-content {
-        @apply flex-col gap-3;
+      .metrics-panel-horizontal {
+        @apply w-full mb-4;
+      }
 
+      .kanban-board-content {
         .kanban-columns-container {
           @apply grid-cols-1 gap-3;
           min-height: auto; // Allow natural height on mobile
-        }
-
-        .metrics-panel {
-          @apply w-full order-first;
         }
       }
     }
@@ -161,9 +156,11 @@
     @apply p-1;
 
     .epic-board {
-      .kanban-board-content {
-        @apply gap-2;
+      .metrics-panel-horizontal {
+        @apply w-full mb-3;
+      }
 
+      .kanban-board-content {
         .kanban-columns-container {
           @apply gap-2;
         }

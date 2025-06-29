@@ -1,443 +1,436 @@
-<!-- T012 - Epic Metrics Dashboard Analytics -->
-<div class="epic-metrics" [class.detailed-view]="viewMode === 'detailed'">
+<!-- T012 - Epic Metrics Dashboard Analytics - Accordion Layout -->
+<div class="epic-metrics epic-metrics-horizontal">
 
-  <!-- HEADER AVEC ACTIONS AVANCÉES -->
-  <div class="metrics-header">
-    <div class="header-title">
-      <mat-icon>analytics</mat-icon>
-      <h2>Analytics Epic</h2>
-      <mat-chip class="status-chip" [class]="'status-' + (epic.status || 'unknown')">
-        {{ epic.status || 'N/A' }}
-      </mat-chip>
-    </div>
-    <div class="header-actions">
-      <span class="last-update text-xs text-gray-600">
-        <mat-icon>access_time</mat-icon>
-        {{ lastRefresh | date:'HH:mm:ss' }}
-      </span>
-      
-      <!-- Toggle View Mode -->
-      <button mat-icon-button 
-              (click)="toggleViewMode()"
-              [matTooltip]="viewMode === 'overview' ? 'Vue détaillée' : 'Vue synthèse'">
-        <mat-icon>{{ viewMode === 'overview' ? 'view_list' : 'view_module' }}</mat-icon>
-      </button>
-
-      <!-- Export Menu -->
-      <button mat-icon-button [matMenuTriggerFor]="exportMenu" matTooltip="Export">
-        <mat-icon>download</mat-icon>
-      </button>
-      <mat-menu #exportMenu="matMenu">
-        <button mat-menu-item (click)="onExportMetrics()">
-          <mat-icon>description</mat-icon>
-          <span>Export JSON</span>
+  <!-- HEADER AVEC ACTIONS -->
+  <mat-expansion-panel class="metrics-header-panel" [expanded]="true">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <mat-icon>analytics</mat-icon>
+        Analytics Epic
+        <mat-chip class="status-chip" [class]="'status-' + (epic.status || 'unknown')">
+          {{ epic.status || 'N/A' }}
+        </mat-chip>
+      </mat-panel-title>
+      <mat-panel-description>
+        <span class="last-update">
+          <mat-icon>access_time</mat-icon>
+          {{ lastRefresh | date:'HH:mm:ss' }}
+        </span>
+        
+        <!-- Toggle View Mode -->
+        <button mat-icon-button 
+                (click)="toggleViewMode(); $event.stopPropagation()"
+                [matTooltip]="viewMode === 'overview' ? 'Vue détaillée' : 'Vue synthèse'">
+          <mat-icon>{{ viewMode === 'overview' ? 'view_list' : 'view_module' }}</mat-icon>
         </button>
-      </mat-menu>
 
-      <!-- Refresh -->
-      <button mat-icon-button 
-              class="refresh-button" 
-              (click)="onRefresh()" 
-              [class.refreshing]="isRefreshing"
-              matTooltip="Actualiser">
-        <mat-icon>refresh</mat-icon>
-      </button>
-    </div>
-  </div>
+        <!-- Export Menu -->
+        <button mat-icon-button 
+                [matMenuTriggerFor]="exportMenu" 
+                matTooltip="Export"
+                (click)="$event.stopPropagation()">
+          <mat-icon>download</mat-icon>
+        </button>
+        <mat-menu #exportMenu="matMenu">
+          <button mat-menu-item (click)="onExportMetrics()">
+            <mat-icon>description</mat-icon>
+            <span>Export JSON</span>
+          </button>
+        </mat-menu>
+
+        <!-- Refresh -->
+        <button mat-icon-button 
+                class="refresh-button" 
+                (click)="onRefresh(); $event.stopPropagation()" 
+                [class.refreshing]="isRefreshing"
+                matTooltip="Actualiser">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+  </mat-expansion-panel>
 
   <!-- ALERTES SYSTÈME -->
-  <div class="alerts-section" *ngIf="alerts().length > 0">
-    <mat-expansion-panel class="alerts-panel">
-      <mat-expansion-panel-header>
-        <mat-panel-title>
-          <mat-icon class="alert-icon text-red-600">warning</mat-icon>
-          <span>Alertes ({{ alerts().length }})</span>
-        </mat-panel-title>
-      </mat-expansion-panel-header>
-      
-      <div class="alerts-list">
-        <mat-card *ngFor="let alert of alerts(); trackBy: trackAlert" 
-                  class="alert-card"
-                  [class]="'alert-' + alert.type">
-          <mat-card-content>
-            <div class="alert-content">
-              <div class="alert-info">
-                <mat-icon [class]="'text-' + getAlertIconColor(alert.type)">
-                  {{ getAlertIcon(alert.type) }}
-                </mat-icon>
-                <div class="alert-text">
-                  <h4>{{ alert.title }}</h4>
-                  <p>{{ alert.message }}</p>
-                  <span class="alert-time">{{ alert.timestamp | date:'short' }}</span>
-                </div>
-              </div>
-              <div class="alert-actions" *ngIf="alert.actionable">
-                <button mat-icon-button 
-                        (click)="onAlertAction(alert.id, 'dismiss')"
-                        matTooltip="Ignorer">
-                  <mat-icon>close</mat-icon>
-                </button>
-              </div>
-            </div>
-          </mat-card-content>
-        </mat-card>
-      </div>
-    </mat-expansion-panel>
-  </div>
-
-  <!-- MÉTRIQUES OVERVIEW - Mode Synthèse -->
-  <div class="overview-section" *ngIf="viewMode === 'overview'">
-    <div class="metrics-grid-overview">
-      
-      <!-- KPI Cards Row -->
-      <div class="kpi-row">
-        <mat-card class="kpi-card progress-kpi">
-          <mat-card-content>
-            <div class="kpi-content">
-              <div class="kpi-chart">
-                <canvas baseChart
-                        [data]="progressChartData"
-                        [type]="progressChartType"
-                        [options]="progressChartOptions"
-                        width="80"
-                        height="80">
-                </canvas>
-                <div class="chart-center-value">
-                  <span class="percentage">{{ taskMetrics().percentage }}%</span>
-                </div>
-              </div>
-              <div class="kpi-details">
-                <h3>Progression</h3>
-                <div class="kpi-breakdown">
-                  <span class="completed">{{ taskMetrics().completed }} terminés</span>
-                  <span class="remaining">{{ taskMetrics().remaining }} restants</span>
-                </div>
-              </div>
-            </div>
-          </mat-card-content>
-        </mat-card>
-
-        <mat-card class="kpi-card team-kpi">
-          <mat-card-content>
-            <div class="kpi-content">
-              <mat-icon class="kpi-icon text-purple-600">group</mat-icon>
-              <div class="kpi-details">
-                <h3>Équipe</h3>
-                <div class="kpi-value text-purple-600">{{ teamMetrics().activeMembers }}/{{ teamMetrics().totalMembers }}</div>
-                <div class="kpi-label">membres actifs</div>
-                <mat-chip class="workload-chip" 
-                          [class]="'workload-' + teamMetrics().workloadDistribution">
-                  {{ getWorkloadLabel(teamMetrics().workloadDistribution) }}
-                </mat-chip>
-              </div>
-            </div>
-          </mat-card-content>
-        </mat-card>
-
-        <mat-card class="kpi-card velocity-kpi">
-          <mat-card-content>
-            <div class="kpi-content">
-              <mat-icon class="kpi-icon text-orange-600">trending_up</mat-icon>
-              <div class="kpi-details">
-                <h3>Vélocité</h3>
-                <div class="kpi-value text-orange-600">{{ velocityStats().tasksPerDay }}</div>
-                <div class="kpi-label">tâches/jour</div>
-                <div class="velocity-trend">
-                  <mat-icon class="trend-icon {{ velocityStats().trend }}">
-                    {{ getTrendIcon(velocityStats().trend) }}
-                  </mat-icon>
-                  <span>{{ velocityStats().trend }}</span>
-                </div>
-              </div>
-            </div>
-          </mat-card-content>
-        </mat-card>
-
-        <mat-card class="kpi-card time-kpi">
-          <mat-card-content>
-            <div class="kpi-content">
-              <mat-icon class="kpi-icon text-green-600" 
-                        [class.text-red-600]="timeMetrics().isOverBudget">schedule</mat-icon>
-              <div class="kpi-details">
-                <h3>Budget temps</h3>
-                <div class="kpi-value" 
-                     [class.text-red-600]="timeMetrics().isOverBudget"
-                     [class.text-green-600]="!timeMetrics().isOverBudget">
-                  {{ (timeMetrics().efficiency * 100).toFixed(0) }}%
-                </div>
-                <div class="kpi-label">utilisé</div>
-                <div class="time-remaining">
-                  {{ timeMetrics().remainingHours }}h restantes
-                </div>
-              </div>
-            </div>
-          </mat-card-content>
-        </mat-card>
-      </div>
-
-      <!-- Velocity Chart -->
-      <mat-card class="velocity-chart-card">
-        <mat-card-header>
-          <mat-card-title>
-            <mat-icon>trending_up</mat-icon>
-            Tendance vélocité
-          </mat-card-title>
-        </mat-card-header>
+  <mat-expansion-panel class="alerts-panel" *ngIf="alerts().length > 0">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <mat-icon class="alert-icon" 
+                  [class.text-red-600]="hasAlertType('danger')"
+                  [class.text-orange-500]="hasAlertType('warning')"
+                  [class.text-blue-500]="hasOnlyInfoAlerts()">
+          warning
+        </mat-icon>
+        Alertes Système
+        <mat-chip class="alert-count">{{ alerts().length }}</mat-chip>
+      </mat-panel-title>
+      <mat-panel-description>
+        Notifications et alertes importantes
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+    
+    <div class="alerts-list">
+      <mat-card class="alert-card" 
+                *ngFor="let alert of alerts(); trackBy: trackAlert"
+                [class]="'alert-' + alert.type">
         <mat-card-content>
+          <div class="alert-content">
+            <div class="alert-info">
+              <mat-icon [class]="'text-' + getAlertIconColor(alert.type)">
+                {{ getAlertIcon(alert.type) }}
+              </mat-icon>
+              <div class="alert-text">
+                <h4>{{ alert.title }}</h4>
+                <p>{{ alert.message }}</p>
+                <span class="alert-time">{{ alert.timestamp | date:'medium' }}</span>
+              </div>
+            </div>
+            <div class="alert-actions" *ngIf="alert.actionable">
+              <button mat-icon-button 
+                      color="primary"
+                      (click)="onAlertAction(alert.id, 'dismiss')"
+                      matTooltip="Marquer comme lu">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </mat-expansion-panel>
+
+  <!-- KPI OVERVIEW - Mode Synthèse -->
+  <mat-expansion-panel class="overview-panel" [expanded]="viewMode === 'overview'">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <mat-icon>dashboard</mat-icon>
+        Vue d'ensemble
+      </mat-panel-title>
+      <mat-panel-description>
+        Métriques principales et indicateurs clés
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+
+    <div class="overview-section">
+      <div class="metrics-grid-overview">
+        
+        <!-- KPI Row -->
+        <div class="kpi-row">
+          <mat-card class="kpi-card progress-kpi">
+            <mat-card-content>
+              <div class="kpi-content">
+                <div class="kpi-chart">
+                  <canvas baseChart
+                          [data]="progressChartData"
+                          [type]="progressChartType"
+                          [options]="progressChartOptions"
+                          width="100"
+                          height="100">
+                  </canvas>
+                  <div class="chart-center-value">
+                    <span class="percentage">{{ taskMetrics().percentage }}%</span>
+                  </div>
+                </div>
+                <div class="kpi-details">
+                  <h3>Progression</h3>
+                  <div class="kpi-breakdown">
+                    <span class="completed">{{ taskMetrics().completed }} terminés</span>
+                    <span class="remaining">{{ taskMetrics().remaining }} restants</span>
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card class="kpi-card team-kpi">
+            <mat-card-content>
+              <div class="kpi-content">
+                <mat-icon class="kpi-icon text-purple-600">group</mat-icon>
+                <div class="kpi-details">
+                  <h3>Équipe</h3>
+                  <div class="kpi-value text-purple-600">{{ teamMetrics().activeMembers }}/{{ teamMetrics().totalMembers }}</div>
+                  <div class="kpi-label">membres actifs</div>
+                  <mat-chip class="workload-chip" 
+                            [class]="'workload-' + teamMetrics().workloadDistribution">
+                    {{ getWorkloadLabel(teamMetrics().workloadDistribution) }}
+                  </mat-chip>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card class="kpi-card velocity-kpi">
+            <mat-card-content>
+              <div class="kpi-content">
+                <mat-icon class="kpi-icon text-orange-600">trending_up</mat-icon>
+                <div class="kpi-details">
+                  <h3>Vélocité</h3>
+                  <div class="kpi-value text-orange-600">{{ velocityStats().tasksPerDay }}</div>
+                  <div class="kpi-label">tâches/jour</div>
+                  <div class="velocity-trend">
+                    <mat-icon class="trend-icon {{ velocityStats().trend }}">
+                      {{ getTrendIcon(velocityStats().trend) }}
+                    </mat-icon>
+                    <span>{{ velocityStats().trend }}</span>
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card class="kpi-card time-kpi">
+            <mat-card-content>
+              <div class="kpi-content">
+                <mat-icon class="kpi-icon text-green-600" 
+                          [class.text-red-600]="timeMetrics().isOverBudget">schedule</mat-icon>
+                <div class="kpi-details">
+                  <h3>Budget temps</h3>
+                  <div class="kpi-value" 
+                       [class.text-red-600]="timeMetrics().isOverBudget"
+                       [class.text-green-600]="!timeMetrics().isOverBudget">
+                    {{ (timeMetrics().efficiency * 100).toFixed(0) }}%
+                  </div>
+                  <div class="kpi-label">utilisé</div>
+                  <div class="time-remaining">
+                    {{ timeMetrics().remainingHours }}h restantes
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+
+        <!-- Velocity Chart -->
+        <mat-card class="velocity-chart-card">
+          <div class="chart-header">
+            <h3>
+              <mat-icon>trending_up</mat-icon>
+              Tendance vélocité
+            </h3>
+            <p class="chart-subtitle">Évolution de la productivité sur 4 semaines</p>
+          </div>
           <div class="chart-container">
             <canvas baseChart
                     [data]="velocityChartData"
                     [type]="velocityChartType"
                     [options]="velocityChartOptions"
-                    height="120">
+                    height="160">
             </canvas>
           </div>
-        </mat-card-content>
-      </mat-card>
+        </mat-card>
 
+      </div>
     </div>
-  </div>
+  </mat-expansion-panel>
 
-  <!-- MÉTRIQUES DÉTAILLÉES - Mode Détaillé -->
-  <div class="detailed-section" *ngIf="viewMode === 'detailed'">
-    <div class="metrics-grid-detailed">
-      
-      <!-- CARD 1: PROGRESSION DÉTAILLÉE -->
-      <mat-card class="metric-card progress-card">
-        <mat-card-header>
-          <div class="card-header">
-            <mat-icon class="card-icon text-blue-600">donut_small</mat-icon>
-            <div class="card-title">
-              <h3>Progression détaillée</h3>
-              <div class="card-subtitle">Répartition par statut</div>
-            </div>
-            <div class="card-percentage text-blue-600">{{ taskMetrics().percentage }}%</div>
-          </div>
-        </mat-card-header>
-        <mat-card-content>
-          <mat-progress-bar 
-            class="main-progress" 
-            [value]="taskMetrics().percentage"
-            color="primary">
-          </mat-progress-bar>
-          
-          <div class="progress-breakdown">
-            <div class="breakdown-item completed">
-              <mat-icon>check_circle</mat-icon>
-              <span class="count">{{ taskMetrics().completed }}</span>
-              <span class="label">Terminé</span>
-            </div>
-            <div class="breakdown-item in-progress">
-              <mat-icon>hourglass_empty</mat-icon>
-              <span class="count">{{ taskMetrics().inProgress }}</span>
-              <span class="label">En cours</span>
-            </div>
-            <div class="breakdown-item review">
-              <mat-icon>rate_review</mat-icon>
-              <span class="count">{{ taskMetrics().review }}</span>
-              <span class="label">Révision</span>
-            </div>
-            <div class="breakdown-item pending">
-              <mat-icon>schedule</mat-icon>
-              <span class="count">{{ taskMetrics().pending }}</span>
-              <span class="label">En attente</span>
-            </div>
-          </div>
+  <!-- MÉTRIQUES DÉTAILLÉES -->
+  <mat-expansion-panel class="detailed-panel" [expanded]="viewMode === 'detailed'">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <mat-icon>analytics</mat-icon>
+        Analyse détaillée
+      </mat-panel-title>
+      <mat-panel-description>
+        Métriques avancées et analyses approfondies
+      </mat-panel-description>
+    </mat-expansion-panel-header>
 
-          <!-- Alertes tâches -->
-          <div class="progress-alerts" *ngIf="taskMetrics().overdue > 0">
-            <mat-chip class="overdue-chip">
-              <mat-icon>warning</mat-icon>
-              {{ taskMetrics().overdue }} en retard
-            </mat-chip>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <!-- CARD 2: FEATURES AVANCÉES -->
-      <mat-card class="metric-card feature-card">
-        <mat-card-header>
-          <div class="card-header">
-            <mat-icon class="card-icon text-purple-600">view_module</mat-icon>
-            <div class="card-title">
-              <h3>Features Analytics</h3>
-              <div class="card-subtitle">Métriques avancées</div>
+    <div class="detailed-section">
+      <div class="metrics-grid-detailed">
+        
+        <!-- CARD 1: PROGRESSION DÉTAILLÉE -->
+        <mat-card class="metric-card progress-card">
+          <mat-card-header>
+            <div class="card-header">
+              <mat-icon class="card-icon text-blue-600">donut_small</mat-icon>
+              <div class="card-title">
+                <h3>Progression détaillée</h3>
+                <div class="card-subtitle">Répartition par statut</div>
+              </div>
+              <div class="card-percentage text-blue-600">{{ taskMetrics().percentage }}%</div>
             </div>
-          </div>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="feature-stats">
-            <div class="stat-item">
-              <div class="stat-value text-purple-600">{{ featureMetrics().total }}</div>
-              <div class="stat-label">Total</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value text-green-600">{{ featureMetrics().completed }}</div>
-              <div class="stat-label">Terminées</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value text-orange-500">{{ featureMetrics().inProgress }}</div>
-              <div class="stat-label">En cours</div>
-            </div>
-          </div>
-
-          <mat-divider class="my-3"></mat-divider>
-
-          <div class="feature-metrics">
-            <div class="metric-row">
-              <span class="metric-label">Moyenne tâches/feature</span>
-              <span class="metric-value">{{ featureMetrics().avgTasksPerFeature }}</span>
-            </div>
-            <div class="metric-row" *ngIf="featureMetrics().blockedFeatures > 0">
-              <span class="metric-label">Features bloquées</span>
-              <span class="metric-value text-red-600">{{ featureMetrics().blockedFeatures }}</span>
-            </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <!-- CARD 3: TEMPS & BUDGET -->
-      <mat-card class="metric-card time-card">
-        <mat-card-header>
-          <div class="card-header">
-            <mat-icon class="card-icon text-green-600" 
-                      [class.text-red-600]="timeMetrics().isOverBudget">schedule</mat-icon>
-            <div class="card-title">
-              <h3>Budget & Performance</h3>
-              <div class="card-subtitle">Suivi temporel détaillé</div>
-            </div>
-          </div>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="time-breakdown">
-            <div class="time-item">
-              <span class="time-label">Estimé</span>
-              <span class="time-value text-blue-600">{{ timeMetrics().estimatedHours }}h</span>
-            </div>
-            <div class="time-item">
-              <span class="time-label">Réalisé</span>
-              <span class="time-value" 
-                    [class.text-green-600]="!timeMetrics().isOverBudget"
-                    [class.text-red-600]="timeMetrics().isOverBudget">
-                {{ timeMetrics().actualHours }}h
-              </span>
-            </div>
-            <div class="time-item">
-              <span class="time-label">Restant</span>
-              <span class="time-value text-orange-500">{{ timeMetrics().remainingHours }}h</span>
-            </div>
-          </div>
-
-          <mat-divider class="my-3"></mat-divider>
-
-          <div class="efficiency-metrics">
-            <div class="efficiency-item">
-              <span class="efficiency-label">Efficacité</span>
-              <mat-chip class="efficiency-chip" 
-                        [class.over-budget]="timeMetrics().isOverBudget">
-                {{ (timeMetrics().efficiency * 100).toFixed(0) }}%
-              </mat-chip>
-            </div>
-            <div class="efficiency-item" *ngIf="timeMetrics().projectedCompletion">
-              <span class="efficiency-label">Fin estimée</span>
-              <span class="projected-date">
-                {{ timeMetrics().projectedCompletion | date:'dd/MM/yyyy' }}
-              </span>
-            </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <!-- CARD 4: ÉQUIPE & PERFORMANCE -->
-      <mat-card class="metric-card team-card">
-        <mat-card-header>
-          <div class="card-header">
-            <mat-icon class="card-icon text-indigo-600">group</mat-icon>
-            <div class="card-title">
-              <h3>Analytics Équipe</h3>
-              <div class="card-subtitle">Performance collective</div>
-            </div>
-          </div>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="team-summary">
-            <div class="team-stat">
-              <span class="team-value">{{ teamMetrics().totalMembers }}</span>
-              <span class="team-label">Membres</span>
-            </div>
-            <div class="team-stat">
-              <span class="team-value text-green-600">{{ teamMetrics().activeMembers }}</span>
-              <span class="team-label">Actifs</span>
-            </div>
-          </div>
-
-          <mat-divider class="my-3"></mat-divider>
-
-          <div class="team-details" *ngIf="teamMetrics().topPerformer">
-            <div class="top-performer">
-              <mat-icon class="trophy-icon text-yellow-500">emoji_events</mat-icon>
-              <div class="performer-info">
-                <span class="performer-name">{{ teamMetrics().topPerformer }}</span>
-                <span class="performer-label">Top performer</span>
+          </mat-card-header>
+          <mat-card-content>
+            <mat-progress-bar 
+              class="main-progress" 
+              [value]="taskMetrics().percentage"
+              color="primary">
+            </mat-progress-bar>
+            
+            <div class="progress-breakdown">
+              <div class="breakdown-item completed">
+                <mat-icon>check_circle</mat-icon>
+                <span class="count">{{ taskMetrics().completed }}</span>
+                <span class="label">Terminé</span>
+              </div>
+              <div class="breakdown-item in-progress">
+                <mat-icon>hourglass_empty</mat-icon>
+                <span class="count">{{ taskMetrics().inProgress }}</span>
+                <span class="label">En cours</span>
+              </div>
+              <div class="breakdown-item review">
+                <mat-icon>rate_review</mat-icon>
+                <span class="count">{{ taskMetrics().review }}</span>
+                <span class="label">Révision</span>
+              </div>
+              <div class="breakdown-item pending">
+                <mat-icon>schedule</mat-icon>
+                <span class="count">{{ taskMetrics().pending }}</span>
+                <span class="label">En attente</span>
               </div>
             </div>
-          </div>
 
-          <div class="workload-indicator">
-            <span class="workload-label">Répartition charge</span>
-            <mat-chip class="workload-status" 
-                      [class]="'status-' + teamMetrics().workloadDistribution">
-              {{ getWorkloadLabel(teamMetrics().workloadDistribution) }}
-            </mat-chip>
-          </div>
-        </mat-card-content>
-      </mat-card>
+            <!-- Alertes tâches -->
+            <div class="progress-alerts" *ngIf="taskMetrics().overdue > 0">
+              <mat-chip class="overdue-chip">
+                <mat-icon>warning</mat-icon>
+                {{ taskMetrics().overdue }} en retard
+              </mat-chip>
+            </div>
+          </mat-card-content>
+        </mat-card>
 
+        <!-- CARD 2: FEATURES AVANCÉES -->
+        <mat-card class="metric-card feature-card">
+          <mat-card-header>
+            <div class="card-header">
+              <mat-icon class="card-icon text-purple-600">view_module</mat-icon>
+              <div class="card-title">
+                <h3>Features Analytics</h3>
+                <div class="card-subtitle">Métriques avancées</div>
+              </div>
+            </div>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="feature-stats">
+              <div class="stat-item">
+                <div class="stat-value text-purple-600">{{ featureMetrics().total }}</div>
+                <div class="stat-label">Total</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value text-green-600">{{ featureMetrics().completed }}</div>
+                <div class="stat-label">Terminées</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value text-orange-500">{{ featureMetrics().inProgress }}</div>
+                <div class="stat-label">En cours</div>
+              </div>
+            </div>
+
+            <mat-divider class="my-3"></mat-divider>
+
+            <div class="feature-metrics">
+              <div class="metric-row">
+                <span class="metric-label">Moyenne tâches/feature</span>
+                <span class="metric-value">{{ featureMetrics().avgTasksPerFeature }}</span>
+              </div>
+              <div class="metric-row" *ngIf="featureMetrics().blockedFeatures > 0">
+                <span class="metric-label">Features bloquées</span>
+                <span class="metric-value text-red-600">{{ featureMetrics().blockedFeatures }}</span>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- CARD 3: TEMPS & BUDGET -->
+        <mat-card class="metric-card time-card">
+          <mat-card-header>
+            <div class="card-header">
+              <mat-icon class="card-icon text-green-600">schedule</mat-icon>
+              <div class="card-title">
+                <h3>Budget & Performance</h3>
+                <div class="card-subtitle">Gestion du temps</div>
+              </div>
+            </div>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="time-metrics">
+              <div class="metric-row">
+                <span class="metric-label">Heures estimées</span>
+                <span class="metric-value">{{ timeMetrics().estimatedHours }}h</span>
+              </div>
+              <div class="metric-row">
+                <span class="metric-label">Heures réelles</span>
+                <span class="metric-value">{{ timeMetrics().actualHours }}h</span>
+              </div>
+              <div class="metric-row">
+                <span class="metric-label">Efficacité</span>
+                <span class="metric-value" 
+                      [class.text-green-600]="timeMetrics().efficiency <= 1"
+                      [class.text-red-600]="timeMetrics().efficiency > 1">
+                  {{ (timeMetrics().efficiency * 100).toFixed(0) }}%
+                </span>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- CARD 4: ANALYTICS ÉQUIPE -->
+        <mat-card class="metric-card team-card">
+          <mat-card-header>
+            <div class="card-header">
+              <mat-icon class="card-icon text-indigo-600">group</mat-icon>
+              <div class="card-title">
+                <h3>Analytics Équipe</h3>
+                <div class="card-subtitle">Performance collective</div>
+              </div>
+            </div>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="team-stats">
+              <div class="stat-item">
+                <div class="stat-value text-indigo-600">{{ teamMetrics().totalMembers }}</div>
+                <div class="stat-label">Membres</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value text-green-600">{{ teamMetrics().activeMembers }}</div>
+                <div class="stat-label">Actifs</div>
+              </div>
+              <div class="stat-item" *ngIf="teamMetrics().topPerformer">
+                <div class="stat-value text-purple-600">{{ teamMetrics().topPerformer }}</div>
+                <div class="stat-label">Top Performer</div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+      </div>
     </div>
-  </div>
+  </mat-expansion-panel>
 
-  <!-- RÉSUMÉ ET PROJECTIONS -->
-  <mat-card class="summary-card">
-    <mat-card-header>
-      <div class="summary-header">
-        <mat-icon>summarize</mat-icon>
-        <h3>Résumé & Projections</h3>
-      </div>
-    </mat-card-header>
-    <mat-card-content>
-      <div class="summary-grid">
-        <div class="summary-item">
-          <div class="summary-metric">
-            <span class="metric-number">{{ taskMetrics().remaining }}</span>
-            <span class="metric-unit">tâches</span>
-          </div>
-          <div class="metric-description">restantes à terminer</div>
-        </div>
-        
-        <div class="summary-item">
-          <div class="summary-metric">
-            <span class="metric-number">{{ velocityStats().daysRemaining }}</span>
-            <span class="metric-unit">jours</span>
-          </div>
-          <div class="metric-description">estimés pour terminer</div>
-        </div>
+  <!-- RÉSUMÉ & PROJECTIONS -->
+  <mat-expansion-panel class="summary-panel" [expanded]="true">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <mat-icon>insights</mat-icon>
+        Résumé & Projections
+      </mat-panel-title>
+      <mat-panel-description>
+        Vue d'ensemble et estimations
+      </mat-panel-description>
+    </mat-expansion-panel-header>
 
-        <div class="summary-item" *ngIf="velocityStats().projectedCompletion">
-          <div class="summary-metric">
-            <span class="metric-date">{{ velocityStats().projectedCompletion | date:'dd/MM' }}</span>
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <div class="summary-stats">
+          <div class="summary-item">
+            <div class="summary-value text-blue-600">{{ taskMetrics().remaining }}</div>
+            <div class="summary-label">tâches restantes à terminer</div>
           </div>
-          <div class="metric-description">fin projetée</div>
-        </div>
-
-        <div class="summary-item">
-          <div class="summary-metric">
-            <span class="metric-number">{{ velocityStats().sprintVelocity }}</span>
-            <span class="metric-unit">pts</span>
+          <div class="summary-item">
+            <div class="summary-value text-orange-500">{{ velocityStats().daysRemaining }}</div>
+            <div class="summary-label">jours estimés pour terminer</div>
           </div>
-          <div class="metric-description">vélocité sprint</div>
+          <div class="summary-item" *ngIf="velocityStats().projectedCompletion">
+            <div class="summary-value text-purple-600">{{ velocityStats().projectedCompletion | date:'dd/MM' }}</div>
+            <div class="summary-label">fin projetée</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-value text-green-600">{{ velocityStats().sprintVelocity }}</div>
+            <div class="summary-label">pts vélocité sprint</div>
+          </div>
         </div>
-      </div>
-    </mat-card-content>
-  </mat-card>
+      </mat-card-content>
+    </mat-card>
+  </mat-expansion-panel>
 
 </div> 

@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, OnChanges, SimpleChanges, computed, signal, effect, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, OnChanges, SimpleChanges, computed, signal, effect, ChangeDetectorRef, inject, DestroyRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,6 +13,7 @@ import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { Task } from '../../../../core/services/task';
 import { EpicMetrics } from '../../models/epic-board.model';
@@ -102,23 +103,24 @@ interface MetricsExport {
     CommonModule,
     MatCardModule,
     MatIconModule,
+    MatButtonModule,
+    MatChipsModule,
+    MatExpansionModule,
+    MatMenuModule,
     MatProgressBarModule,
     MatDividerModule,
-    MatListModule,
-    MatChipsModule,
     MatTooltipModule,
-    MatButtonModule,
-    MatMenuModule,
     MatSnackBarModule,
-    MatExpansionModule,
     BaseChartDirective
   ],
   templateUrl: './epic-metrics.component.html',
-  styleUrls: ['./epic-metrics.component.scss']
+  styleUrls: ['./epic-metrics.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EpicMetricsComponent implements OnInit, OnDestroy, OnChanges {
   private snackBar = inject(MatSnackBar);
   private cdr = inject(ChangeDetectorRef);
+  private destroyRef = inject(DestroyRef);
 
   @Input() epic!: Task;
   @Input() features: Task[] = [];
@@ -683,45 +685,56 @@ export class EpicMetricsComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
-  // T012 - Méthodes helper pour template
+  /**
+   * Helper methods for template
+   */
   trackAlert(index: number, alert: Alert): string {
     return alert.id;
   }
 
-  getAlertIcon(type: Alert['type']): string {
-    switch (type) {
-      case 'danger': return 'error';
-      case 'warning': return 'warning';
-      case 'info': return 'info';
-      default: return 'notifications';
-    }
+  getAlertIcon(type: string): string {
+    const icons: Record<string, string> = {
+      danger: 'error',
+      warning: 'warning',
+      info: 'info'
+    };
+    return icons[type] || 'info';
   }
 
-  getAlertIconColor(type: Alert['type']): string {
-    switch (type) {
-      case 'danger': return 'red-600';
-      case 'warning': return 'orange-500';
-      case 'info': return 'blue-500';
-      default: return 'gray-500';
-    }
+  getAlertIconColor(type: string): string {
+    const colors: Record<string, string> = {
+      danger: 'red-600',
+      warning: 'orange-500',
+      info: 'blue-500'
+    };
+    return colors[type] || 'blue-500';
   }
 
-  getWorkloadLabel(distribution: TeamMetrics['workloadDistribution']): string {
-    switch (distribution) {
-      case 'balanced': return 'Équilibrée';
-      case 'unbalanced': return 'Déséquilibrée';
-      case 'overloaded': return 'Surchargée';
-      default: return 'Inconnue';
-    }
+  getWorkloadLabel(distribution: 'balanced' | 'unbalanced' | 'overloaded'): string {
+    const labels: Record<string, string> = {
+      balanced: 'Équilibrée',
+      unbalanced: 'Déséquilibrée',
+      overloaded: 'Surchargée'
+    };
+    return labels[distribution] || 'Équilibrée';
   }
 
-  getTrendIcon(trend: VelocityStats['trend']): string {
-    switch (trend) {
-      case 'increasing': return 'trending_up';
-      case 'decreasing': return 'trending_down';
-      case 'stable': return 'trending_flat';
-      default: return 'remove';
-    }
+  getTrendIcon(trend: 'increasing' | 'decreasing' | 'stable'): string {
+    const icons: Record<string, string> = {
+      increasing: 'trending_up',
+      decreasing: 'trending_down',
+      stable: 'trending_flat'
+    };
+    return icons[trend] || 'trending_flat';
+  }
+
+  // Helper methods for alert icon styling
+  hasAlertType(type: string): boolean {
+    return this.alerts().some(alert => alert.type === type);
+  }
+
+  hasOnlyInfoAlerts(): boolean {
+    return this.alerts().every(alert => alert.type === 'info');
   }
 
   // Getters pour compatibilité avec template existant

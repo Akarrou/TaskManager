@@ -39,6 +39,17 @@
       (shareBoard)="onShareBoard()">
     </app-epic-header>
 
+    <!-- Epic Metrics Panel (Horizontal) -->
+    <div class="metrics-panel-horizontal">
+      <app-epic-metrics 
+        *ngIf="(metrics$ | async) && (currentEpic$ | async)"
+        [metrics]="(metrics$ | async)!"
+        [epic]="(currentEpic$ | async)!"
+        [features]="(features$ | async) || []"
+        [tasks]="(tasks$ | async) || []">
+      </app-epic-metrics>
+    </div>
+
     <!-- Kanban Board Content -->
     <div class="kanban-board-content">
       
@@ -58,17 +69,6 @@
           (taskStatusChange)="onTaskStatusChange($event)"
           class="kanban-column">
         </app-kanban-column>
-      </div>
-
-      <!-- Epic Metrics Panel (Sidebar) -->
-      <div class="metrics-panel">
-        <app-epic-metrics 
-          *ngIf="(metrics$ | async) && (currentEpic$ | async)"
-          [metrics]="(metrics$ | async)!"
-          [epic]="(currentEpic$ | async)!"
-          [features]="(features$ | async) || []"
-          [tasks]="(tasks$ | async) || []">
-        </app-epic-metrics>
       </div>
 
     </div>
