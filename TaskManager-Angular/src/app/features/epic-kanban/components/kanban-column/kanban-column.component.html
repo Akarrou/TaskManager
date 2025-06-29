@@ -24,7 +24,13 @@
   </div>
 
   <!-- Column Content -->
-  <div class="column-content" [class.collapsed]="column.isCollapsed">
+  <div class="column-content" 
+       [class.collapsed]="column.isCollapsed"
+       cdkDropList
+       [id]="'column-' + column.statusValue"
+       [cdkDropListData]="features"
+       [cdkDropListConnectedTo]="connectedDropLists"
+       (cdkDropListDropped)="onDrop($event)">
     
     <!-- Loading State -->
     <div *ngIf="isLoading" class="loading-state">
@@ -36,7 +42,27 @@
     <div *ngIf="!isLoading" class="features-list">
       
       <!-- Feature Cards -->
-      <div *ngFor="let feature of features; trackBy: trackFeature" class="feature-card-wrapper">
+      <div *ngFor="let feature of features; trackBy: trackFeature" 
+           class="feature-card-wrapper"
+           cdkDrag
+           [cdkDragData]="feature">
+        
+        <!-- Drag Preview (optional custom preview) -->
+        <div *cdkDragPreview class="drag-preview">
+          <div class="feature-preview">
+            <span class="feature-number">#F{{ feature.task_number }}</span>
+            <span class="feature-title">{{ feature.title }}</span>
+          </div>
+        </div>
+
+        <!-- Drag Placeholder -->
+        <div *cdkDragPlaceholder class="drag-placeholder">
+          <div class="placeholder-content">
+            <mat-icon>drag_indicator</mat-icon>
+            <span>Déposer ici</span>
+          </div>
+        </div>
+
         <app-feature-card
           [feature]="feature"
           [tasks]="getFeatureTasks(feature.id!)"
@@ -54,6 +80,7 @@
       <div *ngIf="features.length === 0" class="empty-state">
         <mat-icon>inbox</mat-icon>
         <span>Aucune feature</span>
+        <small class="drop-hint">Glissez une feature ici</small>
       </div>
 
     </div>

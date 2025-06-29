@@ -34,14 +34,24 @@ export class EpicKanbanEffects {
   moveFeature$ = createEffect(() =>
     this.actions$.pipe(
       ofType(EpicKanbanActions.moveFeature),
-      switchMap(({ featureId, fromColumnId, toColumnId, newStatus }) =>
-        from(this.taskService.updateTask(featureId, { status: newStatus as any })).pipe(
-          map(() => EpicKanbanActions.moveFeatureSuccess({ featureId, newStatus })),
-          catchError(error => of(EpicKanbanActions.moveFeatureFailure({ 
-            error: error?.message || 'Erreur lors du déplacement de la feature' 
-          })))
-        )
-      )
+      switchMap(({ featureId, fromColumnId, toColumnId, newStatus }) => {        
+        return from(this.taskService.updateTask(featureId, { status: newStatus as any })).pipe(
+          map((success) => {
+            if (success) {
+              return EpicKanbanActions.moveFeatureSuccess({ featureId, newStatus });
+            } else {
+              return EpicKanbanActions.moveFeatureFailure({ 
+                error: 'Échec de la mise à jour en base de données' 
+              });
+            }
+          }),
+          catchError(error => {
+            return of(EpicKanbanActions.moveFeatureFailure({ 
+              error: error?.message || 'Erreur lors du déplacement de la feature' 
+            }));
+          })
+        );
+      })
     )
   );
 

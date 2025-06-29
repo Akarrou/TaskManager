@@ -61,12 +61,14 @@
           [features]="columnData.features"
           [expandedFeatures]="expandedFeaturesSet"
           [featureTasks]="getFeatureTasksMap()"
+          [connectedDropLists]="getConnectedDropLists(columnData.statusValue)"
           [isLoading]="(loading$ | async) || false"
           (featureClick)="onFeatureClick($event)"
           (featureEdit)="onFeatureEdit($event)"
           (featureDelete)="onFeatureDelete($event)"
           (toggleExpansion)="onFeatureExpand($event)"
           (taskStatusChange)="onTaskStatusChange($event)"
+          (featureDrop)="onFeatureDrop($event)"
           class="kanban-column">
         </app-kanban-column>
       </div>

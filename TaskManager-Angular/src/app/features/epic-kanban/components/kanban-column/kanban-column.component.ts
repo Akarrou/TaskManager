@@ -4,6 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatBadgeModule } from '@angular/material/badge';
+import { CdkDropList, CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 
 import { Task } from '../../../../core/services/task';
 import { KanbanColumn } from '../../models/epic-board.model';
@@ -18,6 +19,7 @@ import { FeatureCardComponent } from '../feature-card/feature-card.component';
     MatIconModule,
     MatButtonModule,
     MatBadgeModule,
+    DragDropModule,
     FeatureCardComponent
   ],
   templateUrl: './kanban-column.component.html',
@@ -29,12 +31,14 @@ export class KanbanColumnComponent {
   @Input() isLoading = false;
   @Input() expandedFeatures: Set<string> = new Set();
   @Input() featureTasks: { [featureId: string]: Task[] } = {};
+  @Input() connectedDropLists: string[] = [];
 
   @Output() featureClick = new EventEmitter<Task>();
   @Output() featureEdit = new EventEmitter<Task>();
   @Output() featureDelete = new EventEmitter<Task>();
   @Output() toggleExpansion = new EventEmitter<string>();
   @Output() taskStatusChange = new EventEmitter<{ task: Task; newStatus: string }>();
+  @Output() featureDrop = new EventEmitter<CdkDragDrop<Task[]>>();
 
   onToggleCollapse(): void {
     this.column.isCollapsed = !this.column.isCollapsed;
@@ -91,5 +95,9 @@ export class KanbanColumnComponent {
 
   onTaskStatusChanged(event: { task: Task; newStatus: string }): void {
     this.taskStatusChange.emit(event);
+  }
+
+  onDrop(event: CdkDragDrop<Task[]>): void {
+    this.featureDrop.emit(event);
   }
 } 

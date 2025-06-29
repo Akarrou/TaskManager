@@ -1,39 +1,31 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 
 import { Store } from '@ngrx/store';
-import { Subject, takeUntil } from 'rxjs';
+import { Observable, combineLatest, map, takeUntil, Subject } from 'rxjs';
+
+import { AppState } from '../../app.state';
+import { Task } from '../../core/services/task';
+import { TaskService } from '../../core/services/task';
+import { KanbanColumn } from './models/epic-board.model';
+import { EpicKanbanActions } from './store/epic-kanban.actions';
+import * as EpicKanbanSelectors from './store/epic-kanban.selectors';
 
 import { EpicHeaderComponent } from './components/epic-header/epic-header.component';
 import { KanbanColumnComponent } from './components/kanban-column/kanban-column.component';
 import { EpicMetricsComponent } from './components/epic-metrics/epic-metrics.component';
+
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { SaveChangesDialogComponent } from '../../shared/components/save-changes-dialog/save-changes-dialog.component';
 
-import { TaskService, Task } from '../../core/services/task';
-import { EpicKanbanService } from './services/epic-kanban.service';
-import { EpicBoard, KanbanColumn } from './models/epic-board.model';
-
-// NgRx imports
-import { EpicKanbanActions } from './store/epic-kanban.actions';
-import { 
-  selectCurrentEpic, 
-  selectColumns, 
-  selectFeatures,
-  selectFeaturesByColumn, 
-  selectTasks,
-  selectMetrics,
-  selectLoading,
-  selectError,
-  selectExpandedFeatures,
-  selectTasksForFeature
-} from './store/epic-kanban.selectors';
+import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 
 @Component({
   selector: 'app-epic-kanban',
@@ -62,15 +54,15 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   // Store selectors
-  currentEpic$ = this.store.select(selectCurrentEpic);
-  columns$ = this.store.select(selectColumns);
-  features$ = this.store.select(selectFeatures);
-  tasks$ = this.store.select(selectTasks);
-  featuresByColumn$ = this.store.select(selectFeaturesByColumn);
-  metrics$ = this.store.select(selectMetrics);
-  loading$ = this.store.select(selectLoading);
-  error$ = this.store.select(selectError);
-  expandedFeatures$ = this.store.select(selectExpandedFeatures);
+  currentEpic$ = this.store.select(EpicKanbanSelectors.selectCurrentEpic);
+  columns$ = this.store.select(EpicKanbanSelectors.selectColumns);
+  features$ = this.store.select(EpicKanbanSelectors.selectFeatures);
+  tasks$ = this.store.select(EpicKanbanSelectors.selectTasks);
+  featuresByColumn$ = this.store.select(EpicKanbanSelectors.selectFeaturesByColumn);
+  metrics$ = this.store.select(EpicKanbanSelectors.selectMetrics);
+  loading$ = this.store.select(EpicKanbanSelectors.selectLoading);
+  error$ = this.store.select(EpicKanbanSelectors.selectError);
+  expandedFeatures$ = this.store.select(EpicKanbanSelectors.selectExpandedFeatures);
 
   // Local state for template
   expandedFeaturesSet = new Set<string>();
@@ -339,6 +331,64 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
         hideCancel: true
       }
     });
+  }
+
+  // === DRAG & DROP METHODS (T015) ===
+
+  getConnectedDropLists(currentColumnStatus: string): string[] {
+    // Retourne la liste des IDs des autres colonnes (toutes sauf la courante)
+    const allColumns = ['column-pending', 'column-in_progress', 'column-review', 'column-completed'];
+    return allColumns.filter(columnId => columnId !== `column-${currentColumnStatus}`);
+  }
+
+  onFeatureDrop(event: CdkDragDrop<Task[]>): void {
+    if (event.previousContainer === event.container) {
+      // Réorganisation dans la même colonne
+      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+    } else {
+      // Déplacement entre colonnes différentes
+      const feature = event.previousContainer.data[event.previousIndex];
+      const newStatus = this.getStatusFromColumnId(event.container.id);
+      
+      // Transfer de l'item
+      transferArrayItem(
+        event.previousContainer.data,
+        event.container.data,
+        event.previousIndex,
+        event.currentIndex
+      );
+
+      // Dispatch action pour mettre à jour le statut
+      this.store.dispatch(EpicKanbanActions.moveFeature({
+        featureId: feature.id!,
+        fromColumnId: event.previousContainer.id,
+        toColumnId: event.container.id,
+        newStatus: newStatus
+      }));
+
+      // Notification de succès
+      this.snackBar.open(
+        `Feature "${feature.title}" déplacée vers "${this.getColumnDisplayName(newStatus)}"`,
+        'Fermer',
+        { duration: 3000 }
+      );
+    }
+  }
+
+  private getStatusFromColumnId(columnId: string): string {
+    // Extrait le statut depuis l'ID de la colonne (ex: 'column-in_progress' -> 'in_progress')
+    return columnId.replace('column-', '');
+  }
+
+  private getColumnDisplayName(status: string): string {
+    switch (status) {
+      case 'pending': return 'À faire';
+      case 'in_progress': return 'En cours';
+      case 'review': return 'Review';
+      case 'completed': return 'Terminé';
+      case 'cancelled': return 'Annulé';
+      default: return status;
+    }
   }
 
   // === INJECTION DE DÉPENDANCES ===
