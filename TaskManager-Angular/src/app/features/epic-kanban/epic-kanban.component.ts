@@ -47,8 +47,7 @@ import {
     MatSnackBarModule,
     EpicHeaderComponent,
     KanbanColumnComponent,
-    EpicMetricsComponent,
-    ConfirmDialogComponent
+    EpicMetricsComponent
   ],
   templateUrl: './epic-kanban.component.html',
   styleUrls: ['./epic-kanban.component.scss']
@@ -219,10 +218,7 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
       width: '400px',
       data: {
         title: 'Supprimer l\'epic',
-        message: `Êtes-vous sûr de vouloir supprimer l'epic "${epic.title}" ? Cette action est irréversible.`,
-        confirmText: 'Supprimer',
-        cancelText: 'Annuler',
-        confirmColor: 'warn'
+        message: `Êtes-vous sûr de vouloir supprimer l'epic "${epic.title}" ?\nCette action est irréversible.`
       }
     });
 
