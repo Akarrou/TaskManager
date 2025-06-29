@@ -2,14 +2,17 @@
   <mat-expansion-panel-header>
     <mat-panel-title>
       <mat-icon>dashboard</mat-icon>
-      Header Epic
-      <mat-chip class="epic-status-chip" [class]="'status-' + (epic.status || 'unknown')">
-        {{ epic.status || 'N/A' }}
-      </mat-chip>
+      <span class="epic-number" *ngIf="epic.task_number">#E{{ epic.task_number }}</span>
+      <span class="epic-title">{{ epic.title || 'Epic sans titre' }}</span>
+     
     </mat-panel-title>
-    <mat-panel-description>
-      Informations générales et actions sur l'epic
-    </mat-panel-description>
+      <!-- Status Badge -->
+      <mat-chip-set class="status-badge">
+        <mat-chip [class]="getStatusColor()">
+          <mat-icon matChipAvatar>{{ getStatusIcon() }}</mat-icon>
+          {{ getStatusLabel() }}
+        </mat-chip>
+      </mat-chip-set>
   </mat-expansion-panel-header>
 
   <div class="epic-header">
@@ -72,32 +75,12 @@
       <mat-card-header>
         <div class="epic-header-content">
           
-          <!-- Epic Number (coloré) -->
-          <div class="epic-number-badge" *ngIf="epic.task_number">
-            <span [class]="epicNumberConfig.color + ' ' + epicNumberConfig.bgColor" 
-                  class="epic-number-chip">
-              #E{{ epic.task_number }}
-            </span>
-            <span class="epic-type-label">{{ epicNumberConfig.label }}</span>
-          </div>
-
           <!-- Epic Title Section -->
           <div class="epic-title-section">
             
             <!-- Status Icon & Title -->
             <div class="title-row">
-              <mat-icon [class]="'status-icon ' + getStatusColor()">{{ getStatusIcon() }}</mat-icon>
-              
-              <!-- Titre éditable inline -->
-              <div class="title-container" *ngIf="!isEditingTitle(); else editingTitle">
-                <h1 class="epic-title" 
-                    (click)="startEditingTitle()" 
-                    [class.editable]="canEdit"
-                    [matTooltip]="canEdit ? 'Cliquer pour modifier' : ''">
-                  {{ epic.title || 'Epic sans titre' }}
-                </h1>
-              </div>
-              
+          
               <ng-template #editingTitle>
                 <mat-form-field class="title-edit-field" appearance="outline">
                   <input matInput 
@@ -121,13 +104,6 @@
                 </mat-form-field>
               </ng-template>
 
-              <!-- Status Badge -->
-              <mat-chip-set class="status-badge">
-                <mat-chip [class]="getStatusColor()">
-                  <mat-icon matChipAvatar>{{ getStatusIcon() }}</mat-icon>
-                  {{ getStatusLabel() }}
-                </mat-chip>
-              </mat-chip-set>
             </div>
 
             <!-- Description -->

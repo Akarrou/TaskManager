@@ -27,6 +27,26 @@
         font-size: 20px !important;
       }
       
+      .epic-number {
+        background-color: #f3f4f6 !important;
+        color: #6366f1 !important;
+        padding: 4px 8px !important;
+        border-radius: 6px !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        border: 1px solid #e5e7eb !important;
+      }
+      
+      .epic-title {
+        font-weight: 600 !important;
+        color: #111827 !important;
+        font-size: 15px !important;
+        max-width: 600px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+      }
+      
       .epic-status-chip {
         margin-left: auto !important;
         font-size: 11px !important;
@@ -88,36 +108,42 @@
 }
 
 .epic-header {
-  @apply mb-6;
+  margin-bottom: 24px;
 
   // ============================================================================
   // HEADER ACTIONS
   // ============================================================================
   .header-actions {
-    @apply flex justify-between items-center mb-4;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
 
     .left-actions, .right-actions {
-      @apply flex items-center gap-2;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .back-button, .refresh-button, .actions-menu {
-      @apply hover:bg-gray-100 transition-colors duration-200;
+      transition: all 0.2s ease;
       
       &:hover {
-        @apply transform scale-105;
+        background-color: #f3f4f6;
+        transform: scale(1.05);
       }
     }
 
     .actions-menu {
-      @apply ml-2;
+      margin-left: 8px;
     }
 
     // Actions du menu contextuel
     .delete-action {
-      @apply text-red-600;
+      color: #dc2626;
       
       mat-icon {
-        @apply text-red-500;
+        color: #ef4444;
       }
     }
   }
@@ -126,78 +152,127 @@
   // EPIC INFO CARD
   // ============================================================================
   .epic-info-card {
-    @apply shadow-lg rounded-lg overflow-hidden;
-    @apply border border-gray-100;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #f3f4f6;
 
     .epic-header-content {
-      @apply w-full space-y-4;
+      width: 100%;
+      
+      > * + * {
+        margin-top: 16px;
+      }
 
       // Epic Number Badge
       .epic-number-badge {
-        @apply flex items-center gap-3 mb-3;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
 
         .epic-number-chip {
-          @apply px-3 py-1 rounded-full text-sm font-bold border-2;
-          @apply transition-all duration-200 hover:scale-105;
+          padding: 4px 12px;
+          border-radius: 9999px;
+          font-size: 14px;
+          font-weight: 700;
+          border: 2px solid;
+          transition: all 0.2s ease;
+          
+          &:hover {
+            transform: scale(1.05);
+          }
         }
 
         .epic-type-label {
-          @apply text-xs text-gray-500 uppercase tracking-wide font-medium;
+          font-size: 12px;
+          color: #6b7280;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          font-weight: 500;
         }
       }
 
       // Title Section
       .epic-title-section {
-        @apply space-y-3;
+        > * + * {
+          margin-top: 12px;
+        }
 
         .title-row {
-          @apply flex items-center gap-3 flex-wrap;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
 
           .status-icon {
-            @apply text-2xl flex-shrink-0;
-            @apply transition-colors duration-200;
+            font-size: 24px;
+            flex-shrink: 0;
+            transition: color 0.2s ease;
           }
 
           .title-container {
-            @apply flex-1 min-w-0;
+            flex: 1;
+            min-width: 0;
 
             .epic-title {
-              @apply text-2xl font-bold text-gray-800 m-0 cursor-default;
-              @apply transition-all duration-200;
-              @apply truncate;
+              font-size: 24px;
+              font-weight: 700;
+              color: #1f2937;
+              margin: 0;
+              cursor: default;
+              transition: all 0.2s ease;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
 
               &.editable {
-                @apply cursor-pointer hover:text-blue-600 hover:bg-blue-50;
-                @apply px-2 py-1 rounded transition-all duration-200;
+                cursor: pointer;
+                padding: 4px 8px;
+                border-radius: 4px;
+                transition: all 0.2s ease;
+                
+                &:hover {
+                  color: #2563eb;
+                  background-color: #eff6ff;
+                }
               }
             }
           }
 
           .title-edit-field {
-            @apply flex-1 min-w-0;
+            flex: 1;
+            min-width: 0;
 
             mat-form-field {
-              @apply w-full;
+              width: 100%;
             }
 
             input {
-              @apply text-xl font-bold;
+              font-size: 20px;
+              font-weight: 700;
             }
           }
 
           .status-badge {
-            @apply flex-shrink-0;
+            flex-shrink: 0;
 
             mat-chip {
-              @apply font-medium text-sm;
-              @apply transition-all duration-200;
+              font-weight: 500;
+              font-size: 14px;
+              transition: all 0.2s ease;
             }
           }
         }
 
         .epic-description {
-          @apply text-gray-600 text-base leading-relaxed m-0;
-          @apply bg-gray-50 p-3 rounded-lg;
+          color: #6b7280;
+          font-size: 16px;
+          line-height: 1.5;
+          margin: 0;
+          background-color: #f9fafb;
+          padding: 12px;
+          border-radius: 8px;
         }
       }
     }
@@ -206,66 +281,93 @@
     // CARD CONTENT
     // ============================================================================
     mat-card-content {
-      @apply space-y-6;
+      > * + * {
+        margin-top: 24px;
+      }
 
       // Progress Section
       .progress-section {
-        @apply space-y-4;
+        > * + * {
+          margin-top: 16px;
+        }
 
         .progress-header {
-          @apply flex justify-between items-center flex-wrap gap-3;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 12px;
 
           .progress-info {
-            @apply flex items-center gap-3;
+            display: flex;
+            align-items: center;
+            gap: 12px;
 
             .progress-label {
-              @apply text-sm font-medium text-gray-700;
+              font-size: 14px;
+              font-weight: 500;
+              color: #374151;
             }
 
             .progress-value {
-              @apply text-lg font-bold;
-              @apply transition-colors duration-200;
+              font-size: 18px;
+              font-weight: 700;
+              transition: color 0.2s ease;
             }
           }
 
           .progress-stats {
-            @apply flex items-center gap-1 text-sm text-gray-600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+            color: #6b7280;
 
             .completed-tasks {
-              @apply font-semibold text-green-600;
+              font-weight: 600;
+              color: #059669;
             }
 
             .separator {
-              @apply mx-1 text-gray-400;
+              margin: 0 4px;
+              color: #9ca3af;
             }
 
             .total-tasks {
-              @apply font-semibold;
+              font-weight: 600;
             }
 
             .tasks-label {
-              @apply ml-1 text-gray-500;
+              margin-left: 4px;
+              color: #6b7280;
             }
           }
         }
 
         .progress-bar {
-          @apply rounded-full h-2;
-          @apply transition-all duration-500;
+          border-radius: 9999px;
+          height: 8px;
+          transition: all 0.5s ease;
         }
 
         .progress-breakdown {
-          @apply flex gap-4 flex-wrap;
+          display: flex;
+          gap: 16px;
+          flex-wrap: wrap;
 
           .breakdown-item {
-            @apply flex items-center gap-2 text-sm;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
 
             .count {
-              @apply font-bold text-lg;
+              font-weight: 700;
+              font-size: 18px;
             }
 
             .label {
-              @apply font-medium;
+              font-weight: 500;
             }
           }
         }
@@ -273,56 +375,91 @@
 
       // Time Tracking Section
       .time-tracking-section {
-        @apply bg-blue-50 p-4 rounded-lg space-y-3;
+        background-color: #eff6ff;
+        padding: 16px;
+        border-radius: 8px;
+        
+        > * + * {
+          margin-top: 12px;
+        }
 
         .time-info {
-          @apply flex justify-between items-center;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
 
           .time-label {
-            @apply text-sm font-medium text-blue-800;
+            font-size: 14px;
+            font-weight: 500;
+            color: #1e40af;
           }
 
           .time-details {
-            @apply flex gap-4 text-sm;
+            display: flex;
+            gap: 16px;
+            font-size: 14px;
 
             .estimated {
-              @apply text-blue-600 font-medium;
+              color: #2563eb;
+              font-weight: 500;
             }
 
             .actual {
-              @apply text-blue-800 font-semibold;
+              color: #1e40af;
+              font-weight: 600;
             }
           }
         }
 
         .time-progress {
-          @apply rounded-full h-2;
+          border-radius: 9999px;
+          height: 8px;
         }
       }
 
       // Meta Information
       .meta-info {
-        @apply grid grid-cols-1 md:grid-cols-2 gap-3;
+        display: grid;
+        grid-template-columns: repeat(1, 1fr);
+        gap: 12px;
+
+        @media (min-width: 768px) {
+          grid-template-columns: repeat(2, 1fr);
+        }
 
         .meta-item {
-          @apply flex items-center gap-2 text-sm text-gray-600;
-          @apply p-2 rounded-lg bg-gray-50;
-          @apply transition-all duration-200 hover:bg-gray-100;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+          color: #6b7280;
+          padding: 8px;
+          border-radius: 8px;
+          background-color: #f9fafb;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background-color: #f3f4f6;
+          }
 
           mat-icon {
-            @apply text-base flex-shrink-0;
+            font-size: 16px;
+            flex-shrink: 0;
           }
 
           span {
-            @apply truncate;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
           }
 
           // Overdue styling
           &.overdue {
-            @apply bg-red-50 text-red-600;
+            background-color: #fef2f2;
+            color: #dc2626;
 
             mat-icon {
-              @apply text-red-500;
+              color: #ef4444;
             }
           }
         }
@@ -330,24 +467,40 @@
 
       // Tags Section
       .tags-section {
-        @apply space-y-3;
+        > * + * {
+          margin-top: 12px;
+        }
 
         .tags-header {
-          @apply flex items-center gap-2 text-sm font-medium text-gray-700;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+          font-weight: 500;
+          color: #374151;
 
           mat-icon {
-            @apply text-base text-gray-500;
+            font-size: 16px;
+            color: #6b7280;
           }
         }
 
         .tags-list {
-          @apply flex flex-wrap gap-2;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
 
           .tag-chip {
-            @apply bg-blue-50 text-blue-700 text-xs;
-            @apply border border-blue-200;
-            @apply transition-all duration-200 hover:bg-blue-100;
-            @apply hover:scale-105;
+            background-color: #eff6ff;
+            color: #1d4ed8;
+            font-size: 12px;
+            border: 1px solid #dbeafe;
+            transition: all 0.2s ease;
+
+            &:hover {
+              background-color: #dbeafe;
+              transform: scale(1.05);
+            }
           }
         }
       }
@@ -361,29 +514,33 @@
 @media (max-width: 768px) {
   .epic-header {
     .header-actions {
-      @apply gap-2;
+      gap: 8px;
 
       .right-actions {
-        @apply gap-1;
+        gap: 4px;
       }
     }
 
     .epic-info-card {
       .epic-header-content {
         .epic-number-badge {
-          @apply flex-col items-start gap-1;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
         }
 
         .epic-title-section {
           .title-row {
-            @apply flex-col items-start gap-2;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 8px;
 
             .epic-title {
-              @apply text-xl;
+              font-size: 20px;
             }
 
             .status-badge {
-              @apply self-start;
+              align-self: flex-start;
             }
           }
         }
@@ -392,16 +549,20 @@
       mat-card-content {
         .progress-section {
           .progress-header {
-            @apply flex-col items-start gap-2;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
           }
 
           .progress-breakdown {
-            @apply grid grid-cols-2 gap-2;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
           }
         }
 
         .meta-info {
-          @apply grid-cols-1;
+          grid-template-columns: repeat(1, 1fr);
         }
       }
     }
@@ -436,7 +597,7 @@
 .meta-item:hover,
 .tag-chip:hover,
 .breakdown-item:hover {
-  @apply transform translate-y-[-1px];
+  transform: translateY(-1px);
 }
 
 // ============================================================================
@@ -445,22 +606,25 @@
 @media (prefers-color-scheme: dark) {
   .epic-header {
     .epic-info-card {
-      @apply bg-gray-800 border-gray-700;
+      background-color: #1f2937;
+      border-color: #374151;
 
       .epic-header-content {
         .epic-title-section {
           .title-row {
             .epic-title {
-              @apply text-gray-100;
+              color: #f9fafb;
 
               &.editable:hover {
-                @apply text-blue-400 bg-blue-900;
+                color: #60a5fa;
+                background-color: #1e3a8a;
               }
             }
           }
 
           .epic-description {
-            @apply bg-gray-700 text-gray-300;
+            background-color: #374151;
+            color: #d1d5db;
           }
         }
       }
@@ -468,24 +632,28 @@
       mat-card-content {
         .meta-info {
           .meta-item {
-            @apply bg-gray-700 text-gray-300;
+            background-color: #374151;
+            color: #d1d5db;
 
             &:hover {
-              @apply bg-gray-600;
+              background-color: #4b5563;
             }
           }
         }
 
         .time-tracking-section {
-          @apply bg-blue-900 text-blue-100;
+          background-color: #1e3a8a;
+          color: #dbeafe;
         }
 
         .tags-section {
           .tag-chip {
-            @apply bg-blue-900 text-blue-200 border-blue-700;
+            background-color: #1e3a8a;
+            color: #bfdbfe;
+            border-color: #1e40af;
 
             &:hover {
-              @apply bg-blue-800;
+              background-color: #1e40af;
             }
           }
         }
@@ -498,17 +666,16 @@
 // CUSTOM PROPERTIES POUR THEMING
 // ============================================================================
 .epic-header {
-  --epic-primary-color: theme('colors.blue.600');
-  --epic-bg-color: theme('colors.white');
-  --epic-text-color: theme('colors.gray.800');
-  --epic-border-color: theme('colors.gray.200');
+  --epic-primary-color: #2563eb;
+  --epic-bg-color: #ffffff;
+  --epic-text-color: #1f2937;
+  --epic-border-color: #e5e7eb;
 }
 
 // Epic number colors par type
 .epic-number-chip {
   // Epic (rouge)
   &.text-red-700.bg-red-100 {
-    @apply shadow-md;
     box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);
   }
 } 
