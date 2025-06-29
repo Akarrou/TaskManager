@@ -1,0 +1,136 @@
+.epic-kanban-container {
+  @apply min-h-screen bg-gray-50 p-4;
+
+  // Loading State
+  .loading-container {
+    @apply flex flex-col items-center justify-center min-h-screen;
+
+    mat-progress-bar {
+      @apply w-64 mb-4;
+    }
+
+    .loading-text {
+      @apply text-gray-600 text-lg;
+    }
+  }
+
+  // Error State
+  .error-container {
+    @apply flex flex-col items-center justify-center min-h-screen text-center max-w-md mx-auto;
+
+    .error-icon {
+      @apply text-6xl text-red-500 mb-4;
+    }
+
+    h3 {
+      @apply text-2xl font-bold text-gray-800 mb-2;
+    }
+
+    p {
+      @apply text-gray-600 mb-6;
+    }
+
+    button {
+      @apply mb-2;
+    }
+  }
+
+  // Empty State
+  .empty-state {
+    @apply flex flex-col items-center justify-center min-h-screen text-center max-w-md mx-auto;
+
+    .empty-icon {
+      @apply text-6xl text-gray-400 mb-4;
+    }
+
+    h3 {
+      @apply text-2xl font-bold text-gray-800 mb-2;
+    }
+
+    p {
+      @apply text-gray-600 mb-6;
+    }
+  }
+
+  // Epic Board
+  .epic-board {
+    @apply max-w-full;
+
+    .kanban-board-content {
+      @apply flex gap-6 mt-6;
+
+      .kanban-columns-container {
+        @apply flex gap-4 flex-1 overflow-x-auto pb-4;
+        min-height: calc(100vh - 300px);
+
+        .kanban-column {
+          @apply flex-shrink-0;
+        }
+      }
+
+      .metrics-panel {
+        @apply w-80 flex-shrink-0;
+      }
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 1280px) {
+  .epic-kanban-container {
+    .epic-board {
+      .kanban-board-content {
+        @apply flex-col;
+
+        .kanban-columns-container {
+          @apply flex-nowrap;
+          min-width: 100%;
+        }
+
+        .metrics-panel {
+          @apply w-full order-first;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .epic-kanban-container {
+    @apply p-2;
+
+    .epic-board {
+      .kanban-board-content {
+        @apply gap-4;
+
+        .kanban-columns-container {
+          @apply gap-3;
+        }
+      }
+    }
+  }
+}
+
+// Scrollbar Styling
+.kanban-columns-container {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f7fafc;
+
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f7fafc;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+  }
+} 

@@ -1,0 +1,122 @@
+.epic-header {
+  @apply mb-6;
+
+  .header-actions {
+    @apply flex justify-between items-center mb-4;
+
+    .back-button, .refresh-button {
+      @apply hover:bg-gray-100 transition-colors;
+    }
+  }
+
+  .epic-info-card {
+    @apply shadow-lg;
+
+    .epic-title-section {
+      @apply w-full;
+
+      .epic-title {
+        @apply flex items-center gap-3 mb-2;
+
+        .status-icon {
+          @apply text-2xl;
+          
+          &.success {
+            @apply text-green-600;
+          }
+          
+          &.primary {
+            @apply text-blue-600;
+          }
+          
+          &.warn {
+            @apply text-orange-600;
+          }
+        }
+
+        h1 {
+          @apply text-2xl font-bold text-gray-800 m-0 flex-1;
+        }
+
+        .task-number-chip {
+          .epic-number {
+            @apply bg-red-100 text-red-800 text-sm font-semibold;
+          }
+        }
+      }
+
+      .epic-description {
+        @apply text-gray-600 text-base leading-relaxed m-0;
+      }
+    }
+
+    mat-card-content {
+      .progress-section {
+        @apply mb-6;
+
+        .progress-info {
+          @apply flex justify-between items-center mb-2;
+
+          .progress-label {
+            @apply text-sm font-medium text-gray-700;
+          }
+
+          .progress-value {
+            @apply text-sm font-bold text-blue-600;
+          }
+        }
+
+        .progress-bar {
+          @apply mb-2;
+        }
+
+        .progress-details {
+          @apply text-xs text-gray-500;
+        }
+      }
+
+      .meta-info {
+        @apply flex flex-wrap gap-4 mb-4;
+
+        .meta-item {
+          @apply flex items-center gap-2 text-sm text-gray-600;
+
+          mat-icon {
+            @apply text-base text-gray-500;
+          }
+        }
+      }
+
+      .tags-section {
+        mat-chip-set {
+          mat-chip {
+            @apply bg-blue-50 text-blue-700 text-xs;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .epic-header {
+    .epic-info-card {
+      .epic-title-section {
+        .epic-title {
+          @apply flex-wrap;
+
+          h1 {
+            @apply text-xl;
+          }
+        }
+      }
+
+      mat-card-content {
+        .meta-info {
+          @apply flex-col gap-2;
+        }
+      }
+    }
+  }
+} 

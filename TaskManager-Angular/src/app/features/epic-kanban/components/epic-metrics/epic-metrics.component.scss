@@ -1,0 +1,191 @@
+.epic-metrics {
+  @apply w-full max-w-sm;
+
+  .metrics-card {
+    @apply h-fit sticky top-4;
+
+    mat-card-header {
+      mat-card-title {
+        @apply flex items-center gap-2 text-lg font-semibold text-gray-800;
+
+        mat-icon {
+          @apply text-blue-600;
+        }
+      }
+    }
+
+    mat-card-content {
+      .metric-section {
+        @apply py-4;
+
+        .metric-header {
+          @apply flex items-center gap-2 mb-3;
+
+          mat-icon {
+            @apply text-gray-600 text-lg;
+          }
+
+          h4 {
+            @apply text-base font-semibold text-gray-700 m-0;
+          }
+        }
+
+        // Progress Overview Styles
+        .progress-overview {
+          @apply flex items-center gap-4;
+
+          .progress-circle {
+            @apply relative w-16 h-16 rounded-full border-4 border-blue-200 bg-blue-50 flex items-center justify-center;
+
+            .progress-percentage {
+              @apply text-sm font-bold text-blue-700;
+            }
+          }
+
+          .progress-details {
+            @apply flex-1 space-y-1;
+
+            .detail-item {
+              @apply flex justify-between items-center text-sm;
+
+              .label {
+                @apply text-gray-600;
+              }
+
+              .value {
+                @apply font-semibold text-gray-800;
+
+                &.completed {
+                  @apply text-green-600;
+                }
+
+                &.in-progress {
+                  @apply text-orange-600;
+                }
+              }
+            }
+          }
+        }
+
+        // Velocity Styles
+        .velocity-info {
+          @apply flex items-baseline gap-2;
+
+          .velocity-value {
+            @apply text-2xl font-bold text-gray-800;
+          }
+
+          .velocity-unit {
+            @apply text-sm text-gray-500;
+          }
+        }
+
+        // Blocked Tasks Styles
+        .blocked-tasks {
+          mat-list {
+            @apply p-0;
+
+            mat-list-item {
+              @apply border-l-2 border-red-200 pl-2 mb-2;
+
+              .mat-mdc-list-item-icon {
+                @apply text-red-500;
+              }
+            }
+          }
+
+          .more-blocked {
+            @apply text-xs text-gray-500 italic mt-2;
+          }
+        }
+
+        // Team Load Styles
+        .team-load {
+          @apply space-y-2;
+
+          .team-member {
+            @apply flex justify-between items-center p-2 bg-gray-50 rounded;
+
+            .member-info {
+              @apply flex-1;
+
+              .member-email {
+                @apply block text-sm font-medium text-gray-700;
+              }
+
+              .member-tasks {
+                @apply block text-xs text-gray-500;
+              }
+            }
+
+            .workload-indicator {
+              @apply px-2 py-1 rounded text-xs font-semibold;
+
+              &.workload-low {
+                @apply bg-green-100 text-green-800;
+              }
+
+              &.workload-medium {
+                @apply bg-yellow-100 text-yellow-800;
+              }
+
+              &.workload-high {
+                @apply bg-orange-100 text-orange-800;
+              }
+
+              &.workload-overloaded {
+                @apply bg-red-100 text-red-800;
+              }
+            }
+          }
+        }
+
+        // Epic Details Styles
+        .epic-details {
+          @apply space-y-2;
+
+          .detail-item {
+            @apply flex justify-between items-center text-sm;
+
+            .label {
+              @apply text-gray-600;
+            }
+
+            .value {
+              @apply font-medium text-gray-800;
+            }
+          }
+        }
+      }
+
+      mat-divider {
+        @apply my-4;
+      }
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 1024px) {
+  .epic-metrics {
+    @apply max-w-full;
+
+    .metrics-card {
+      mat-card-content {
+        .metric-section {
+          .progress-overview {
+            @apply flex-col items-start gap-3;
+
+            .progress-circle {
+              @apply w-12 h-12;
+
+              .progress-percentage {
+                @apply text-xs;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} 

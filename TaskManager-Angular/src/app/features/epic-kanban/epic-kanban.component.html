@@ -1,0 +1,71 @@
+<div class="epic-kanban-container">
+  
+  <!-- Loading State -->
+  <div *ngIf="isLoading()" class="loading-container">
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    <p class="loading-text">Chargement de l'épic...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error() && !isLoading()" class="error-container">
+    <mat-icon class="error-icon">error</mat-icon>
+    <h3>Erreur</h3>
+    <p>{{ error() }}</p>
+    <button mat-raised-button color="primary" (click)="onRefreshBoard()">
+      <mat-icon>refresh</mat-icon>
+      Réessayer
+    </button>
+    <button mat-button (click)="onNavigateBack()">
+      <mat-icon>arrow_back</mat-icon>
+      Retour au tableau de bord
+    </button>
+  </div>
+
+  <!-- Epic Kanban Board -->
+  <div *ngIf="epicBoard() && !isLoading()" class="epic-board">
+    
+    <!-- Epic Header -->
+    <app-epic-header 
+      [epic]="epicBoard()!.epic"
+      [metrics]="epicBoard()!.metrics"
+      (navigateBack)="onNavigateBack()"
+      (refreshBoard)="onRefreshBoard()">
+    </app-epic-header>
+
+    <!-- Kanban Board Content -->
+    <div class="kanban-board-content">
+      
+      <!-- Kanban Columns Container -->
+      <div class="kanban-columns-container">
+        <app-kanban-column
+          *ngFor="let column of epicBoard()!.columns; trackBy: trackColumn"
+          [column]="column"
+          [features]="getFeaturesByStatus(column.statusValue)"
+          [isLoading]="isLoading()"
+          class="kanban-column">
+        </app-kanban-column>
+      </div>
+
+      <!-- Epic Metrics Panel (Sidebar) -->
+      <div class="metrics-panel">
+        <app-epic-metrics 
+          [metrics]="epicBoard()!.metrics"
+          [epic]="epicBoard()!.epic">
+        </app-epic-metrics>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!epicBoard() && !isLoading() && !error()" class="empty-state">
+    <mat-icon class="empty-icon">inbox</mat-icon>
+    <h3>Aucun épic trouvé</h3>
+    <p>L'épic demandé n'existe pas ou n'a pas pu être chargé.</p>
+    <button mat-raised-button color="primary" (click)="onNavigateBack()">
+      <mat-icon>arrow_back</mat-icon>
+      Retour au tableau de bord
+    </button>
+  </div>
+
+</div> 

@@ -1,0 +1,80 @@
+<div class="kanban-column" [style.background-color]="column.color">
+  
+  <!-- Column Header -->
+  <div class="column-header">
+    <div class="header-left">
+      <mat-icon class="column-icon">{{ getColumnIcon() }}</mat-icon>
+      <h3 class="column-title">{{ column.title }}</h3>
+      <span class="feature-count" [matBadge]="features.length" matBadgeColor="primary">
+        ({{ features.length }})
+      </span>
+    </div>
+    
+    <div class="header-actions">
+      <button mat-icon-button (click)="onToggleCollapse()" class="toggle-button">
+        <mat-icon>{{ column.isCollapsed ? 'expand_more' : 'expand_less' }}</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- WIP Limit Warning -->
+  <div *ngIf="column.wipLimit && features.length > column.wipLimit" class="wip-warning">
+    <mat-icon>warning</mat-icon>
+    <span>Limite WIP dépassée ({{ features.length }}/{{ column.wipLimit }})</span>
+  </div>
+
+  <!-- Column Content -->
+  <div class="column-content" [class.collapsed]="column.isCollapsed">
+    
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-state">
+      <mat-icon class="spin">hourglass_empty</mat-icon>
+      <span>Chargement...</span>
+    </div>
+
+    <!-- Features List -->
+    <div *ngIf="!isLoading" class="features-list">
+      
+      <!-- Feature Cards -->
+      <div *ngFor="let feature of features; trackBy: trackFeature" class="feature-card-wrapper">
+        <mat-card class="feature-card">
+          <mat-card-header>
+            <div class="feature-header">
+              <span class="feature-number" *ngIf="feature.task_number">#{{ feature.task_number }}</span>
+              <h4 class="feature-title">{{ feature.title }}</h4>
+            </div>
+          </mat-card-header>
+          
+          <mat-card-content>
+            <p *ngIf="feature.description" class="feature-description">
+              {{ feature.description }}
+            </p>
+            
+            <div class="feature-meta">
+              <div class="meta-item" *ngIf="feature.assigned_to">
+                <mat-icon>person</mat-icon>
+                <span>{{ feature.assigned_to }}</span>
+              </div>
+              <div class="meta-item" *ngIf="feature.due_date">
+                <mat-icon>event</mat-icon>
+                <span>{{ feature.due_date | date:'dd/MM' }}</span>
+              </div>
+              <div class="meta-item priority-{{ feature.priority }}">
+                <mat-icon>flag</mat-icon>
+                <span>{{ feature.priority }}</span>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="features.length === 0" class="empty-state">
+        <mat-icon>inbox</mat-icon>
+        <span>Aucune feature</span>
+      </div>
+
+    </div>
+  </div>
+
+</div> 

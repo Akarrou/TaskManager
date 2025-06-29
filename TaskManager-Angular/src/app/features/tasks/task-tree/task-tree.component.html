@@ -39,6 +39,9 @@
               </div>
 
               <div class="node-actions">
+                <button *ngIf="node.type === 'epic'" class="c-icon-button" (click)="onEpicKanban(node); $event.stopPropagation();" title="Vue Kanban">
+                  <mat-icon>view_kanban</mat-icon>
+                </button>
                 <button *ngIf="node.type === 'epic'" class="c-icon-button" (click)="onAddChild(node, 'feature'); $event.stopPropagation();" title="Ajouter une feature">
                   <mat-icon>add</mat-icon>
                 </button>
@@ -89,6 +92,9 @@
                     </div>
 
                     <div class="node-actions">
+                      <button *ngIf="child.type === 'epic'" class="c-icon-button" (click)="onEpicKanban(child); $event.stopPropagation();" title="Vue Kanban">
+                        <mat-icon>view_kanban</mat-icon>
+                      </button>
                       <button *ngIf="child.type === 'epic'" class="c-icon-button" (click)="onAddChild(child, 'feature'); $event.stopPropagation();" title="Ajouter une feature">
                         <mat-icon>add</mat-icon>
                       </button>
@@ -139,6 +145,9 @@
                           </div>
 
                           <div class="node-actions">
+                            <button *ngIf="grandChild.type === 'epic'" class="c-icon-button" (click)="onEpicKanban(grandChild); $event.stopPropagation();" title="Vue Kanban">
+                              <mat-icon>view_kanban</mat-icon>
+                            </button>
                             <button *ngIf="grandChild.type === 'epic'" class="c-icon-button" (click)="onAddChild(grandChild, 'feature'); $event.stopPropagation();" title="Ajouter une feature">
                               <mat-icon>add</mat-icon>
                             </button>

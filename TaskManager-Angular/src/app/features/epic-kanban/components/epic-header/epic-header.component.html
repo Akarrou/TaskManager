@@ -1,0 +1,71 @@
+<div class="epic-header">
+  
+  <!-- Header Actions -->
+  <div class="header-actions">
+    <button mat-icon-button (click)="onNavigateBack()" class="back-button">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <button mat-icon-button (click)="onRefreshBoard()" class="refresh-button">
+      <mat-icon>refresh</mat-icon>
+    </button>
+  </div>
+
+  <!-- Epic Info Card -->
+  <mat-card class="epic-info-card">
+    <mat-card-header>
+      <div class="epic-title-section">
+        <div class="epic-title">
+          <mat-icon [class]="'status-icon ' + getStatusColor()">{{ getStatusIcon() }}</mat-icon>
+          <h1>{{ epic.title || 'Epic sans titre' }}</h1>
+          <mat-chip-set *ngIf="epic.task_number" class="task-number-chip">
+            <mat-chip class="epic-number">#{{ epic.task_number }}</mat-chip>
+          </mat-chip-set>
+        </div>
+        <p class="epic-description" *ngIf="epic.description">{{ epic.description }}</p>
+      </div>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- Progress Section -->
+      <div class="progress-section">
+        <div class="progress-info">
+          <span class="progress-label">Progression</span>
+          <span class="progress-value">{{ metrics.progressPercentage || 0 }}%</span>
+        </div>
+        <mat-progress-bar 
+          mode="determinate" 
+          [value]="metrics.progressPercentage || 0"
+          class="progress-bar">
+        </mat-progress-bar>
+        <div class="progress-details">
+          <span>{{ metrics.completedTasks || 0 }} / {{ metrics.totalTasks || 0 }} tâches terminées</span>
+        </div>
+      </div>
+
+      <!-- Meta Information -->
+      <div class="meta-info">
+        <div class="meta-item" *ngIf="epic.due_date">
+          <mat-icon>event</mat-icon>
+          <span>Échéance: {{ epic.due_date | date:'dd/MM/yyyy' }}</span>
+        </div>
+        <div class="meta-item" *ngIf="epic.assigned_to">
+          <mat-icon>person</mat-icon>
+          <span>Assigné à: {{ epic.assigned_to }}</span>
+        </div>
+        <div class="meta-item" *ngIf="epic.priority">
+          <mat-icon>flag</mat-icon>
+          <span>Priorité: {{ epic.priority }}</span>
+        </div>
+      </div>
+
+      <!-- Tags Section -->
+      <div class="tags-section" *ngIf="epic.tags && epic.tags.length > 0">
+        <mat-chip-set>
+          <mat-chip *ngFor="let tag of epic.tags">{{ tag }}</mat-chip>
+        </mat-chip-set>
+      </div>
+
+    </mat-card-content>
+  </mat-card>
+
+</div> 

@@ -158,6 +158,11 @@ export class TaskTreeComponent implements OnInit, OnChanges {
     });
   }
 
+  onEpicKanban(node: TaskTreeNode) {
+    // Naviguer vers la vue Epic Kanban
+    this.router.navigate(['/epic', node.id, 'kanban']);
+  }
+
   // Drag & drop
   async drop(event: CdkDragDrop<TaskTreeNode[]>, parentNode: TaskTreeNode | null = null) {
     console.log('DROP EVENT', event, parentNode); // DEBUG

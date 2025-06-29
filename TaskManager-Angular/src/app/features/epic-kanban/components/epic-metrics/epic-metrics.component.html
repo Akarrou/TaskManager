@@ -1,0 +1,123 @@
+<div class="epic-metrics">
+  
+  <mat-card class="metrics-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>analytics</mat-icon>
+        Métriques
+      </mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      
+      <!-- Progress Overview -->
+      <div class="metric-section">
+        <div class="metric-header">
+          <mat-icon>assessment</mat-icon>
+          <h4>Progression</h4>
+        </div>
+        <div class="progress-overview">
+          <div class="progress-circle">
+            <span class="progress-percentage">{{ metrics.progressPercentage || 0 }}%</span>
+          </div>
+          <div class="progress-details">
+            <div class="detail-item">
+              <span class="label">Total :</span>
+              <span class="value">{{ metrics.totalTasks || 0 }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Terminées :</span>
+              <span class="value completed">{{ metrics.completedTasks || 0 }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">En cours :</span>
+              <span class="value in-progress">{{ (metrics.totalTasks || 0) - (metrics.completedTasks || 0) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <mat-divider></mat-divider>
+
+      <!-- Velocity Metric -->
+      <div class="metric-section">
+        <div class="metric-header">
+          <mat-icon [class]="getVelocityColor()">{{ getVelocityIcon() }}</mat-icon>
+          <h4>Vélocité</h4>
+        </div>
+        <div class="velocity-info">
+          <span class="velocity-value">{{ metrics.velocity || 0 }}</span>
+          <span class="velocity-unit">tâches/semaine</span>
+        </div>
+      </div>
+
+      <mat-divider></mat-divider>
+
+      <!-- Blocked Tasks -->
+      <div class="metric-section" *ngIf="metrics.blockedTasks && metrics.blockedTasks.length > 0">
+        <div class="metric-header">
+          <mat-icon class="text-red-600">block</mat-icon>
+          <h4>Tâches bloquées</h4>
+        </div>
+        <div class="blocked-tasks">
+          <mat-list>
+            <mat-list-item *ngFor="let task of metrics.blockedTasks.slice(0, 3)">
+              <mat-icon matListItemIcon class="text-red-500">warning</mat-icon>
+              <div matListItemTitle>{{ task.title }}</div>
+              <div matListItemLine *ngIf="task.due_date">Échéance: {{ task.due_date | date:'dd/MM/yyyy' }}</div>
+            </mat-list-item>
+          </mat-list>
+          <div *ngIf="metrics.blockedTasks.length > 3" class="more-blocked">
+            +{{ metrics.blockedTasks.length - 3 }} autres tâches bloquées
+          </div>
+        </div>
+      </div>
+
+      <!-- Team Load (if available) -->
+      <div class="metric-section" *ngIf="metrics.teamLoad && metrics.teamLoad.length > 0">
+        <mat-divider></mat-divider>
+        <div class="metric-header">
+          <mat-icon>group</mat-icon>
+          <h4>Charge équipe</h4>
+        </div>
+        <div class="team-load">
+          <div *ngFor="let member of metrics.teamLoad.slice(0, 3)" class="team-member">
+            <div class="member-info">
+              <span class="member-email">{{ member.email }}</span>
+              <span class="member-tasks">{{ member.assignedTasks }} tâches</span>
+            </div>
+            <div class="workload-indicator workload-{{ member.workload }}">
+              {{ member.workload }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Epic Details -->
+      <mat-divider></mat-divider>
+      
+      <div class="metric-section">
+        <div class="metric-header">
+          <mat-icon>info</mat-icon>
+          <h4>Détails Epic</h4>
+        </div>
+        <div class="epic-details">
+          <div class="detail-item" *ngIf="epic.created_at">
+            <span class="label">Créé le :</span>
+            <span class="value">{{ epic.created_at | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="detail-item" *ngIf="epic.due_date">
+            <span class="label">Échéance :</span>
+            <span class="value">{{ epic.due_date | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="detail-item" *ngIf="epic.estimated_hours">
+            <span class="label">Heures estimées :</span>
+            <span class="value">{{ epic.estimated_hours }}h</span>
+          </div>
+        </div>
+      </div>
+
+    </mat-card-content>
+  </mat-card>
+
+</div> 

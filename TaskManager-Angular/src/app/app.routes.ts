@@ -35,6 +35,13 @@ export const routes: Routes = [
     data: { renderMode: 'client' }
   },
   {
+    path: 'epic/:id/kanban',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/epic-kanban/epic-kanban.component').then(m => m.EpicKanbanComponent),
+    title: 'Epic Kanban - AgroFlow Task Manager',
+    data: { renderMode: 'client' }
+  },
+  {
     path: '**',
     redirectTo: '/dashboard'
   }

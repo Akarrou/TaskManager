@@ -1,0 +1,197 @@
+.kanban-column {
+  @apply min-w-80 max-w-80 h-fit rounded-lg border border-gray-200 shadow-sm;
+  background-color: var(--column-bg, #f8f9fa);
+
+  .column-header {
+    @apply flex justify-between items-center p-4 border-b border-gray-200 bg-white rounded-t-lg;
+
+    .header-left {
+      @apply flex items-center gap-2;
+
+      .column-icon {
+        @apply text-gray-600 text-lg;
+      }
+
+      .column-title {
+        @apply text-lg font-semibold text-gray-800 m-0;
+      }
+
+      .feature-count {
+        @apply text-sm text-gray-500 ml-1;
+      }
+    }
+
+    .header-actions {
+      .toggle-button {
+        @apply hover:bg-gray-100 transition-colors;
+      }
+    }
+  }
+
+  .wip-warning {
+    @apply flex items-center gap-2 p-3 bg-orange-50 border-b border-orange-200 text-orange-800;
+
+    mat-icon {
+      @apply text-orange-600;
+    }
+
+    span {
+      @apply text-sm font-medium;
+    }
+  }
+
+  .column-content {
+    @apply p-4 transition-all duration-300;
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+
+    &.collapsed {
+      @apply p-2;
+      max-height: 100px;
+      overflow: hidden;
+    }
+
+    .loading-state {
+      @apply flex flex-col items-center justify-center p-8 text-gray-500;
+
+      mat-icon {
+        @apply text-3xl mb-2;
+
+        &.spin {
+          animation: spin 2s linear infinite;
+        }
+      }
+
+      span {
+        @apply text-sm;
+      }
+    }
+
+    .features-list {
+      @apply space-y-3;
+
+      .feature-card-wrapper {
+        .feature-card {
+          @apply hover:shadow-md transition-shadow cursor-pointer border border-gray-100;
+
+          &:hover {
+            @apply border-blue-200;
+          }
+
+          mat-card-header {
+            @apply pb-2;
+
+            .feature-header {
+              @apply flex items-start gap-2 w-full;
+
+              .feature-number {
+                @apply bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded;
+                min-width: fit-content;
+              }
+
+              .feature-title {
+                @apply text-base font-semibold text-gray-800 m-0 flex-1;
+                line-height: 1.4;
+              }
+            }
+          }
+
+          mat-card-content {
+            @apply pt-0;
+
+            .feature-description {
+              @apply text-sm text-gray-600 mb-3 line-clamp-2;
+            }
+
+            .feature-meta {
+              @apply flex flex-wrap gap-3 mt-3;
+
+              .meta-item {
+                @apply flex items-center gap-1 text-xs text-gray-500;
+
+                mat-icon {
+                  @apply text-sm;
+                }
+
+                &.priority-high {
+                  @apply text-red-600;
+                }
+
+                &.priority-medium {
+                  @apply text-orange-600;
+                }
+
+                &.priority-low {
+                  @apply text-green-600;
+                }
+
+                &.priority-urgent {
+                  @apply text-purple-600 font-semibold;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      .empty-state {
+        @apply flex flex-col items-center justify-center p-8 text-gray-400;
+
+        mat-icon {
+          @apply text-4xl mb-2;
+        }
+
+        span {
+          @apply text-sm;
+        }
+      }
+    }
+  }
+}
+
+// Animations
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .kanban-column {
+    @apply min-w-72 max-w-72;
+
+    .column-header {
+      @apply p-3;
+
+      .header-left {
+        .column-title {
+          @apply text-base;
+        }
+      }
+    }
+
+    .column-content {
+      @apply p-3;
+
+      .features-list {
+        @apply space-y-2;
+
+        .feature-card-wrapper {
+          .feature-card {
+            mat-card-header {
+              .feature-header {
+                .feature-title {
+                  @apply text-sm;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} 
