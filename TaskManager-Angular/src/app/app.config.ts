@@ -7,6 +7,7 @@ import { provideStore } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
 import { provideStoreDevtools } from '@ngrx/store-devtools';
 import { reducers, metaReducers } from './store/reducers';
+import { EpicKanbanEffects } from './features/epic-kanban/store/epic-kanban.effects';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -15,7 +16,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideClientHydration(withEventReplay()),
     provideStore(reducers, { metaReducers }),
-    provideEffects([]),
+    provideEffects([EpicKanbanEffects]),
     provideStoreDevtools({ maxAge: 25, logOnly: !isDevMode() })
   ]
 };

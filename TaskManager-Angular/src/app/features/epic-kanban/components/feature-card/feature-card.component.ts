@@ -1,11 +1,12 @@
-import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+
 import { Task } from '../../../../core/services/task';
 import { TaskBadgeComponent } from '../task-badge/task-badge.component';
 
@@ -15,67 +16,87 @@ import { TaskBadgeComponent } from '../task-badge/task-badge.component';
   imports: [
     CommonModule,
     MatCardModule,
-    MatIconModule,
     MatButtonModule,
+    MatIconModule,
     MatChipsModule,
-    MatTooltipModule,
     MatMenuModule,
+    MatProgressBarModule,
     TaskBadgeComponent
   ],
   templateUrl: './feature-card.component.html',
   styleUrls: ['./feature-card.component.scss']
 })
 export class FeatureCardComponent {
+
   @Input({ required: true }) feature!: Task;
   @Input() tasks: Task[] = [];
   @Input() isExpanded = false;
-  
-  @Output() expand = new EventEmitter<void>();
-  @Output() collapse = new EventEmitter<void>();
-  @Output() editFeature = new EventEmitter<Task>();
-  @Output() deleteFeature = new EventEmitter<Task>();
+  @Input() showTasks = true;
+
+  @Output() expand = new EventEmitter<string>();
+  @Output() edit = new EventEmitter<Task>();
+  @Output() delete = new EventEmitter<Task>();
+  @Output() taskStatusChange = new EventEmitter<{ task: Task; newStatus: string }>();
   @Output() taskClick = new EventEmitter<Task>();
 
-  get completedTasks(): Task[] {
-    return this.tasks.filter(task => task.status === 'completed');
-  }
-
-  get totalTasks(): number {
-    return this.tasks.length;
-  }
-
-  get progressPercentage(): number {
-    if (this.totalTasks === 0) return 0;
-    return Math.round((this.completedTasks.length / this.totalTasks) * 100);
-  }
-
-  get priorityColor(): string {
-    switch (this.feature.priority) {
-      case 'low': return 'success';
-      case 'medium': return 'warn';  
-      case 'high': return 'accent';
-      case 'urgent': return 'primary';
-      default: return 'basic';
-    }
-  }
-
-  onToggleExpand(): void {
-    if (this.isExpanded) {
-      this.collapse.emit();
-    } else {
-      this.expand.emit();
+  onToggleExpansion(): void {
+    if (this.feature.id) {
+      this.expand.emit(this.feature.id);
     }
   }
 
   onEditFeature(): void {
-    this.editFeature.emit(this.feature);
+    this.edit.emit(this.feature);
   }
 
   onDeleteFeature(): void {
-    this.deleteFeature.emit(this.feature);
+    this.delete.emit(this.feature);
   }
 
-  onTaskClick(task: Task): void {
+  onTaskStatusChanged(task: Task, newStatus: string): void {
+    this.taskStatusChange.emit({ task, newStatus });
+  }
+
+  onTaskClicked(task: Task): void {
     this.taskClick.emit(task);
+  }
+
+  getProgressPercentage(): number {
+    if (!this.tasks || this.tasks.length === 0) return 0;
+    
+    const completedTasks = this.tasks.filter(task => task.status === 'completed').length;
+    return Math.round((completedTasks / this.tasks.length) * 100);
+  }
+
+  getStatusColor(status: string): string {
+    switch (status) {
+      case 'completed': return 'green';
+      case 'in_progress': return 'orange';
+      case 'pending': return 'blue';
+      case 'cancelled': return 'red';
+      default: return 'gray';
+    }
+  }
+
+  getPriorityIcon(priority: string): string {
+    switch (priority) {
+      case 'high': return 'keyboard_arrow_up';
+      case 'medium': return 'remove';
+      case 'low': return 'keyboard_arrow_down';
+      default: return 'remove';
+    }
+  }
+
+  getPriorityColor(priority: string): string {
+    switch (priority) {
+      case 'high': return 'red';
+      case 'medium': return 'orange';
+      case 'low': return 'green';
+      default: return 'gray';
+    }
+  }
+
+  trackTask(index: number, task: Task): string {
+    return task.id || index.toString();
   }
 } 

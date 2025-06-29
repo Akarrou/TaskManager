@@ -14,8 +14,10 @@ export function logger(reducer: ActionReducer<AppState>): ActionReducer<AppState
   };
 }
 
+import { epicKanbanReducer } from '../../features/epic-kanban/store/epic-kanban.reducer';
+
 export const reducers: ActionReducerMap<AppState> = {
-  // Les réducteurs spécifiques aux fonctionnalités seront ajoutés ici
+  epicKanban: epicKanbanReducer
 };
 
 export const metaReducers: MetaReducer<AppState>[] = isDevMode() ? [logger] : []; 

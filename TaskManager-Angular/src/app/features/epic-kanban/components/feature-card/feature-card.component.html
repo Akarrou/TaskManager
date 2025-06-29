@@ -1,77 +1,101 @@
 <mat-card class="feature-card" [class.expanded]="isExpanded">
-  <!-- Header avec numéro et titre -->
+  
+  <!-- Feature Header -->
   <mat-card-header class="feature-header">
-    <div class="feature-number">
-      <span class="number-badge feature-badge">#F{{ feature.task_number }}</span>
-    </div>
     
-    <mat-card-title class="feature-title">
-      {{ feature.title }}
-    </mat-card-title>
+    <!-- Feature Info -->
+    <div class="feature-info">
+      <div class="feature-title-row">
+        <span class="feature-number">#{{ feature.task_number }}</span>
+        <h4 class="feature-title">{{ feature.title }}</h4>
+        <mat-icon 
+          class="priority-icon" 
+          [style.color]="getPriorityColor(feature.priority)">
+          {{ getPriorityIcon(feature.priority) }}
+        </mat-icon>
+      </div>
+      
+      <div class="feature-meta">
+        <mat-chip class="status-chip" [style.background-color]="getStatusColor(feature.status)">
+          {{ feature.status }}
+        </mat-chip>
+        <span class="task-count">{{ tasks.length }} tâche(s)</span>
+      </div>
+    </div>
 
-    <!-- Menu actions -->
+    <!-- Feature Actions -->
     <div class="feature-actions">
-      <button mat-icon-button [matMenuTriggerFor]="featureMenu" 
-              matTooltip="Actions">
+      <button 
+        mat-icon-button 
+        [matMenuTriggerFor]="featureMenu"
+        class="action-menu">
         <mat-icon>more_vert</mat-icon>
       </button>
       
-      <mat-menu #featureMenu="matMenu">
-        <button mat-menu-item (click)="onEditFeature()">
-          <mat-icon>edit</mat-icon>
-          <span>Modifier</span>
-        </button>
-        <button mat-menu-item (click)="onDeleteFeature()" class="delete-action">
-          <mat-icon>delete</mat-icon>
-          <span>Supprimer</span>
-        </button>
-      </mat-menu>
-    </div>
-  </mat-card-header>
-
-  <!-- Contenu principal -->
-  <mat-card-content class="feature-content">
-    <!-- Priorité et statut -->
-    <div class="feature-metadata">
-      <mat-chip-set>
-        <mat-chip [color]="priorityColor" selected>
-          {{ feature.priority | titlecase }}
-        </mat-chip>
-        <mat-chip class="status-chip">
-          {{ feature.status | titlecase }}
-        </mat-chip>
-      </mat-chip-set>
-    </div>
-
-    <!-- Progression des tâches -->
-    <div class="progress-section" *ngIf="totalTasks > 0">
-      <div class="progress-header">
-        <span class="progress-text">
-          {{ completedTasks.length }}/{{ totalTasks }} tâches
-        </span>
-        <span class="progress-percentage">{{ progressPercentage }}%</span>
-      </div>
-      
-      <div class="progress-bar">
-        <div class="progress-fill" 
-             [style.width.%]="progressPercentage">
-        </div>
-      </div>
-    </div>
-
-    <!-- Bouton expand/collapse pour voir les tâches -->
-    <div class="expand-section" *ngIf="totalTasks > 0">
-      <button mat-button (click)="onToggleExpand()" class="expand-button">
+      <button 
+        mat-icon-button 
+        (click)="onToggleExpansion()"
+        class="expand-button"
+        *ngIf="showTasks && tasks.length > 0">
         <mat-icon>{{ isExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
-        <span>{{ isExpanded ? 'Masquer' : 'Voir' }} les tâches</span>
       </button>
     </div>
 
-    <!-- Liste des tâches (collapsed par défaut) -->
-    <div class="tasks-list" *ngIf="isExpanded && totalTasks > 0">
-      <div class="task-item" *ngFor="let task of tasks" (click)="onTaskClick(task)">
-        <app-task-badge [task]="task"></app-task-badge>
+  </mat-card-header>
+
+  <!-- Feature Progress -->
+  <mat-card-content class="feature-content">
+    <div class="progress-section" *ngIf="tasks.length > 0">
+      <div class="progress-info">
+        <span class="progress-label">Progression</span>
+        <span class="progress-percentage">{{ getProgressPercentage() }}%</span>
       </div>
+      <mat-progress-bar 
+        mode="determinate" 
+        [value]="getProgressPercentage()"
+        class="progress-bar">
+      </mat-progress-bar>
+    </div>
+
+    <!-- Feature Description -->
+    <p class="feature-description" *ngIf="feature.description">
+      {{ feature.description }}
+    </p>
+
+    <!-- Feature Tags -->
+    <div class="feature-tags" *ngIf="feature.tags && feature.tags.length > 0">
+      <mat-chip 
+        *ngFor="let tag of feature.tags" 
+        class="tag-chip">
+        {{ tag }}
+      </mat-chip>
     </div>
   </mat-card-content>
-</mat-card> 
+
+  <!-- Expanded Tasks Section -->
+  <mat-card-content class="tasks-section" *ngIf="isExpanded && showTasks && tasks.length > 0">
+    <h5 class="tasks-title">Tâches associées</h5>
+    
+    <div class="tasks-list">
+      <app-task-badge
+        *ngFor="let task of tasks; trackBy: trackTask"
+        [task]="task"
+        (click)="onTaskClicked(task)"
+        class="task-item">
+      </app-task-badge>
+    </div>
+  </mat-card-content>
+
+</mat-card>
+
+<!-- Feature Action Menu -->
+<mat-menu #featureMenu="matMenu">
+  <button mat-menu-item (click)="onEditFeature()">
+    <mat-icon>edit</mat-icon>
+    <span>Modifier</span>
+  </button>
+  <button mat-menu-item (click)="onDeleteFeature()" class="delete-action">
+    <mat-icon>delete</mat-icon>
+    <span>Supprimer</span>
+  </button>
+</mat-menu> 

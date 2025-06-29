@@ -1,16 +1,16 @@
 <div class="epic-kanban-container">
   
   <!-- Loading State -->
-  <div *ngIf="isLoading()" class="loading-container">
+  <div *ngIf="loading$ | async" class="loading-container">
     <mat-progress-bar mode="indeterminate"></mat-progress-bar>
     <p class="loading-text">Chargement de l'épic...</p>
   </div>
 
   <!-- Error State -->
-  <div *ngIf="error() && !isLoading()" class="error-container">
+  <div *ngIf="(error$ | async) && !(loading$ | async)" class="error-container">
     <mat-icon class="error-icon">error</mat-icon>
     <h3>Erreur</h3>
-    <p>{{ error() }}</p>
+    <p>{{ error$ | async }}</p>
     <button mat-raised-button color="primary" (click)="onRefreshBoard()">
       <mat-icon>refresh</mat-icon>
       Réessayer
@@ -22,12 +22,13 @@
   </div>
 
   <!-- Epic Kanban Board -->
-  <div *ngIf="epicBoard() && !isLoading()" class="epic-board">
+  <div *ngIf="(currentEpic$ | async) && !(loading$ | async)" class="epic-board">
     
     <!-- Epic Header -->
     <app-epic-header 
-      [epic]="epicBoard()!.epic"
-      [metrics]="epicBoard()!.metrics"
+      *ngIf="(currentEpic$ | async) && (metrics$ | async)"
+      [epic]="(currentEpic$ | async)!"
+      [metrics]="(metrics$ | async)!"
       (navigateBack)="onNavigateBack()"
       (refreshBoard)="onRefreshBoard()">
     </app-epic-header>
@@ -38,10 +39,10 @@
       <!-- Kanban Columns Container -->
       <div class="kanban-columns-container">
         <app-kanban-column
-          *ngFor="let column of epicBoard()!.columns; trackBy: trackColumn"
-          [column]="column"
-          [features]="getFeaturesByStatus(column.statusValue)"
-          [isLoading]="isLoading()"
+          *ngFor="let columnData of (featuresByColumn$ | async); trackBy: trackColumn"
+          [column]="columnData"
+          [features]="columnData.features"
+          [isLoading]="(loading$ | async) || false"
           class="kanban-column">
         </app-kanban-column>
       </div>
@@ -49,8 +50,9 @@
       <!-- Epic Metrics Panel (Sidebar) -->
       <div class="metrics-panel">
         <app-epic-metrics 
-          [metrics]="epicBoard()!.metrics"
-          [epic]="epicBoard()!.epic">
+          *ngIf="(metrics$ | async) && (currentEpic$ | async)"
+          [metrics]="(metrics$ | async)!"
+          [epic]="(currentEpic$ | async)!">
         </app-epic-metrics>
       </div>
 
@@ -58,7 +60,7 @@
   </div>
 
   <!-- Empty State -->
-  <div *ngIf="!epicBoard() && !isLoading() && !error()" class="empty-state">
+  <div *ngIf="!(currentEpic$ | async) && !(loading$ | async) && !(error$ | async)" class="empty-state">
     <mat-icon class="empty-icon">inbox</mat-icon>
     <h3>Aucun épic trouvé</h3>
     <p>L'épic demandé n'existe pas ou n'a pas pu être chargé.</p>
