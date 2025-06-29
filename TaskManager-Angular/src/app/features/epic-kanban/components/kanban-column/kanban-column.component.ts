@@ -51,6 +51,16 @@ export class KanbanColumnComponent {
     }
   }
 
+  getBadgeColor(): 'primary' | 'accent' | 'warn' {
+    switch (this.column.statusValue) {
+      case 'pending': return 'accent';
+      case 'in_progress': return 'warn';
+      case 'review': return 'primary';
+      case 'completed': return 'primary';
+      default: return 'primary';
+    }
+  }
+
   trackFeature(index: number, feature: Task): string {
     return feature.id || index.toString();
   }

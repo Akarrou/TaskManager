@@ -1,11 +1,11 @@
-<div class="kanban-column" [style.background-color]="column.color">
+<div class="kanban-column" [style.background-color]="column.bgColor">
   
   <!-- Column Header -->
   <div class="column-header">
     <div class="header-left">
-      <mat-icon class="column-icon">{{ getColumnIcon() }}</mat-icon>
+      <mat-icon class="column-icon" [style.color]="column.color">{{ getColumnIcon() }}</mat-icon>
       <h3 class="column-title">{{ column.title }}</h3>
-      <span class="feature-count" [matBadge]="features.length" matBadgeColor="primary">
+      <span class="feature-count" [matBadge]="features.length" [matBadgeColor]="getBadgeColor()">
         ({{ features.length }})
       </span>
     </div>
