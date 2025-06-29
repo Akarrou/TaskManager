@@ -1,47 +1,107 @@
+// ============================================================================
+// TASK BADGE COMPONENT STYLES
+// ============================================================================
+
 .task-badge {
-  @apply flex items-center gap-2 p-2 rounded border cursor-pointer transition-all duration-200;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.2s ease;
   min-height: 32px;
+  background-color: #f9fafb;
 
   &:hover {
-    @apply shadow-sm;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
     transform: translateY(-1px);
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
   }
 
   // États de priorité (couleurs de fond)
   &.priority-low {
-    @apply border-green-200 bg-green-50 hover:bg-green-100;
+    border-color: #bbf7d0;
+    background-color: #f0fdf4;
+    
+    &:hover {
+      background-color: #dcfce7;
+    }
   }
 
   &.priority-medium {
-    @apply border-yellow-200 bg-yellow-50 hover:bg-yellow-100;
+    border-color: #fde68a;
+    background-color: #fffbeb;
+    
+    &:hover {
+      background-color: #fef3c7;
+    }
   }
 
   &.priority-high {
-    @apply border-orange-200 bg-orange-50 hover:bg-orange-100;
+    border-color: #fed7aa;
+    background-color: #fff7ed;
+    
+    &:hover {
+      background-color: #ffedd5;
+    }
   }
 
   &.priority-urgent {
-    @apply border-red-200 bg-red-50 hover:bg-red-100;
+    border-color: #fecaca;
+    background-color: #fef2f2;
+    
+    &:hover {
+      background-color: #fee2e2;
+    }
   }
 
-  &.priority-default {
-    @apply border-gray-200 bg-gray-50 hover:bg-gray-100;
+  // Mode compact
+  &.compact {
+    padding: 6px;
+    min-height: 28px;
+    gap: 6px;
   }
 }
 
+// ============================================================================
+// TASK LEFT SECTION (STATUS + NUMBER)
+// ============================================================================
+
 .task-left {
-  @apply flex items-center gap-2 flex-shrink-0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 
   .status-icon {
-    @apply text-lg;
     font-size: 16px;
     width: 16px;
     height: 16px;
+    
+    // Couleurs de statut
+    &.text-green-500 { color: #10b981; }
+    &.text-orange-500 { color: #f97316; }
+    &.text-blue-500 { color: #3b82f6; }
+    &.text-gray-400 { color: #9ca3af; }
+    &.text-red-500 { color: #ef4444; }
   }
 
   .status-button {
-    @apply w-6 h-6 p-0;
+    width: 24px;
+    height: 24px;
     min-width: 24px;
+    padding: 0;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
     
     .status-icon {
       font-size: 14px;
@@ -50,47 +110,84 @@
     }
 
     &:hover {
-      @apply bg-white bg-opacity-50;
+      background-color: rgba(255, 255, 255, 0.5);
+    }
+
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.5);
+      border-radius: 4px;
     }
   }
 
   .task-number {
-    @apply text-xs font-mono font-medium text-gray-600;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace;
+    font-weight: 500;
+    color: #6b7280;
     min-width: fit-content;
+    white-space: nowrap;
   }
 }
 
+// ============================================================================
+// TASK CONTENT SECTION (TITLE + PRIORITY)
+// ============================================================================
+
 .task-content {
-  @apply flex-1 flex items-center gap-1 overflow-hidden;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
 
   .task-title {
-    @apply text-xs text-gray-800 font-medium truncate;
+    font-size: 12px;
+    color: #1f2937;
+    font-weight: 500;
     line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .priority-indicator {
-    @apply text-xs font-bold flex-shrink-0;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
     
     &.priority-low {
-      @apply text-green-600;
+      color: #059669;
     }
     
     &.priority-high {
-      @apply text-orange-600;
+      color: #ea580c;
     }
     
     &.priority-urgent {
-      @apply text-red-600;
+      color: #dc2626;
     }
   }
 }
 
+// ============================================================================
+// TASK ACTIONS SECTION
+// ============================================================================
+
 .task-actions {
-  @apply flex-shrink-0;
+  flex-shrink: 0;
 
   .action-button {
-    @apply w-6 h-6 p-0 text-gray-500 hover:text-gray-700;
+    width: 24px;
+    height: 24px;
     min-width: 24px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 4px;
+    color: #6b7280;
+    transition: all 0.2s ease;
     
     .mat-icon {
       font-size: 14px;
@@ -99,54 +196,43 @@
     }
 
     &:hover {
-      @apply bg-white bg-opacity-50;
+      background-color: rgba(255, 255, 255, 0.5);
+      color: #374151;
+    }
+
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.5);
+      border-radius: 4px;
     }
   }
 }
 
-// Les couleurs de statut sont déjà définies par Tailwind CSS
-// Pas besoin de redéfinir ces classes
+// ============================================================================
+// RESPONSIVE DESIGN
+// ============================================================================
 
-// Mode compact amélioré
-.task-badge {
-  &.compact {
-    @apply p-1.5;
-    min-height: 28px;
-    
-    .task-left {
-      gap: 1px;
-      
-      .task-number {
-        @apply text-xs;
-      }
-    }
-    
-    .task-content .task-title {
-      @apply text-xs;
-    }
-  }
-}
-
-// États responsive
 @media (max-width: 768px) {
   .task-badge {
-    @apply p-1.5;
+    padding: 6px;
     min-height: 28px;
+    gap: 6px;
     
     .task-left {
-      gap: 4px;
+      gap: 6px;
       
       .task-number {
-        @apply text-xs;
+        font-size: 10px;
       }
     }
     
     .task-content .task-title {
-      @apply text-xs;
+      font-size: 11px;
     }
     
     .task-actions .action-button {
-      @apply w-5 h-5;
+      width: 20px;
+      height: 20px;
       min-width: 20px;
       
       .mat-icon {
@@ -158,12 +244,34 @@
   }
 }
 
-// Focus et accessibilité
-.task-badge:focus {
-  @apply outline-none ring-2 ring-blue-500 ring-opacity-50;
-}
+// ============================================================================
+// DARK MODE SUPPORT (PREPARÉ)
+// ============================================================================
 
-.status-button:focus,
-.action-button:focus {
-  @apply outline-none ring-1 ring-blue-500 ring-opacity-50 rounded;
+@media (prefers-color-scheme: dark) {
+  .task-badge {
+    background-color: #1f2937;
+    border-color: #374151;
+    
+    &:hover {
+      background-color: #374151;
+    }
+    
+    .task-content .task-title {
+      color: #f9fafb;
+    }
+    
+    .task-left .task-number {
+      color: #9ca3af;
+    }
+    
+    .task-actions .action-button {
+      color: #9ca3af;
+      
+      &:hover {
+        color: #f9fafb;
+        background-color: rgba(0, 0, 0, 0.2);
+      }
+    }
+  }
 } 

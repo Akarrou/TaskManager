@@ -31,6 +31,7 @@ export class TaskBadgeComponent {
     switch (this.task.status) {
       case 'completed': return 'check_circle';
       case 'in_progress': return 'schedule';
+      case 'review': return 'rate_review';
       case 'pending': return 'radio_button_unchecked';
       case 'cancelled': return 'cancel';
       default: return 'radio_button_unchecked';
@@ -41,6 +42,7 @@ export class TaskBadgeComponent {
     switch (this.task.status) {
       case 'completed': return 'text-green-500';
       case 'in_progress': return 'text-orange-500';
+      case 'review': return 'text-blue-500';
       case 'pending': return 'text-gray-400';
       case 'cancelled': return 'text-red-500';
       default: return 'text-gray-400';
