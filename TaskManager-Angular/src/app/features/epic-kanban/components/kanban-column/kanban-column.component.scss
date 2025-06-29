@@ -1,5 +1,5 @@
 .kanban-column {
-  @apply min-w-80 max-w-80 h-fit rounded-lg border border-gray-200;
+  @apply w-full h-fit rounded-lg border border-gray-200;
   background-color: var(--column-bg, #f8f9fa);
   
   // Material Design 3.0 elevation
@@ -305,12 +305,21 @@
 }
 
 // ============================================================================
-// RESPONSIVE DESIGN
+// RESPONSIVE DESIGN T010
 // ============================================================================
+
+// Tablet (768px-1200px) - 2 colonnes en grille
+@media (max-width: 1200px) and (min-width: 769px) {
+  .kanban-column {
+    .column-content {
+      max-height: calc(100vh - 320px); // Ajust for tablet layout
+    }
+  }
+}
+
+// Mobile (<768px) - 1 colonne stack vertical
 @media (max-width: 768px) {
   .kanban-column {
-    @apply min-w-72 max-w-72;
-
     .column-header {
       @apply p-3;
 
@@ -323,7 +332,7 @@
 
     .column-content {
       @apply p-3;
-      max-height: calc(100vh - 240px);
+      max-height: calc(100vh - 200px); // Optimized for mobile
 
       .features-list {
         @apply space-y-2;
@@ -341,6 +350,30 @@
             }
           }
         }
+      }
+    }
+  }
+}
+
+// Small Mobile (<480px) - Optimisation pour très petits écrans
+@media (max-width: 480px) {
+  .kanban-column {
+    .column-header {
+      @apply p-2;
+
+      .header-left {
+        .column-title {
+          @apply text-sm;
+        }
+      }
+    }
+
+    .column-content {
+      @apply p-2;
+      max-height: calc(100vh - 180px);
+
+      .features-list {
+        @apply space-y-1;
       }
     }
   }

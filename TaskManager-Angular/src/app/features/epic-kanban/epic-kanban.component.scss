@@ -1,7 +1,9 @@
 .epic-kanban-container {
   @apply min-h-screen bg-gray-50 p-4;
 
-  // Loading State
+  // ============================================================================
+  // LOADING STATE
+  // ============================================================================
   .loading-container {
     @apply flex flex-col items-center justify-center min-h-screen;
 
@@ -14,7 +16,9 @@
     }
   }
 
-  // Error State
+  // ============================================================================
+  // ERROR STATE
+  // ============================================================================
   .error-container {
     @apply flex flex-col items-center justify-center min-h-screen text-center max-w-md mx-auto;
 
@@ -35,7 +39,9 @@
     }
   }
 
-  // Empty State
+  // ============================================================================
+  // EMPTY STATE
+  // ============================================================================
   .empty-state {
     @apply flex flex-col items-center justify-center min-h-screen text-center max-w-md mx-auto;
 
@@ -52,22 +58,30 @@
     }
   }
 
-  // Epic Board
+  // ============================================================================
+  // EPIC BOARD MAIN LAYOUT
+  // ============================================================================
   .epic-board {
     @apply max-w-full;
 
     .kanban-board-content {
       @apply flex gap-6 mt-6;
 
+      // ========================================================================
+      // KANBAN COLUMNS CONTAINER (DESKTOP DEFAULT)
+      // ========================================================================
       .kanban-columns-container {
-        @apply flex gap-4 flex-1 overflow-x-auto pb-4;
+        @apply grid grid-cols-4 gap-4 flex-1;
         min-height: calc(100vh - 300px);
 
         .kanban-column {
-          @apply flex-shrink-0;
+          @apply w-full; // Remove flex-shrink-0 for grid
         }
       }
 
+      // ========================================================================
+      // METRICS PANEL (SIDEBAR)
+      // ========================================================================
       .metrics-panel {
         @apply w-80 flex-shrink-0;
       }
@@ -75,16 +89,62 @@
   }
 }
 
-// Responsive Design
-@media (max-width: 1280px) {
+// ============================================================================
+// RESPONSIVE BREAKPOINTS T010
+// ============================================================================
+
+// Large Desktop (>1200px) - 4 colonnes côte à côte
+@media (min-width: 1201px) {
   .epic-kanban-container {
     .epic-board {
       .kanban-board-content {
-        @apply flex-col;
+        .kanban-columns-container {
+          @apply grid-cols-4 gap-6;
+        }
+        
+        .metrics-panel {
+          @apply w-80;
+        }
+      }
+    }
+  }
+}
+
+// Tablet (768px-1200px) - 2 colonnes en grille 2x2
+@media (max-width: 1200px) and (min-width: 769px) {
+  .epic-kanban-container {
+    @apply p-3;
+    
+    .epic-board {
+      .kanban-board-content {
+        @apply flex-col gap-4;
 
         .kanban-columns-container {
-          @apply flex-nowrap;
-          min-width: 100%;
+          @apply grid-cols-2 gap-4;
+          min-height: calc(100vh - 250px);
+        }
+
+        .metrics-panel {
+          @apply w-full order-first;
+          // Metrics en haut sur tablet
+        }
+      }
+    }
+  }
+}
+
+// Mobile (<768px) - 1 colonne stack vertical
+@media (max-width: 768px) {
+  .epic-kanban-container {
+    @apply p-2;
+
+    .epic-board {
+      .kanban-board-content {
+        @apply flex-col gap-3;
+
+        .kanban-columns-container {
+          @apply grid-cols-1 gap-3;
+          min-height: auto; // Allow natural height on mobile
         }
 
         .metrics-panel {
@@ -95,42 +155,79 @@
   }
 }
 
-@media (max-width: 768px) {
+// Small Mobile (<480px) - Optimisation pour très petits écrans
+@media (max-width: 480px) {
   .epic-kanban-container {
-    @apply p-2;
+    @apply p-1;
 
     .epic-board {
       .kanban-board-content {
-        @apply gap-4;
+        @apply gap-2;
 
         .kanban-columns-container {
-          @apply gap-3;
+          @apply gap-2;
         }
       }
     }
   }
 }
 
-// Scrollbar Styling
+// ============================================================================
+// CUSTOM SCROLLBAR STYLING
+// ============================================================================
 .kanban-columns-container {
+  // Pour les cas où on a besoin de scroll (overflow sur très grandes colonnes)
+  overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #cbd5e0 #f7fafc;
 
   &::-webkit-scrollbar {
-    height: 8px;
+    width: 6px;
   }
 
   &::-webkit-scrollbar-track {
     background: #f7fafc;
-    border-radius: 4px;
+    border-radius: 3px;
   }
 
   &::-webkit-scrollbar-thumb {
     background: #cbd5e0;
-    border-radius: 4px;
+    border-radius: 3px;
   }
 
   &::-webkit-scrollbar-thumb:hover {
     background: #a0aec0;
+  }
+}
+
+// ============================================================================
+// TRANSITIONS ET ANIMATIONS
+// ============================================================================
+.kanban-columns-container {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  .kanban-column {
+    transition: all 0.2s ease-in-out;
+  }
+}
+
+// ============================================================================
+// PRINT STYLES (BONUS)
+// ============================================================================
+@media print {
+  .epic-kanban-container {
+    .epic-board {
+      .kanban-board-content {
+        @apply block;
+
+        .kanban-columns-container {
+          @apply grid-cols-2 text-sm;
+        }
+
+        .metrics-panel {
+          @apply hidden; // Masquer les métriques à l'impression
+        }
+      }
+    }
   }
 } 
