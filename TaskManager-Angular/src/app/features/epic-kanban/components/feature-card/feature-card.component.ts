@@ -51,8 +51,10 @@ export class FeatureCardComponent {
 
   get priorityConfig(): { icon: string; color: string; label: string } {
     switch (this.feature.priority) {
+      case 'urgent':
+        return { icon: 'priority_high', color: 'text-purple-600', label: 'Urgent' };
       case 'high':
-        return { icon: 'priority_high', color: 'text-red-600', label: 'Haute' };
+        return { icon: 'arrow_upward', color: 'text-red-600', label: 'Haute' };
       case 'medium':
         return { icon: 'remove', color: 'text-orange-500', label: 'Moyenne' };
       case 'low':
@@ -63,11 +65,70 @@ export class FeatureCardComponent {
   }
 
   get statusConfig(): { icon: string; color: string; label: string } {
-    switch (this.feature.status) {
+    return this.getTaskStatusConfig(this.feature);
+  }
+
+  get typeConfig(): { color: string; bgColor: string; borderColor: string; label: string } {
+    switch (this.feature.type) {
+      case 'epic':
+        return { 
+          color: 'text-red-700', 
+          bgColor: 'bg-red-100', 
+          borderColor: 'border-red-300',
+          label: 'Epic' 
+        };
+      case 'feature':
+        return { 
+          color: 'text-blue-700', 
+          bgColor: 'bg-blue-100', 
+          borderColor: 'border-blue-300',
+          label: 'Feature' 
+        };
+      case 'task':
+        return { 
+          color: 'text-green-700', 
+          bgColor: 'bg-green-100', 
+          borderColor: 'border-green-300',
+          label: 'Task' 
+        };
+      default:
+        return { 
+          color: 'text-gray-700', 
+          bgColor: 'bg-gray-100', 
+          borderColor: 'border-gray-300',
+          label: 'Unknown' 
+        };
+    }
+  }
+
+  get isOverdue(): boolean {
+    if (!this.feature.due_date) return false;
+    const dueDate = new Date(this.feature.due_date);
+    const today = new Date();
+    return dueDate < today && this.feature.status !== 'completed';
+  }
+
+  get hasActiveTasks(): boolean {
+    return this.tasks.some(task => task.status === 'in_progress');
+  }
+
+  get completionRate(): string {
+    if (this.tasks.length === 0) return 'Aucune tâche';
+    const completed = this.tasks.filter(task => task.status === 'completed').length;
+    return `${completed}/${this.tasks.length} terminées`;
+  }
+
+  /**
+   * T011 - Méthode pour obtenir la config de statut d'une tâche spécifique
+   */
+  getTaskStatusConfig(task: Task): { icon: string; color: string; label: string } {
+    switch (task.status) {
       case 'pending':
         return { icon: 'schedule', color: 'text-gray-500', label: 'En attente' };
       case 'in_progress':
         return { icon: 'hourglass_empty', color: 'text-orange-500', label: 'En cours' };
+      case 'review':
+        return { icon: 'rate_review', color: 'text-blue-500', label: 'En révision' };
       case 'completed':
         return { icon: 'check_circle', color: 'text-green-600', label: 'Terminé' };
       case 'cancelled':
@@ -77,24 +138,22 @@ export class FeatureCardComponent {
     }
   }
 
-  get typeConfig(): { color: string; label: string } {
-    switch (this.feature.type) {
-      case 'epic':
-        return { color: 'text-red-600 bg-red-50 border-red-200', label: 'Epic' };
-      case 'feature':
-        return { color: 'text-blue-600 bg-blue-50 border-blue-200', label: 'Feature' };
-      case 'task':
-        return { color: 'text-green-600 bg-green-50 border-green-200', label: 'Task' };
+  /**
+   * T011 - Méthode pour obtenir la config de priorité d'une tâche spécifique
+   */
+  getTaskPriorityConfig(task: Task): { icon: string; color: string; label: string } {
+    switch (task.priority) {
+      case 'urgent':
+        return { icon: 'priority_high', color: 'text-purple-600', label: 'Urgent' };
+      case 'high':
+        return { icon: 'arrow_upward', color: 'text-red-600', label: 'Haute' };
+      case 'medium':
+        return { icon: 'remove', color: 'text-orange-500', label: 'Moyenne' };
+      case 'low':
+        return { icon: 'keyboard_arrow_down', color: 'text-green-600', label: 'Basse' };
       default:
-        return { color: 'text-gray-600 bg-gray-50 border-gray-200', label: 'Unknown' };
+        return { icon: 'remove', color: 'text-gray-500', label: 'Non définie' };
     }
-  }
-
-  get isOverdue(): boolean {
-    if (!this.feature.due_date) return false;
-    const dueDate = new Date(this.feature.due_date);
-    const today = new Date();
-    return dueDate < today && this.feature.status !== 'completed';
   }
 
   onCardClick(): void {
@@ -123,16 +182,65 @@ export class FeatureCardComponent {
     this.featureClick.emit(task);
   }
 
+  /**
+   * T011 - Méthode pour changer le statut d'une tâche depuis la carte feature
+   */
+  onTaskStatusChange(task: Task, newStatus: string, event: Event): void {
+    event.stopPropagation();
+    this.taskStatusChange.emit({ task, newStatus });
+  }
+
   formatDate(dateString: string): string {
     const date = new Date(dateString);
+    const now = new Date();
+    const diffInDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays === 0) return 'Aujourd\'hui';
+    if (diffInDays === 1) return 'Demain';
+    if (diffInDays === -1) return 'Hier';
+    if (diffInDays > 0 && diffInDays <= 7) return `Dans ${diffInDays}j`;
+    if (diffInDays < 0 && diffInDays >= -7) return `Il y a ${Math.abs(diffInDays)}j`;
+    
     return date.toLocaleDateString('fr-FR', { 
       day: '2-digit', 
       month: '2-digit',
-      year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
     });
+  }
+
+  /**
+   * T011 - Format d'affichage amélioré pour les assignations
+   */
+  formatAssignee(assignee: string): string {
+    if (!assignee) return '';
+    
+    // Si c'est un email, ne prendre que la partie avant @
+    if (assignee.includes('@')) {
+      return assignee.split('@')[0];
+    }
+    
+    // Sinon, limiter à 10 caractères
+    return assignee.length > 10 ? assignee.substring(0, 10) + '...' : assignee;
   }
 
   trackTask(index: number, task: Task): string {
     return task.id || index.toString();
+  }
+
+  /**
+   * T011 - Vérifier si une tâche est en retard
+   */
+  isTaskOverdue(task: Task): boolean {
+    if (!task.due_date) return false;
+    const dueDate = new Date(task.due_date);
+    const today = new Date();
+    return dueDate < today && task.status !== 'completed';
+  }
+
+  /**
+   * T011 - TrackBy function pour les tags
+   */
+  trackTag(index: number, tag: string): string {
+    return tag || index.toString();
   }
 } 

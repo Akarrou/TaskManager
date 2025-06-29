@@ -14,7 +14,7 @@ interface TaskTreeNode {
   title: string;
   slug: string;
   type: 'epic' | 'feature' | 'task';
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled';
   estimated_hours?: number;
   task_number?: number;
   children?: TaskTreeNode[];
@@ -127,6 +127,7 @@ export class TaskTreeComponent implements OnInit, OnChanges {
     switch (status) {
       case 'completed': return 'check_circle';
       case 'in_progress': return 'hourglass_empty';
+      case 'review': return 'rate_review';
       case 'pending': return 'radio_button_unchecked';
       case 'cancelled': return 'cancel';
       default: return 'help_outline';
@@ -137,6 +138,7 @@ export class TaskTreeComponent implements OnInit, OnChanges {
     switch (status) {
       case 'completed': return 'Terminé';
       case 'in_progress': return 'En cours';
+      case 'review': return 'En révision';
       case 'pending': return 'En attente';
       case 'cancelled': return 'Annulé';
       default: return 'Inconnu';

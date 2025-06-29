@@ -3,6 +3,11 @@
   @apply border border-gray-200 bg-white;
   @apply hover:shadow-md;
   
+  // Focus state for accessibility
+  &:focus-visible {
+    @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+  }
+  
   // Dragging state
   &.dragging {
     @apply opacity-60 transform rotate-1 z-50;
@@ -15,6 +20,15 @@
     
     .mat-mdc-card-header {
       @apply bg-red-100/50;
+    }
+  }
+
+  // T011 - Active tasks indicator
+  &.has-active-tasks {
+    @apply border-l-4 border-l-orange-400;
+    
+    &:hover {
+      @apply border-l-orange-500;
     }
   }
 
@@ -46,14 +60,35 @@
     overflow: hidden;
   }
 
-  // Progress bar styling
+  // T011 - Enhanced progress bar styling
   .mat-mdc-progress-bar {
     @apply rounded-full overflow-hidden;
     height: 6px !important;
+    background-color: rgb(243 244 246) !important; // bg-gray-100
     
     .mdc-linear-progress__bar-inner {
       @apply rounded-full;
     }
+
+    // T011 - Progress states
+    &.progress-completed {
+      .mdc-linear-progress__bar-inner {
+        background-color: rgb(34 197 94) !important; // green-500
+      }
+    }
+
+    &.progress-active {
+      .mdc-linear-progress__bar-inner {
+        background-color: rgb(249 115 22) !important; // orange-500
+        animation: progress-pulse 2s ease-in-out infinite;
+      }
+    }
+  }
+
+  // T011 - Progress pulse animation
+  @keyframes progress-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
   }
 
   // Chip styling
@@ -88,11 +123,36 @@
       width: 16px !important;
       height: 16px !important;
     }
+
+    // T011 - Flex shrink icons
+    &.flex-shrink-0 {
+      flex-shrink: 0;
+    }
   }
 
   // Task items in expanded view
   .space-y-2 > * + * {
     margin-top: 8px;
+  }
+
+  // T011 - Enhanced task item styling
+  .group {
+    &:focus-visible {
+      @apply outline-none ring-2 ring-blue-500 ring-offset-2 rounded-md;
+    }
+  }
+
+  // T011 - Screen reader only content
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   // Responsive adjustments
@@ -108,6 +168,15 @@
     .text-xs {
       font-size: 10px;
     }
+
+    // T011 - Mobile optimizations
+    .max-w-20 {
+      max-width: 3rem;
+    }
+
+    .max-w-16 {
+      max-width: 2.5rem;
+    }
   }
 }
 
@@ -121,26 +190,28 @@
   animation: card-pulse 0.2s ease-in-out;
 }
 
-// Menu styling override
-.mat-mdc-menu-content {
-  .mat-mdc-menu-item {
-    @apply transition-colors duration-200;
-    
-    &:hover {
-      @apply bg-gray-50;
-    }
-    
-    &.text-red-600 {
+// T011 - Enhanced menu styling
+.feature-card-menu {
+  .mat-mdc-menu-content {
+    .mat-mdc-menu-item {
+      @apply transition-colors duration-200;
+      
       &:hover {
-        @apply bg-red-50;
+        @apply bg-gray-50;
       }
-    }
-    
-    .mat-icon {
-      @apply mr-3;
-      font-size: 18px !important;
-      width: 18px !important;
-      height: 18px !important;
+      
+      &.text-red-600 {
+        &:hover {
+          @apply bg-red-50;
+        }
+      }
+      
+      .mat-icon {
+        @apply mr-3;
+        font-size: 18px !important;
+        width: 18px !important;
+        height: 18px !important;
+      }
     }
   }
 }
@@ -154,12 +225,16 @@
   color: rgb(75 85 99) !important;
 }
 
+.hover\:border-gray-200:hover {
+  border-color: rgb(229 231 235) !important;
+}
+
 // Tooltip overrides
 .mat-mdc-tooltip {
   @apply text-xs;
 }
 
-// Type badge variations
+// T011 - Type badge variations with improved contrast
 .type-epic {
   @apply text-red-700 bg-red-100 border-red-300;
 }
@@ -170,4 +245,11 @@
 
 .type-task {
   @apply text-green-700 bg-green-100 border-green-300;
+}
+
+// T011 - Enhanced truncation utilities
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 } 

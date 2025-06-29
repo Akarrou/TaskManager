@@ -6,7 +6,7 @@ export interface Task {
   id?: string;
   title: string;
   description?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   assigned_to?: string;
   created_by?: string;  // Sera ajouté automatiquement lors de la création
