@@ -1,9 +1,23 @@
 <div class="task-form-container">
   <div class="form-header">
-    <h2>{{ pageTitle() }}</h2>
+    <h2>
+      <span *ngIf="!isEditMode()">{{ pageTitle() }}</span>
+      <span *ngIf="isEditMode() && currentTask()">
+        Modifier la tâche
+        <span class="task-number-badge" [class]="'task-number-' + currentTask()?.type">
+          #{{ currentTask()?.task_number }}
+        </span>
+      </span>
+    </h2>
   </div>
 
-  <mat-horizontal-stepper [linear]="true" #stepper>
+  <!-- Message informatif pour le mode édition -->
+  <div *ngIf="isEditMode()" class="stepper-info">
+    <mat-icon>info</mat-icon>
+    <span>En mode édition, vous pouvez cliquer sur les étapes pour naviguer directement.</span>
+  </div>
+
+  <mat-horizontal-stepper [linear]="!isEditMode()" #stepper>
     <!-- Étape 1 : Informations principales -->
     <mat-step [stepControl]="mainInfoForm" label="Informations principales">
       <form [formGroup]="mainInfoForm">

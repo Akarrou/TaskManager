@@ -52,6 +52,7 @@ export class TaskFormComponent implements OnInit {
   isSubmitting = signal(false);
   pageTitle = signal('Nouvelle tâche');
   currentTaskId = signal<string | null>(null);
+  currentTask = signal<Task | null>(null);
   mainInfoForm!: FormGroup;
   assignForm!: FormGroup;
   advancedForm!: FormGroup;
@@ -221,6 +222,11 @@ export class TaskFormComponent implements OnInit {
     try {
       const task = await this.taskService.fetchTaskById(id);
       if (task) {
+        this.currentTask.set(task);
+        // Mettre à jour le titre avec le numéro de tâche
+        const taskNumber = task.task_number ? `#${task.task_number}` : '';
+        this.pageTitle.set(`Modifier la tâche ${taskNumber}`);
+        
         this.patchFormWithTask(task);
         this.loadTaskDetailsAndComments(id);
         // Verrouillage du type pour epic ou feature avec enfants
