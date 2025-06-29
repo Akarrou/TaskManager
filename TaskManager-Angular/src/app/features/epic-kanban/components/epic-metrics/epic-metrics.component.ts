@@ -35,14 +35,14 @@ export class EpicMetricsComponent {
   }
 
   getVelocityIcon(): string {
-    const velocity = this.metrics?.velocity || 0;
+    const velocity = this.metrics?.velocity?.averageVelocity || 0;
     if (velocity > 5) return 'trending_up';
     if (velocity > 2) return 'trending_flat';
     return 'trending_down';
   }
 
   getVelocityColor(): string {
-    const velocity = this.metrics?.velocity || 0;
+    const velocity = this.metrics?.velocity?.averageVelocity || 0;
     if (velocity > 5) return 'text-green-600';
     if (velocity > 2) return 'text-orange-600';
     return 'text-red-600';

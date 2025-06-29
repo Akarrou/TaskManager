@@ -1,14 +1,15 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDividerModule } from '@angular/material/divider';
 
 import { Task } from '../../../../core/services/task';
-import { TaskBadgeComponent } from '../task-badge/task-badge.component';
 
 @Component({
   selector: 'app-feature-card',
@@ -16,84 +17,119 @@ import { TaskBadgeComponent } from '../task-badge/task-badge.component';
   imports: [
     CommonModule,
     MatCardModule,
-    MatButtonModule,
     MatIconModule,
+    MatButtonModule,
     MatChipsModule,
     MatMenuModule,
     MatProgressBarModule,
-    TaskBadgeComponent
+    MatTooltipModule,
+    MatDividerModule
   ],
   templateUrl: './feature-card.component.html',
   styleUrls: ['./feature-card.component.scss']
 })
 export class FeatureCardComponent {
-
-  @Input({ required: true }) feature!: Task;
-  @Input() tasks: Task[] = [];
+  @Input() feature!: Task;
+  @Input() showProgress = true;
   @Input() isExpanded = false;
-  @Input() showTasks = true;
+  @Input() isDragging = false;
+  @Input() tasks: Task[] = [];
 
-  @Output() expand = new EventEmitter<string>();
-  @Output() edit = new EventEmitter<Task>();
-  @Output() delete = new EventEmitter<Task>();
+  @Output() featureClick = new EventEmitter<Task>();
+  @Output() featureEdit = new EventEmitter<Task>();
+  @Output() featureDelete = new EventEmitter<Task>();
+  @Output() toggleExpansion = new EventEmitter<string>();
   @Output() taskStatusChange = new EventEmitter<{ task: Task; newStatus: string }>();
-  @Output() taskClick = new EventEmitter<Task>();
 
-  onToggleExpansion(): void {
-    if (this.feature.id) {
-      this.expand.emit(this.feature.id);
-    }
-  }
-
-  onEditFeature(): void {
-    this.edit.emit(this.feature);
-  }
-
-  onDeleteFeature(): void {
-    this.delete.emit(this.feature);
-  }
-
-  onTaskStatusChanged(task: Task, newStatus: string): void {
-    this.taskStatusChange.emit({ task, newStatus });
-  }
-
-  onTaskClicked(task: Task): void {
-    this.taskClick.emit(task);
-  }
-
-  getProgressPercentage(): number {
-    if (!this.tasks || this.tasks.length === 0) return 0;
+  get featureProgress(): { completed: number; total: number; percentage: number } {
+    const total = this.tasks.length;
+    const completed = this.tasks.filter(task => task.status === 'completed').length;
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
     
-    const completedTasks = this.tasks.filter(task => task.status === 'completed').length;
-    return Math.round((completedTasks / this.tasks.length) * 100);
+    return { completed, total, percentage };
   }
 
-  getStatusColor(status: string): string {
-    switch (status) {
-      case 'completed': return 'green';
-      case 'in_progress': return 'orange';
-      case 'pending': return 'blue';
-      case 'cancelled': return 'red';
-      default: return 'gray';
+  get priorityConfig(): { icon: string; color: string; label: string } {
+    switch (this.feature.priority) {
+      case 'high':
+        return { icon: 'priority_high', color: 'text-red-600', label: 'Haute' };
+      case 'medium':
+        return { icon: 'remove', color: 'text-orange-500', label: 'Moyenne' };
+      case 'low':
+        return { icon: 'keyboard_arrow_down', color: 'text-green-600', label: 'Basse' };
+      default:
+        return { icon: 'remove', color: 'text-gray-500', label: 'Non définie' };
     }
   }
 
-  getPriorityIcon(priority: string): string {
-    switch (priority) {
-      case 'high': return 'keyboard_arrow_up';
-      case 'medium': return 'remove';
-      case 'low': return 'keyboard_arrow_down';
-      default: return 'remove';
+  get statusConfig(): { icon: string; color: string; label: string } {
+    switch (this.feature.status) {
+      case 'pending':
+        return { icon: 'schedule', color: 'text-gray-500', label: 'En attente' };
+      case 'in_progress':
+        return { icon: 'hourglass_empty', color: 'text-orange-500', label: 'En cours' };
+      case 'completed':
+        return { icon: 'check_circle', color: 'text-green-600', label: 'Terminé' };
+      case 'cancelled':
+        return { icon: 'cancel', color: 'text-red-500', label: 'Annulé' };
+      default:
+        return { icon: 'help', color: 'text-gray-500', label: 'Inconnu' };
     }
   }
 
-  getPriorityColor(priority: string): string {
-    switch (priority) {
-      case 'high': return 'red';
-      case 'medium': return 'orange';
-      case 'low': return 'green';
-      default: return 'gray';
+  get typeConfig(): { color: string; label: string } {
+    switch (this.feature.type) {
+      case 'epic':
+        return { color: 'text-red-600 bg-red-50 border-red-200', label: 'Epic' };
+      case 'feature':
+        return { color: 'text-blue-600 bg-blue-50 border-blue-200', label: 'Feature' };
+      case 'task':
+        return { color: 'text-green-600 bg-green-50 border-green-200', label: 'Task' };
+      default:
+        return { color: 'text-gray-600 bg-gray-50 border-gray-200', label: 'Unknown' };
     }
+  }
+
+  get isOverdue(): boolean {
+    if (!this.feature.due_date) return false;
+    const dueDate = new Date(this.feature.due_date);
+    const today = new Date();
+    return dueDate < today && this.feature.status !== 'completed';
+  }
+
+  onCardClick(): void {
+    this.featureClick.emit(this.feature);
+  }
+
+  onEditClick(event: Event): void {
+    event.stopPropagation();
+    this.featureEdit.emit(this.feature);
+  }
+
+  onDeleteClick(event: Event): void {
+    event.stopPropagation();
+    this.featureDelete.emit(this.feature);
+  }
+
+  onToggleExpansion(event: Event): void {
+    event.stopPropagation();
+    if (this.feature.id) {
+      this.toggleExpansion.emit(this.feature.id);
+    }
+  }
+
+  onTaskClick(task: Task, event: Event): void {
+    event.stopPropagation();
+    this.featureClick.emit(task);
+  }
+
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', { 
+      day: '2-digit', 
+      month: '2-digit',
+      year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+    });
   }
 
   trackTask(index: number, task: Task): string {

@@ -1,56 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { TaskService, Task } from '../../../core/services/task';
-import { EpicBoard, KanbanColumn, EpicMetrics, BoardSettings } from '../models/epic-board.model';
+import { EpicBoard, EpicMetrics, VelocityMetrics, BurndownData, BoardSettings } from '../models/epic-board.model';
+import { DEFAULT_KANBAN_COLUMNS, DEFAULT_BOARD_SETTINGS } from '../models/kanban-constants';
 
 @Injectable({
   providedIn: 'root'
 })
 export class EpicKanbanService {
   private taskService = inject(TaskService);
-
-  // Configuration des colonnes par défaut
-  private readonly DEFAULT_COLUMNS: KanbanColumn[] = [
-    {
-      id: 'pending',
-      title: 'À faire',
-      order: 1,
-      color: '#f3f4f6',
-      isCollapsed: false,
-      statusValue: 'pending'
-    },
-    {
-      id: 'in_progress',
-      title: 'En cours',
-      order: 2,
-      color: '#fef3c7',
-      isCollapsed: false,
-      statusValue: 'in_progress'
-    },
-    {
-      id: 'review',
-      title: 'Review',
-      order: 3,
-      color: '#e0e7ff',
-      isCollapsed: false,
-      statusValue: 'review'
-    },
-    {
-      id: 'completed',
-      title: 'Terminé',
-      order: 4,
-      color: '#d1fae5',
-      isCollapsed: false,
-      statusValue: 'completed'
-    }
-  ];
-
-  private readonly DEFAULT_SETTINGS: BoardSettings = {
-    showMetricsPanel: true,
-    autoRefresh: false,
-    refreshInterval: 30,
-    defaultView: 'compact',
-    enableWipLimits: false
-  };
 
   /**
    * Charge le board complet pour un epic donné
@@ -79,11 +36,13 @@ export class EpicKanbanService {
 
       return {
         epic,
-        columns: this.DEFAULT_COLUMNS,
+        columns: DEFAULT_KANBAN_COLUMNS,
         features,
         tasks,
         metrics,
-        settings
+        settings,
+        lastUpdated: new Date().toISOString(),
+        isLoading: false
       };
 
     } catch (error) {
@@ -151,11 +110,37 @@ export class EpicKanbanService {
     return {
       totalTasks,
       completedTasks,
+      inProgressTasks: allItems.filter(item => item.status === 'in_progress').length,
+      pendingTasks: allItems.filter(item => item.status === 'pending').length,
+      cancelledTasks: allItems.filter(item => item.status === 'cancelled').length,
       progressPercentage,
-      velocity: 0, // À calculer plus tard avec l'historique
-      burndownData: [], // À implémenter plus tard
+      velocity: {
+        currentSprint: 0,
+        previousSprint: 0,
+        averageVelocity: 0,
+        trend: 'stable',
+        sprintHistory: []
+      },
+      burndown: {
+        points: [],
+        idealLine: [],
+        isOnTrack: true
+      },
+      cycleTime: {
+        averageCycleTime: 0,
+        medianCycleTime: 0,
+        fastest: 0,
+        slowest: 0,
+        distribution: []
+      },
       blockedTasks,
-      teamLoad: [] // À implémenter plus tard
+      teamLoad: [],
+      estimatedHours: 0,
+      actualHours: 0,
+      remainingHours: 0,
+      highPriorityTasks: allItems.filter(item => item.priority === 'high').length,
+      mediumPriorityTasks: allItems.filter(item => item.priority === 'medium').length,
+      lowPriorityTasks: allItems.filter(item => item.priority === 'low').length
     };
   }
 
@@ -166,12 +151,12 @@ export class EpicKanbanService {
     const savedSettings = localStorage.getItem(`epic-kanban-settings-${epicId}`);
     if (savedSettings) {
       try {
-        return { ...this.DEFAULT_SETTINGS, ...JSON.parse(savedSettings) };
+        return { ...DEFAULT_BOARD_SETTINGS, ...JSON.parse(savedSettings) };
       } catch (error) {
         console.warn('Erreur lors du chargement des settings:', error);
       }
     }
-    return { ...this.DEFAULT_SETTINGS };
+    return { ...DEFAULT_BOARD_SETTINGS };
   }
 
   /**

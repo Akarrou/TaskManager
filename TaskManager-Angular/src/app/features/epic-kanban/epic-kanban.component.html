@@ -42,7 +42,14 @@
           *ngFor="let columnData of (featuresByColumn$ | async); trackBy: trackColumn"
           [column]="columnData"
           [features]="columnData.features"
+          [expandedFeatures]="expandedFeaturesSet"
+          [featureTasks]="getFeatureTasksMap()"
           [isLoading]="(loading$ | async) || false"
+          (featureClick)="onFeatureClick($event)"
+          (featureEdit)="onFeatureEdit($event)"
+          (featureDelete)="onFeatureDelete($event)"
+          (toggleExpansion)="onFeatureExpand($event)"
+          (taskStatusChange)="onTaskStatusChange($event)"
           class="kanban-column">
         </app-kanban-column>
       </div>

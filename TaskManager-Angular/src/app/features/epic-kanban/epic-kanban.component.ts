@@ -23,6 +23,7 @@ import {
   selectColumns, 
   selectFeatures,
   selectFeaturesByColumn, 
+  selectTasks,
   selectMetrics,
   selectLoading,
   selectError,
@@ -56,16 +57,24 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   // Store selectors
   currentEpic$ = this.store.select(selectCurrentEpic);
   columns$ = this.store.select(selectColumns);
+  features$ = this.store.select(selectFeatures);
+  tasks$ = this.store.select(selectTasks);
   featuresByColumn$ = this.store.select(selectFeaturesByColumn);
   metrics$ = this.store.select(selectMetrics);
   loading$ = this.store.select(selectLoading);
   error$ = this.store.select(selectError);
+  expandedFeatures$ = this.store.select(selectExpandedFeatures);
+
+  // Local state for template
+  expandedFeaturesSet = new Set<string>();
+  featureTasksMap: { [featureId: string]: Task[] } = {};
   
   // Current epic ID
   epicId: string | null = null;
 
   ngOnInit(): void {
     this.loadEpicFromRoute();
+    this.subscribeToStoreChanges();
   }
 
   ngOnDestroy(): void {
@@ -139,5 +148,36 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
     return feature.id || index.toString();
   }
 
+  private subscribeToStoreChanges(): void {
+    // Sync expanded features with local state
+    this.expandedFeatures$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(expandedFeatures => {
+      this.expandedFeaturesSet = expandedFeatures;
+    });
+
+    // Build feature-tasks map
+    this.tasks$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(tasks => {
+      this.featureTasksMap = {};
+      tasks.forEach(task => {
+        if (task.parent_task_id) {
+          if (!this.featureTasksMap[task.parent_task_id]) {
+            this.featureTasksMap[task.parent_task_id] = [];
+          }
+          this.featureTasksMap[task.parent_task_id].push(task);
+        }
+      });
+    });
+  }
+
+  getFeatureTasksMap(): { [featureId: string]: Task[] } {
+    return this.featureTasksMap;
+  }
+
+  onFeatureClick(feature: Task): void {
+    this.router.navigate(['/tasks', feature.id, 'edit']);
+  }
 
 } 

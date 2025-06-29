@@ -1,108 +1,173 @@
 .feature-card {
-  @apply w-full mb-4 transition-all duration-200 hover:shadow-lg;
+  @apply transition-all duration-200 ease-in-out;
+  @apply border border-gray-200 bg-white;
+  @apply hover:shadow-md;
   
-  &.expanded {
-    @apply shadow-lg;
+  // Dragging state
+  &.dragging {
+    @apply opacity-60 transform rotate-1 z-50;
+    @apply shadow-2xl;
   }
 
-  .feature-header {
-    @apply pb-2;
-
-    .feature-info {
-      @apply flex-1;
-
-      .feature-title-row {
-        @apply flex items-center gap-2 mb-2;
-
-        .feature-number {
-          @apply px-2 py-1 bg-blue-100 text-blue-800 text-sm font-mono rounded;
-        }
-
-        .feature-title {
-          @apply flex-1 text-base font-medium text-gray-900 m-0;
-        }
-
-        .priority-icon {
-          @apply w-5 h-5;
-        }
-      }
-
-      .feature-meta {
-        @apply flex items-center gap-3;
-
-        .status-chip {
-          @apply text-xs text-white px-2 py-1 rounded-full font-medium;
-        }
-
-        .task-count {
-          @apply text-sm text-gray-600;
-        }
-      }
-    }
-
-    .feature-actions {
-      @apply flex items-center gap-1;
-
-      .action-menu,
-      .expand-button {
-        @apply w-8 h-8 transition-all duration-200;
-        
-        &:hover {
-          @apply bg-gray-100;
-        }
-      }
+  // Overdue state  
+  &.overdue {
+    @apply border-red-300 bg-red-50;
+    
+    .mat-mdc-card-header {
+      @apply bg-red-100/50;
     }
   }
 
-  .feature-content {
-    @apply pt-0;
-
-    .progress-section {
-      @apply mb-3;
-
-      .progress-info {
-        @apply flex justify-between items-center mb-2;
-
-        .progress-label {
-          @apply text-sm font-medium text-gray-700;
-        }
-
-        .progress-percentage {
-          @apply text-sm font-bold text-blue-600;
-        }
-      }
-
-      .progress-bar {
-        @apply h-2 rounded-full bg-gray-200;
-      }
-    }
-
-    .feature-description {
-      @apply text-sm text-gray-600 mb-3;
-    }
-
-    .feature-tags {
-      @apply flex flex-wrap gap-1;
-
-      .tag-chip {
-        @apply text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full;
-      }
+  // Card header styling
+  .mat-mdc-card-header {
+    @apply border-b border-gray-100;
+    padding: 12px !important;
+    
+    .mat-mdc-card-header-text {
+      margin: 0 !important;
     }
   }
 
-  .tasks-section {
-    @apply pt-3 border-t border-gray-200;
-
-    .tasks-title {
-      @apply text-sm font-semibold text-gray-800 mb-3 m-0;
-    }
-
-    .tasks-list {
-      @apply space-y-2;
-
-      .task-item {
-        @apply block w-full;
-      }
+  // Card content
+  .mat-mdc-card-content {
+    padding: 12px !important;
+    
+    // Last content section (expanded tasks)
+    &:last-child {
+      @apply border-t border-gray-100 bg-gray-50/30;
     }
   }
+
+  // Title truncation
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  // Progress bar styling
+  .mat-mdc-progress-bar {
+    @apply rounded-full overflow-hidden;
+    height: 6px !important;
+    
+    .mdc-linear-progress__bar-inner {
+      @apply rounded-full;
+    }
+  }
+
+  // Chip styling
+  .mat-mdc-chip {
+    @apply rounded-md;
+    height: 24px !important;
+    font-size: 10px !important;
+    
+    .mdc-evolution-chip__text-label {
+      font-size: 10px !important;
+      font-weight: 500;
+    }
+  }
+
+  // Menu button
+  .mat-mdc-icon-button {
+    @apply transition-colors duration-200;
+    width: 32px !important;
+    height: 32px !important;
+    
+    .mat-icon {
+      font-size: 18px !important;
+      width: 18px !important;
+      height: 18px !important;
+    }
+  }
+
+  // Icon sizes
+  .mat-icon {
+    &.text-sm {
+      font-size: 16px !important;
+      width: 16px !important;
+      height: 16px !important;
+    }
+  }
+
+  // Task items in expanded view
+  .space-y-2 > * + * {
+    margin-top: 8px;
+  }
+
+  // Responsive adjustments
+  @media (max-width: 640px) {
+    .mat-mdc-card-header {
+      padding: 8px !important;
+    }
+    
+    .mat-mdc-card-content {
+      padding: 8px !important;
+    }
+    
+    .text-xs {
+      font-size: 10px;
+    }
+  }
+}
+
+// Animation for card interactions
+@keyframes card-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.feature-card:active {
+  animation: card-pulse 0.2s ease-in-out;
+}
+
+// Menu styling override
+.mat-mdc-menu-content {
+  .mat-mdc-menu-item {
+    @apply transition-colors duration-200;
+    
+    &:hover {
+      @apply bg-gray-50;
+    }
+    
+    &.text-red-600 {
+      &:hover {
+        @apply bg-red-50;
+      }
+    }
+    
+    .mat-icon {
+      @apply mr-3;
+      font-size: 18px !important;
+      width: 18px !important;
+      height: 18px !important;
+    }
+  }
+}
+
+// Hover effects for interactive elements
+.hover\:bg-gray-100:hover {
+  background-color: rgb(243 244 246) !important;
+}
+
+.hover\:text-gray-600:hover {
+  color: rgb(75 85 99) !important;
+}
+
+// Tooltip overrides
+.mat-mdc-tooltip {
+  @apply text-xs;
+}
+
+// Type badge variations
+.type-epic {
+  @apply text-red-700 bg-red-100 border-red-300;
+}
+
+.type-feature {
+  @apply text-blue-700 bg-blue-100 border-blue-300;
+}
+
+.type-task {
+  @apply text-green-700 bg-green-100 border-green-300;
 } 

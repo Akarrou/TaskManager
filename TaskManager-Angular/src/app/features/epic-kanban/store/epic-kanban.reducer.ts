@@ -1,6 +1,7 @@
 import { createReducer, on } from '@ngrx/store';
 import { Task } from '../../../core/services/task';
 import { EpicBoard, KanbanColumn, EpicMetrics } from '../models/epic-board.model';
+import { DEFAULT_KANBAN_COLUMNS } from '../models/kanban-constants';
 import { EpicKanbanActions } from './epic-kanban.actions';
 
 export interface EpicKanbanState {
@@ -36,11 +37,7 @@ export const initialState: EpicKanbanState = {
   currentEpic: null,
   features: [],
   tasks: [],
-  columns: [
-    { id: 'pending', title: 'À faire', statusValue: 'pending', order: 0, color: '#f3f4f6', isCollapsed: false },
-    { id: 'in_progress', title: 'En cours', statusValue: 'in_progress', order: 1, wipLimit: 3, color: '#fef3c7', isCollapsed: false },
-    { id: 'completed', title: 'Terminé', statusValue: 'completed', order: 2, color: '#dcfce7', isCollapsed: false }
-  ],
+  columns: [...DEFAULT_KANBAN_COLUMNS],
   metrics: null,
 
   // États UI

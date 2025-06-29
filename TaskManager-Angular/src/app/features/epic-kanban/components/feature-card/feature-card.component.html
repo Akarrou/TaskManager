@@ -1,101 +1,174 @@
-<mat-card class="feature-card" [class.expanded]="isExpanded">
-  
-  <!-- Feature Header -->
-  <mat-card-header class="feature-header">
-    
-    <!-- Feature Info -->
-    <div class="feature-info">
-      <div class="feature-title-row">
-        <span class="feature-number">#{{ feature.task_number }}</span>
-        <h4 class="feature-title">{{ feature.title }}</h4>
-        <mat-icon 
-          class="priority-icon" 
-          [style.color]="getPriorityColor(feature.priority)">
-          {{ getPriorityIcon(feature.priority) }}
-        </mat-icon>
-      </div>
-      
-      <div class="feature-meta">
-        <mat-chip class="status-chip" [style.background-color]="getStatusColor(feature.status)">
-          {{ feature.status }}
-        </mat-chip>
-        <span class="task-count">{{ tasks.length }} tâche(s)</span>
-      </div>
-    </div>
+<mat-card 
+  class="feature-card cursor-pointer hover:shadow-lg transition-all duration-200"
+  [class.dragging]="isDragging"
+  [class.overdue]="isOverdue"
+  (click)="onCardClick()">
 
-    <!-- Feature Actions -->
-    <div class="feature-actions">
-      <button 
-        mat-icon-button 
-        [matMenuTriggerFor]="featureMenu"
-        class="action-menu">
+  <!-- Card Header -->
+  <mat-card-header class="p-3 pb-2">
+    <div class="w-full flex items-start justify-between">
+      
+      <!-- Left: Type badge + Number -->
+      <div class="flex items-center gap-2">
+        <span class="px-2 py-1 text-xs font-medium rounded-md border {{ typeConfig.color }}"
+              [matTooltip]="typeConfig.label">
+          {{ feature.type.toUpperCase() }}
+        </span>
+        <span *ngIf="feature.task_number" 
+              class="text-xs font-mono text-gray-500">
+          #{{ feature.task_number }}
+        </span>
+      </div>
+
+      <!-- Right: Actions Menu -->
+      <button mat-icon-button
+              [matMenuTriggerFor]="actionsMenu"
+              class="text-gray-400 hover:text-gray-600"
+              (click)="$event.stopPropagation()"
+              [matTooltip]="'Actions'">
         <mat-icon>more_vert</mat-icon>
       </button>
-      
-      <button 
-        mat-icon-button 
-        (click)="onToggleExpansion()"
-        class="expand-button"
-        *ngIf="showTasks && tasks.length > 0">
-        <mat-icon>{{ isExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
-      </button>
-    </div>
 
+      <!-- Actions Menu -->
+      <mat-menu #actionsMenu="matMenu">
+        <button mat-menu-item (click)="onEditClick($event)">
+          <mat-icon>edit</mat-icon>
+          <span>Modifier</span>
+        </button>
+        <button mat-menu-item (click)="onToggleExpansion($event)" *ngIf="tasks.length > 0">
+          <mat-icon>{{ isExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+          <span>{{ isExpanded ? 'Réduire' : 'Développer' }}</span>
+        </button>
+        <mat-divider></mat-divider>
+        <button mat-menu-item (click)="onDeleteClick($event)" class="text-red-600">
+          <mat-icon>delete</mat-icon>
+          <span>Supprimer</span>
+        </button>
+      </mat-menu>
+
+    </div>
   </mat-card-header>
 
-  <!-- Feature Progress -->
-  <mat-card-content class="feature-content">
-    <div class="progress-section" *ngIf="tasks.length > 0">
-      <div class="progress-info">
-        <span class="progress-label">Progression</span>
-        <span class="progress-percentage">{{ getProgressPercentage() }}%</span>
-      </div>
-      <mat-progress-bar 
-        mode="determinate" 
-        [value]="getProgressPercentage()"
-        class="progress-bar">
-      </mat-progress-bar>
-    </div>
+  <!-- Card Content -->
+  <mat-card-content class="px-3 pb-3">
+    
+    <!-- Feature Title -->
+    <h4 class="text-sm font-medium text-gray-900 mb-2 line-clamp-2">
+      {{ feature.title }}
+    </h4>
 
     <!-- Feature Description -->
-    <p class="feature-description" *ngIf="feature.description">
+    <p *ngIf="feature.description" 
+       class="text-xs text-gray-600 mb-3 line-clamp-2">
       {{ feature.description }}
     </p>
 
-    <!-- Feature Tags -->
-    <div class="feature-tags" *ngIf="feature.tags && feature.tags.length > 0">
-      <mat-chip 
-        *ngFor="let tag of feature.tags" 
-        class="tag-chip">
+    <!-- Metadata Row -->
+    <div class="flex items-center justify-between mb-3">
+      
+      <!-- Status & Priority -->
+      <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1 text-xs {{ statusConfig.color }}"
+             [matTooltip]="statusConfig.label">
+          <mat-icon class="text-sm">{{ statusConfig.icon }}</mat-icon>
+        </div>
+        
+        <div class="flex items-center gap-1 text-xs {{ priorityConfig.color }}"
+             [matTooltip]="'Priorité: ' + priorityConfig.label">
+          <mat-icon class="text-sm">{{ priorityConfig.icon }}</mat-icon>
+        </div>
+      </div>
+
+      <!-- Assigned & Due Date -->
+      <div class="flex items-center gap-2 text-xs text-gray-500">
+        <span *ngIf="feature.assigned_to"
+              class="flex items-center gap-1"
+              [matTooltip]="'Assigné à: ' + feature.assigned_to">
+          <mat-icon class="text-sm">person</mat-icon>
+          {{ feature.assigned_to }}
+        </span>
+        
+        <span *ngIf="feature.due_date"
+              class="flex items-center gap-1"
+              [class.text-red-600]="isOverdue"
+              [matTooltip]="'Échéance: ' + formatDate(feature.due_date)">
+          <mat-icon class="text-sm">event</mat-icon>
+          {{ formatDate(feature.due_date) }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Progress Bar (if has tasks) -->
+    <div *ngIf="showProgress && tasks.length > 0" class="mb-3">
+      <div class="flex justify-between items-center mb-1">
+        <span class="text-xs text-gray-600">Progression</span>
+        <span class="text-xs font-medium text-gray-900">
+          {{ featureProgress.completed }}/{{ featureProgress.total }} 
+          ({{ featureProgress.percentage }}%)
+        </span>
+      </div>
+      <mat-progress-bar 
+        mode="determinate" 
+        [value]="featureProgress.percentage"
+        class="h-2 rounded-full">
+      </mat-progress-bar>
+    </div>
+
+    <!-- Tags (if any) -->
+    <div *ngIf="feature.tags && feature.tags.length > 0" 
+         class="flex flex-wrap gap-1">
+      <mat-chip *ngFor="let tag of feature.tags.slice(0, 3)" 
+                class="text-xs h-6">
         {{ tag }}
       </mat-chip>
+      <span *ngIf="feature.tags.length > 3" 
+            class="text-xs text-gray-500">
+        +{{ feature.tags.length - 3 }}
+      </span>
     </div>
+
   </mat-card-content>
 
-  <!-- Expanded Tasks Section -->
-  <mat-card-content class="tasks-section" *ngIf="isExpanded && showTasks && tasks.length > 0">
-    <h5 class="tasks-title">Tâches associées</h5>
+  <!-- Expanded Tasks (if expanded) -->
+  <mat-card-content *ngIf="isExpanded && tasks.length > 0" 
+                    class="px-3 pt-0 pb-3 border-t border-gray-100">
     
-    <div class="tasks-list">
-      <app-task-badge
-        *ngFor="let task of tasks; trackBy: trackTask"
-        [task]="task"
-        (click)="onTaskClicked(task)"
-        class="task-item">
-      </app-task-badge>
+    <div class="text-xs font-medium text-gray-700 mb-2">
+      Tâches ({{ tasks.length }})
+    </div>
+
+    <div class="space-y-2">
+      <div *ngFor="let task of tasks; trackBy: trackTask"
+           class="flex items-center justify-between p-2 bg-gray-50 rounded-md hover:bg-gray-100 cursor-pointer transition-colors"
+           (click)="onTaskClick(task, $event)">
+        
+        <div class="flex items-center gap-2 min-w-0 flex-1">
+          <mat-icon class="text-sm {{ statusConfig.color }}">
+            {{ statusConfig.icon }}
+          </mat-icon>
+          <span class="text-xs text-gray-700 truncate">
+            {{ task.title }}
+          </span>
+          <span *ngIf="task.task_number" 
+                class="text-xs font-mono text-gray-400">
+            #{{ task.task_number }}
+          </span>
+        </div>
+
+        <div class="flex items-center gap-1">
+          <span *ngIf="task.assigned_to" 
+                class="text-xs text-gray-500"
+                [matTooltip]="task.assigned_to">
+            <mat-icon class="text-sm">person</mat-icon>
+          </span>
+          <span *ngIf="task.due_date" 
+                class="text-xs text-gray-500"
+                [matTooltip]="formatDate(task.due_date)">
+            <mat-icon class="text-sm">event</mat-icon>
+          </span>
+        </div>
+      </div>
     </div>
   </mat-card-content>
 
-</mat-card>
-
-<!-- Feature Action Menu -->
-<mat-menu #featureMenu="matMenu">
-  <button mat-menu-item (click)="onEditFeature()">
-    <mat-icon>edit</mat-icon>
-    <span>Modifier</span>
-  </button>
-  <button mat-menu-item (click)="onDeleteFeature()" class="delete-action">
-    <mat-icon>delete</mat-icon>
-    <span>Supprimer</span>
-  </button>
-</mat-menu> 
+</mat-card> 
