@@ -63,6 +63,7 @@ export class FeatureCardComponent {
   @Output() featureClick = new EventEmitter<Task>();
   @Output() featureEdit = new EventEmitter<Task>();
   @Output() featureDelete = new EventEmitter<Task>();
+  @Output() addTaskToFeature = new EventEmitter<Task>();
   @Output() toggleExpansion = new EventEmitter<string>();
   @Output() taskStatusChange = new EventEmitter<{ task: Task; newStatus: string }>();
   @Output() taskPriorityChange = new EventEmitter<{ task: Task; newPriority: string }>();
@@ -197,6 +198,11 @@ export class FeatureCardComponent {
   onDeleteClick(event: Event): void {
     event.stopPropagation();
     this.featureDelete.emit(this.feature);
+  }
+
+  onAddTaskClick(event: Event): void {
+    event.stopPropagation();
+    this.addTaskToFeature.emit(this.feature);
   }
 
   onToggleExpansion(event: Event): void {

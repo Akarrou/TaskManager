@@ -1,7 +1,19 @@
 <div class="epic-kanban-container">
   
   <!-- Header avec métriques -->
-  <app-epic-header></app-epic-header>
+  <app-epic-header
+    *ngIf="(currentEpic$ | async) && (metrics$ | async)"
+    [epic]="(currentEpic$ | async)!"
+    [metrics]="(metrics$ | async)!"
+    [canEdit]="true"
+    (navigateBack)="onNavigateBack()"
+    (refreshBoard)="onRefreshBoard()"
+    (editEpic)="onEditEpic($event)"
+    (saveEpic)="onSaveEpic($event)"
+    (deleteEpic)="onDeleteEpic($event)"
+    (exportBoard)="onExportBoard()"
+    (shareBoard)="onShareBoard()">
+  </app-epic-header>
   
   <!-- Section des filtres -->
   <app-search-filters></app-search-filters>
@@ -50,6 +62,7 @@
           (featureClick)="onFeatureClick($event)"
           (featureEdit)="onFeatureEdit($event)"
           (featureDelete)="onFeatureDelete($event)"
+          (addTaskToFeature)="onAddTaskToFeature($event)"
           (toggleExpansion)="onFeatureExpand($event)"
           (taskStatusChange)="onTaskStatusChange($event)"
           (taskPriorityChange)="onTaskPriorityChange($event)"

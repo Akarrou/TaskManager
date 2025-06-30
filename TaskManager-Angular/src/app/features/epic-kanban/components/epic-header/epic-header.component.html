@@ -2,8 +2,8 @@
   <mat-expansion-panel-header>
     <mat-panel-title>
       <mat-icon>dashboard</mat-icon>
-      <span class="epic-number" *ngIf="epic.task_number">#E{{ epic.task_number }}</span>
-      <span class="epic-title">{{ epic.title || 'Epic sans titre' }}</span>
+      <span class="epic-number" *ngIf="epic?.task_number">#E{{ epic.task_number }}</span>
+      <span class="epic-title">{{ epic?.title || 'Epic sans titre' }}</span>
      
     </mat-panel-title>
       <!-- Status Badge -->
@@ -107,7 +107,7 @@
             </div>
 
             <!-- Description -->
-            <p class="epic-description" *ngIf="epic.description">{{ epic.description }}</p>
+            <p class="epic-description" *ngIf="epic?.description">{{ epic.description }}</p>
           </div>
         </div>
       </mat-card-header>
@@ -119,39 +119,39 @@
             <div class="progress-info">
               <span class="progress-label">Progression globale</span>
               <span class="progress-value" [class]="'text-' + progressColor">
-                {{ metrics.progressPercentage || 0 }}%
+                {{ metrics?.progressPercentage || 0 }}%
               </span>
             </div>
             <div class="progress-stats">
-              <span class="completed-tasks">{{ metrics.completedTasks || 0 }}</span>
+              <span class="completed-tasks">{{ metrics?.completedTasks || 0 }}</span>
               <span class="separator">/</span>
-              <span class="total-tasks">{{ metrics.totalTasks || 0 }}</span>
+              <span class="total-tasks">{{ metrics?.totalTasks || 0 }}</span>
               <span class="tasks-label">tâches</span>
             </div>
           </div>
           
           <mat-progress-bar 
             mode="determinate" 
-            [value]="metrics.progressPercentage || 0"
+            [value]="metrics?.progressPercentage || 0"
             [color]="progressColor"
             class="progress-bar">
           </mat-progress-bar>
           
           <div class="progress-breakdown">
              <div class="breakdown-item">
-               <span class="count">{{ metrics.completedTasks || 0 }}</span>
+               <span class="count">{{ metrics?.completedTasks || 0 }}</span>
                <span class="label text-green-600">Tâches terminées</span>
              </div>
              <div class="breakdown-item">
-               <span class="count">{{ metrics.inProgressTasks || 0 }}</span>
+               <span class="count">{{ metrics?.inProgressTasks || 0 }}</span>
                <span class="label text-orange-500">En cours</span>
              </div>
              <div class="breakdown-item">
-               <span class="count">{{ metrics.pendingTasks || 0 }}</span>
+               <span class="count">{{ metrics?.pendingTasks || 0 }}</span>
                <span class="label text-gray-500">En attente</span>
              </div>
-             <div class="breakdown-item" *ngIf="metrics.cancelledTasks > 0">
-               <span class="count">{{ metrics.cancelledTasks }}</span>
+             <div class="breakdown-item" *ngIf="(metrics?.cancelledTasks || 0) > 0">
+               <span class="count">{{ metrics?.cancelledTasks }}</span>
                <span class="label text-red-500">Annulées</span>
              </div>
            </div>
@@ -162,8 +162,8 @@
           <div class="time-info">
             <span class="time-label">Suivi temporel</span>
             <div class="time-details">
-              <span class="estimated">{{ epic.estimated_hours || 0 }}h estimées</span>
-              <span class="actual">{{ epic.actual_hours || 0 }}h réelles</span>
+              <span class="estimated">{{ epic?.estimated_hours || 0 }}h estimées</span>
+              <span class="actual">{{ epic?.actual_hours || 0 }}h réelles</span>
             </div>
           </div>
           <mat-progress-bar 
@@ -175,7 +175,7 @@
 
         <!-- Meta Information enrichie -->
         <div class="meta-info">
-          <div class="meta-item" *ngIf="epic.due_date">
+          <div class="meta-item" *ngIf="epic?.due_date">
             <mat-icon [class]="isOverdue ? 'text-red-500' : 'text-gray-500'">event</mat-icon>
             <span [class]="isOverdue ? 'text-red-600 font-semibold' : ''">
               Échéance: {{ formatDate(epic.due_date) }}
@@ -183,29 +183,29 @@
             </span>
           </div>
           
-          <div class="meta-item" *ngIf="epic.assigned_to">
+          <div class="meta-item" *ngIf="epic?.assigned_to">
             <mat-icon>person</mat-icon>
             <span>Assigné à: {{ epic.assigned_to }}</span>
           </div>
           
-          <div class="meta-item" *ngIf="epic.priority">
+          <div class="meta-item" *ngIf="epic?.priority">
             <mat-icon [class]="getPriorityColor()">{{ getPriorityIcon() }}</mat-icon>
             <span [class]="getPriorityColor()">{{ getPriorityLabel() }}</span>
           </div>
 
-          <div class="meta-item" *ngIf="epic.prd_slug">
+          <div class="meta-item" *ngIf="epic?.prd_slug">
             <mat-icon>description</mat-icon>
             <span>PRD: {{ epic.prd_slug }}</span>
           </div>
 
-          <div class="meta-item" *ngIf="epic.environment && epic.environment.length > 0">
+          <div class="meta-item" *ngIf="epic?.environment && epic?.environment.length > 0">
             <mat-icon>computer</mat-icon>
             <span>Environnements: {{ epic.environment.join(', ') }}</span>
           </div>
         </div>
 
         <!-- Tags Section améliorée -->
-        <div class="tags-section" *ngIf="epic.tags && epic.tags.length > 0">
+        <div class="tags-section" *ngIf="epic?.tags && epic?.tags.length > 0">
           <div class="tags-header">
             <mat-icon>local_offer</mat-icon>
             <span class="tags-label">Tags</span>

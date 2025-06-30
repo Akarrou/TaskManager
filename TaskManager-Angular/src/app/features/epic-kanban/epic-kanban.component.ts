@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -64,6 +64,7 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   loading$ = this.store.select(EpicKanbanSelectors.selectLoading);
   error$ = this.store.select(EpicKanbanSelectors.selectError);
   expandedFeatures$ = this.store.select(EpicKanbanSelectors.selectExpandedFeatures);
+  filteredFeaturesCount = this.store.selectSignal(EpicKanbanSelectors.selectFilteredFeaturesCount);
 
   // Local state for template
   expandedFeaturesSet = new Set<string>();
@@ -449,6 +450,18 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
     if (this.epicId) {
       this.store.dispatch(EpicKanbanActions.loadEpicBoard({ epicId: this.epicId }));
     }
+  }
+
+  onAddTaskToFeature(feature: Task): void {
+    console.log('Add task to feature:', feature);
+    // TODO: Ouvrir le dialog de création de tâche avec parent_id = feature.id
+    // Temporairement, on peut naviguer vers le formulaire de création de tâche
+    this.router.navigate(['/tasks/new'], { 
+      queryParams: { 
+        parent_id: feature.id,
+        epic_id: this.route.snapshot.paramMap.get('id')
+      }
+    });
   }
 
 } 

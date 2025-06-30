@@ -37,6 +37,7 @@ export class KanbanColumnComponent {
   @Output() featureClick = new EventEmitter<Task>();
   @Output() featureEdit = new EventEmitter<Task>();
   @Output() featureDelete = new EventEmitter<Task>();
+  @Output() addTaskToFeature = new EventEmitter<Task>();
   @Output() toggleExpansion = new EventEmitter<string>();
   @Output() taskStatusChange = new EventEmitter<{ task: Task, newStatus: string }>();
   @Output() taskPriorityChange = new EventEmitter<{ task: Task, newPriority: string }>();
@@ -91,6 +92,10 @@ export class KanbanColumnComponent {
 
   onFeatureDelete(feature: Task): void {
     this.featureDelete.emit(feature);
+  }
+
+  onAddTaskToFeature(feature: Task): void {
+    this.addTaskToFeature.emit(feature);
   }
 
   onToggleFeatureExpansion(featureId: string): void {

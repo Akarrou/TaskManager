@@ -41,6 +41,10 @@
           <mat-icon>edit</mat-icon>
           <span>Modifier</span>
         </button>
+        <button mat-menu-item (click)="onAddTaskClick($event)" [attr.aria-label]="'Ajouter une tâche à ' + feature.title">
+          <mat-icon>add_task</mat-icon>
+          <span>Ajouter une tâche</span>
+        </button>
         <mat-divider></mat-divider>
         <button mat-menu-item 
                 (click)="onDeleteClick($event)" 
