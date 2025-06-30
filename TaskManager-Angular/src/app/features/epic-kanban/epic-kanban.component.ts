@@ -10,12 +10,20 @@ import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 
 import { Store } from '@ngrx/store';
 import {  takeUntil, Subject } from 'rxjs';
+import { takeUntil as takeUntilOperator } from 'rxjs/operators';
 
 import { Task } from '../../core/services/task';
 import { TaskService } from '../../core/services/task';
 import { KanbanColumn } from './models/epic-board.model';
 import { EpicKanbanActions } from './store/epic-kanban.actions';
-import * as EpicKanbanSelectors from './store/epic-kanban.selectors';
+import { 
+  selectFeaturesByColumn,
+  selectLoading,
+  selectError,
+  selectExpandedFeatures,
+  selectTasksForFeature,
+  selectMatchingSubtasksByFeature
+} from './store/epic-kanban.selectors';
 
 import { EpicHeaderComponent } from './components/epic-header/epic-header.component';
 import { KanbanColumnComponent } from './components/kanban-column/kanban-column.component';
@@ -70,6 +78,9 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   
   // Current epic ID
   epicId: string | null = null;
+
+  // T021 - Highlighted subtasks par feature
+  highlightedSubtasksByFeature: { [featureId: string]: string[] } = {};
 
   // Permissions
   get canEditEpic(): boolean {
@@ -174,6 +185,13 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
           this.featureTasksMap[task.parent_task_id].push(task);
         }
       });
+    });
+
+    // T021 - Sous-tâches qui matchent les filtres par feature
+    this.store.select(selectMatchingSubtasksByFeature).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(highlighted => {
+      this.highlightedSubtasksByFeature = highlighted;
     });
   }
 
@@ -432,6 +450,10 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
     if (confirmed) {
       this.store.dispatch(EpicKanbanActions.deleteTask({ taskId: task.id! }));
     }
+  }
+
+  retryLoad(): void {
+    this.store.dispatch(EpicKanbanActions.loadEpicBoard());
   }
 
 } 

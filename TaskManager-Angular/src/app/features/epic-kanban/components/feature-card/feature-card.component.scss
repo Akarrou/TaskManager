@@ -356,4 +356,70 @@
   border-radius: 0.5rem;
   box-shadow: 0 0 0 2px #38bdf833;
   transition: background 0.2s, border 0.2s;
+}
+
+// T021 - Styles pour le highlight des sous-tâches filtrées
+.feature-card__task-item {
+  transition: all 0.2s ease-in-out;
+  
+  &.highlighted-task {
+    position: relative;
+    
+    // Bordure gauche jaune pour indiquer le match
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      border-radius: 2px;
+      z-index: 1;
+    }
+    
+    // Fond légèrement coloré
+    background: linear-gradient(90deg, rgba(251, 191, 36, 0.08), rgba(245, 158, 11, 0.04));
+    border-left: 1px solid rgba(251, 191, 36, 0.2);
+    
+    // Animation subtile au survol
+    &:hover {
+      background: linear-gradient(90deg, rgba(251, 191, 36, 0.12), rgba(245, 158, 11, 0.06));
+      box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
+    }
+    
+    // Badge "filtré" optionnel
+    &::after {
+      content: '🔍';
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      font-size: 12px;
+      opacity: 0.7;
+      background: rgba(251, 191, 36, 0.9);
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+    }
+  }
+}
+
+// Animation d'apparition pour les tâches filtrées
+@keyframes highlightFadeIn {
+  0% {
+    background: rgba(251, 191, 36, 0.3);
+    transform: scale(1.02);
+  }
+  100% {
+    background: rgba(251, 191, 36, 0.08);
+    transform: scale(1);
+  }
+}
+
+.highlighted-task {
+  animation: highlightFadeIn 0.6s ease-out;
 } 

@@ -1,95 +1,56 @@
 <div class="epic-kanban-container">
   
-  <!-- Loading State -->
-  <div *ngIf="loading$ | async" class="loading-container">
-    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-    <p class="loading-text">Chargement de l'épic...</p>
+  <!-- Header avec métriques -->
+  <app-epic-header></app-epic-header>
+  
+  <!-- Section des filtres -->
+  <app-search-filters></app-search-filters>
+  
+  <!-- Métriques en haut -->
+  <app-epic-metrics></app-epic-metrics>
+
+  <!-- État de chargement -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="loading-content">
+      <mat-icon class="loading-spinner">hourglass_empty</mat-icon>
+      <span>Chargement du tableau Kanban...</span>
+    </div>
   </div>
 
-  <!-- Error State -->
-  <div *ngIf="(error$ | async) && !(loading$ | async)" class="error-container">
-    <mat-icon class="error-icon">error</mat-icon>
-    <h3>Erreur</h3>
-    <p>{{ error$ | async }}</p>
-    <button mat-raised-button color="primary" (click)="onRefreshBoard()">
+  <!-- État d'erreur -->
+  <div *ngIf="error" class="error-state">
+    <mat-icon class="error-icon">error_outline</mat-icon>
+    <h3>Erreur de chargement</h3>
+    <p>{{ error }}</p>
+    <button mat-raised-button color="primary" (click)="retryLoad()">
       <mat-icon>refresh</mat-icon>
       Réessayer
     </button>
-    <button mat-button (click)="onNavigateBack()">
-      <mat-icon>arrow_back</mat-icon>
-      Retour au tableau de bord
-    </button>
   </div>
 
-  <!-- Epic Kanban Board -->
-  <div *ngIf="(currentEpic$ | async) && !(loading$ | async)" class="epic-board">
-    
-    <!-- Epic Header -->
-    <app-epic-header 
-      *ngIf="(currentEpic$ | async) && (metrics$ | async)"
-      [epic]="(currentEpic$ | async)!"
-      [metrics]="(metrics$ | async)!"
-      [canEdit]="canEditEpic"
-      (navigateBack)="onNavigateBack()"
-      (refreshBoard)="onRefreshBoard()"
-      (editEpic)="onEditEpic($event)"
-      (saveEpic)="onSaveEpic($event)"
-      (deleteEpic)="onDeleteEpic($event)"
-      (exportBoard)="onExportBoard()"
-      (shareBoard)="onShareBoard()">
-    </app-epic-header>
-
-    <!-- Epic Metrics Panel (Horizontal) -->
-    <div class="metrics-panel-horizontal">
-      <app-epic-metrics 
-        *ngIf="(metrics$ | async) && (currentEpic$ | async)"
-        [metrics]="(metrics$ | async)!"
-        [epic]="(currentEpic$ | async)!"
-        [features]="(features$ | async) || []"
-        [tasks]="(tasks$ | async) || []">
-      </app-epic-metrics>
+  <!-- Tableau Kanban -->
+  <div *ngIf="!isLoading && !error" class="kanban-board">
+    <div class="kanban-columns">
+      <app-kanban-column
+        *ngFor="let column of featuresByColumn; trackBy: trackColumn"
+        [column]="column"
+        [features]="column.features"
+        [isLoading]="isLoading"
+        [expandedFeatures]="expandedFeatures"
+        [featureTasks]="featureTasks"
+        [connectedDropLists]="getConnectedDropLists()"
+        [highlightedSubtasksByFeature]="highlightedSubtasksByFeature"
+        (featureClick)="onFeatureClick($event)"
+        (featureEdit)="onFeatureEdit($event)"
+        (featureDelete)="onFeatureDelete($event)"
+        (toggleExpansion)="onToggleExpansion($event)"
+        (taskStatusChange)="onTaskStatusChange($event)"
+        (taskPriorityChange)="onTaskPriorityChange($event)"
+        (taskEdit)="onTaskEdit($event)"
+        (taskDelete)="onTaskDelete($event)"
+        class="kanban-column-wrapper">
+      </app-kanban-column>
     </div>
-
-    <!-- Search Filters Panel -->
-    <app-search-filters></app-search-filters>
-    <!-- Kanban Board Content -->
-    <div class="kanban-board-content">
-      
-      <!-- Kanban Columns Container -->
-      <div class="kanban-columns-container">
-        <app-kanban-column
-          *ngFor="let columnData of (featuresByColumn$ | async); trackBy: trackColumn"
-          [column]="columnData"
-          [features]="columnData.features"
-          [expandedFeatures]="expandedFeaturesSet"
-          [featureTasks]="getFeatureTasksMap()"
-          [connectedDropLists]="getConnectedDropLists(columnData.statusValue)"
-          [isLoading]="(loading$ | async) || false"
-          (featureClick)="onFeatureClick($event)"
-          (featureEdit)="onFeatureEdit($event)"
-          (featureDelete)="onFeatureDelete($event)"
-          (toggleExpansion)="onFeatureExpand($event)"
-          (taskStatusChange)="onTaskStatusChange($event)"
-          (taskPriorityChange)="onTaskPriorityChange($event)"
-          (taskEdit)="onTaskEdit($event)"
-          (taskDelete)="onTaskDelete($event)"
-          (featureDrop)="onFeatureDrop($event)"
-          class="kanban-column">
-        </app-kanban-column>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- Empty State -->
-  <div *ngIf="!(currentEpic$ | async) && !(loading$ | async) && !(error$ | async)" class="empty-state">
-    <mat-icon class="empty-icon">inbox</mat-icon>
-    <h3>Aucun épic trouvé</h3>
-    <p>L'épic demandé n'existe pas ou n'a pas pu être chargé.</p>
-    <button mat-raised-button color="primary" (click)="onNavigateBack()">
-      <mat-icon>arrow_back</mat-icon>
-      Retour au tableau de bord
-    </button>
   </div>
 
 </div> 
