@@ -2,7 +2,7 @@
   <mat-expansion-panel-header>
     <mat-panel-title>
       <mat-icon>dashboard</mat-icon>
-      <span class="epic-number" *ngIf="epic?.task_number">#E{{ epic.task_number }}</span>
+      <span class="epic-number" *ngIf="epic?.task_number">#E{{ epic?.task_number }}</span>
       <span class="epic-title">{{ epic?.title || 'Epic sans titre' }}</span>
      
     </mat-panel-title>
@@ -107,7 +107,7 @@
             </div>
 
             <!-- Description -->
-            <p class="epic-description" *ngIf="epic?.description">{{ epic.description }}</p>
+            <p class="epic-description" *ngIf="epic?.description">{{ epic?.description }}</p>
           </div>
         </div>
       </mat-card-header>
@@ -122,96 +122,83 @@
                 {{ metrics?.progressPercentage || 0 }}%
               </span>
             </div>
-            <div class="progress-stats">
-              <span class="completed-tasks">{{ metrics?.completedTasks || 0 }}</span>
-              <span class="separator">/</span>
-              <span class="total-tasks">{{ metrics?.totalTasks || 0 }}</span>
-              <span class="tasks-label">tâches</span>
+            <div class="progress-actions">
+              <button mat-icon-button class="action-btn" 
+                      (click)="onRefreshBoard()"
+                      matTooltip="Actualiser les données">
+                <mat-icon>refresh</mat-icon>
+              </button>
+              <button mat-icon-button class="action-btn" 
+                      (click)="onExportBoard()"
+                      matTooltip="Exporter le board">
+                <mat-icon>download</mat-icon>
+              </button>
             </div>
           </div>
-          
+
+          <!-- Progress bar -->
           <mat-progress-bar 
             mode="determinate" 
             [value]="metrics?.progressPercentage || 0"
             [color]="progressColor"
             class="progress-bar">
           </mat-progress-bar>
-          
-          <div class="progress-breakdown">
-             <div class="breakdown-item">
-               <span class="count">{{ metrics?.completedTasks || 0 }}</span>
-               <span class="label text-green-600">Tâches terminées</span>
-             </div>
-             <div class="breakdown-item">
-               <span class="count">{{ metrics?.inProgressTasks || 0 }}</span>
-               <span class="label text-orange-500">En cours</span>
-             </div>
-             <div class="breakdown-item">
-               <span class="count">{{ metrics?.pendingTasks || 0 }}</span>
-               <span class="label text-gray-500">En attente</span>
-             </div>
-             <div class="breakdown-item" *ngIf="(metrics?.cancelledTasks || 0) > 0">
-               <span class="count">{{ metrics?.cancelledTasks }}</span>
-               <span class="label text-red-500">Annulées</span>
-             </div>
-           </div>
-        </div>
 
-        <!-- Time Tracking (si disponible) -->
-        <div class="time-tracking-section" *ngIf="hasTimeTracking">
-          <div class="time-info">
-            <span class="time-label">Suivi temporel</span>
-            <div class="time-details">
-              <span class="estimated">{{ epic?.estimated_hours || 0 }}h estimées</span>
-              <span class="actual">{{ epic?.actual_hours || 0 }}h réelles</span>
-            </div>
+          <!-- Métriques détaillées -->
+          <div class="metrics-details">
+            <span class="metric-item completed">
+              <span class="count">{{ metrics?.completedTasks || 0 }}</span>
+              <span class="label">Terminées</span>
+            </span>
+            <span class="metric-item in-progress">
+              <span class="count">{{ metrics?.inProgressTasks || 0 }}</span>
+              <span class="label">En cours</span>
+            </span>
+            <span class="metric-item pending">
+              <span class="count">{{ metrics?.pendingTasks || 0 }}</span>
+              <span class="label">En attente</span>
+            </span>
+            <span class="metric-item total">
+              <span class="count">{{ metrics?.totalTasks || 0 }}</span>
+              <span class="label">Total</span>
+            </span>
           </div>
-          <mat-progress-bar 
-            mode="determinate" 
-            [value]="timeTrackingProgress"
-            class="time-progress">
-          </mat-progress-bar>
         </div>
 
-        <!-- Meta Information enrichie -->
-        <div class="meta-info">
+        <!-- Informations supplémentaires -->
+        <div class="epic-meta">
           <div class="meta-item" *ngIf="epic?.due_date">
-            <mat-icon [class]="isOverdue ? 'text-red-500' : 'text-gray-500'">event</mat-icon>
+            <mat-icon>schedule</mat-icon>
             <span [class]="isOverdue ? 'text-red-600 font-semibold' : ''">
-              Échéance: {{ formatDate(epic.due_date) }}
+              Échéance: {{ formatDate(epic!.due_date!) }}
               <mat-icon class="ml-1 text-red-500" *ngIf="isOverdue">warning</mat-icon>
             </span>
           </div>
-          
+
           <div class="meta-item" *ngIf="epic?.assigned_to">
             <mat-icon>person</mat-icon>
-            <span>Assigné à: {{ epic.assigned_to }}</span>
-          </div>
-          
-          <div class="meta-item" *ngIf="epic?.priority">
-            <mat-icon [class]="getPriorityColor()">{{ getPriorityIcon() }}</mat-icon>
-            <span [class]="getPriorityColor()">{{ getPriorityLabel() }}</span>
+            <span>Assigné à: {{ epic?.assigned_to }}</span>
           </div>
 
           <div class="meta-item" *ngIf="epic?.prd_slug">
             <mat-icon>description</mat-icon>
-            <span>PRD: {{ epic.prd_slug }}</span>
+            <span>PRD: {{ epic?.prd_slug }}</span>
           </div>
 
-          <div class="meta-item" *ngIf="epic?.environment && epic?.environment.length > 0">
+          <div class="meta-item" *ngIf="epic?.environment && epic!.environment!.length > 0">
             <mat-icon>computer</mat-icon>
-            <span>Environnements: {{ epic.environment.join(', ') }}</span>
+            <span>Environnements: {{ epic!.environment!.join(', ') }}</span>
           </div>
         </div>
 
         <!-- Tags Section améliorée -->
-        <div class="tags-section" *ngIf="epic?.tags && epic?.tags.length > 0">
+        <div class="tags-section" *ngIf="epic?.tags && epic!.tags!.length > 0">
           <div class="tags-header">
             <mat-icon>local_offer</mat-icon>
             <span class="tags-label">Tags</span>
           </div>
           <mat-chip-set class="tags-list">
-            <mat-chip *ngFor="let tag of epic.tags" class="tag-chip">{{ tag }}</mat-chip>
+            <mat-chip *ngFor="let tag of epic!.tags!" class="tag-chip">{{ tag }}</mat-chip>
           </mat-chip-set>
         </div>
 

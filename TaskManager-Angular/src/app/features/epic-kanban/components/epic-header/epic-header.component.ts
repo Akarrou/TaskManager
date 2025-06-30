@@ -38,8 +38,8 @@ import { EpicMetrics } from '../../models/epic-board.model';
   styleUrls: ['./epic-header.component.scss']
 })
 export class EpicHeaderComponent {
-  @Input() epic!: Task;
-  @Input() metrics!: EpicMetrics;
+  @Input() epic: Task | undefined;
+  @Input() metrics: EpicMetrics | undefined;
   @Input() canEdit = true;
   
   @Output() navigateBack = new EventEmitter<void>();
@@ -63,11 +63,15 @@ export class EpicHeaderComponent {
   }
 
   onEditEpic(): void {
-    this.editEpic.emit(this.epic);
+    if (this.epic) {
+      this.editEpic.emit(this.epic);
+    }
   }
 
   onDeleteEpic(): void {
-    this.deleteEpic.emit(this.epic);
+    if (this.epic) {
+      this.deleteEpic.emit(this.epic);
+    }
   }
 
   onExportBoard(): void {
@@ -80,12 +84,13 @@ export class EpicHeaderComponent {
 
   // Édition inline du titre
   startEditingTitle(): void {
-    if (!this.canEdit) return;
+    if (!this.canEdit || !this.epic) return;
     this.editedTitle.set(this.epic.title || '');
     this.isEditingTitle.set(true);
   }
 
   saveTitle(): void {
+    if (!this.epic) return;
     const newTitle = this.editedTitle().trim();
     if (newTitle && newTitle !== this.epic.title) {
       this.saveEpic.emit({ title: newTitle });
