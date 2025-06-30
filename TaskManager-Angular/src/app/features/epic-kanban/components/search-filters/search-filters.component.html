@@ -3,7 +3,7 @@
   <!-- 1. RECHERCHE GLOBALE (toujours visible et prioritaire) -->
   <div class="search-section">
     <div class="form-group">
-      <label for="search-input" class="visually-hidden">Rechercher features et tâches</label>
+      <label for="search-input">Rechercher features et tâches</label>
       <div class="search-input-container">
         <mat-icon class="search-icon">search</mat-icon>
         <input 
@@ -11,7 +11,7 @@
           type="text"
           [value]="searchText()"
           (input)="onSearchChange($any($event.target).value)"
-          placeholder="Rechercher : titre, numéro (#T123), tags..."
+          placeholder="Titre, numéro (#T123), tags..."
           aria-label="Rechercher dans les features et tâches">
         <button 
           *ngIf="searchText()"
@@ -39,14 +39,13 @@
         <div class="filter-buttons">
           <button 
             *ngFor="let option of quickPriorityFilters()" 
-            type="button"
-            class="quick-filter-btn"
+            mat-stroked-button
+            [color]="option.isActive ? 'primary' : ''"
             [class.active]="option.isActive"
-            [style.--filter-color]="option.color"
             (click)="onQuickPriorityFilter(option.value)"
             [title]="option.label">
-            <mat-icon class="filter-btn-icon">{{ option.icon }}</mat-icon>
-            <span class="filter-btn-label">{{ option.label }}</span>
+            <mat-icon [style.color]="option.color">{{ option.icon }}</mat-icon>
+            <span>{{ option.label }}</span>
           </button>
         </div>
       </div>
@@ -57,14 +56,13 @@
         <div class="filter-buttons">
           <button 
             *ngFor="let option of quickStatusFilters()" 
-            type="button"
-            class="quick-filter-btn"
+            mat-stroked-button
+            [color]="option.isActive ? 'primary' : ''"
             [class.active]="option.isActive"
-            [style.--filter-color]="option.color"
             (click)="onQuickStatusFilter(option.value)"
             [title]="option.label">
-            <mat-icon class="filter-btn-icon">{{ option.icon }}</mat-icon>
-            <span class="filter-btn-label">{{ option.label }}</span>
+            <mat-icon [style.color]="option.color">{{ option.icon }}</mat-icon>
+            <span>{{ option.label }}</span>
           </button>
         </div>
       </div>
@@ -72,29 +70,32 @@
   </div>
 
   <!-- 3. FILTRES AVANCÉS (expandable) -->
-  <div class="advanced-filters-section">
-    <button 
-      type="button"
-      class="advanced-filters-toggle"
-      (click)="toggleExpanded()"
-      [attr.aria-expanded]="isExpanded()"
-      [attr.aria-label]="isExpanded() ? 'Masquer les filtres avancés' : 'Afficher les filtres avancés'">
-      <mat-icon>filter_list</mat-icon>
-      <span>Filtres avancés</span>
-      <div class="filters-badge" *ngIf="hasAdvancedFilters()">
-        {{ advancedFiltersCount() }}
-      </div>
-      <mat-icon class="toggle-icon">{{ isExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
-    </button>
+  <mat-expansion-panel 
+    class="advanced-filters-panel"
+    [expanded]="isExpanded()"
+    (expandedChange)="toggleExpanded()">
+    
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <mat-icon>filter_list</mat-icon>
+        <span>Filtres avancés</span>
+        <mat-chip 
+          *ngIf="hasAdvancedFilters()" 
+          class="filters-count-chip">
+          {{ advancedFiltersCount() }}
+        </mat-chip>
+      </mat-panel-title>
+    </mat-expansion-panel-header>
 
-    <div class="advanced-filters-content" [class.expanded]="isExpanded()" [class.collapsed]="!isExpanded()">
+    <!-- Contenu des filtres avancés -->
+    <div class="advanced-filters-content">
       <form class="advanced-filters-form">
         
         <div class="form-row">
           <!-- Filtre par assigné -->
           <div class="form-group">
             <label for="assigned-filter">
-              <mat-icon class="field-icon">person</mat-icon>
+              <mat-icon>person</mat-icon>
               Assigné à
             </label>
             <select 
@@ -112,7 +113,7 @@
           <!-- Filtre par environnement -->
           <div class="form-group">
             <label for="environment-filter">
-              <mat-icon class="field-icon">cloud</mat-icon>
+              <mat-icon>cloud</mat-icon>
               Environnement
             </label>
             <select 
@@ -121,7 +122,7 @@
               (change)="onEnvironmentChange($any($event.target).value)">
               <option value="">Tous les environnements</option>
               <option *ngFor="let option of environmentOptions" [value]="option.value">
-                <span [style.color]="option.color">{{ option.icon }}</span> {{ option.label }}
+                {{ option.label }}
               </option>
             </select>
           </div>
@@ -130,7 +131,7 @@
         <!-- Gestion des tags -->
         <div class="form-group">
           <label for="tag-filter">
-            <mat-icon class="field-icon">label</mat-icon>
+            <mat-icon>label</mat-icon>
             Tags
           </label>
           <select 
@@ -159,83 +160,84 @@
 
       </form>
     </div>
-  </div>
+
+  </mat-expansion-panel>
 
   <!-- 4. RÉSUMÉ DES FILTRES ACTIFS -->
   <div class="active-filters-summary" *ngIf="hasActiveFilters()">
     <div class="summary-header">
-      <mat-icon>filter_alt</mat-icon>
-      <span class="summary-count">{{ activeFiltersCount() }} filtre(s) actif(s)</span>
+      <div class="summary-info">
+        <mat-icon>filter_alt</mat-icon>
+        <span class="summary-count">{{ activeFiltersCount() }} filtre(s) actif(s)</span>
+      </div>
       <button 
-        type="button" 
+        mat-button 
+        color="warn"
         class="btn-clear-all"
-        (click)="clearAllFilters()"
-        title="Supprimer tous les filtres">
+        (click)="clearAllFilters()">
         <mat-icon>clear_all</mat-icon>
-        <span>Tout effacer</span>
+        Tout effacer
       </button>
     </div>
     
     <div class="summary-items">
-      <span class="summary-item" *ngIf="searchText()">
-        <mat-icon class="summary-icon">search</mat-icon>
-        <span class="summary-type">Recherche:</span>
-        <span class="summary-value">"{{ searchText() }}"</span>
-        <button type="button" class="summary-remove" (click)="clearSearch()" title="Supprimer">
-          <mat-icon>close</mat-icon>
-        </button>
-      </span>
+      <mat-chip 
+        *ngIf="searchText()"
+        class="summary-chip"
+        (removed)="clearSearch()">
+        <mat-icon>search</mat-icon>
+        Recherche: "{{ searchText() }}"
+        <mat-icon matChipRemove>cancel</mat-icon>
+      </mat-chip>
       
-      <span class="summary-item" *ngIf="priorityFilter()">
-        <mat-icon class="summary-icon" [style.color]="getPriorityColor(priorityFilter())">
+      <mat-chip 
+        *ngIf="priorityFilter()"
+        class="summary-chip"
+        (removed)="onQuickPriorityFilter('')">
+        <mat-icon [style.color]="getPriorityColor(priorityFilter())">
           {{ getPriorityIcon(priorityFilter()) }}
         </mat-icon>
-        <span class="summary-type">Priorité:</span>
-        <span class="summary-value">{{ activePriorityLabel() }}</span>
-        <button type="button" class="summary-remove" (click)="onQuickPriorityFilter('')" title="Supprimer">
-          <mat-icon>close</mat-icon>
-        </button>
-      </span>
+        Priorité: {{ activePriorityLabel() }}
+        <mat-icon matChipRemove>cancel</mat-icon>
+      </mat-chip>
       
-      <span class="summary-item" *ngIf="statusFilter()">
-        <mat-icon class="summary-icon" [style.color]="getStatusColor(statusFilter())">
+      <mat-chip 
+        *ngIf="statusFilter()"
+        class="summary-chip"
+        (removed)="onQuickStatusFilter('')">
+        <mat-icon [style.color]="getStatusColor(statusFilter())">
           {{ getStatusIcon(statusFilter()) }}
         </mat-icon>
-        <span class="summary-type">Statut:</span>
-        <span class="summary-value">{{ activeStatusLabel() }}</span>
-        <button type="button" class="summary-remove" (click)="onQuickStatusFilter('')" title="Supprimer">
-          <mat-icon>close</mat-icon>
-        </button>
-      </span>
+        Statut: {{ activeStatusLabel() }}
+        <mat-icon matChipRemove>cancel</mat-icon>
+      </mat-chip>
       
-      <span class="summary-item" *ngIf="assigneeFilter()">
-        <mat-icon class="summary-icon">person</mat-icon>
-        <span class="summary-type">Assigné:</span>
-        <span class="summary-value">{{ activeAssigneeLabel() }}</span>
-        <button type="button" class="summary-remove" (click)="onAssigneeChange('')" title="Supprimer">
-          <mat-icon>close</mat-icon>
-        </button>
-      </span>
+      <mat-chip 
+        *ngIf="assigneeFilter()"
+        class="summary-chip"
+        (removed)="onAssigneeChange('')">
+        <mat-icon>person</mat-icon>
+        Assigné: {{ activeAssigneeLabel() }}
+        <mat-icon matChipRemove>cancel</mat-icon>
+      </mat-chip>
       
-      <span class="summary-item" *ngIf="environmentFilter()">
-        <mat-icon class="summary-icon" [style.color]="getEnvironmentColor(environmentFilter())">
-          cloud
-        </mat-icon>
-        <span class="summary-type">Environnement:</span>
-        <span class="summary-value">{{ activeEnvironmentLabel() }}</span>
-        <button type="button" class="summary-remove" (click)="onEnvironmentChange('')" title="Supprimer">
-          <mat-icon>close</mat-icon>
-        </button>
-      </span>
+      <mat-chip 
+        *ngIf="environmentFilter()"
+        class="summary-chip"
+        (removed)="onEnvironmentChange('')">
+        <mat-icon>cloud</mat-icon>
+        Environnement: {{ activeEnvironmentLabel() }}
+        <mat-icon matChipRemove>cancel</mat-icon>
+      </mat-chip>
       
-      <span class="summary-item" *ngFor="let tag of tagsFilter()">
-        <mat-icon class="summary-icon">label</mat-icon>
-        <span class="summary-type">Tag:</span>
-        <span class="summary-value">{{ tag }}</span>
-        <button type="button" class="summary-remove" (click)="onTagRemove(tag)" title="Supprimer">
-          <mat-icon>close</mat-icon>
-        </button>
-      </span>
+      <mat-chip 
+        *ngFor="let tag of tagsFilter()"
+        class="summary-chip"
+        (removed)="onTagRemove(tag)">
+        <mat-icon>label</mat-icon>
+        Tag: {{ tag }}
+        <mat-icon matChipRemove>cancel</mat-icon>
+      </mat-chip>
     </div>
   </div>
 
