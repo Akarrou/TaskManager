@@ -16,14 +16,7 @@ import { Task } from '../../core/services/task';
 import { TaskService } from '../../core/services/task';
 import { KanbanColumn } from './models/epic-board.model';
 import { EpicKanbanActions } from './store/epic-kanban.actions';
-import { 
-  selectFeaturesByColumn,
-  selectLoading,
-  selectError,
-  selectExpandedFeatures,
-  selectTasksForFeature,
-  selectMatchingSubtasksByFeature
-} from './store/epic-kanban.selectors';
+import * as EpicKanbanSelectors from './store/epic-kanban.selectors';
 
 import { EpicHeaderComponent } from './components/epic-header/epic-header.component';
 import { KanbanColumnComponent } from './components/kanban-column/kanban-column.component';
@@ -177,7 +170,7 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
       takeUntil(this.destroy$)
     ).subscribe(tasks => {
       this.featureTasksMap = {};
-      tasks.forEach(task => {
+      tasks.forEach((task: Task) => {
         if (task.parent_task_id) {
           if (!this.featureTasksMap[task.parent_task_id]) {
             this.featureTasksMap[task.parent_task_id] = [];
@@ -188,7 +181,7 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
     });
 
     // T021 - Sous-tâches qui matchent les filtres par feature
-    this.store.select(selectMatchingSubtasksByFeature).pipe(
+    this.store.select(EpicKanbanSelectors.selectMatchingSubtasksByFeature).pipe(
       takeUntil(this.destroy$)
     ).subscribe(highlighted => {
       this.highlightedSubtasksByFeature = highlighted;
@@ -453,7 +446,9 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   }
 
   retryLoad(): void {
-    this.store.dispatch(EpicKanbanActions.loadEpicBoard());
+    if (this.epicId) {
+      this.store.dispatch(EpicKanbanActions.loadEpicBoard({ epicId: this.epicId }));
+    }
   }
 
 } 

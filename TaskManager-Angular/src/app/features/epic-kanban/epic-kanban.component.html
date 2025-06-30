@@ -7,10 +7,16 @@
   <app-search-filters></app-search-filters>
   
   <!-- Métriques en haut -->
-  <app-epic-metrics></app-epic-metrics>
+  <app-epic-metrics 
+    *ngIf="(currentEpic$ | async) && (metrics$ | async)"
+    [epic]="(currentEpic$ | async)!"
+    [features]="(features$ | async) || []"
+    [tasks]="(tasks$ | async) || []"
+    [metrics]="(metrics$ | async)!">
+  </app-epic-metrics>
 
   <!-- État de chargement -->
-  <div *ngIf="isLoading" class="loading-state">
+  <div *ngIf="loading$ | async" class="loading-state">
     <div class="loading-content">
       <mat-icon class="loading-spinner">hourglass_empty</mat-icon>
       <span>Chargement du tableau Kanban...</span>
@@ -18,10 +24,10 @@
   </div>
 
   <!-- État d'erreur -->
-  <div *ngIf="error" class="error-state">
+  <div *ngIf="error$ | async" class="error-state">
     <mat-icon class="error-icon">error_outline</mat-icon>
     <h3>Erreur de chargement</h3>
-    <p>{{ error }}</p>
+    <p>{{ error$ | async }}</p>
     <button mat-raised-button color="primary" (click)="retryLoad()">
       <mat-icon>refresh</mat-icon>
       Réessayer
@@ -29,27 +35,29 @@
   </div>
 
   <!-- Tableau Kanban -->
-  <div *ngIf="!isLoading && !error" class="kanban-board">
-    <div class="kanban-columns">
-      <app-kanban-column
-        *ngFor="let column of featuresByColumn; trackBy: trackColumn"
-        [column]="column"
-        [features]="column.features"
-        [isLoading]="isLoading"
-        [expandedFeatures]="expandedFeatures"
-        [featureTasks]="featureTasks"
-        [connectedDropLists]="getConnectedDropLists()"
-        [highlightedSubtasksByFeature]="highlightedSubtasksByFeature"
-        (featureClick)="onFeatureClick($event)"
-        (featureEdit)="onFeatureEdit($event)"
-        (featureDelete)="onFeatureDelete($event)"
-        (toggleExpansion)="onToggleExpansion($event)"
-        (taskStatusChange)="onTaskStatusChange($event)"
-        (taskPriorityChange)="onTaskPriorityChange($event)"
-        (taskEdit)="onTaskEdit($event)"
-        (taskDelete)="onTaskDelete($event)"
-        class="kanban-column-wrapper">
-      </app-kanban-column>
+  <div *ngIf="!(loading$ | async) && !(error$ | async)" class="epic-board">
+    <div class="kanban-board-content">
+      <div class="kanban-columns-container">
+        <app-kanban-column
+          *ngFor="let column of featuresByColumn$ | async; trackBy: trackColumn"
+          [column]="column"
+          [features]="column.features"
+          [isLoading]="(loading$ | async) || false"
+          [expandedFeatures]="expandedFeaturesSet"
+          [featureTasks]="featureTasksMap"
+          [connectedDropLists]="getConnectedDropLists(column.statusValue)"
+          [highlightedSubtasksByFeature]="highlightedSubtasksByFeature"
+          (featureClick)="onFeatureClick($event)"
+          (featureEdit)="onFeatureEdit($event)"
+          (featureDelete)="onFeatureDelete($event)"
+          (toggleExpansion)="onFeatureExpand($event)"
+          (taskStatusChange)="onTaskStatusChange($event)"
+          (taskPriorityChange)="onTaskPriorityChange($event)"
+          (taskEdit)="onTaskEdit($event)"
+          (taskDelete)="onTaskDelete($event)"
+          class="kanban-column">
+        </app-kanban-column>
+      </div>
     </div>
   </div>
 
