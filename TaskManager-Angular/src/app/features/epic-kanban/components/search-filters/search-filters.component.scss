@@ -278,6 +278,14 @@
           font-weight: vars.$font-weight-medium;
           color: vars.$text-color-medium;
         }
+
+        .results-chip {
+          margin-left: vars.$space-3;
+          background: vars.$success-color;
+          color: vars.$text-color-inverted;
+          font-weight: vars.$font-weight-bold;
+          font-size: vars.$font-size-xs;
+        }
       }
 
       .btn-clear-all {

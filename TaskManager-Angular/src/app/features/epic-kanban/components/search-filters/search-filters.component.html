@@ -5,7 +5,6 @@
     <div class="form-group">
       <label for="search-input">Rechercher features et tâches</label>
       <div class="search-input-container">
-        <mat-icon class="search-icon">search</mat-icon>
         <input 
           id="search-input"
           type="text"
@@ -23,6 +22,7 @@
         </button>
       </div>
     </div>
+  
   </div>
 
   <!-- 2. FILTRES RAPIDES VISUELS (toujours visibles) -->
@@ -166,6 +166,9 @@
       <div class="summary-info">
         <mat-icon>filter_alt</mat-icon>
         <span class="summary-count">{{ activeFiltersCount() }} filtre(s) actif(s)</span>
+        <mat-chip color="accent" selected class="results-chip">
+          {{ filteredFeaturesCount() ?? 0 }} features affichées
+        </mat-chip>
       </div>
       <button 
         mat-button 

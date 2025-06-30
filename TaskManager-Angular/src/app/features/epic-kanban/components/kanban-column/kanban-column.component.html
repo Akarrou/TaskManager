@@ -65,6 +65,7 @@
           [tasks]="getFeatureTasks(feature.id!)"
           [isExpanded]="isFeatureExpanded(feature.id!)"
           [showProgress]="true"
+          [highlightedTaskIds]="highlightedSubtasksByFeature[feature.id!] || []"
           (featureClick)="onFeatureClick($event)"
           (featureEdit)="onFeatureEdit($event)"
           (featureDelete)="onFeatureDelete($event)"

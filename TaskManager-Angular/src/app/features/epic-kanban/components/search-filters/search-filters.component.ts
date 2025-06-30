@@ -13,7 +13,8 @@ import {
   selectEpicKanbanFilters, 
   selectUniqueAssignees, 
   selectUniqueEnvironments,
-  selectUniqueTags 
+  selectUniqueTags,
+  selectFilteredFeaturesCount
 } from '../../store/epic-kanban.selectors';
 import { UserService } from '../../../../core/services/user.service';
 
@@ -175,6 +176,14 @@ export class SearchFiltersComponent implements OnInit, OnDestroy {
     return count;
   });
 
+  // Compteur de features filtrées
+  filteredFeaturesCount = signal(0);
+  
+  // Computed pour savoir si on doit afficher le compteur
+  showFeaturesCount = computed(() => {
+    return this.hasActiveFilters() || this.filteredFeaturesCount() >= 0;
+  });
+
   async ngOnInit() {
     // Configuration du debounce pour la recherche
     this.searchSubject$.pipe(
@@ -190,6 +199,13 @@ export class SearchFiltersComponent implements OnInit, OnDestroy {
 
     // Écouter les changements du store
     this.subscribeToStore();
+
+    // Écouter le compteur de features filtrées
+    this.store.select(selectFilteredFeaturesCount).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(count => {
+      this.filteredFeaturesCount.set(count);
+    });
   }
 
   ngOnDestroy() {

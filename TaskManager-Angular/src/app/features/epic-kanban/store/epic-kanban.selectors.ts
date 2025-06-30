@@ -67,14 +67,27 @@ export const selectLastUpdated = createSelector(
   (state) => state.lastUpdated
 );
 
+// T021 - Filtrage hiérarchique : une feature est gardée si elle ou au moins une de ses sous-tâches matche les filtres
+function applyHierarchicalFilters(features: any[], tasks: any[], filters: any) {
+  return features.filter(feature => {
+    // 1. La feature matche-t-elle ?
+    const featureMatches = applyFilters([feature], filters).length > 0;
+    // 2. Au moins une sous-tâche matche-t-elle ?
+    const subtasks = tasks.filter((t: any) => t.parent_task_id === feature.id);
+    const subtaskMatches = subtasks.some((sub: any) => applyFilters([sub], filters).length > 0);
+    return featureMatches || subtaskMatches;
+  });
+}
+
 // Selectors composés
 export const selectFeaturesByColumn = createSelector(
   selectFeatures,
   selectColumns,
   selectEpicKanbanFilters,
-  (features, columns, filters) => {
-    const filteredFeatures = applyFilters(features, filters);
-    
+  selectTasks,
+  (features, columns, filters, tasks) => {
+    // T021 - Utiliser le filtrage hiérarchique
+    const filteredFeatures = applyHierarchicalFilters(features, tasks, filters);
     return columns.map(column => ({
       ...column,
       features: filteredFeatures.filter(feature => feature.status === column.statusValue)
@@ -293,4 +306,32 @@ function applyFilters(features: any[], filters: any) {
     
     return true;
   });
-} 
+}
+
+// T021 - Sélecteur : mapping des sous-tâches qui matchent les filtres par feature
+export const selectMatchingSubtasksByFeature = createSelector(
+  selectFeatures,
+  selectTasks,
+  selectEpicKanbanFilters,
+  (features, tasks, filters) => {
+    const result: Record<string, string[]> = {};
+    features.forEach(feature => {
+      const featureId = String(feature.id ?? '');
+      const subtasks = tasks.filter((t: any) => t.parent_task_id === featureId);
+      const matching = subtasks.filter((sub: any) => applyFilters([sub], filters).length > 0);
+      if (featureId && matching.length > 0) {
+        result[featureId] = matching.map((t: any) => t.id);
+      }
+    });
+    return result;
+  }
+);
+
+export const selectFilteredFeaturesCount = createSelector(
+  selectFeatures,
+  selectTasks,
+  selectEpicKanbanFilters,
+  (features, tasks, filters) => {
+    return applyHierarchicalFilters(features, tasks, filters).length;
+  }
+); 

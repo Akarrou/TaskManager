@@ -32,6 +32,7 @@ export class KanbanColumnComponent {
   @Input() expandedFeatures: Set<string> = new Set();
   @Input() featureTasks: { [featureId: string]: Task[] } = {};
   @Input() connectedDropLists: string[] = [];
+  @Input() highlightedSubtasksByFeature: { [featureId: string]: string[] } = {};
 
   @Output() featureClick = new EventEmitter<Task>();
   @Output() featureEdit = new EventEmitter<Task>();

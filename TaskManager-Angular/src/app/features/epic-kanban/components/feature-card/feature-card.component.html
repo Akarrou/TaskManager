@@ -178,7 +178,8 @@
         (priorityChange)="onTaskPriorityChange($event)"
         (taskEdit)="onTaskEdit($event)"
         (taskDelete)="onTaskDelete($event)"
-        class="feature-card__task-item">
+        class="feature-card__task-item"
+        [ngClass]="{'highlighted-task': highlightedTaskIds.includes(task.id || '')}">
       </app-task-badge>
     </div>
 

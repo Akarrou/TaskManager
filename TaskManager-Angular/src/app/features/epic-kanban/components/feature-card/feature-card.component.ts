@@ -58,6 +58,7 @@ export class FeatureCardComponent {
   @Input() isExpanded = false;
   @Input() isDragging = false;
   @Input() tasks: Task[] = [];
+  @Input() highlightedTaskIds: string[] = [];
 
   @Output() featureClick = new EventEmitter<Task>();
   @Output() featureEdit = new EventEmitter<Task>();
