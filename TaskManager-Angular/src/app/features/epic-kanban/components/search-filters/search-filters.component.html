@@ -90,8 +90,7 @@
     <!-- Contenu des filtres avancés -->
     <div class="advanced-filters-content">
       <form class="advanced-filters-form">
-        
-        <div class="form-row">
+        <div class="form-row advanced-inline-row">
           <!-- Filtre par assigné -->
           <div class="form-group">
             <label for="assigned-filter">
@@ -126,38 +125,36 @@
               </option>
             </select>
           </div>
-        </div>
 
-        <!-- Gestion des tags -->
-        <div class="form-group">
-          <label for="tag-filter">
-            <mat-icon>label</mat-icon>
-            Tags
-          </label>
-          <select 
-            id="tag-filter"
-            (change)="onTagAdd($any($event.target).value); $any($event.target).value = ''">
-            <option value="">Ajouter un tag...</option>
-            <option *ngFor="let tag of uniqueTags()" [value]="tag">
-              {{ tag }}
-            </option>
-          </select>
-        </div>
+          <!-- Gestion des tags -->
+          <div class="form-group">
+            <label for="tag-filter">
+              <mat-icon>label</mat-icon>
+              Tags
+            </label>
+            <select 
+              id="tag-filter"
+              (change)="onTagAdd($any($event.target).value); $any($event.target).value = ''">
+              <option value="">Ajouter un tag...</option>
+              <option *ngFor="let tag of uniqueTags()" [value]="tag">
+                {{ tag }}
+              </option>
+            </select>
+          </div>
 
-        <!-- Tags actifs -->
-        <div class="tags-active-section" *ngIf="tagsFilter().length > 0">
-          <span class="tags-active-label">Tags sélectionnés :</span>
-          <div class="tags-container">
-            <mat-chip 
-              *ngFor="let tag of tagsFilter()" 
-              class="tag-chip"
-              (removed)="onTagRemove(tag)">
-              {{ tag }}
-              <mat-icon matChipRemove>cancel</mat-icon>
-            </mat-chip>
+          <!-- Tags actifs sur la même ligne -->
+          <div class="tags-active-section" *ngIf="tagsFilter().length > 0">
+            <div class="tags-container">
+              <mat-chip 
+                *ngFor="let tag of tagsFilter()" 
+                class="tag-chip"
+                (removed)="onTagRemove(tag)">
+                {{ tag }}
+                <mat-icon matChipRemove>cancel</mat-icon>
+              </mat-chip>
+            </div>
           </div>
         </div>
-
       </form>
     </div>
 
