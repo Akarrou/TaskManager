@@ -18,10 +18,10 @@ import { UserService } from '../../../../core/services/user.service';
 
 export interface KanbanSearchFilters {
   searchText: string;
-  priority: string;
-  assignee: string;
-  status: string;
-  environment: string;
+  priority: string | null;
+  assignee: string | null;
+  status: string | null;
+  environment: string | null;
   tags: string[];
 }
 
@@ -290,7 +290,7 @@ export class SearchFiltersComponent implements OnInit {
 
   onTagRemove(tag: string) {
     const currentTags = this.tagsFilter();
-    const newTags = currentTags.filter(t => t !== tag);
+    const newTags = currentTags.filter((t: string) => t !== tag);
     this.tagsFilter.set(newTags);
     this.updateFilters({ tags: newTags });
   }
@@ -313,7 +313,7 @@ export class SearchFiltersComponent implements OnInit {
 
   // Basculer l'expansion du panel
   toggleExpanded() {
-    this.isExpanded.update(expanded => !expanded);
+    this.isExpanded.update((expanded: boolean) => !expanded);
   }
 
   // Méthode pour mettre à jour les filtres dans le store

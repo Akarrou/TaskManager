@@ -247,7 +247,7 @@ export const selectUniqueTags = createSelector(
   }
 );
 
-// Fonction utilitaire pour appliquer les filtres
+// T020 - Fonction utilitaire pour appliquer les filtres enrichis
 function applyFilters(features: any[], filters: any) {
   return features.filter(feature => {
     // Filtre par texte de recherche
@@ -274,6 +274,21 @@ function applyFilters(features: any[], filters: any) {
     // Filtre par statut
     if (filters.status && feature.status !== filters.status) {
       return false;
+    }
+    
+    // T020 - Filtre par environnement
+    if (filters.environment && !feature.environment?.includes(filters.environment)) {
+      return false;
+    }
+    
+    // T020 - Filtre par tags
+    if (filters.tags && filters.tags.length > 0) {
+      const hasMatchingTag = filters.tags.some((tag: string) => 
+        feature.tags?.includes(tag)
+      );
+      if (!hasMatchingTag) {
+        return false;
+      }
     }
     
     return true;

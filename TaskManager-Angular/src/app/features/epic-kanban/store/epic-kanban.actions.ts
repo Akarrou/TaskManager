@@ -44,12 +44,14 @@ export const EpicKanbanActions = createActionGroup({
     'Expand All Features': emptyProps(),
     'Collapse All Features': emptyProps(),
 
-    // Filtres
+    // T020 - Filtres enrichis
     'Update Filters': props<{ 
       searchText?: string;
       priority?: string;
       assignee?: string;
       status?: string;
+      environment?: string;
+      tags?: string[];
     }>(),
     'Clear Filters': emptyProps(),
 

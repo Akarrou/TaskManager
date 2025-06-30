@@ -19,12 +19,14 @@ export interface EpicKanbanState {
   saving: boolean;
   error: string | null;
 
-  // Filtres
+  // T020 - Filtres enrichis
   filters: {
     searchText: string;
     priority: string | null;
     assignee: string | null;
     status: string | null;
+    environment: string | null;
+    tags: string[];
   };
 
   // Meta
@@ -46,12 +48,14 @@ export const initialState: EpicKanbanState = {
   saving: false,
   error: null,
 
-  // Filtres
+  // T020 - Filtres enrichis
   filters: {
     searchText: '',
     priority: null,
     assignee: null,
-    status: null
+    status: null,
+    environment: null,
+    tags: []
   },
 
   // Meta
@@ -181,15 +185,17 @@ export const epicKanbanReducer = createReducer(
     expandedFeatures: new Set<string>()
   })),
 
-  // Filtres
-  on(EpicKanbanActions.updateFilters, (state, { searchText, priority, assignee, status }) => ({
+  // T020 - Filtres enrichis
+  on(EpicKanbanActions.updateFilters, (state, { searchText, priority, assignee, status, environment, tags }) => ({
     ...state,
     filters: {
       ...state.filters,
       ...(searchText !== undefined && { searchText }),
       ...(priority !== undefined && { priority }),
       ...(assignee !== undefined && { assignee }),
-      ...(status !== undefined && { status })
+      ...(status !== undefined && { status }),
+      ...(environment !== undefined && { environment }),
+      ...(tags !== undefined && { tags })
     }
   })),
 
@@ -199,7 +205,9 @@ export const epicKanbanReducer = createReducer(
       searchText: '',
       priority: null,
       assignee: null,
-      status: null
+      status: null,
+      environment: null,
+      tags: []
     }
   })),
 
