@@ -8,6 +8,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { Router } from '@angular/router';
 import { Task } from '../../../../core/services/task';
+import { MatIcon } from '@angular/material/icon';
 
 @Component({
   selector: 'app-task-badge',
@@ -20,6 +21,7 @@ import { Task } from '../../../../core/services/task';
     MatChipsModule,
     MatMenuModule,
     MatDividerModule
+
   ],
   templateUrl: './task-badge.component.html',
   styleUrls: ['./task-badge.component.scss']

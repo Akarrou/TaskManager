@@ -1,0 +1,133 @@
+<div class="search-filters">
+  <!-- Header avec toggle et badge -->
+  <div class="search-filters__header" (click)="toggleExpanded()">
+    <div class="search-filters__title">
+      <mat-icon class="search-filters__icon">filter_list</mat-icon>
+      <span>Filtres</span>
+      <div class="search-filters__badge" *ngIf="hasActiveFilters()">
+        {{ activeFiltersCount() }}
+      </div>
+    </div>
+    
+    <button type="button" 
+            class="search-filters__toggle"
+            [attr.aria-label]="isExpanded() ? 'Réduire les filtres' : 'Développer les filtres'"
+            [attr.aria-expanded]="isExpanded()">
+      <mat-icon>{{ isExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </button>
+  </div>
+
+  <!-- Panel de filtres expansible -->
+  <div class="search-filters__content" [class.expanded]="isExpanded()" [class.collapsed]="!isExpanded()">
+    <form class="search-filters__form">
+      
+      <!-- Section de recherche -->
+      <div class="form-group">
+        <label for="search-input">Rechercher features et tâches</label>
+        <div class="search-input-container">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input 
+            id="search-input"
+            type="text"
+            [value]="searchText()"
+            (input)="onSearchChange($any($event.target).value)"
+            placeholder="Titre, numéro (#T123), tags..."
+            aria-label="Rechercher dans les features et tâches">
+          <button 
+            *ngIf="searchText()"
+            type="button"
+            class="clear-search"
+            (click)="clearSearch()"
+            aria-label="Effacer la recherche">
+            <mat-icon>clear</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Section des filtres par dropdowns -->
+      <div class="form-row">
+        <!-- Filtre par statut -->
+        <div class="form-group">
+          <label for="status-filter">Statut</label>
+          <select 
+            id="status-filter"
+            [value]="statusFilter()"
+            (change)="onStatusChange($any($event.target).value)">
+            <option value="">Tous les statuts</option>
+            <option *ngFor="let option of statusOptions" [value]="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Filtre par priorité -->
+        <div class="form-group">
+          <label for="priority-filter">Priorité</label>
+          <select 
+            id="priority-filter"
+            [value]="priorityFilter()"
+            (change)="onPriorityChange($any($event.target).value)">
+            <option value="">Toutes les priorités</option>
+            <option *ngFor="let option of priorityOptions" [value]="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Filtre par assigné -->
+        <div class="form-group">
+          <label for="assigned-filter">Assigné à</label>
+          <select 
+            id="assigned-filter"
+            [value]="assigneeFilter()"
+            (change)="onAssigneeChange($any($event.target).value)">
+            <option value="">Tous les utilisateurs</option>
+            <option value="unassigned">Non assigné</option>
+            <option *ngFor="let user of availableUsers()" [value]="user.id">
+              {{ user.email }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </form>
+
+    <!-- Section des filtres actifs -->
+    <div class="active-filters" *ngIf="hasActiveFilters()">
+      <div class="active-filters__title">
+        <mat-icon>filter_alt</mat-icon>
+        <span>Filtres actifs :</span>
+      </div>
+      <div class="active-filters__list">
+        <span class="active-filters__item" *ngIf="searchText()">
+          <mat-icon>search</mat-icon>
+          <span class="active-filters__item__type">Recherche:</span>
+          <span class="active-filters__item__value">"{{ searchText() }}"</span>
+        </span>
+        <span class="active-filters__item" *ngIf="statusFilter()">
+          <mat-icon>{{ getStatusIcon(statusFilter()) }}</mat-icon>
+          <span class="active-filters__item__type">Statut:</span>
+          <span class="active-filters__item__value">{{ activeStatusLabel() }}</span>
+        </span>
+        <span class="active-filters__item" *ngIf="priorityFilter()">
+          <mat-icon>{{ getPriorityIcon(priorityFilter()) }}</mat-icon>
+          <span class="active-filters__item__type">Priorité:</span>
+          <span class="active-filters__item__value">{{ activePriorityLabel() }}</span>
+        </span>
+        <span class="active-filters__item" *ngIf="assigneeFilter()">
+          <mat-icon>person</mat-icon>
+          <span class="active-filters__item__type">Assigné:</span>
+          <span class="active-filters__item__value">{{ activeAssigneeLabel() }}</span>
+        </span>
+      </div>
+      <div class="active-filters__actions">
+        <button 
+          type="button"
+          class="btn-secondary"
+          (click)="clearFilters()">
+          <mat-icon>clear_all</mat-icon>
+          Effacer tous les filtres
+        </button>
+      </div>
+    </div>
+  </div>
+</div> 

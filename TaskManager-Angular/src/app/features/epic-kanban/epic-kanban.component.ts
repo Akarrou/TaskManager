@@ -9,9 +9,8 @@ import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 
 import { Store } from '@ngrx/store';
-import { Observable, combineLatest, map, takeUntil, Subject } from 'rxjs';
+import {  takeUntil, Subject } from 'rxjs';
 
-import { AppState } from '../../app.state';
 import { Task } from '../../core/services/task';
 import { TaskService } from '../../core/services/task';
 import { KanbanColumn } from './models/epic-board.model';
@@ -21,9 +20,9 @@ import * as EpicKanbanSelectors from './store/epic-kanban.selectors';
 import { EpicHeaderComponent } from './components/epic-header/epic-header.component';
 import { KanbanColumnComponent } from './components/kanban-column/kanban-column.component';
 import { EpicMetricsComponent } from './components/epic-metrics/epic-metrics.component';
+import { SearchFiltersComponent } from './components/search-filters/search-filters.component';
 
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
-import { SaveChangesDialogComponent } from '../../shared/components/save-changes-dialog/save-changes-dialog.component';
 
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 
@@ -41,7 +40,8 @@ import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/dr
 
     EpicHeaderComponent,
     KanbanColumnComponent,
-    EpicMetricsComponent
+    EpicMetricsComponent,
+    SearchFiltersComponent
   ],
   templateUrl: './epic-kanban.component.html',
   styleUrls: ['./epic-kanban.component.scss']
