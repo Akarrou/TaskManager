@@ -1,79 +1,129 @@
+@use '../../../../styles/variables' as v;
+@use '../../../../styles/mixins' as m;
+
 /* ==========================================================================
    Task Badge Component - T018 Enhanced Interactivity
    ========================================================================== */
+:host {
+  display: block;
+}
 
 .task-badge {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  @include m.flex-center-y;
+  background-color: v.$background-color-light;
+  border-radius: v.$border-radius-md;
+  padding: v.$space-1 v.$space-2;
   cursor: pointer;
-  transition: all 0.15s ease;
-  font-size: 13px;
-  min-height: 36px;
-  user-select: none;
+  border: 1px solid v.$border-color-light;
+  transition: all 0.2s ease-in-out;
+  gap: v.$space-2;
 
-  /* Hover effects */
   &:hover {
-    background: #f9fafb;
-    border-color: #d1d5db;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-color: v.$primary-color;
+    transform: translateY(-2px);
+    box-shadow: v.$shadow-sm;
   }
 
-  /* Focus states for accessibility */
-  &:focus {
-    outline: 2px solid #3b82f6;
-    outline-offset: 2px;
+  &__status,
+  &__priority {
+    flex-shrink: 0;
   }
 
-  /* Overdue state */
-  &--overdue {
-    border-color: #fca5a5;
-    background: #fef2f2;
-    
-    &:hover {
-      background: #fecaca;
+  &__title {
+    flex-grow: 1;
+    font-size: v.$font-size-sm;
+    color: v.$text-color-dark;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__quick-actions {
+    display: none; // Hidden by default
+  }
+
+  &:hover &__quick-actions {
+    display: flex;
+    align-items: center;
+  }
+
+  // --- Status Modifiers ---
+  &.is-status-completed {
+    background-color: v.$background-color-light;
+    .task-badge__title {
+      text-decoration: line-through;
+      color: v.$text-color-light;
     }
   }
+  &.is-status-in_progress {
+    border-left: 3px solid v.$primary-color;
+  }
+  &.is-status-review {
+    border-left: 3px solid v.$warning-color;
+  }
+
+  // --- Priority Modifiers ---
+  &.is-priority-high {
+    .task-badge__priority .mat-icon { color: v.$error-color; }
+  }
+  &.is-priority-medium {
+    .task-badge__priority .mat-icon { color: v.$warning-color; }
+  }
+  &.is-priority-low {
+    .task-badge__priority .mat-icon { color: v.$primary-color; }
+  }
+}
+
+.mat-icon-button {
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
 }
 
 /* Priority Indicator */
 .task-badge__priority {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  @include m.flex-center;
   width: 20px;
   height: 20px;
-  border-radius: 3px;
-  border: 1px solid;
+  border-radius: v.$border-radius-sm;
   flex-shrink: 0;
-}
 
-.task-badge__priority-icon {
-  font-size: 14px;
-  width: 14px;
-  height: 14px;
+  .task-badge__priority-icon {
+    font-size: 14px;
+  }
+
+  /* Priority classes */
+  &.is-priority-high {
+    background-color: v.$error-color;
+    color: v.$text-color-inverted;
+  }
+  &.is-priority-medium {
+    background-color: v.$warning-color;
+    color: v.$text-color-inverted;
+  }
+  &.is-priority-low {
+    background-color: v.$success-color;
+    color: v.$text-color-inverted;
+  }
+  &.is-priority-none {
+    background-color: v.$background-color-page;
+    color: v.$text-color-light;
+    border: 1px solid v.$border-color-light;
+  }
 }
 
 /* Task Number */
 .task-badge__number {
-  font-weight: 500;
-  color: #6b7280;
-  font-size: 11px;
-  letter-spacing: 0.025em;
-  flex-shrink: 0;
+  font-weight: v.$font-weight-medium;
+  color: v.$text-color-light;
+  font-size: v.$font-size-xs;
 }
 
 /* Task Title */
 .task-badge__title {
   flex: 1;
-  color: #374151;
-  font-weight: 500;
+  color: v.$text-color-dark;
+  font-weight: v.$font-weight-medium;
   line-height: 1.3;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -82,32 +132,20 @@
 
 /* Status Section with Quick Actions */
 .task-badge__status-section {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
+  @include m.flex-center-y;
+  gap: v.$space-1;
 }
 
 .task-badge__status-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  @include m.button-icon-reset;
   width: 24px;
   height: 24px;
-  background: transparent;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  
-  &:hover {
-    background: rgba(0, 0, 0, 0.04);
-  }
-  
-  &:focus {
-    outline: 2px solid #3b82f6;
-    outline-offset: 1px;
-  }
+
+  /* Status classes */
+  &.is-status-completed { color: v.$success-color; }
+  &.is-status-in_progress { color: v.$primary-color; }
+  &.is-status-review { color: v.$secondary-color; }
+  &.is-status-pending { color: v.$text-color-light; }
 }
 
 .task-badge__status-icon {
@@ -118,40 +156,18 @@
 
 /* Quick Actions */
 .task-badge__quick-actions {
-  display: flex;
-  align-items: center;
-  gap: 2px;
+  @include m.flex-center-y;
   opacity: 0;
-  transform: translateX(-4px);
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease;
   
   .task-badge:hover & {
     opacity: 1;
-    transform: translateX(0);
   }
-}
 
-.task-badge__quick-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  background: transparent;
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  color: #6b7280;
-  
-  &:hover {
-    background: rgba(0, 0, 0, 0.06);
-    color: #374151;
-  }
-  
-  &:focus {
-    outline: 1px solid #3b82f6;
-    outline-offset: 1px;
+  .task-badge__quick-btn {
+    @include m.button-icon-reset;
+    color: v.$text-color-light;
+    &:hover { color: v.$text-color-dark; }
   }
 }
 
@@ -171,24 +187,93 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  background: #ef4444;
-  border-radius: 50%;
-  border: 2px solid #ffffff;
+  background: v.$error-color;
+  border-radius: v.$border-radius-full;
+  border: 2px solid v.$background-color-form;
 }
 
 .task-badge__overdue-icon {
   font-size: 10px;
   width: 10px;
   height: 10px;
-  color: #ffffff;
+  color: v.$text-color-inverted;
+}
+
+/* Task Action Buttons */
+.task-badge__actions {
+  display: flex;
+  align-items: center;
+  gap: v.$space-1;
+  padding-left: v.$space-2;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+
+  .task-badge:hover & {
+    opacity: 1;
+  }
+}
+
+.task-badge__action-btn {
+  @include m.button-icon-reset;
+  font-size: v.$font-size-xs;
+  border-radius: v.$border-radius-sm;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background-color: v.$background-color-page;
+    color: v.$text-color-medium;
+    border: 1px solid v.$border-color-light;
+
+    &:active {
+      background-color: v.$border-color-light;
+      color: v.$text-color-dark;
+      font-weight: v.$font-weight-medium;
+    }
+  }
+}
+
+/* Additional Task States */
+.task-badge {
+  &.is-dragging {
+    opacity: 0.7;
+    transform: rotate(2deg);
+    box-shadow: v.$shadow-lg;
+  }
+
+  &.is-over-dropzone {
+    border-color: v.$primary-color;
+    background-color: v.$background-color-light;
+  }
+
+  &.is-blocked {
+    opacity: 0.6;
+    .task-badge__title {
+      color: v.$danger-color;
+    }
+    
+    &::after {
+      content: "🚫";
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background-color: v.$danger-bg;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: v.$danger-color;
+    }
+  }
 }
 
 /* Tags Section */
 .task-badge__tags {
-  display: flex;
-  align-items: center;
+  @include m.flex-center-y;
   margin-left: auto;
-  padding-left: 8px;
+  padding-left: v.$space-2;
 }
 
 .task-badge__chip-set {
@@ -198,18 +283,20 @@
 }
 
 .task-badge__tag {
-  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  font-size: v.$font-size-xs;
+  border-radius: v.$border-radius-sm;
   height: 18px;
   padding: 0 6px;
-  background: #f3f4f6;
-  color: #6b7280;
-  border: none;
-  min-height: auto;
-  
-  &--more {
-    background: #e5e7eb;
-    color: #4b5563;
-    font-weight: 500;
+  background-color: v.$background-color-page;
+  color: v.$text-color-medium;
+  border: 1px solid v.$border-color-light;
+
+  &.task-badge__tag--more {
+    background-color: v.$border-color-light;
+    color: v.$text-color-dark;
+    font-weight: v.$font-weight-medium;
   }
 }
 
@@ -219,37 +306,23 @@
 
 :host ::ng-deep .task-context-menu {
   .mat-mdc-menu-panel {
+    @include m.panel-base;
     min-width: 180px;
-    border-radius: 6px;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
 
   .mat-mdc-menu-item {
-    font-size: 13px;
-    height: 36px;
-    
-    .mat-icon {
-      margin-right: 8px;
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-    }
-    
-    &:hover {
-      background: #f9fafb;
-    }
+    @include m.menu-item-base;
   }
 
   .task-context-menu__danger {
-    color: #dc2626;
+    color: v.$danger-color;
     
     &:hover {
-      background: #fef2f2;
+      background-color: v.$danger-bg;
     }
     
     .mat-icon {
-      color: #dc2626;
+      color: v.$danger-color;
     }
   }
 }
@@ -361,7 +434,6 @@
   .task-badge__quick-actions {
     /* Show quick actions immediately on mobile */
     opacity: 1;
-    transform: translateX(0);
   }
 
   .task-badge__tags {
@@ -381,21 +453,21 @@
 
 @media (prefers-color-scheme: dark) {
   .task-badge {
-    background: #374151;
+    background-color: #374151;
     border-color: #4b5563;
     color: #f9fafb;
     
     &:hover {
-      background: #4b5563;
+      background-color: #4b5563;
       border-color: #6b7280;
     }
     
-    &--overdue {
+    &.is-overdue {
       border-color: #f87171;
-      background: #7f1d1d;
+      background-color: #7f1d1d;
       
       &:hover {
-        background: #991b1b;
+        background-color: #991b1b;
       }
     }
   }
@@ -412,18 +484,18 @@
     color: #d1d5db;
     
     &:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background-color: rgba(255, 255, 255, 0.1);
       color: #f3f4f6;
     }
   }
 
   .task-badge__tag {
-    background: #4b5563;
+    background-color: #4b5563;
     color: #d1d5db;
     
-    &--more {
-      background: #6b7280;
+    &.task-badge__tag--more {
+      background-color: #6b7280;
       color: #f3f4f6;
     }
   }
-} 
+}

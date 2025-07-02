@@ -1,49 +1,33 @@
-<mat-expansion-panel class="epic-header-panel" [expanded]="false">
+<mat-expansion-panel class="epic-header-panel" [expanded]="true">
   <mat-expansion-panel-header>
     <mat-panel-title>
       <mat-icon>dashboard</mat-icon>
       <span class="epic-number" *ngIf="epic?.task_number">#E{{ epic?.task_number }}</span>
       <span class="epic-title">{{ epic?.title || 'Epic sans titre' }}</span>
-     
     </mat-panel-title>
-      <!-- Status Badge -->
-      <mat-chip-set class="status-badge">
-        <mat-chip [class]="getStatusColor()">
-          <mat-icon matChipAvatar>{{ getStatusIcon() }}</mat-icon>
-          {{ getStatusLabel() }}
-        </mat-chip>
-      </mat-chip-set>
+    
+    <mat-chip-set class="status-badge">
+      <mat-chip [ngClass]="getStatusColor()">
+        <mat-icon matChipAvatar>{{ getStatusIcon() }}</mat-icon>
+        {{ getStatusLabel() }}
+      </mat-chip>
+    </mat-chip-set>
   </mat-expansion-panel-header>
 
   <div class="epic-header">
-    
-    <!-- Header Actions -->
     <div class="header-actions">
       <div class="left-actions">
-        <button mat-icon-button 
-                (click)="onNavigateBack()" 
-                class="back-button"
-                matTooltip="Retour au Dashboard">
+        <button mat-icon-button (click)="onNavigateBack()" class="action-button" matTooltip="Retour au Dashboard">
           <mat-icon>arrow_back</mat-icon>
         </button>
       </div>
-
       <div class="right-actions">
-        <button mat-icon-button 
-                (click)="onRefreshBoard()" 
-                class="refresh-button"
-                matTooltip="Actualiser le tableau">
+        <button mat-icon-button (click)="onRefreshBoard()" class="action-button" matTooltip="Actualiser le tableau">
           <mat-icon>refresh</mat-icon>
         </button>
-        
-        <!-- Actions contextuelles -->
-        <button mat-icon-button 
-                [matMenuTriggerFor]="actionsMenu"
-                class="actions-menu"
-                matTooltip="Actions">
+        <button mat-icon-button [matMenuTriggerFor]="actionsMenu" class="action-button" matTooltip="Actions">
           <mat-icon>more_vert</mat-icon>
         </button>
-        
         <mat-menu #actionsMenu="matMenu">
           <button mat-menu-item (click)="onEditEpic()" *ngIf="canEdit">
             <mat-icon>edit</mat-icon>
@@ -59,10 +43,7 @@
             <span>Partager</span>
           </button>
           <mat-divider *ngIf="canEdit"></mat-divider>
-          <button mat-menu-item 
-                  (click)="onDeleteEpic()" 
-                  class="delete-action"
-                  *ngIf="canEdit">
+          <button mat-menu-item (click)="onDeleteEpic()" class="delete-action" *ngIf="canEdit">
             <mat-icon>delete</mat-icon>
             <span>Supprimer l'epic</span>
           </button>
@@ -70,7 +51,6 @@
       </div>
     </div>
 
-    <!-- Epic Info Card -->
     <mat-card class="epic-info-card">
       <mat-card-header>
         <div class="epic-header-content">
@@ -118,21 +98,9 @@
           <div class="progress-header">
             <div class="progress-info">
               <span class="progress-label">Progression globale</span>
-              <span class="progress-value" [class]="'text-' + progressColor">
+              <span class="progress-value" [ngClass]="progressColor">
                 {{ metrics?.progressPercentage || 0 }}%
               </span>
-            </div>
-            <div class="progress-actions">
-              <button mat-icon-button class="action-btn" 
-                      (click)="onRefreshBoard()"
-                      matTooltip="Actualiser les données">
-                <mat-icon>refresh</mat-icon>
-              </button>
-              <button mat-icon-button class="action-btn" 
-                      (click)="onExportBoard()"
-                      matTooltip="Exporter le board">
-                <mat-icon>download</mat-icon>
-              </button>
             </div>
           </div>
 
@@ -167,12 +135,9 @@
 
         <!-- Informations supplémentaires -->
         <div class="epic-meta">
-          <div class="meta-item" *ngIf="epic?.due_date">
+          <div class="meta-item" *ngIf="epic?.due_date" [class.is-overdue]="isOverdue">
             <mat-icon>schedule</mat-icon>
-            <span [class]="isOverdue ? 'text-red-600 font-semibold' : ''">
-              Échéance: {{ formatDate(epic!.due_date!) }}
-              <mat-icon class="ml-1 text-red-500" *ngIf="isOverdue">warning</mat-icon>
-            </span>
+            <span>Échéance: {{ formatDate(epic!.due_date!) }}</span>
           </div>
 
           <div class="meta-item" *ngIf="epic?.assigned_to">

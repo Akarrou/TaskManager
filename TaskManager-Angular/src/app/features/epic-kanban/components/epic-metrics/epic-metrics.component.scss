@@ -1,4 +1,13 @@
-// T012 - Epic Metrics Dashboard Analytics Styles
+@use '../../../../styles/variables' as v;
+@use '../../../../styles/mixins' as m;
+
+// ============================================================================
+// EPIC METRICS - Component Styles
+// Author: TaskManager AI
+// Date: 2024-07-30
+// Refactor: T021 - UI Color & Style Harmonization (Metrics)
+// ============================================================================
+
 .epic-metrics {
   display: flex;
   flex-direction: column;
@@ -1556,8 +1565,6 @@
       }
     }
   }
-
-
 
   /* ====================================================================== */
   /* RESPONSIVE DESIGN */

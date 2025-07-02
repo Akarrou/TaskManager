@@ -26,6 +26,7 @@ import { SearchFiltersComponent } from './components/search-filters/search-filte
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
+import { ISubtask } from '../tasks/subtask.model';
 
 @Component({
   selector: 'app-epic-kanban',
@@ -68,7 +69,7 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
 
   // Local state for template
   expandedFeaturesSet = new Set<string>();
-  featureTasksMap: { [featureId: string]: Task[] } = {};
+  featureTasksMap: { [featureId: string]: (Task | ISubtask)[] } = {};
   
   // Current epic ID
   epicId: string | null = null;
@@ -133,14 +134,14 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   }
 
   // Événements des tâches
-  onTaskStatusChange(event: { task: Task; newStatus: string }): void {
+  onTaskStatusChange(event: { task: Task | ISubtask; newStatus: string }): void {
     this.store.dispatch(EpicKanbanActions.updateTaskStatus({ 
-      taskId: event.task.id!, 
-      newStatus: event.newStatus 
+      taskId: event.task.id!,
+      newStatus: event.newStatus
     }));
   }
 
-  onTaskClick(task: Task): void {
+  onTaskClick(task: Task | ISubtask): void {
     this.router.navigate(['/tasks', task.id, 'edit']);
   }
 
@@ -189,7 +190,7 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
     });
   }
 
-  getFeatureTasksMap(): { [featureId: string]: Task[] } {
+  getFeatureTasksMap(): { [featureId: string]: (Task | ISubtask)[] } {
     return this.featureTasksMap;
   }
 
@@ -409,19 +410,19 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   private taskService = inject(TaskService);
 
   // T018 - Handle task priority change
-  onTaskPriorityChange(event: { task: Task, newPriority: string }): void {
+  onTaskPriorityChange(event: { task: Task | ISubtask, newPriority: string }): void {
     console.log('🔄 Changement de priorité task:', event.task.id, 'Nouvelle priorité:', event.newPriority);
     
     this.store.dispatch(EpicKanbanActions.updateTask({ 
       task: { 
-        ...event.task, 
+        ...(event.task as Task), 
         priority: event.newPriority as 'low' | 'medium' | 'high' | 'urgent'
       } 
     }));
   }
 
   // T018 - Handle task edit - Navigate to task edit or open modal
-  onTaskEdit(task: Task): void {
+  onTaskEdit(task: Task | ISubtask): void {
     console.log('✏️ Édition task:', task.id);
     
     // Option 1: Navigation vers page d'édition
@@ -435,14 +436,15 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   }
 
   // T018 - Handle task delete
-  onTaskDelete(task: Task): void {
-    console.log('🗑️ Suppression task:', task.id);
+  onTaskDelete(taskId: string): void {
+    console.log('🗑️ Suppression task:', taskId);
     
     // Confirmation avant suppression
-    const confirmed = confirm(`Êtes-vous sûr de vouloir supprimer la tâche "${task.title}" ?`);
+    const taskToDelete = this.featureTasksMap[this.epicId!].find(t => t.id === taskId);
+    const confirmed = confirm(`Êtes-vous sûr de vouloir supprimer la tâche "${taskToDelete?.title}" ?`);
     
     if (confirmed) {
-      this.store.dispatch(EpicKanbanActions.deleteTask({ taskId: task.id! }));
+      this.store.dispatch(EpicKanbanActions.deleteTask({ taskId }));
     }
   }
 
@@ -464,4 +466,4 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
     });
   }
 
-} 
+}

@@ -1,509 +1,310 @@
+@use "sass:color";
+@use '../../../../styles/variables' as v;
+@use '../../../../styles/mixins' as m;
+
 // ============================================================================
-// ACCORDÉON EPIC HEADER PANEL
+// EPIC HEADER - Component Styles
+// Author: TaskManager AI
+// Date: 2024-07-30
+// Refactor: T019 - UI Color & Style Harmonization (Header)
 // ============================================================================
-.epic-header-panel {
-  margin-bottom: 24px !important;
-  border-radius: 12px !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
-  border: 1px solid #e5e7eb !important;
+
+// ============================================================================
+// Expansion Panel Root
+// ============================================================================
+:host ::ng-deep .epic-header-panel {
+  margin-bottom: v.$space-6;
+  border-radius: v.$border-radius-xl;
+  box-shadow: v.$shadow-md;
+  border: 1px solid v.$border-color-light;
+  background-color: v.$background-color-light;
+  overflow: hidden;
 
   .mat-expansion-panel-header {
-    padding: 16px 24px !important;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
-    border-radius: 12px 12px 0 0 !important;
+    padding: v.$space-4 v.$space-6;
+    background: linear-gradient(135deg, v.$background-color-light 0%, v.$background-color-page 100%);
     
     &:hover {
-      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+      background: linear-gradient(135deg, v.$background-color-page 0%, color.adjust(v.$background-color-page, $lightness: -3%) 100%);
     }
     
     .mat-expansion-panel-header-title {
-      align-items: center !important;
-      gap: 12px !important;
-      font-weight: 600 !important;
-      color: #374151 !important;
+      align-items: center;
+      gap: v.$space-3;
+      font-weight: v.$font-weight-semibold;
+      color: v.$text-color-dark;
       
       mat-icon {
-        color: #6366f1 !important;
-        font-size: 20px !important;
+        color: v.$primary-color;
+        font-size: v.$font-size-xl;
       }
       
       .epic-number {
-        background-color: #f3f4f6 !important;
-        color: #6366f1 !important;
-        padding: 4px 8px !important;
-        border-radius: 6px !important;
-        font-size: 12px !important;
-        font-weight: 700 !important;
-        border: 1px solid #e5e7eb !important;
+        background-color: v.$background-color-page;
+        color: v.$primary-color;
+        padding: v.$space-1 v.$space-2;
+        border-radius: v.$border-radius-md;
+        font-size: v.$font-size-xs;
+        font-weight: v.$font-weight-bold;
+        border: 1px solid v.$border-color-light;
       }
       
       .epic-title {
-        font-weight: 600 !important;
-        color: #111827 !important;
-        font-size: 15px !important;
-        max-width: 600px !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        white-space: nowrap !important;
+        font-weight: v.$font-weight-semibold;
+        color: v.$text-color-darkest;
+        font-size: v.$font-size-md;
+        max-width: 600px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       
       .epic-status-chip {
-        margin-left: auto !important;
-        font-size: 11px !important;
-        font-weight: 500 !important;
-        padding: 4px 8px !important;
-        border-radius: 6px !important;
+        margin-left: auto;
+        font-size: 11px;
+        font-weight: 500;
+        padding: 4px 8px;
+        border-radius: 6px;
         
         &.status-completed {
-          background-color: #dcfce7 !important;
-          color: #166534 !important;
+          background-color: #dcfce7;
+          color: #166534;
         }
         
         &.status-in_progress {
-          background-color: #fef3c7 !important;
-          color: #d97706 !important;
+          background-color: #fef3c7;
+          color: #d97706;
         }
         
         &.status-pending {
-          background-color: #f3f4f6 !important;
-          color: #6b7280 !important;
+          background-color: #f3f4f6;
+          color: #6b7280;
         }
         
         &.status-cancelled {
-          background-color: #fecaca !important;
-          color: #dc2626 !important;
+          background-color: #fecaca;
+          color: #dc2626;
         }
         
         &.status-unknown {
-          background-color: #e5e7eb !important;
-          color: #6b7280 !important;
+          background-color: #e5e7eb;
+          color: #6b7280;
         }
       }
     }
     
     .mat-expansion-panel-header-description {
-      color: #6b7280 !important;
-      font-size: 13px !important;
-      margin-right: 16px !important;
+      color: #6b7280;
+      font-size: 13px;
+      margin-right: 16px;
     }
   }
   
-  .mat-expansion-panel-content {
-    .mat-expansion-panel-body {
-      padding: 0 !important;
-    }
+  .mat-expansion-panel-content .mat-expansion-panel-body {
+    padding: 0 !important; // Override default padding
   }
   
-  &.mat-expanded {
-    .mat-expansion-panel-header {
-      border-radius: 12px 12px 0 0 !important;
-    }
+  &.mat-expanded .mat-expansion-panel-header {
+    border-bottom: 1px solid v.$border-color-light;
+    border-radius: v.$border-radius-xl v.$border-radius-xl 0 0;
   }
   
-  &:not(.mat-expanded) {
-    .mat-expansion-panel-header {
-      border-radius: 12px !important;
+  &:not(.mat-expanded) .mat-expansion-panel-header {
+    border-radius: v.$border-radius-xl;
+  }
+}
+
+// ============================================================================
+// Main Header Content inside Panel
+// ============================================================================
+.epic-header {
+  padding: v.$space-4 v.$space-6;
+}
+
+// Header Actions (Back, Refresh, More...)
+// ============================================================================
+.header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: v.$space-4;
+
+  .left-actions, .right-actions {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+  }
+
+  .action-button {
+    @include m.button-icon-reset;
+    color: v.$text-color-medium;
+    
+    &:hover {
+      background-color: v.$background-color-hover;
+      color: v.$primary-color;
+    }
+  }
+
+  .delete-action {
+    color: v.$danger-color;
+    
+    mat-icon {
+      color: v.$danger-color;
+    }
+
+    &:hover {
+      color: color.adjust(v.$danger-color, $lightness: -10%);
+      mat-icon {
+        color: color.adjust(v.$danger-color, $lightness: -10%);
+      }
     }
   }
 }
 
-.epic-header {
-  margin-bottom: 24px;
+// ============================================================================
+// Epic Info Card
+// ============================================================================
+.epic-info-card {
+  box-shadow: none;
+  border-radius: 0;
+  background-color: transparent;
+  
+  .epic-description {
+    color: v.$text-color-medium;
+    font-size: v.$font-size-sm;
+    margin-top: v.$space-2;
+    max-width: 80ch;
+  }
 
-  // ============================================================================
-  // HEADER ACTIONS
-  // ============================================================================
-  .header-actions {
+  // Title editing form
+  .title-edit-field {
+    width: 100%;
+  }
+}
+
+
+// ============================================================================
+// Progress Section
+// ============================================================================
+.progress-section {
+  background-color: v.$background-color-form;
+  padding: v.$space-4;
+  border-radius: v.$border-radius-lg;
+  border: 1px solid v.$border-color-light;
+  margin-top: v.$space-4;
+
+  .progress-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: v.$space-3;
+  }
 
-    .left-actions, .right-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+  .progress-info {
+    .progress-label {
+      font-size: v.$font-size-sm;
+      color: v.$text-color-medium;
+      font-weight: v.$font-weight-medium;
     }
-
-    .back-button, .refresh-button, .actions-menu {
-      transition: all 0.2s ease;
+    .progress-value {
+      font-size: v.$font-size-lg;
+      font-weight: v.$font-weight-bold;
+      margin-left: v.$space-2;
       
-      &:hover {
-        background-color: #f3f4f6;
-        transform: scale(1.05);
-      }
-    }
-
-    .actions-menu {
-      margin-left: 8px;
-    }
-
-    // Actions du menu contextuel
-    .delete-action {
-      color: #dc2626;
-      
-      mat-icon {
-        color: #ef4444;
-      }
+      // Colors are applied via class binding in TS
     }
   }
 
-  // ============================================================================
-  // EPIC INFO CARD
-  // ============================================================================
-  .epic-info-card {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid #f3f4f6;
+  .progress-actions .action-btn {
+    @include m.button-icon-reset;
+  }
 
-    .epic-header-content {
-      width: 100%;
-      
-      > * + * {
-        margin-top: 16px;
+  .progress-bar {
+    border-radius: v.$border-radius-full;
+    height: 8px;
+    margin-bottom: v.$space-3;
+  }
+
+  .metrics-details {
+    display: flex;
+    justify-content: space-around;
+    gap: v.$space-4;
+    text-align: center;
+    
+    .metric-item {
+      .count {
+        display: block;
+        font-size: v.$font-size-xl;
+        font-weight: v.$font-weight-bold;
+      }
+      .label {
+        font-size: v.$font-size-xs;
+        color: v.$text-color-medium;
+        text-transform: uppercase;
       }
 
-      // Epic Number Badge
-      .epic-number-badge {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 12px;
+      &.completed .count { color: v.$success-color; }
+      &.in-progress .count { color: v.$warning-color; }
+      &.pending .count { color: v.$text-color-light; }
+      &.total .count { color: v.$text-color-dark; }
+    }
+  }
+}
 
-        .epic-number-chip {
-          padding: 4px 12px;
-          border-radius: 9999px;
-          font-size: 14px;
-          font-weight: 700;
-          border: 2px solid;
-          transition: all 0.2s ease;
-          
-          &:hover {
-            transform: scale(1.05);
-          }
-        }
+// ============================================================================
+// Meta Info & Tags Section
+// ============================================================================
+.epic-meta, .tags-section {
+  margin-top: v.$space-5;
+  padding-top: v.$space-4;
+  border-top: 1px solid v.$border-color-light;
+}
 
-        .epic-type-label {
-          font-size: 12px;
-          color: #6b7280;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          font-weight: 500;
-        }
-      }
+.epic-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$space-5;
+  color: v.$text-color-medium;
 
-      // Title Section
-      .epic-title-section {
-        > * + * {
-          margin-top: 12px;
-        }
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    font-size: v.$font-size-sm;
 
-        .title-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          flex-wrap: wrap;
-
-          .status-icon {
-            font-size: 24px;
-            flex-shrink: 0;
-            transition: color 0.2s ease;
-          }
-
-          .title-container {
-            flex: 1;
-            min-width: 0;
-
-            .epic-title {
-              font-size: 24px;
-              font-weight: 700;
-              color: #1f2937;
-              margin: 0;
-              cursor: default;
-              transition: all 0.2s ease;
-              overflow: hidden;
-              text-overflow: ellipsis;
-              white-space: nowrap;
-
-              &.editable {
-                cursor: pointer;
-                padding: 4px 8px;
-                border-radius: 4px;
-                transition: all 0.2s ease;
-                
-                &:hover {
-                  color: #2563eb;
-                  background-color: #eff6ff;
-                }
-              }
-            }
-          }
-
-          .title-edit-field {
-            flex: 1;
-            min-width: 0;
-
-            mat-form-field {
-              width: 100%;
-            }
-
-            input {
-              font-size: 20px;
-              font-weight: 700;
-            }
-          }
-
-          .status-badge {
-            flex-shrink: 0;
-
-            mat-chip {
-              font-weight: 500;
-              font-size: 14px;
-              transition: all 0.2s ease;
-            }
-          }
-        }
-
-        .epic-description {
-          color: #6b7280;
-          font-size: 16px;
-          line-height: 1.5;
-          margin: 0;
-          background-color: #f9fafb;
-          padding: 12px;
-          border-radius: 8px;
-        }
+    mat-icon {
+      font-size: v.$font-size-lg;
+      color: v.$text-color-light;
+    }
+    
+    &.is-overdue {
+      color: v.$danger-color;
+      font-weight: v.$font-weight-semibold;
+      mat-icon {
+        color: v.$danger-color;
       }
     }
+  }
+}
 
-    // ============================================================================
-    // CARD CONTENT
-    // ============================================================================
-    mat-card-content {
-      > * + * {
-        margin-top: 24px;
-      }
+.tags-section {
+  .tags-header {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    margin-bottom: v.$space-3;
+    color: v.$text-color-dark;
+    font-weight: v.$font-weight-medium;
 
-      // Progress Section
-      .progress-section {
-        > * + * {
-          margin-top: 16px;
-        }
-
-        .progress-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 12px;
-
-          .progress-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-
-            .progress-label {
-              font-size: 14px;
-              font-weight: 500;
-              color: #374151;
-            }
-
-            .progress-value {
-              font-size: 18px;
-              font-weight: 700;
-              transition: color 0.2s ease;
-            }
-          }
-
-          .progress-stats {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 14px;
-            color: #6b7280;
-
-            .completed-tasks {
-              font-weight: 600;
-              color: #059669;
-            }
-
-            .separator {
-              margin: 0 4px;
-              color: #9ca3af;
-            }
-
-            .total-tasks {
-              font-weight: 600;
-            }
-
-            .tasks-label {
-              margin-left: 4px;
-              color: #6b7280;
-            }
-          }
-        }
-
-        .progress-bar {
-          border-radius: 9999px;
-          height: 8px;
-          transition: all 0.5s ease;
-        }
-
-        .progress-breakdown {
-          display: flex;
-          gap: 16px;
-          flex-wrap: wrap;
-
-          .breakdown-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-
-            .count {
-              font-weight: 700;
-              font-size: 18px;
-            }
-
-            .label {
-              font-weight: 500;
-            }
-          }
-        }
-      }
-
-      // Time Tracking Section
-      .time-tracking-section {
-        background-color: #eff6ff;
-        padding: 16px;
-        border-radius: 8px;
-        
-        > * + * {
-          margin-top: 12px;
-        }
-
-        .time-info {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-
-          .time-label {
-            font-size: 14px;
-            font-weight: 500;
-            color: #1e40af;
-          }
-
-          .time-details {
-            display: flex;
-            gap: 16px;
-            font-size: 14px;
-
-            .estimated {
-              color: #2563eb;
-              font-weight: 500;
-            }
-
-            .actual {
-              color: #1e40af;
-              font-weight: 600;
-            }
-          }
-        }
-
-        .time-progress {
-          border-radius: 9999px;
-          height: 8px;
-        }
-      }
-
-      // Meta Information
-      .meta-info {
-        display: grid;
-        grid-template-columns: repeat(1, 1fr);
-        gap: 12px;
-
-        @media (min-width: 768px) {
-          grid-template-columns: repeat(2, 1fr);
-        }
-
-        .meta-item {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 14px;
-          color: #6b7280;
-          padding: 8px;
-          border-radius: 8px;
-          background-color: #f9fafb;
-          transition: all 0.2s ease;
-
-          &:hover {
-            background-color: #f3f4f6;
-          }
-
-          mat-icon {
-            font-size: 16px;
-            flex-shrink: 0;
-          }
-
-          span {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          }
-
-          // Overdue styling
-          &.overdue {
-            background-color: #fef2f2;
-            color: #dc2626;
-
-            mat-icon {
-              color: #ef4444;
-            }
-          }
-        }
-      }
-
-      // Tags Section
-      .tags-section {
-        > * + * {
-          margin-top: 12px;
-        }
-
-        .tags-header {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 14px;
-          font-weight: 500;
-          color: #374151;
-
-          mat-icon {
-            font-size: 16px;
-            color: #6b7280;
-          }
-        }
-
-        .tags-list {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-
-          .tag-chip {
-            background-color: #eff6ff;
-            color: #1d4ed8;
-            font-size: 12px;
-            border: 1px solid #dbeafe;
-            transition: all 0.2s ease;
-
-            &:hover {
-              background-color: #dbeafe;
-              transform: scale(1.05);
-            }
-          }
-        }
-      }
+    mat-icon {
+      color: v.$text-color-light;
+    }
+  }
+  .tags-list {
+    .tag-chip {
+      background-color: v.$background-color-page;
+      color: v.$text-color-dark;
+      border: 1px solid v.$border-color-light;
     }
   }
 }

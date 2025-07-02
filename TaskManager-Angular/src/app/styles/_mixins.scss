@@ -1,3 +1,4 @@
+@use 'sass:color';
 @use './variables' as v;
 
 // Mixin for a consistent focus ring style
@@ -16,4 +17,150 @@
   text-align: inherit;
   font: inherit;
   color: inherit;
-} 
+}
+
+// Flexbox mixins
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-center-y {
+  display: flex;
+  align-items: center;
+}
+
+@mixin flex-center-x {
+  display: flex;
+  justify-content: center;
+}
+
+// Form input styles
+@mixin input-base {
+  border: v.$border-width-1 solid v.$border-color-light;
+  border-radius: v.$border-radius-md;
+  padding: v.$space-2 v.$space-3;
+  font-size: v.$font-size-base;
+  line-height: 1.5;
+  background-color: v.$background-color-form;
+  color: v.$text-color-dark;
+  transition: v.$transition-duration ease v.$transition-timing-function;
+
+  &::placeholder {
+    color: v.$text-color-light;
+  }
+}
+
+@mixin input-focus-ring {
+  @include focus-ring(v.$primary-color);
+}
+
+// Button styles
+@mixin button-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: v.$border-radius-md;
+  font-weight: v.$font-weight-medium;
+  text-decoration: none;
+  cursor: pointer;
+  transition: v.$transition-duration ease v.$transition-timing-function;
+  border: none;
+  outline: none;
+
+  &:focus-visible {
+    @include focus-ring();
+  }
+}
+
+@mixin button-solid($bg-color: v.$primary-color) {
+  @include button-base;
+  background-color: $bg-color;
+  color: v.$text-color-inverted;
+
+  &:hover {
+    background-color: color.adjust($bg-color, $lightness: -8%);
+  }
+}
+
+@mixin button-stroked($border-color: v.$border-color-medium) {
+  @include button-base;
+  background-color: transparent;
+  border: v.$border-width-1 solid $border-color;
+  color: v.$text-color-dark;
+
+  &:hover {
+    background-color: v.$background-color-light;
+  }
+}
+
+@mixin button-icon-reset {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: v.$border-radius-md;
+  padding: v.$space-1;
+  transition: v.$transition-duration ease v.$transition-timing-function;
+
+  &:hover {
+    background-color: v.$background-color-light;
+  }
+
+  &:focus-visible {
+    @include focus-ring();
+  }
+}
+
+// Form labels
+@mixin form-label-xs-uppercase {
+  font-size: v.$font-size-xs;
+  font-weight: v.$font-weight-medium;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: v.$text-color-medium;
+  margin-bottom: v.$space-2;
+}
+
+// Panel styles
+@mixin panel-base {
+  background-color: v.$background-color-form;
+  border-radius: v.$border-radius-md;
+  box-shadow: v.$shadow-sm;
+  border: v.$border-width-1 solid v.$border-color-light;
+}
+
+// Menu item styles
+@mixin menu-item-base {
+  padding: v.$space-2 v.$space-3;
+  font-size: v.$font-size-sm;
+  color: v.$text-color-dark;
+  transition: v.$transition-duration ease v.$transition-timing-function;
+
+  &:hover {
+    background-color: v.$background-color-light;
+  }
+}
+
+// Legacy variable mappings (for components that use old variable names)
+$color-neutral-light: v.$background-color-light;
+$color-border-subtle: v.$border-color-light;
+$color-primary-base: v.$primary-color;
+$color-text-base: v.$text-color-dark;
+$color-text-muted: v.$text-color-light;
+$color-success-light: color.adjust(v.$success-color, $lightness: 45%);
+$color-info-base: v.$primary-color;
+$color-warning-base: v.$warning-color;
+$color-danger-base: v.$error-color;
+
+$border-radius-base: v.$border-radius-md;
+$border-radius-sm: v.$border-radius-sm;
+$spacing-xs: v.$space-2;
+$spacing-sm: v.$space-3;
+$font-size-sm: v.$font-size-sm;
+$shadow-base: v.$shadow-md;
+
+$danger-color: v.$error-color;
+$warning-color: v.$warning-color;
+$success-color: v.$success-color; 

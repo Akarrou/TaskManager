@@ -2,32 +2,36 @@
 
 // Import shared SCSS partials to apply them globally.
 // The order is important: @use must come before any other rule.
-@use 'app/styles/variables';
-@use 'app/styles/mixins';
-@use 'app/styles/forms';
+@use "app/styles/variables" as v;
+@use "app/styles/mixins" as m;
+@use "app/styles/forms" as f;
 
 // Import Google Fonts after @use rules.
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons+Outlined');
+@import url("https://fonts.googleapis.com/icon?family=Material+Icons+Outlined");
 
 // Global base styles
+html,
 body {
-  background-color: variables.$background-color-page;
-  font-family: variables.$font-family-sans;
-  color: variables.$text-color-medium;
+  height: 100%;
+  background-color: v.$background-color-page;
+  font-family: v.$font-family-sans;
+  color: v.$text-color-medium;
   line-height: 1.6;
   margin: 0;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
 // === TABLEAU DASHBOARD GLOBAL ===
 .c-tasks-container {
-  background-color: variables.$background-color-form;
-  border-radius: variables.$border-radius-lg;
-  border: variables.$border-width-1 solid variables.$border-color-light;
-  box-shadow: variables.$shadow-md;
+  background-color: v.$background-color-form;
+  border-radius: v.$border-radius-lg;
+  border: v.$border-width-1 solid v.$border-color-light;
+  box-shadow: v.$shadow-md;
   overflow: hidden;
 }
 
@@ -41,126 +45,81 @@ body {
   border-collapse: collapse;
 
   &__header {
-    padding: variables.$space-3 variables.$space-6;
+    padding: v.$space-3 v.$space-6;
     text-align: left;
-    font-size: variables.$font-size-xs;
-    font-weight: variables.$font-weight-bold;
-    color: variables.$text-color-light;
+    font-size: v.$font-size-xs;
+    font-weight: v.$font-weight-bold;
+    color: v.$text-color-light;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    border-bottom: variables.$border-width-1 solid variables.$border-color-light;
+    border-bottom: v.$border-width-1 solid v.$border-color-light;
   }
 
   &__row:not(:last-child) {
-    border-bottom: variables.$border-width-1 solid variables.$border-color-light;
+    border-bottom: v.$border-width-1 solid v.$border-color-light;
   }
 
   &__cell {
-    padding: variables.$space-4 variables.$space-6;
-    font-size: variables.$font-size-sm;
-    color: variables.$text-color-medium;
+    padding: v.$space-4 v.$space-6;
+    font-size: v.$font-size-sm;
+    color: v.$text-color-medium;
     white-space: nowrap;
 
     &:first-child {
-      font-weight: variables.$font-weight-medium;
-      color: variables.$text-color-dark;
+      font-weight: v.$font-weight-medium;
+      color: v.$text-color-dark;
     }
   }
 
   &__actions {
     display: flex;
     justify-content: flex-end;
-    gap: variables.$space-1;
+    gap: v.$space-1;
   }
 }
 
 .c-badge {
   display: inline-flex;
   align-items: center;
-  padding: variables.$space-1 variables.$space-3;
-  border-radius: variables.$border-radius-full;
-  font-size: variables.$font-size-sm;
-  font-weight: variables.$font-weight-medium;
+  padding: v.$space-1 v.$space-3;
+  border-radius: v.$border-radius-full;
+  font-size: v.$font-size-sm;
+  font-weight: v.$font-weight-medium;
   text-transform: capitalize;
 
-  &--status-in-progress { background-color: #e0f2fe; color: #0ea5e9; }
-  &--status-pending { background-color: #fef9c3; color: #f59e0b; }
-  &--status-completed { background-color: #dcfce7; color: #22c55e; }
-  &--priority-high { background-color: #fee2e2; color: #ef4444; }
-  &--priority-medium { background-color: #ffedd5; color: #f97316; }
-  &--priority-low { background-color: #e0e7ff; color: #818cf8; }
+  &--status-in-progress {
+    background-color: #e0f2fe;
+    color: #0ea5e9;
+  }
+  &--status-pending {
+    background-color: #fef9c3;
+    color: #f59e0b;
+  }
+  &--status-completed {
+    background-color: #dcfce7;
+    color: #22c55e;
+  }
+  &--priority-high {
+    background-color: #fee2e2;
+    color: #ef4444;
+  }
+  &--priority-medium {
+    background-color: #ffedd5;
+    color: #f97316;
+  }
+  &--priority-low {
+    background-color: #e0e7ff;
+    color: #818cf8;
+  }
 }
 
-.c-table-column--subtask-title { width: 25%; }
-.c-table-column--subtask-desc { width: 25%; }
+.c-table-column--subtask-title {
+  width: 25%;
+}
+.c-table-column--subtask-desc {
+  width: 25%;
+}
 
 /* ==========================================================================
-   Global Tooltip Styles Override (TaskManager)
+   Global Tooltip Styles Override (TaskManager) - Version Complète
    ========================================================================== */
-
-/* Force all Angular Material tooltips to have proper backgrounds */
-.cdk-overlay-container .mat-mdc-tooltip {
-  background: #1f2937 !important;
-  background-color: #1f2937 !important;
-  color: #ffffff !important;
-  border-radius: 6px !important;
-  padding: 12px !important;
-  font-size: 12px !important;
-  line-height: 1.4 !important;
-  opacity: 1 !important;
-  z-index: 9999 !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
-}
-
-/* Target specifically task-tooltip class */
-.cdk-overlay-container .mat-mdc-tooltip.task-tooltip {
-  background: #1f2937 !important;
-  background-color: #1f2937 !important;
-  color: #ffffff !important;
-  border-radius: 6px !important;
-  padding: 12px !important;
-  font-size: 12px !important;
-  line-height: 1.4 !important;
-  max-width: 280px !important;
-  white-space: pre-line !important;
-  text-align: left !important;
-  opacity: 1 !important;
-  z-index: 9999 !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
-}
-
-/* For all tooltip surfaces in CDK overlay */
-.cdk-overlay-container .mdc-tooltip__surface {
-  background: #1f2937 !important;
-  background-color: #1f2937 !important;
-  color: #ffffff !important;
-  opacity: 1 !important;
-}
-
-/* Ultra specific selectors for task tooltips */
-.cdk-overlay-container div[class*="mat-mdc-tooltip"]:not([class*="transparent"]) {
-  background: #1f2937 !important;
-  background-color: #1f2937 !important;
-  color: #ffffff !important;
-  opacity: 1 !important;
-}
-
-/* Global fallback for any tooltip */
-.mat-mdc-tooltip,
-.mdc-tooltip,
-.task-tooltip {
-  background: #1f2937 !important;
-  background-color: #1f2937 !important;
-  color: #ffffff !important;
-  opacity: 1 !important;
-}
-
-/* Ensure surface elements are also styled */
-.mat-mdc-tooltip .mdc-tooltip__surface,
-.mdc-tooltip .mdc-tooltip__surface,
-.task-tooltip .mdc-tooltip__surface {
-  background: #1f2937 !important;
-  background-color: #1f2937 !important;
-  color: #ffffff !important;
-  opacity: 1 !important;
-}

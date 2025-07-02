@@ -1,140 +1,194 @@
+@use '../../../../styles/variables' as v;
+@use '../../../../styles/mixins' as m;
+@use "sass:color";
+
+// ============================================================================
+// FEATURE CARD - Component Styles
+// Author: TaskManager AI
+// Date: 2024-07-15
+// Refactor: T018 - UI Color & Style Harmonization
+// ============================================================================
+
+:host {
+  display: block;
+}
+
 .feature-card {
-  transition: all 0.2s ease-in-out;
-  border: 1px solid #e5e7eb;
-  background-color: white;
-  border-radius: 8px;
+  --card-border-color: #{v.$border-color-light};
+  --card-bg-color: #{v.$background-color-form};
+  --card-indicator-color: transparent;
+
+  display: block;
+  background-color: var(--card-bg-color);
+  border: v.$border-width-1 solid var(--card-border-color);
+  border-left: 4px solid var(--card-indicator-color);
+  border-radius: v.$border-radius-md;
+  box-shadow: v.$shadow-sm;
   overflow: hidden;
-  
+  transition: transform v.$transition-duration v.$transition-timing-function, 
+              box-shadow v.$transition-duration v.$transition-timing-function,
+              border-color v.$transition-duration v.$transition-timing-function;
+
   &:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+    box-shadow: v.$shadow-md;
+    border-color: v.$primary-color-light;
   }
   
-  // Focus state for accessibility
   &:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px rgb(59 130 246), 0 0 0 4px rgba(59, 130, 246, 0.2);
+    @include m.focus-ring(v.$primary-color);
   }
   
-  // Dragging state
   &.dragging {
     opacity: 0.6;
-    transform: rotate(1deg);
-    z-index: 50;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    transform: rotate(1deg) translateY(-2px);
+    box-shadow: v.$shadow-lg;
   }
 
-  // Overdue state  
   &.overdue {
-    border-color: #fca5a5;
-    background-color: #fef2f2;
-    
-    .mat-mdc-card-header {
-      background-color: rgba(254, 202, 202, 0.5);
-    }
+    --card-border-color: #{v.$danger-border};
+    --card-bg-color: #{v.$danger-bg};
+    --card-indicator-color: #{v.$error-color};
   }
 
-  // Active tasks indicator
   &.has-active-tasks {
-    border-left: 4px solid #fb923c;
-    
-    &:hover {
-      border-left-color: #f97316;
-    }
+    --card-indicator-color: #{v.$warning-color};
   }
 
-  // Card header styling
   .mat-mdc-card-header {
-    border-bottom: 1px solid #f3f4f6;
-    padding: 12px !important;
-    
-    .mat-mdc-card-header-text {
-      margin: 0 !important;
-    }
+    padding: v.$space-3 !important;
+    border-bottom: v.$border-width-1 solid v.$border-color-light;
   }
 
-  // Card content
   .mat-mdc-card-content {
-    padding: 12px !important;
+    padding: v.$space-3 !important;
   }
 }
 
 // ============================================================================
-// PROGRESS SECTION - T017 Enhanced
+// HEADER ELEMENTS
 // ============================================================================
+.feature-card__type-badge {
+  display: inline-block;
+  padding: v.$space-1 v.$space-2;
+  font-size: v.$font-size-xs;
+  font-weight: v.$font-weight-medium;
+  border-radius: v.$border-radius-sm;
+  border: v.$border-width-1 solid;
+}
 
+.feature-card__task-number {
+  font-family: monospace;
+  font-size: v.$font-size-xs;
+  color: v.$text-color-light;
+}
+
+.feature-card__actions-btn {
+  color: v.$text-color-light;
+  transition: color v.$transition-duration;
+  &:hover {
+    color: v.$text-color-dark;
+  }
+}
+
+// ============================================================================
+// CONTENT ELEMENTS
+// ============================================================================
+.feature-card__title {
+  font-size: v.$font-size-base;
+  font-weight: v.$font-weight-medium;
+  color: v.$text-color-dark;
+  margin-bottom: v.$space-2;
+}
+
+.feature-card__description {
+  font-size: v.$font-size-sm;
+  color: v.$text-color-medium;
+  margin-bottom: v.$space-3;
+  line-height: 1.5;
+}
+
+// ============================================================================
+// METADATA
+// ============================================================================
+.feature-card__metadata {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: v.$space-3;
+  font-size: v.$font-size-sm;
+  color: v.$text-color-light;
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: v.$space-1;
+    
+    mat-icon {
+      font-size: 1rem;
+    }
+    
+    &.meta-item--overdue {
+      color: v.$error-color;
+      font-weight: v.$font-weight-medium;
+    }
+  }
+}
+
+// ============================================================================
+// PROGRESS SECTION
+// ============================================================================
 .progress-section {
-  margin-bottom: 12px;
-
   .progress-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: v.$space-2;
 
     .progress-label {
-      font-size: 12px;
-      color: #6b7280;
-      font-weight: 500;
+      font-size: v.$font-size-xs;
+      color: v.$text-color-medium;
+      font-weight: v.$font-weight-medium;
     }
+  }
 
-    .progress-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+  .progress-actions {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
 
-      .progress-count {
-        font-size: 12px;
-        font-weight: 500;
-        color: #1f2937;
-      }
+    .progress-count {
+      font-size: v.$font-size-xs;
+      font-weight: v.$font-weight-medium;
+      color: v.$text-color-dark;
+    }
+  }
 
-      .expand-button {
-        width: 28px !important;
-        height: 28px !important;
-        min-width: 28px;
-        color: #6b7280;
-        transition: all 0.2s ease;
-
-        &:hover {
-          color: #374151;
-          background-color: rgba(59, 130, 246, 0.1);
-        }
-
-        .expand-icon {
-          font-size: 18px !important;
-          width: 18px !important;
-          height: 18px !important;
-          transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-
-          &.expanded {
-            transform: rotate(180deg);
-          }
-        }
-      }
+  .expand-button {
+    color: v.$text-color-light;
+    &:hover {
+      color: v.$text-color-dark;
+      background-color: rgba(v.$primary-color, 0.1);
+    }
+    .expand-icon.expanded {
+      transform: rotate(180deg);
     }
   }
 
   .progress-bar {
-    border-radius: 9999px;
-    overflow: hidden;
     height: 6px !important;
-    background-color: #f3f4f6 !important;
-    
+    border-radius: v.$border-radius-full;
+    background-color: v.$border-color-light !important;
+
     .mdc-linear-progress__bar-inner {
-      border-radius: 9999px;
+      background-color: v.$primary-color !important;
     }
-
-    &.progress-completed {
-      .mdc-linear-progress__bar-inner {
-        background-color: #22c55e !important;
-      }
+    &.progress-completed .mdc-linear-progress__bar-inner {
+      background-color: v.$success-color !important;
     }
-
-    &.progress-active {
-      .mdc-linear-progress__bar-inner {
-        background-color: #f97316 !important;
-        animation: progress-pulse 2s ease-in-out infinite;
-      }
+    &.progress-active .mdc-linear-progress__bar-inner {
+      background-color: v.$warning-color !important;
+      animation: progress-pulse 2s ease-in-out infinite;
     }
   }
 }
@@ -145,52 +199,84 @@
 }
 
 // ============================================================================
-// EXPANDED TASKS SECTION - T017 New
+// TAGS
 // ============================================================================
+.feature-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$space-1;
+  margin-bottom: v.$space-1;
 
-.expanded-tasks-section {
-  background-color: rgba(249, 250, 251, 0.3);
-  border-top: 1px solid #f3f4f6;
-  padding: 16px 12px 12px 12px !important;
-
-  .tasks-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-
-    .tasks-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: #374151;
-    }
-
-    .tasks-summary {
-      font-size: 11px;
-      color: #6b7280;
+  .tag-chip {
+    font-size: v.$font-size-xs !important;
+    height: 24px !important;
+    border-radius: v.$border-radius-sm !important;
+    background-color: v.$background-color-light !important;
+    color: v.$text-color-medium !important;
+    border: 1px solid v.$border-color-light !important;
+    
+    &:hover {
+      background-color: color.adjust(v.$background-color-light, $lightness: -2%) !important;
     }
   }
 
-  .tasks-list {
+  .more-tags-indicator {
+    font-size: v.$font-size-xs;
+    color: v.$text-color-light;
+    padding: v.$space-1 v.$space-2;
+  }
+}
+
+// ============================================================================
+// EXPANDED TASKS SECTION
+// ============================================================================
+.feature-card__tasks {
+  background-color: v.$background-color-light;
+  border-top: v.$border-width-1 solid v.$border-color-light;
+  overflow: hidden;
+
+  .feature-card__tasks-header {
+    padding: v.$space-3;
+    .feature-card__tasks-title {
+      display: flex;
+      align-items: center;
+      gap: v.$space-2;
+      font-size: v.$font-size-sm;
+      font-weight: v.$font-weight-medium;
+      color: v.$text-color-dark;
+    }
+    .feature-card__tasks-subtitle {
+      font-size: v.$font-size-xs;
+      color: v.$text-color-light;
+      margin-top: v.$space-1;
+    }
+  }
+
+  .feature-card__tasks-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: v.$space-2;
+    padding: 0 v.$space-3 v.$space-3;
+  }
 
-    .task-badge-item {
-      transition: all 0.2s ease;
-      
-      &:hover {
-        transform: translateX(4px);
-      }
+  .feature-card__task-item.highlighted-task {
+    background-color: rgba(v.$primary-color, 0.1);
+    border-radius: v.$border-radius-md;
+  }
+
+  .feature-card__no-tasks {
+    text-align: center;
+    padding: v.$space-6;
+    color: v.$text-color-light;
+    .feature-card__no-tasks-icon {
+      font-size: 2rem;
     }
   }
 }
 
 // ============================================================================
-// EXISTING STYLES CONVERTED FROM TAILWIND
+// SHARED UTILITIES (from Tailwind)
 // ============================================================================
-
-// Title truncation
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -198,46 +284,8 @@
   overflow: hidden;
 }
 
-// Chip styling
-.mat-mdc-chip {
-  border-radius: 6px;
-  height: 24px !important;
-  font-size: 10px !important;
-  
-  .mdc-evolution-chip__text-label {
-    font-size: 10px !important;
-    font-weight: 500;
-  }
-}
-
-// Menu button
-.mat-mdc-icon-button {
-  transition: color 0.2s ease;
-  width: 32px !important;
-  height: 32px !important;
-  
-  .mat-icon {
-    font-size: 18px !important;
-    width: 18px !important;
-    height: 18px !important;
-  }
-}
-
-// Icon sizes
-.mat-icon {
-  &.text-sm {
-    font-size: 16px !important;
-    width: 16px !important;
-    height: 16px !important;
-  }
-
-  &.flex-shrink-0 {
-    flex-shrink: 0;
-  }
-}
-
-// Screen reader only content
 .sr-only {
+  @include m.button-reset; // Using this as a base for hiding content accessibly
   position: absolute;
   width: 1px;
   height: 1px;
@@ -332,15 +380,21 @@
 
 // T011 - Type badge variations with improved contrast
 .type-epic {
-  @apply text-red-700 bg-red-100 border-red-300;
+  color: v.$error-color;
+  background-color: v.$danger-bg;
+  border-color: v.$danger-border;
 }
 
 .type-feature {
-  @apply text-blue-700 bg-blue-100 border-blue-300;
+  color: v.$primary-color;
+  background-color: v.$background-color-light;
+  border-color: v.$border-color-medium;
 }
 
 .type-task {
-  @apply text-green-700 bg-green-100 border-green-300;
+  color: v.$success-color;
+  background-color: v.$background-color-light;
+  border-color: v.$border-color-medium;
 }
 
 // T011 - Enhanced truncation utilities

@@ -1,49 +1,81 @@
+@use "sass:color";
+@use "../../../../styles/variables" as v;
+@use "../../../../styles/mixins" as m;
+
+// ============================================================================
+// KANBAN COLUMN - Component Styles
+// Author: TaskManager AI
+// Date: 2024-07-15
+// Refactor: T018 - UI Color & Style Harmonization
+// ============================================================================
+
+:host {
+  display: block;
+  width: 100%;
+  height: fit-content;
+}
+
 .kanban-column {
-  @apply w-full h-fit rounded-lg border border-gray-200;
-  background-color: var(--column-bg, #f8f9fa);
-  
-  // Material Design 3.0 elevation
-  box-shadow: 
-    0px 1px 2px rgba(0, 0, 0, 0.06),
-    0px 1px 3px rgba(0, 0, 0, 0.1);
-  
-  transition: box-shadow 0.2s ease-in-out;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: v.$border-radius-lg;
+  border: v.$border-width-1 solid v.$border-color-light;
+  background-color: v.$background-color-light;
+  box-shadow: v.$shadow-sm;
+  transition: box-shadow v.$transition-duration v.$transition-timing-function;
 
   &:hover {
-    box-shadow: 
-      0px 2px 4px rgba(0, 0, 0, 0.08),
-      0px 4px 12px rgba(0, 0, 0, 0.12);
+    box-shadow: v.$shadow-md;
   }
 
   // ============================================================================
   // COLUMN HEADER
   // ============================================================================
   .column-header {
-    @apply flex justify-between items-center p-4 border-b border-gray-200 bg-white rounded-t-lg;
-    
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: v.$space-4;
+    border-bottom: v.$border-width-1 solid v.$border-color-light;
+    background-color: v.$background-color-form;
+    border-top-left-radius: v.$border-radius-lg;
+    border-top-right-radius: v.$border-radius-lg;
+
     // Material Design header shadow
     box-shadow: 0px 1px 0px rgba(0, 0, 0, 0.06);
 
     .header-left {
-      @apply flex items-center gap-3;
+      display: flex;
+      align-items: center;
+      gap: v.$space-3;
 
       .column-icon {
-        @apply text-gray-600 text-xl;
-        transition: color 0.2s ease-in-out;
+        color: v.$text-color-medium;
+        font-size: v.$font-size-xl;
+        transition: color v.$transition-duration v.$transition-timing-function;
       }
 
       .column-title {
-        @apply text-lg font-semibold text-gray-800 m-0;
-        letter-spacing: -0.01em;
+        font-size: v.$font-size-lg;
+        font-weight: v.$font-weight-bold;
+        color: v.$text-color-dark;
+        margin: 0;
         line-height: 1.3;
       }
 
       .feature-count {
-        @apply text-sm text-gray-500 ml-1 font-medium;
-        
+        font-size: v.$font-size-sm;
+        color: v.$text-color-light;
+        margin-left: v.$space-1;
+        font-weight: v.$font-weight-medium;
+
         // Material Badge styling
         ::ng-deep .mat-badge-content {
-          @apply bg-blue-500 text-white text-xs;
+          background-color: v.$primary-color;
+          color: v.$background-color-form;
+          font-size: v.$font-size-xs;
           border-radius: 8px;
           min-width: 20px;
           height: 20px;
@@ -54,15 +86,20 @@
 
     .header-actions {
       .toggle-button {
-        @apply hover:bg-gray-100 transition-all duration-200;
-        border-radius: 8px;
+        color: v.$text-color-light;
+        transition: background-color v.$transition-duration,
+          transform v.$transition-duration;
 
-        mat-icon {
-          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        &:hover {
+          background-color: color.adjust(
+            v.$background-color-page,
+            $lightness: -2%
+          );
+          color: v.$text-color-medium;
         }
 
-        &:hover mat-icon {
-          transform: scale(1.1);
+        mat-icon {
+          transition: transform 0.3s v.$transition-timing-function;
         }
       }
     }
@@ -72,19 +109,26 @@
   // WIP LIMIT WARNING
   // ============================================================================
   .wip-warning {
-    @apply flex items-center gap-2 p-3 bg-orange-50 border-b border-orange-200 text-orange-800;
-    
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    padding: v.$space-3;
+    background-color: rgba(v.$warning-color, 0.1);
+    border-bottom: v.$border-width-1 solid rgba(v.$warning-color, 0.2);
+    color: color.adjust(v.$warning-color, $lightness: -20%);
+
     // Material Design warning styling
     background: linear-gradient(90deg, #fff7ed 0%, #fed7aa 100%);
     animation: pulse-warning 2s infinite;
 
     mat-icon {
-      @apply text-orange-600;
-      animation: bounce 1s infinite;
+      color: v.$warning-color;
+      animation: bounce 1.2s infinite;
     }
 
     span {
-      @apply text-sm font-medium;
+      font-size: v.$font-size-sm;
+      font-weight: v.$font-weight-medium;
     }
   }
 
@@ -92,45 +136,38 @@
   // COLUMN CONTENT (MAIN SCROLLABLE AREA)
   // ============================================================================
   .column-content {
-    @apply p-4;
+    padding: v.$space-4;
     max-height: calc(100vh - 280px);
     min-height: 200px;
-    
-    // Custom Material Design scrollbar
     overflow-y: auto;
     overflow-x: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s v.$transition-timing-function;
 
-    // Custom scrollbar styling
+    // Custom scrollbar
+    scrollbar-width: thin;
+    scrollbar-color: v.$border-color-medium v.$background-color-light;
     &::-webkit-scrollbar {
       width: 6px;
     }
-
     &::-webkit-scrollbar-track {
       background: transparent;
     }
-
     &::-webkit-scrollbar-thumb {
-      background: rgba(0, 0, 0, 0.2);
+      background: v.$border-color-light;
       border-radius: 3px;
-      transition: background 0.2s ease;
+      &:hover {
+        background: v.$border-color-medium;
+      }
     }
-
-    &::-webkit-scrollbar-thumb:hover {
-      background: rgba(0, 0, 0, 0.3);
-    }
-
-    // Firefox scrollbar
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 
     // Collapsed state
     &.collapsed {
-      @apply p-2;
-      max-height: 60px;
-      min-height: 60px;
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
       overflow: hidden;
-      
+      border-top: v.$border-width-1 solid v.$border-color-light;
+
       .features-list {
         opacity: 0;
         transform: translateY(-10px);
@@ -141,19 +178,22 @@
     // LOADING STATE
     // ============================================================================
     .loading-state {
-      @apply flex flex-col items-center justify-center p-8 text-gray-500;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: v.$space-8;
+      color: v.$text-color-light;
+      text-align: center;
 
       mat-icon {
-        @apply text-3xl mb-3;
-
-        &.spin {
-          animation: spin 1.5s linear infinite;
-        }
+        font-size: 2.5rem;
+        margin-bottom: v.$space-3;
       }
 
       span {
-        @apply text-sm font-medium;
-        letter-spacing: 0.01em;
+        font-size: v.$font-size-base;
+        font-weight: v.$font-weight-medium;
       }
     }
 
@@ -161,8 +201,10 @@
     // FEATURES LIST
     // ============================================================================
     .features-list {
-      @apply space-y-3;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      gap: v.$space-3;
+      transition: all 0.3s v.$transition-timing-function;
 
       .feature-card-wrapper {
         transform: translateZ(0); // Hardware acceleration
@@ -175,79 +217,103 @@
         // Enhanced feature card styling
         app-feature-card {
           display: block;
-          
+
           ::ng-deep .feature-card {
-            @apply border border-gray-100 rounded-lg;
+            border: v.$border-width-1 solid v.$border-color-light;
+            border-radius: v.$border-radius-lg;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            
-            // Material Design elevation
-            box-shadow: 
-              0px 1px 2px rgba(0, 0, 0, 0.06),
+
+            box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.06),
               0px 1px 3px rgba(0, 0, 0, 0.1);
 
             &:hover {
-              @apply border-blue-200;
-              box-shadow: 
-                0px 2px 4px rgba(0, 0, 0, 0.08),
+              border-color: v.$primary-color-light;
+              box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.08),
                 0px 4px 12px rgba(0, 0, 0, 0.12);
-              
+
               transform: translateY(-1px);
             }
 
-            // Improved header styling
             mat-card-header {
-              @apply pb-2;
+              padding-bottom: v.$space-2;
 
               .feature-header {
-                @apply flex items-start gap-2 w-full;
+                display: flex;
+                align-items: flex-start;
+                gap: v.$space-2;
+                width: 100%;
 
                 .feature-number {
-                  @apply bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-md;
+                  background-color: v.$primary-color-lightest;
+                  color: v.$primary-color;
+                  font-size: v.$font-size-xs;
+                  font-weight: v.$font-weight-semibold;
+                  padding: v.$space-1 v.$space-2;
+                  border-radius: v.$border-radius-md;
                   min-width: fit-content;
-                  border: 1px solid rgba(59, 130, 246, 0.3);
+                  border: 1px solid v.$primary-color-light;
                 }
 
                 .feature-title {
-                  @apply text-base font-semibold text-gray-800 m-0 flex-1;
+                  font-size: v.$font-size-base;
+                  font-weight: v.$font-weight-semibold;
+                  color: v.$text-color-dark;
+                  margin: 0;
+                  flex: 1;
                   line-height: 1.4;
                   letter-spacing: -0.01em;
                 }
               }
             }
 
-            // Enhanced content styling
             mat-card-content {
-              @apply pt-0;
+              padding-top: 0;
 
               .feature-description {
-                @apply text-sm text-gray-600 mb-3 line-clamp-2;
+                font-size: v.$font-size-sm;
+                color: v.$text-color-medium;
+                margin-bottom: v.$space-3;
                 line-height: 1.5;
+                // line-clamp-2
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
               }
 
               .feature-meta {
-                @apply flex flex-wrap gap-3 mt-3;
+                display: flex;
+                flex-wrap: wrap;
+                gap: v.$space-3;
+                margin-top: v.$space-3;
 
                 .meta-item {
-                  @apply flex items-center gap-1 text-xs text-gray-500 transition-colors;
+                  display: flex;
+                  align-items: center;
+                  gap: v.$space-1;
+                  font-size: v.$font-size-xs;
+                  color: v.$text-color-light;
+                  transition: color v.$transition-duration;
 
                   mat-icon {
-                    @apply text-sm;
+                    font-size: v.$font-size-sm;
                   }
 
                   &.priority-urgent {
-                    @apply text-purple-600 font-semibold;
+                    color: v.$accent-color;
+                    font-weight: v.$font-weight-semibold;
                   }
 
                   &.priority-high {
-                    @apply text-red-600;
+                    color: v.$error-color;
                   }
 
                   &.priority-medium {
-                    @apply text-orange-600;
+                    color: v.$warning-color;
                   }
 
                   &.priority-low {
-                    @apply text-green-600;
+                    color: v.$success-color;
                   }
                 }
               }
@@ -260,24 +326,31 @@
       // EMPTY STATE
       // ============================================================================
       .empty-state {
-        @apply flex flex-col items-center justify-center p-8 text-gray-400;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: v.$space-8;
         min-height: 120px;
-        border: 2px dashed #e5e7eb;
+        border: 2px dashed v.$border-color-light;
         border-radius: 8px;
         transition: all 0.2s ease-in-out;
 
         &:hover {
-          @apply border-gray-300 text-gray-500;
+          border-color: v.$border-color-medium;
+          color: v.$text-color-light;
           background-color: rgba(0, 0, 0, 0.02);
         }
 
         mat-icon {
-          @apply text-4xl mb-2;
+          font-size: 4rem;
+          margin-bottom: v.$space-2;
           opacity: 0.6;
         }
 
         span {
-          @apply text-sm font-medium;
+          font-size: v.$font-size-base;
+          font-weight: v.$font-weight-medium;
           letter-spacing: 0.01em;
         }
       }
@@ -289,53 +362,72 @@
 // ANIMATIONS
 // ============================================================================
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pulse-warning {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.9; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.9;
+  }
 }
 
 @keyframes bounce {
-  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-2px); }
-  60% { transform: translateY(-1px); }
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-2px);
+  }
+  60% {
+    transform: translateY(-1px);
+  }
 }
 
 // ============================================================================
 // RESPONSIVE DESIGN T010
 // ============================================================================
 
-// Tablet (768px-1200px) - 2 colonnes en grille
+// Tablet (768px-1200px)
 @media (max-width: 1200px) and (min-width: 769px) {
   .kanban-column {
     .column-content {
-      max-height: calc(100vh - 320px); // Ajust for tablet layout
+      max-height: calc(100vh - 320px);
     }
   }
 }
 
-// Mobile (<768px) - 1 colonne stack vertical
+// Mobile (<768px)
 @media (max-width: 768px) {
   .kanban-column {
     .column-header {
-      @apply p-3;
+      padding: v.$space-3;
 
       .header-left {
         .column-title {
-          @apply text-base;
+          font-size: v.$font-size-base;
         }
       }
     }
 
     .column-content {
-      @apply p-3;
-      max-height: calc(100vh - 200px); // Optimized for mobile
+      padding: v.$space-3;
+      max-height: calc(100vh - 200px);
 
       .features-list {
-        @apply space-y-2;
+        gap: v.$space-2;
 
         .feature-card-wrapper {
           app-feature-card {
@@ -343,7 +435,7 @@
               mat-card-header {
                 .feature-header {
                   .feature-title {
-                    @apply text-sm;
+                    font-size: v.$font-size-sm;
                   }
                 }
               }
@@ -355,25 +447,25 @@
   }
 }
 
-// Small Mobile (<480px) - Optimisation pour très petits écrans
+// Small Mobile (<480px)
 @media (max-width: 480px) {
   .kanban-column {
     .column-header {
-      @apply p-2;
+      padding: v.$space-2;
 
       .header-left {
         .column-title {
-          @apply text-sm;
+          font-size: v.$font-size-sm;
         }
       }
     }
 
     .column-content {
-      @apply p-2;
+      padding: v.$space-2;
       max-height: calc(100vh - 180px);
 
       .features-list {
-        @apply space-y-1;
+        gap: v.$space-1;
       }
     }
   }
@@ -384,19 +476,18 @@
 // ============================================================================
 @media (prefers-color-scheme: dark) {
   .kanban-column {
-    background-color: var(--column-bg, #1e293b);
+    background-color: #1e293b;
     border-color: #374151;
 
     .column-header {
-      @apply bg-slate-800 border-slate-600 text-white;
-      
+      background-color: #1a2332;
+      border-bottom-color: #374151;
+      color: v.$text-color-light;
+
       .header-left {
-        .column-icon {
-          @apply text-slate-300;
-        }
-        
+        .column-icon,
         .column-title {
-          @apply text-white;
+          color: v.$text-color-light;
         }
       }
     }
@@ -409,46 +500,40 @@
 .column-content {
   // Drop zone active state
   &.cdk-drop-list-dragging {
-    background-color: rgba(96, 165, 250, 0.05);
-    border: 2px dashed #93c5fd;
-    border-radius: 8px;
+    background-color: rgba(v.$primary-color, 0.05);
+    border: 2px dashed v.$primary-color-light;
+    border-radius: v.$border-radius-md;
     transition: all 0.2s ease;
   }
 
   // Drag placeholder
   .drag-placeholder {
-    background-color: #f1f5f9;
-    border: 2px dashed #cbd5e1;
-    border-radius: 8px;
-    padding: 16px;
-    margin: 8px 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0.8;
-    transition: all 0.2s ease;
+    border: v.$border-width-2 dashed v.$primary-color-light;
+    border-radius: v.$border-radius-md;
+    background-color: rgba(v.$primary-color, 0.05);
+    padding: v.$space-8;
+    color: v.$primary-color;
+    text-align: center;
+    margin: v.$space-2 0;
 
     .placeholder-content {
       display: flex;
       align-items: center;
-      gap: 8px;
-      color: #64748b;
-      font-size: 14px;
-
-      mat-icon {
-        color: #94a3b8;
-        animation: pulse 2s infinite;
-      }
+      gap: v.$space-2;
+      font-weight: v.$font-weight-medium;
     }
   }
 
   // Drag preview
   .drag-preview {
     background-color: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 12px;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border: 1px solid v.$border-color-light;
+    border-radius: v.$border-radius-md;
+    padding: v.$space-3;
+    box-shadow: v.$shadow-lg;
     transform: rotate(2deg);
     opacity: 0.9;
     max-width: 300px;
@@ -456,20 +541,20 @@
     .feature-preview {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: v.$space-2;
 
       .feature-number {
-        background-color: #dbeafe;
-        color: #1d4ed8;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 600;
+        background-color: v.$primary-color-lightest;
+        color: v.$primary-color;
+        padding: v.$space-1 v.$space-2;
+        border-radius: v.$border-radius-sm;
+        font-size: v.$font-size-xs;
+        font-weight: v.$font-weight-semibold;
       }
 
       .feature-title {
-        font-weight: 500;
-        color: #374151;
+        font-weight: v.$font-weight-medium;
+        color: v.$text-color-dark;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -497,39 +582,40 @@
 .empty-state {
   .drop-hint {
     display: block;
-    margin-top: 8px;
-    color: #9ca3af;
-    font-size: 12px;
+    margin-top: v.$space-2;
+    color: v.$text-color-light;
+    font-size: v.$font-size-xs;
     font-style: italic;
   }
 
   // Enhanced empty state when dragging
   .cdk-drop-list-dragging & {
-    background-color: rgba(59, 130, 246, 0.1);
-    border: 2px dashed #3b82f6;
-    border-radius: 8px;
-    padding: 24px;
-    
+    background-color: rgba(v.$primary-color, 0.1);
+    border: 2px dashed v.$primary-color;
+    border-radius: v.$border-radius-md;
+    padding: v.$space-6;
+
     mat-icon {
-      color: #3b82f6;
+      color: v.$primary-color;
       animation: bounce 1s infinite;
     }
-    
+
     span {
-      color: #1d4ed8;
-      font-weight: 500;
+      color: v.$primary-color;
+      font-weight: v.$font-weight-medium;
     }
-    
+
     .drop-hint {
-      color: #2563eb;
-      font-weight: 500;
+      color: v.$primary-color;
+      font-weight: v.$font-weight-medium;
     }
   }
 }
 
 // Pulse animation for drag indicators
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -539,7 +625,11 @@
 
 // Bounce animation for drop zones
 @keyframes bounce {
-  0%, 20%, 50%, 80%, 100% {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
     transform: translateY(0);
   }
   40% {
@@ -548,4 +638,4 @@
   60% {
     transform: translateY(-4px);
   }
-} 
+}

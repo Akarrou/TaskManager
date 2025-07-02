@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatBadgeModule } from '@angular/material/badge';
 import { CdkDropList, CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 
+import { ISubtask } from '../../../tasks/subtask.model';
 import { Task } from '../../../../core/services/task';
 import { KanbanColumn } from '../../models/epic-board.model';
 import { FeatureCardComponent } from '../feature-card/feature-card.component';
@@ -30,7 +31,7 @@ export class KanbanColumnComponent {
   @Input() features: Task[] = [];
   @Input() isLoading = false;
   @Input() expandedFeatures: Set<string> = new Set();
-  @Input() featureTasks: { [featureId: string]: Task[] } = {};
+  @Input() featureTasks: { [featureId: string]: (Task | ISubtask)[] } = {};
   @Input() connectedDropLists: string[] = [];
   @Input() highlightedSubtasksByFeature: { [featureId: string]: string[] } = {};
 
@@ -39,10 +40,10 @@ export class KanbanColumnComponent {
   @Output() featureDelete = new EventEmitter<Task>();
   @Output() addTaskToFeature = new EventEmitter<Task>();
   @Output() toggleExpansion = new EventEmitter<string>();
-  @Output() taskStatusChange = new EventEmitter<{ task: Task, newStatus: string }>();
-  @Output() taskPriorityChange = new EventEmitter<{ task: Task, newPriority: string }>();
-  @Output() taskEdit = new EventEmitter<Task>();
-  @Output() taskDelete = new EventEmitter<Task>();
+  @Output() taskStatusChange = new EventEmitter<{ task: Task | ISubtask, newStatus: string }>();
+  @Output() taskPriorityChange = new EventEmitter<{ task: Task | ISubtask, newPriority: string }>();
+  @Output() taskEdit = new EventEmitter<Task | ISubtask>();
+  @Output() taskDelete = new EventEmitter<string>();
   @Output() featureDrop = new EventEmitter<CdkDragDrop<Task[]>>();
 
   onToggleCollapse(): void {
@@ -74,7 +75,7 @@ export class KanbanColumnComponent {
     return feature.id || index.toString();
   }
 
-  getFeatureTasks(featureId: string): Task[] {
+  getFeatureTasks(featureId: string): (Task | ISubtask)[] {
     return this.featureTasks[featureId] || [];
   }
 
@@ -102,23 +103,23 @@ export class KanbanColumnComponent {
     this.toggleExpansion.emit(featureId);
   }
 
-  onTaskStatusChanged(event: { task: Task, newStatus: string }): void {
+  onTaskStatusChanged(event: { task: Task | ISubtask, newStatus: string }): void {
     this.taskStatusChange.emit(event);
   }
 
-  onTaskPriorityChanged(event: { task: Task, newPriority: string }): void {
+  onTaskPriorityChanged(event: { task: Task | ISubtask, newPriority: string }): void {
     this.taskPriorityChange.emit(event);
   }
 
-  onTaskEdit(task: Task): void {
+  onTaskEdit(task: Task | ISubtask): void {
     this.taskEdit.emit(task);
   }
 
-  onTaskDelete(task: Task): void {
-    this.taskDelete.emit(task);
+  onTaskDelete(taskId: string): void {
+    this.taskDelete.emit(taskId);
   }
 
   onDrop(event: CdkDragDrop<Task[]>): void {
     this.featureDrop.emit(event);
   }
-} 
+}

@@ -1,41 +1,77 @@
+@use '../../styles/variables' as v;
+@use '../../styles/mixins' as m;
+
+// ============================================================================
+// EPIC KANBAN - Global Container & States
+// Author: TaskManager AI
+// Date: 2024-07-15
+// Refactor: T018 - UI Color & Style Harmonization
+// ============================================================================
+
 .epic-kanban-container {
-  @apply min-h-screen bg-gray-50 p-4;
+  min-height: 100vh;
+  background-color: v.$background-color-page;
+  padding: v.$space-4;
 
   // ============================================================================
   // LOADING STATE
   // ============================================================================
-  .loading-container {
-    @apply flex flex-col items-center justify-center min-h-screen;
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: v.$space-10;
+    color: v.$text-color-medium;
 
-    mat-progress-bar {
-      @apply w-64 mb-4;
+    .loading-spinner {
+      font-size: 2.5rem;
+      margin-bottom: v.$space-4;
+      animation: spin 1.5s linear infinite;
     }
 
-    .loading-text {
-      @apply text-gray-600 text-lg;
+    span {
+      font-size: v.$font-size-lg;
     }
   }
 
   // ============================================================================
   // ERROR STATE
   // ============================================================================
-  .error-container {
-    @apply flex flex-col items-center justify-center min-h-screen text-center max-w-md mx-auto;
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: v.$space-8;
+    background-color: v.$danger-bg;
+    border: 1px solid v.$danger-border;
+    border-radius: v.$border-radius-lg;
 
     .error-icon {
-      @apply text-6xl text-red-500 mb-4;
+      font-size: 3rem;
+      color: v.$error-color;
+      margin-bottom: v.$space-4;
     }
 
     h3 {
-      @apply text-2xl font-bold text-gray-800 mb-2;
+      font-size: v.$font-size-2xl;
+      font-weight: v.$font-weight-bold;
+      color: v.$danger-text;
+      margin-bottom: v.$space-2;
     }
 
     p {
-      @apply text-gray-600 mb-6;
+      color: v.$text-color-medium;
+      margin-bottom: v.$space-6;
     }
-
+    
     button {
-      @apply mb-2;
+      background-color: v.$primary-color;
+      color: v.$text-color-inverted;
     }
   }
 
@@ -62,7 +98,7 @@
   // EPIC BOARD MAIN LAYOUT
   // ============================================================================
   .epic-board {
-    @apply max-w-full;
+    max-width: 100%;
 
     // ========================================================================
     // METRICS PANEL HORIZONTAL (NEW LAYOUT)
@@ -72,17 +108,19 @@
     }
 
     .kanban-board-content {
-      @apply mt-6;
+      margin-top: v.$space-6;
 
       // ========================================================================
       // KANBAN COLUMNS CONTAINER (DESKTOP DEFAULT)
       // ========================================================================
       .kanban-columns-container {
-        @apply grid grid-cols-4 gap-4;
-        min-height: calc(100vh - 400px); // Adjusted for metrics above
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: v.$space-4;
+        min-height: calc(100vh - 400px);
 
         .kanban-column {
-          @apply w-full;
+          width: 100%;
         }
       }
     }
@@ -113,7 +151,7 @@
 // Tablet (768px-1200px) - 2 colonnes en grille 2x2
 @media (max-width: 1200px) and (min-width: 769px) {
   .epic-kanban-container {
-    @apply p-3;
+    padding: v.$space-3;
     
     .epic-board {
       .metrics-panel-horizontal {
@@ -122,7 +160,8 @@
 
       .kanban-board-content {
         .kanban-columns-container {
-          @apply grid-cols-2 gap-4;
+          grid-template-columns: repeat(2, 1fr);
+          gap: v.$space-4;
           min-height: calc(100vh - 350px);
         }
       }
@@ -133,7 +172,7 @@
 // Mobile (<768px) - 1 colonne stack vertical
 @media (max-width: 768px) {
   .epic-kanban-container {
-    @apply p-2;
+    padding: v.$space-2;
 
     .epic-board {
       .metrics-panel-horizontal {
@@ -142,8 +181,9 @@
 
       .kanban-board-content {
         .kanban-columns-container {
-          @apply grid-cols-1 gap-3;
-          min-height: auto; // Allow natural height on mobile
+          grid-template-columns: 1fr;
+          gap: v.$space-3;
+          min-height: auto;
         }
       }
     }
@@ -153,7 +193,7 @@
 // Small Mobile (<480px) - Optimisation pour très petits écrans
 @media (max-width: 480px) {
   .epic-kanban-container {
-    @apply p-1;
+    padding: v.$space-1;
 
     .epic-board {
       .metrics-panel-horizontal {
@@ -173,27 +213,26 @@
 // CUSTOM SCROLLBAR STYLING
 // ============================================================================
 .kanban-columns-container {
-  // Pour les cas où on a besoin de scroll (overflow sur très grandes colonnes)
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e0 #f7fafc;
+  scrollbar-color: v.$border-color-medium v.$background-color-light;
 
   &::-webkit-scrollbar {
     width: 6px;
   }
 
   &::-webkit-scrollbar-track {
-    background: #f7fafc;
+    background: v.$background-color-light;
     border-radius: 3px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #cbd5e0;
+    background: v.$border-color-medium;
     border-radius: 3px;
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    background: #a0aec0;
+    
+    &:hover {
+      background: v.$secondary-color-light;
+    }
   }
 }
 
@@ -201,7 +240,7 @@
 // TRANSITIONS ET ANIMATIONS
 // ============================================================================
 .kanban-columns-container {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s v.$transition-timing-function;
   
   .kanban-column {
     transition: all 0.2s ease-in-out;
@@ -215,10 +254,11 @@
   .epic-kanban-container {
     .epic-board {
       .kanban-board-content {
-        @apply block;
+        display: block;
 
         .kanban-columns-container {
-          @apply grid-cols-2 text-sm;
+          grid-template-columns: repeat(2, 1fr);
+          font-size: v.$font-size-sm;
         }
 
         .metrics-panel {
@@ -226,5 +266,15 @@
         }
       }
     }
+  }
+}
+
+// Keyframes for animations
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 } 

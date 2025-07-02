@@ -1,9 +1,9 @@
-<div class="kanban-column" [style.background-color]="column.bgColor">
+<div class="kanban-column">
   
   <!-- Column Header -->
   <div class="column-header">
     <div class="header-left">
-      <mat-icon class="column-icon" [style.color]="column.color">{{ getColumnIcon() }}</mat-icon>
+      <mat-icon class="column-icon">{{ getColumnIcon() }}</mat-icon>
       <h3 class="column-title">{{ column.title }}</h3>
     </div>
     
@@ -40,7 +40,6 @@
       
       <!-- Feature Cards -->
       <div *ngFor="let feature of features; trackBy: trackFeature" 
-           class="feature-card-wrapper"
            cdkDrag
            [cdkDragData]="feature">
         
@@ -79,7 +78,7 @@
       </div>
 
       <!-- Empty State -->
-      <div *ngIf="features.length === 0" class="empty-state">
+      <div *ngIf="features.length === 0 && !isLoading" class="empty-state">
         <mat-icon>inbox</mat-icon>
         <span>Aucune feature</span>
         <small class="drop-hint">Glissez une feature ici</small>

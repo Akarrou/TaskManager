@@ -10,8 +10,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 
-import { Task } from '../../../../core/services/task';
 import { TaskBadgeComponent } from '../task-badge/task-badge.component';
+import { ISubtask } from '../../../tasks/subtask.model';
+import { Task } from '../../../../core/services/task';
 
 @Component({
   selector: 'app-feature-card',
@@ -57,7 +58,7 @@ export class FeatureCardComponent {
   @Input() showProgress = true;
   @Input() isExpanded = false;
   @Input() isDragging = false;
-  @Input() tasks: Task[] = [];
+  @Input() tasks: (Task | ISubtask)[] = [];
   @Input() highlightedTaskIds: string[] = [];
 
   @Output() featureClick = new EventEmitter<Task>();
@@ -65,10 +66,10 @@ export class FeatureCardComponent {
   @Output() featureDelete = new EventEmitter<Task>();
   @Output() addTaskToFeature = new EventEmitter<Task>();
   @Output() toggleExpansion = new EventEmitter<string>();
-  @Output() taskStatusChange = new EventEmitter<{ task: Task; newStatus: string }>();
-  @Output() taskPriorityChange = new EventEmitter<{ task: Task; newPriority: string }>();
-  @Output() taskEdit = new EventEmitter<Task>();
-  @Output() taskDelete = new EventEmitter<Task>();
+  @Output() taskStatusChange = new EventEmitter<{ task: Task | ISubtask; newStatus: string }>();
+  @Output() taskPriorityChange = new EventEmitter<{ task: Task | ISubtask; newPriority: string }>();
+  @Output() taskEdit = new EventEmitter<Task | ISubtask>();
+  @Output() taskDelete = new EventEmitter<string>();
   @Output() featureToggleExpanded = new EventEmitter<Task>();
 
   get featureProgress(): { completed: number; total: number; percentage: number } {
@@ -212,14 +213,14 @@ export class FeatureCardComponent {
     }
   }
 
-  onTaskClick(task: Task): void {
-    this.featureClick.emit(task);
+  onTaskClick(task: Task | ISubtask): void {
+    this.featureClick.emit(task as Task);
   }
 
   /**
    * T018 - Méthode pour changer le statut d'une tâche depuis TaskBadge
    */
-  onTaskStatusChange(event: { task: Task, newStatus: string }): void {
+  onTaskStatusChange(event: { task: Task | ISubtask, newStatus: string }): void {
     this.taskStatusChange.emit(event);
   }
 
@@ -256,7 +257,7 @@ export class FeatureCardComponent {
     return assignee.length > 10 ? assignee.substring(0, 10) + '...' : assignee;
   }
 
-  trackTask(index: number, task: Task): string {
+  trackTask(index: number, task: Task | ISubtask): string {
     return task.id || index.toString();
   }
 
@@ -278,17 +279,17 @@ export class FeatureCardComponent {
   }
 
   // T018 - Handle task priority change
-  onTaskPriorityChange(event: { task: Task, newPriority: string }): void {
+  onTaskPriorityChange(event: { task: Task | ISubtask, newPriority: string }): void {
     this.taskPriorityChange.emit(event);
   }
 
   // T018 - Handle task edit
-  onTaskEdit(task: Task): void {
+  onTaskEdit(task: Task | ISubtask): void {
     this.taskEdit.emit(task);
   }
 
   // T018 - Handle task delete
-  onTaskDelete(task: Task): void {
-    this.taskDelete.emit(task);
+  onTaskDelete(taskId: string): void {
+    this.taskDelete.emit(taskId);
   }
-} 
+}

@@ -6,17 +6,22 @@
 $primary-color: #3b82f6; // Blue
 $primary-color-dark: #2563eb;
 $primary-color-light: #60a5fa;
+$primary-color-lightest: #dbeafe; // eg. blue-100
+
+$accent-color: #8b5cf6; // Violet for accents
 
 $secondary-color: #6b7280; // Gray
 $secondary-color-dark: #4b5563;
 $secondary-color-light: #9ca3af;
 
 $success-color: #10b981; // Green
-$error-color: #ef4444;   // Red
+$error-color: #ef4444; // Red
+$danger-color: #ef4444; // Red (alias for error-color)
 $warning-color: #f59e0b; // Orange
 
 // Text Colors
 $text-color-dark: #1f2937;
+$text-color-darkest: #111827;
 $text-color-medium: #374151;
 $text-color-light: #6b7280;
 $text-color-inverted: #ffffff;
@@ -26,6 +31,7 @@ $text-color-disabled: #94a3b8; // For disabled text/icons
 $background-color-page: #f3f4f6;
 $background-color-form: #ffffff;
 $background-color-light: #f9fafb;
+$background-color-hover: #f3f4f6;
 
 // Border Colors
 $border-color-light: #e5e7eb;
@@ -35,22 +41,26 @@ $border-color-medium: #d1d5db;
 $danger-bg: #fee2e2;
 $danger-border: #fca5a5;
 $danger-text: #991b1b;
+$danger-color-lightest: #fef2f2;
 
 // ==========================================================================
 // Typography
 // ==========================================================================
-$font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-$font-size-xs: 0.75rem;  // 12px
+$font-family-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
+  "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+$font-size-xs: 0.75rem; // 12px
 $font-size-sm: 0.875rem; // 14px
-$font-size-base: 1rem;   // 16px
+$font-size-base: 1rem; // 16px
+$font-size-md: 1rem; // 16px (alias for base)
 $font-size-lg: 1.125rem; // 18px
-$font-size-xl: 1.25rem;  // 20px
-$font-size-2xl: 1.5rem;  // 24px
-$font-size-3xl: 1.875rem;// 30px
+$font-size-xl: 1.25rem; // 20px
+$font-size-2xl: 1.5rem; // 24px
+$font-size-3xl: 1.875rem; // 30px
 
 // Font Weights
 $font-weight-regular: 400;
 $font-weight-medium: 500;
+$font-weight-semibold: 600;
 $font-weight-bold: 700;
 $font-weight-black: 900;
 
@@ -58,8 +68,9 @@ $font-weight-black: 900;
 // Sizing & Spacing
 // ==========================================================================
 $border-radius-sm: 0.25rem; // 4px
-$border-radius-md: 0.5rem;  // 8px
+$border-radius-md: 0.5rem; // 8px
 $border-radius-lg: 0.75rem; // 12px
+$border-radius-xl: 1rem; // 16px
 $border-radius-full: 9999px;
 
 // Spacing
@@ -80,13 +91,16 @@ $border-width-2: 2px;
 // Shadows
 // ==========================================================================
 $shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+  0 2px 4px -1px rgba(0, 0, 0, 0.06);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+  0 4px 6px -2px rgba(0, 0, 0, 0.05);
 
 // ==========================================================================
 // Transitions
 // ==========================================================================
-$transition-colors: color, background-color, border-color, text-decoration-color, fill, stroke;
+$transition-colors: color, background-color, border-color, text-decoration-color,
+  fill, stroke;
 $transition-duration: 150ms;
 $transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -102,4 +116,4 @@ $z-index-10: 10;
 $breakpoint-sm: 640px;
 $breakpoint-md: 768px;
 $breakpoint-lg: 1024px;
-$breakpoint-xl: 1280px; 
+$breakpoint-xl: 1280px;

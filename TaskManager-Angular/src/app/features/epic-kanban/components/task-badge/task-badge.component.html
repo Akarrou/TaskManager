@@ -1,6 +1,6 @@
 <div 
   class="task-badge"
-  [class.task-badge--overdue]="isOverdue"
+  [class.is-overdue]="isOverdue"
   [matTooltip]="detailedTooltip"
   matTooltipClass="task-tooltip"
   matTooltipPosition="above"
@@ -10,43 +10,33 @@
   #menuTrigger="matMenuTrigger"
   [matMenuTriggerFor]="contextMenu"
   role="button"
-  [attr.aria-label]="'Tâche ' + task.task_number + ': ' + task.title"
   tabindex="0">
 
   <!-- Priority indicator -->
-  <div class="task-badge__priority" [ngClass]="priorityColor">
-    <mat-icon 
-      [ngClass]="priorityConfig.color" 
-      class="task-badge__priority-icon"
-      [attr.aria-label]="'Priorité: ' + priorityConfig.label">
-      {{ priorityConfig.icon }}
-    </mat-icon>
+  <div class="task-badge__priority" [ngClass]="priorityClass">
+    <mat-icon class="task-badge__priority-icon">{{ priorityConfig.icon }}</mat-icon>
   </div>
 
   <!-- Task number -->
-  <span class="task-badge__number" *ngIf="task.task_number">
-    #T{{ task.task_number }}
-  </span>
+  <span class="task-badge__number" *ngIf="task.task_number">#T{{ task.task_number }}</span>
 
   <!-- Task title -->
-  <span class="task-badge__title">
-    {{ truncatedTitle }}
-  </span>
+  <span class="task-badge__title">{{ truncatedTitle }}</span>
 
-  <!-- Status section with quick actions -->
+  <!-- Status section -->
   <div class="task-badge__status-section">
-    <!-- Status icon - clickable for quick status change -->
     <button
       type="button"
       class="task-badge__status-btn"
-      [ngClass]="statusColor"
+      [ngClass]="statusClass"
       (click)="onStatusToggle($event)"
-      [attr.aria-label]="'Statut actuel: ' + getStatusLabel() + '. Cliquer pour changer en: ' + nextStatus"
-      matTooltip="Cliquer pour changer le statut"
-      matTooltipPosition="above">
-      <mat-icon class="task-badge__status-icon">{{ statusIcon }}</mat-icon>
+      matTooltip="Cliquer pour changer le statut">
+      <mat-icon>{{ statusIcon }}</mat-icon>
     </button>
+  </div>
 
+  <!-- Status section with quick actions -->
+  <div class="task-badge__status-section">
     <!-- Quick actions (only if enabled) -->
     <div class="task-badge__quick-actions" *ngIf="showQuickActions">
       <!-- Priority toggle -->
@@ -99,33 +89,24 @@
 
 <!-- Context Menu -->
 <mat-menu #contextMenu="matMenu" class="task-context-menu">
-  <!-- Quick Status Changes -->
   <button mat-menu-item (click)="onStatusToggle($event)">
-    <mat-icon [ngClass]="statusColor">{{ statusIcon }}</mat-icon>
+    <mat-icon [ngClass]="statusClass">{{ statusIcon }}</mat-icon>
     <span>Changer statut ({{ nextStatus }})</span>
   </button>
-
   <button mat-menu-item (click)="onPriorityToggle($event)">
-    <mat-icon [ngClass]="priorityConfig.color">{{ priorityConfig.icon }}</mat-icon>
+    <mat-icon [ngClass]="priorityClass">{{ priorityConfig.icon }}</mat-icon>
     <span>Changer priorité ({{ nextPriority }})</span>
   </button>
-
   <mat-divider></mat-divider>
-
-  <!-- Edit Actions -->
   <button mat-menu-item (click)="onQuickEdit($event)">
     <mat-icon>edit</mat-icon>
     <span>Éditer</span>
   </button>
-
   <button mat-menu-item (click)="onClick()">
     <mat-icon>visibility</mat-icon>
     <span>Voir détails</span>
   </button>
-
   <mat-divider></mat-divider>
-
-  <!-- Delete Action -->
   <button mat-menu-item (click)="onQuickDelete($event)" class="task-context-menu__danger">
     <mat-icon>delete</mat-icon>
     <span>Supprimer</span>
