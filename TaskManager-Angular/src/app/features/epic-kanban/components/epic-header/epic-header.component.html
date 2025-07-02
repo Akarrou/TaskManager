@@ -1,49 +1,70 @@
-<mat-expansion-panel class="epic-header-panel" [expanded]="true">
+<mat-expansion-panel class="epic-header-panel"
+  [expanded]="false">
   <mat-expansion-panel-header>
-    <mat-panel-title>
-      <mat-icon>dashboard</mat-icon>
-      <span class="epic-number" *ngIf="epic?.task_number">#E{{ epic?.task_number }}</span>
-      <span class="epic-title">{{ epic?.title || 'Epic sans titre' }}</span>
+    <mat-panel-title class="panel-title-header">
+      <div class="panel-title-header-content">
+        <mat-icon>dashboard</mat-icon>
+        <span class="epic-number"
+          *ngIf="epic?.task_number">#E{{ epic?.task_number }}</span>
+        <span class="epic-title">{{ epic?.title || 'Epic sans titre' }}</span>
+      </div>
+
+      <mat-chip-set class="status-badge">
+        <mat-chip [ngClass]="getStatusColor()">
+          <mat-icon matChipAvatar>{{ getStatusIcon() }}</mat-icon>
+          {{ getStatusLabel() }}
+        </mat-chip>
+      </mat-chip-set>
     </mat-panel-title>
-    
-    <mat-chip-set class="status-badge">
-      <mat-chip [ngClass]="getStatusColor()">
-        <mat-icon matChipAvatar>{{ getStatusIcon() }}</mat-icon>
-        {{ getStatusLabel() }}
-      </mat-chip>
-    </mat-chip-set>
+
   </mat-expansion-panel-header>
 
   <div class="epic-header">
     <div class="header-actions">
       <div class="left-actions">
-        <button mat-icon-button (click)="onNavigateBack()" class="action-button" matTooltip="Retour au Dashboard">
+        <button mat-icon-button
+          (click)="onNavigateBack()"
+          class="action-button"
+          matTooltip="Retour au Dashboard">
           <mat-icon>arrow_back</mat-icon>
         </button>
       </div>
       <div class="right-actions">
-        <button mat-icon-button (click)="onRefreshBoard()" class="action-button" matTooltip="Actualiser le tableau">
+        <button mat-icon-button
+          (click)="onRefreshBoard()"
+          class="action-button"
+          matTooltip="Actualiser le tableau">
           <mat-icon>refresh</mat-icon>
         </button>
-        <button mat-icon-button [matMenuTriggerFor]="actionsMenu" class="action-button" matTooltip="Actions">
+        <button mat-icon-button
+          [matMenuTriggerFor]="actionsMenu"
+          class="action-button"
+          matTooltip="Actions">
           <mat-icon>more_vert</mat-icon>
         </button>
         <mat-menu #actionsMenu="matMenu">
-          <button mat-menu-item (click)="onEditEpic()" *ngIf="canEdit">
+          <button mat-menu-item
+            (click)="onEditEpic()"
+            *ngIf="canEdit">
             <mat-icon>edit</mat-icon>
             <span>Modifier l'epic</span>
           </button>
           <mat-divider></mat-divider>
-          <button mat-menu-item (click)="onExportBoard()">
+          <button mat-menu-item
+            (click)="onExportBoard()">
             <mat-icon>download</mat-icon>
             <span>Exporter le tableau</span>
           </button>
-          <button mat-menu-item (click)="onShareBoard()">
+          <button mat-menu-item
+            (click)="onShareBoard()">
             <mat-icon>share</mat-icon>
             <span>Partager</span>
           </button>
           <mat-divider *ngIf="canEdit"></mat-divider>
-          <button mat-menu-item (click)="onDeleteEpic()" class="delete-action" *ngIf="canEdit">
+          <button mat-menu-item
+            (click)="onDeleteEpic()"
+            class="delete-action"
+            *ngIf="canEdit">
             <mat-icon>delete</mat-icon>
             <span>Supprimer l'epic</span>
           </button>
@@ -54,31 +75,32 @@
     <mat-card class="epic-info-card">
       <mat-card-header>
         <div class="epic-header-content">
-          
+
           <!-- Epic Title Section -->
           <div class="epic-title-section">
-            
+
             <!-- Status Icon & Title -->
             <div class="title-row">
-          
+
               <ng-template #editingTitle>
-                <mat-form-field class="title-edit-field" appearance="outline">
-                  <input matInput 
-                         [(ngModel)]="editedTitle"
-                         (keydown)="onTitleKeydown($event)"
-                         (blur)="saveTitle()"
-                         placeholder="Titre de l'epic..."
-                         #titleInput>
-                  <button mat-icon-button 
-                          matSuffix 
-                          (click)="saveTitle()"
-                          matTooltip="Sauvegarder">
+                <mat-form-field class="title-edit-field"
+                  appearance="outline">
+                  <input matInput
+                    [(ngModel)]="editedTitle"
+                    (keydown)="onTitleKeydown($event)"
+                    (blur)="saveTitle()"
+                    placeholder="Titre de l'epic..."
+                    #titleInput>
+                  <button mat-icon-button
+                    matSuffix
+                    (click)="saveTitle()"
+                    matTooltip="Sauvegarder">
                     <mat-icon>check</mat-icon>
                   </button>
-                  <button mat-icon-button 
-                          matSuffix 
-                          (click)="cancelEditingTitle()"
-                          matTooltip="Annuler">
+                  <button mat-icon-button
+                    matSuffix
+                    (click)="cancelEditingTitle()"
+                    matTooltip="Annuler">
                     <mat-icon>close</mat-icon>
                   </button>
                 </mat-form-field>
@@ -87,7 +109,8 @@
             </div>
 
             <!-- Description -->
-            <p class="epic-description" *ngIf="epic?.description">{{ epic?.description }}</p>
+            <p class="epic-description"
+              *ngIf="epic?.description">{{ epic?.description }}</p>
           </div>
         </div>
       </mat-card-header>
@@ -98,15 +121,15 @@
           <div class="progress-header">
             <div class="progress-info">
               <span class="progress-label">Progression globale</span>
-              <span class="progress-value" [ngClass]="progressColor">
+              <span class="progress-value"
+                [ngClass]="progressColor">
                 {{ metrics?.progressPercentage || 0 }}%
               </span>
             </div>
           </div>
 
           <!-- Progress bar -->
-          <mat-progress-bar 
-            mode="determinate" 
+          <mat-progress-bar mode="determinate"
             [value]="metrics?.progressPercentage || 0"
             [color]="progressColor"
             class="progress-bar">
@@ -135,35 +158,42 @@
 
         <!-- Informations supplémentaires -->
         <div class="epic-meta">
-          <div class="meta-item" *ngIf="epic?.due_date" [class.is-overdue]="isOverdue">
+          <div class="meta-item"
+            *ngIf="epic?.due_date"
+            [class.is-overdue]="isOverdue">
             <mat-icon>schedule</mat-icon>
             <span>Échéance: {{ formatDate(epic!.due_date!) }}</span>
           </div>
 
-          <div class="meta-item" *ngIf="epic?.assigned_to">
+          <div class="meta-item"
+            *ngIf="epic?.assigned_to">
             <mat-icon>person</mat-icon>
             <span>Assigné à: {{ epic?.assigned_to }}</span>
           </div>
 
-          <div class="meta-item" *ngIf="epic?.prd_slug">
+          <div class="meta-item"
+            *ngIf="epic?.prd_slug">
             <mat-icon>description</mat-icon>
             <span>PRD: {{ epic?.prd_slug }}</span>
           </div>
 
-          <div class="meta-item" *ngIf="epic?.environment && epic!.environment!.length > 0">
+          <div class="meta-item"
+            *ngIf="epic?.environment && epic!.environment!.length > 0">
             <mat-icon>computer</mat-icon>
             <span>Environnements: {{ epic!.environment!.join(', ') }}</span>
           </div>
         </div>
 
         <!-- Tags Section améliorée -->
-        <div class="tags-section" *ngIf="epic?.tags && epic!.tags!.length > 0">
+        <div class="tags-section"
+          *ngIf="epic?.tags && epic!.tags!.length > 0">
           <div class="tags-header">
             <mat-icon>local_offer</mat-icon>
             <span class="tags-label">Tags</span>
           </div>
           <mat-chip-set class="tags-list">
-            <mat-chip *ngFor="let tag of epic!.tags!" class="tag-chip">{{ tag }}</mat-chip>
+            <mat-chip *ngFor="let tag of epic!.tags!"
+              class="tag-chip">{{ tag }}</mat-chip>
           </mat-chip-set>
         </div>
 
@@ -172,4 +202,4 @@
 
   </div>
 
-</mat-expansion-panel> 
+</mat-expansion-panel>

@@ -2,7 +2,8 @@
 <div class="epic-metrics">
 
   <!-- ANALYTICS EPIC - Vue unique avec toggle interne -->
-  <mat-expansion-panel class="analytics-panel" [expanded]="true">
+  <mat-expansion-panel class="analytics-panel"
+    [expanded]="false">
     <mat-expansion-panel-header>
       <mat-panel-title>
         <mat-icon>analytics</mat-icon>
@@ -10,37 +11,38 @@
       </mat-panel-title>
       <mat-panel-description>
         <span class="current-view">{{ viewMode === 'overview' ? 'Vue d\'ensemble' : 'Analyse détaillée' }}</span>
-        
+
         <!-- Toggle View Mode -->
-        <button mat-icon-button 
-                (click)="toggleViewMode(); $event.stopPropagation()"
-                [matTooltip]="viewMode === 'overview' ? 'Vue détaillée' : 'Vue synthèse'">
+        <button mat-icon-button
+          (click)="toggleViewMode(); $event.stopPropagation()"
+          [matTooltip]="viewMode === 'overview' ? 'Vue détaillée' : 'Vue synthèse'">
           <mat-icon>{{ viewMode === 'overview' ? 'view_list' : 'view_module' }}</mat-icon>
         </button>
 
         <!-- Export Menu -->
-        <button mat-icon-button 
-                [matMenuTriggerFor]="exportMenu" 
-                matTooltip="Export"
-                (click)="$event.stopPropagation()">
+        <button mat-icon-button
+          [matMenuTriggerFor]="exportMenu"
+          matTooltip="Export"
+          (click)="$event.stopPropagation()">
           <mat-icon>download</mat-icon>
         </button>
         <mat-menu #exportMenu="matMenu">
-          <button mat-menu-item (click)="onExportMetrics()">
+          <button mat-menu-item
+            (click)="onExportMetrics()">
             <mat-icon>description</mat-icon>
             <span>Export JSON</span>
           </button>
         </mat-menu>
 
         <!-- Refresh -->
-        <button mat-icon-button 
-                class="refresh-button" 
-                (click)="onRefresh(); $event.stopPropagation()" 
-                [class.refreshing]="isRefreshing"
-                matTooltip="Actualiser">
+        <button mat-icon-button
+          class="refresh-button"
+          (click)="onRefresh(); $event.stopPropagation()"
+          [class.refreshing]="isRefreshing"
+          matTooltip="Actualiser">
           <mat-icon>refresh</mat-icon>
         </button>
-        
+
         <span class="last-update">
           <mat-icon>access_time</mat-icon>
           {{ lastRefresh | date:'HH:mm:ss' }}
@@ -50,20 +52,21 @@
 
     <!-- CONTENU CONDITIONNEL SELON LE MODE -->
     <div class="analytics-content">
-      
+
       <!-- MODE OVERVIEW - Vue d'ensemble -->
-      <div class="overview-section" *ngIf="viewMode === 'overview'">
+      <div class="overview-section"
+        *ngIf="viewMode === 'overview'">
         <div class="metrics-grid-overview">
-          
+
           <!-- KPI Row -->
           <div class="kpi-row">
             <mat-card class="kpi-card progress-kpi">
               <div class="kpi-content">
                 <div class="kpi-chart">
                   <canvas baseChart
-                          [data]="progressChartData"
-                          [type]="progressChartType"
-                          [options]="progressChartOptions">
+                    [data]="progressChartData"
+                    [type]="progressChartType"
+                    [options]="progressChartOptions">
                   </canvas>
                   <div class="chart-center-value">
                     <span class="percentage">{{ taskMetrics().percentage }}%</span>
@@ -102,10 +105,14 @@
 
             <mat-card class="kpi-card time-kpi">
               <div class="kpi-content">
-                <mat-icon class="kpi-icon" [class.is-over-budget]="timeMetrics().isOverBudget" [class.is-on-track]="!timeMetrics().isOverBudget">schedule</mat-icon>
+                <mat-icon class="kpi-icon"
+                  [class.is-over-budget]="timeMetrics().isOverBudget"
+                  [class.is-on-track]="!timeMetrics().isOverBudget">schedule</mat-icon>
                 <div class="kpi-details">
                   <h3>Budget temps</h3>
-                  <div class="kpi-value" [class.is-over-budget]="timeMetrics().isOverBudget" [class.is-on-track]="!timeMetrics().isOverBudget">
+                  <div class="kpi-value"
+                    [class.is-over-budget]="timeMetrics().isOverBudget"
+                    [class.is-on-track]="!timeMetrics().isOverBudget">
                     {{ (timeMetrics().efficiency * 100).toFixed(0) }}%
                   </div>
                   <div class="kpi-label">utilisé</div>
@@ -121,9 +128,9 @@
             </div>
             <div class="chart-container">
               <canvas baseChart
-                      [data]="velocityChartData"
-                      [type]="velocityChartType"
-                      [options]="velocityChartOptions">
+                [data]="velocityChartData"
+                [type]="velocityChartType"
+                [options]="velocityChartOptions">
               </canvas>
             </div>
           </mat-card>
@@ -132,9 +139,10 @@
       </div>
 
       <!-- MODE DETAILED - Analyse détaillée -->
-      <div class="detailed-section" *ngIf="viewMode === 'detailed'">
+      <div class="detailed-section"
+        *ngIf="viewMode === 'detailed'">
         <div class="metrics-grid-detailed">
-          
+
           <!-- CARD 1: PROGRESSION DÉTAILLÉE -->
           <mat-card class="metric-card progress-card">
             <div class="card-header">
@@ -145,12 +153,11 @@
               <div class="card-percentage text-progress">{{ taskMetrics().percentage }}%</div>
             </div>
             <mat-card-content>
-              <mat-progress-bar 
-                class="main-progress" 
+              <mat-progress-bar class="main-progress"
                 [value]="taskMetrics().percentage"
                 color="primary">
               </mat-progress-bar>
-              
+
               <div class="progress-breakdown">
                 <div class="breakdown-item completed">
                   <span class="count">{{ taskMetrics().completed }}</span>
@@ -171,8 +178,10 @@
               </div>
 
               <!-- Alertes tâches -->
-              <div class="progress-alerts" *ngIf="taskMetrics().overdue > 0">
-                <mat-chip color="warn" selected>
+              <div class="progress-alerts"
+                *ngIf="taskMetrics().overdue > 0">
+                <mat-chip color="warn"
+                  selected>
                   {{ taskMetrics().overdue }} en retard
                 </mat-chip>
               </div>
@@ -210,7 +219,8 @@
                   <span class="metric-label">Moyenne tâches/feature</span>
                   <span class="metric-value">{{ featureMetrics().avgTasksPerFeature }}</span>
                 </div>
-                <div class="metric-row" *ngIf="featureMetrics().blockedFeatures > 0">
+                <div class="metric-row"
+                  *ngIf="featureMetrics().blockedFeatures > 0">
                   <span class="metric-label">Features bloquées</span>
                   <span class="metric-value text-red-600">{{ featureMetrics().blockedFeatures }}</span>
                 </div>
@@ -238,9 +248,9 @@
                 </div>
                 <div class="metric-row">
                   <span class="metric-label">Efficacité</span>
-                  <span class="metric-value" 
-                        [class.text-green-600]="timeMetrics().efficiency <= 1"
-                        [class.text-red-600]="timeMetrics().efficiency > 1">
+                  <span class="metric-value"
+                    [class.text-green-600]="timeMetrics().efficiency <= 1"
+                    [class.text-red-600]="timeMetrics().efficiency > 1">
                     {{ (timeMetrics().efficiency * 100).toFixed(0) }}%
                   </span>
                 </div>
@@ -266,7 +276,8 @@
                   <div class="stat-value">{{ teamMetrics().activeMembers }}</div>
                   <div class="stat-label">Actifs</div>
                 </div>
-                <div class="stat-item" *ngIf="teamMetrics().topPerformer">
+                <div class="stat-item"
+                  *ngIf="teamMetrics().topPerformer">
                   <div class="stat-value">{{ teamMetrics().topPerformer }}</div>
                   <div class="stat-label">Top Performer</div>
                 </div>
@@ -276,7 +287,7 @@
 
         </div>
       </div>
-      
+
       <!-- RÉSUMÉ & PROJECTIONS - Visible dans les deux modes -->
       <div class="summary-section">
         <mat-divider class="summary-divider"></mat-divider>
@@ -297,7 +308,8 @@
                 <div class="summary-value">{{ velocityStats().daysRemaining }}</div>
                 <div class="summary-label">jours estimés pour terminer</div>
               </div>
-              <div class="summary-item" *ngIf="velocityStats().projectedCompletion">
+              <div class="summary-item"
+                *ngIf="velocityStats().projectedCompletion">
                 <div class="summary-value">{{ velocityStats().projectedCompletion | date:'dd/MM' }}</div>
                 <div class="summary-label">fin projetée</div>
               </div>
@@ -309,18 +321,19 @@
           </mat-card-content>
         </mat-card>
       </div>
-      
+
     </div>
   </mat-expansion-panel>
 
   <!-- ALERTES SYSTÈME -->
-  <mat-expansion-panel class="alerts-panel" *ngIf="alerts().length > 0">
+  <mat-expansion-panel class="alerts-panel"
+    *ngIf="alerts().length > 0">
     <mat-expansion-panel-header>
       <mat-panel-title>
-        <mat-icon class="alert-icon" 
-                  [class.text-red-600]="hasAlertType('danger')"
-                  [class.text-orange-500]="hasAlertType('warning')"
-                  [class.text-blue-500]="hasOnlyInfoAlerts()">
+        <mat-icon class="alert-icon"
+          [class.text-red-600]="hasAlertType('danger')"
+          [class.text-orange-500]="hasAlertType('warning')"
+          [class.text-blue-500]="hasOnlyInfoAlerts()">
           warning
         </mat-icon>
         Alertes Système
@@ -330,11 +343,11 @@
         Notifications et alertes importantes
       </mat-panel-description>
     </mat-expansion-panel-header>
-    
+
     <div class="alerts-list">
-      <mat-card class="alert-card" 
-                *ngFor="let alert of alerts(); trackBy: trackAlert"
-                [class]="'alert-' + alert.type">
+      <mat-card class="alert-card"
+        *ngFor="let alert of alerts(); trackBy: trackAlert"
+        [class]="'alert-' + alert.type">
         <mat-card-content>
           <div class="alert-content">
             <div class="alert-info">
@@ -347,11 +360,12 @@
                 <span class="alert-time">{{ alert.timestamp | date:'medium' }}</span>
               </div>
             </div>
-            <div class="alert-actions" *ngIf="alert.actionable">
-              <button mat-icon-button 
-                      color="primary"
-                      (click)="onAlertAction(alert.id, 'dismiss')"
-                      matTooltip="Marquer comme lu">
+            <div class="alert-actions"
+              *ngIf="alert.actionable">
+              <button mat-icon-button
+                color="primary"
+                (click)="onAlertAction(alert.id, 'dismiss')"
+                matTooltip="Marquer comme lu">
                 <mat-icon>close</mat-icon>
               </button>
             </div>
@@ -361,4 +375,4 @@
     </div>
   </mat-expansion-panel>
 
-</div> 
+</div>
