@@ -30,6 +30,7 @@ export interface Task {
   guideline_refs: string[];
   type: 'epic' | 'feature' | 'task';
   parent_task_id?: string | null;
+  project_id: string;
 }
 
 // Nouvelle interface pour les commentaires
@@ -118,7 +119,6 @@ export class TaskService {
   // mais on peut la garder pour des cas sans projet ou la supprimer.
   // Pour l'instant, je la laisse pour ne pas casser d'autres dépendances.
   async loadTasks(): Promise<void> {
-    console.warn("loadTasks() est dépréciée. Le chargement est maintenant piloté par le projet sélectionné.");
     // Optionnel: charger les tâches du projet actif si on veut garder cette méthode
     const projectId = this.store.selectSignal(selectSelectedProjectId)();
     if (projectId) {
@@ -160,7 +160,8 @@ export class TaskService {
         actual_hours: 2,
         type: 'task',
         guideline_refs: [],
-        parent_task_id: null
+        parent_task_id: null,
+        project_id: ''
       },
       {
         title: '💧 Vérification du système d\'irrigation',
@@ -178,7 +179,8 @@ export class TaskService {
         actual_hours: 0.5,
         type: 'task',
         guideline_refs: [],
-        parent_task_id: null
+        parent_task_id: null,
+        project_id: ''
       },
       {
         title: '🚜 Entretien tracteur',
@@ -196,7 +198,8 @@ export class TaskService {
         actual_hours: 2,
         type: 'task',
         guideline_refs: [],
-        parent_task_id: null
+        parent_task_id: null,
+        project_id: ''
       },
       {
         title: '📊 Rapport mensuel',
@@ -214,7 +217,8 @@ export class TaskService {
         actual_hours: 3,
         type: 'task',
         guideline_refs: [],
-        parent_task_id: null
+        parent_task_id: null,
+        project_id: ''
       },
       {
         title: 'Inspection qualité récolte',
@@ -232,7 +236,8 @@ export class TaskService {
         actual_hours: 1,
         type: 'task',
         guideline_refs: [],
-        parent_task_id: null
+        parent_task_id: null,
+        project_id: ''
       }
     ];
 

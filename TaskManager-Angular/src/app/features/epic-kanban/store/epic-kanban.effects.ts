@@ -1,13 +1,15 @@
 import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
-import { catchError, map, switchMap, tap } from 'rxjs/operators';
+import { catchError, map, switchMap, tap, withLatestFrom, filter } from 'rxjs/operators';
 import { of, from } from 'rxjs';
 import { Router } from '@angular/router';
 
 import { EpicKanbanActions } from './epic-kanban.actions';
 import { EpicKanbanService } from '../services/epic-kanban.service';
 import { TaskService, Task } from '../../../core/services/task';
+import * as ProjectActions from '../../projects/store/project.actions';
+import { selectCurrentEpic } from './epic-kanban.selectors';
 
 @Injectable()
 export class EpicKanbanEffects {
@@ -16,6 +18,24 @@ export class EpicKanbanEffects {
   private epicKanbanService = inject(EpicKanbanService);
   private taskService = inject(TaskService);
   private router = inject(Router);
+
+  // Rediriger si l'epic actuel n'appartient pas au projet sélectionné
+  redirectOnProjectChange$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(ProjectActions.selectProject),
+      withLatestFrom(this.store.select(selectCurrentEpic)),
+      filter(([{ projectId }, epic]) => {
+        // Ne rien faire si aucun epic n'est chargé
+        if (!epic || !epic.id) {
+          return false;
+        }
+        // Rediriger si l'epic n'appartient pas au projet
+        return epic.project_id !== projectId;
+      }),
+      tap(() => this.router.navigate(['/dashboard']))
+    ),
+    { dispatch: false }
+  );
 
   // Charger Epic Board
   loadEpicBoard$ = createEffect(() =>

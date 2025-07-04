@@ -10,7 +10,7 @@ import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 
 import { Store } from '@ngrx/store';
 import { takeUntil, Subject } from 'rxjs';
-import { takeUntil as takeUntilOperator } from 'rxjs/operators';
+import { take } from 'rxjs/operators';
 
 import { Task } from '../../core/services/task';
 import { TaskService } from '../../core/services/task';
@@ -90,7 +90,6 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadEpicFromRoute();
     this.subscribeToStoreChanges();
-    this.subscribeToProjectChanges();
   }
 
   ngOnDestroy(): void {
@@ -135,7 +134,6 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
 
   onFeatureDelete(feature: Task): void {
     // TODO: Implémenter la suppression avec confirmation
-    console.log('Delete feature:', feature);
   }
 
   // Événements des tâches
@@ -428,29 +426,27 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
 
   // T018 - Handle task edit - Navigate to task edit or open modal
   onTaskEdit(task: Task | ISubtask): void {
-    console.log('✏️ Édition task:', task.id);
-
-    // Option 1: Navigation vers page d'édition
-    // this.router.navigate(['/tasks', task.id, 'edit']);
-
-    // Option 2: Modal d'édition (à implémenter plus tard)
-    // this.openTaskEditModal(task);
-
-    // Pour l'instant, on log seulement
-    console.log('Task edit modal à implémenter:', task);
+    // TODO: ouvrir le dialog d'édition de la tâche
   }
 
   // T018 - Handle task delete
   onTaskDelete(taskId: string): void {
-    console.log('🗑️ Suppression task:', taskId);
+    this.tasks$.pipe(take(1)).subscribe((tasks: Task[]) => {
+      const task = tasks.find(t => t.id === taskId);
+      const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+        width: '400px',
+        data: {
+          title: 'Supprimer la tâche',
+          message: `Êtes-vous sûr de vouloir supprimer la tâche "${task?.title}" ?`
+        }
+      });
 
-    // Confirmation avant suppression
-    const taskToDelete = this.featureTasksMap[this.epicId!].find(t => t.id === taskId);
-    const confirmed = confirm(`Êtes-vous sûr de vouloir supprimer la tâche "${taskToDelete?.title}" ?`);
-
-    if (confirmed) {
-      this.store.dispatch(EpicKanbanActions.deleteTask({ taskId }));
-    }
+      dialogRef.afterClosed().subscribe(result => {
+        if (result) {
+          this.store.dispatch(EpicKanbanActions.deleteTask({ taskId }));
+        }
+      });
+    });
   }
 
   retryLoad(): void {
@@ -460,28 +456,7 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   }
 
   onAddTaskToFeature(feature: Task): void {
-    console.log('Add task to feature:', feature);
-    // TODO: Ouvrir le dialog de création de tâche avec parent_id = feature.id
-    // Temporairement, on peut naviguer vers le formulaire de création de tâche
-    this.router.navigate(['/tasks/new'], {
-      queryParams: {
-        parent_id: feature.id,
-        epic_id: this.route.snapshot.paramMap.get('id')
-      }
-    });
-  }
-
-  private subscribeToProjectChanges(): void {
-    this.selectedProjectId$.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(projectId => {
-      if (projectId && this.epicId) {
-        // Le projet a changé, on doit recharger le board
-        // pour s'assurer que l'epic est bien dans le contexte du nouveau projet.
-        console.log(`Project changed to ${projectId}, reloading epic ${this.epicId}`);
-        this.store.dispatch(EpicKanbanActions.loadEpicBoard({ epicId: this.epicId }));
-      }
-    });
+    // TODO: Implémenter la logique de création de tâche, probablement via un dialogue
   }
 
 }

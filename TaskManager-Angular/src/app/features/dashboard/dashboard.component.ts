@@ -131,13 +131,6 @@ export class DashboardComponent implements OnInit {
   }
 
   async debugTasks() {
-    console.log('--- Debugging Tasks ---');
-    console.log('Current Tasks Signal:', this.tasks());
-    console.log('Loading State:', this.loading());
-    console.log('Error State:', this.taskError());
-    console.log('Supabase Status:', this.supabaseStatus());
-    console.log('Stats:', this.getTaskStats());
-    console.log('Filtered Tasks:', this.filteredTasks());
   }
 
   navigateToNewTaskForm() {
@@ -164,13 +157,13 @@ export class DashboardComponent implements OnInit {
       if (result) {
         const success = await this.taskService.deleteTask(id);
         if (success) {
-          console.log(`Tâche ${id} supprimée.`);
+          // Optionally show a success snackbar
         } else {
-          console.error(`Erreur lors de la suppression de la tâche ${id}.`);
+          // Optionally show an error snackbar
         }
       }
     } catch (error) {
-      console.error('Error closing dialog:', error);
+      // Optionally show an error snackbar
     }
   }
 
