@@ -18,6 +18,10 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatStepperModule } from '@angular/material/stepper';
+import { Store } from '@ngrx/store';
+import { AppState } from '../../../app.state';
+import { selectSelectedProjectId } from '../../projects/store/project.selectors';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-task-form',
@@ -48,6 +52,7 @@ export class TaskFormComponent implements OnInit {
   private snackBar = inject(MatSnackBar);
   private dialog = inject(MatDialog);
   private cdr = inject(ChangeDetectorRef);
+  private store = inject(Store<AppState>);
 
   isSubmitting = signal(false);
   pageTitle = signal('Nouvelle tâche');
@@ -226,7 +231,7 @@ export class TaskFormComponent implements OnInit {
         // Mettre à jour le titre avec le numéro de tâche
         const taskNumber = task.task_number ? `#${task.task_number}` : '';
         this.pageTitle.set(`Modifier la tâche ${taskNumber}`);
-        
+
         this.patchFormWithTask(task);
         this.loadTaskDetailsAndComments(id);
         // Verrouillage du type pour epic ou feature avec enfants
@@ -339,111 +344,78 @@ export class TaskFormComponent implements OnInit {
   }
 
   async onSubmit(): Promise<void> {
-    if (this.stepperForm.invalid) {
-      this.snackBar.open('Veuillez corriger les erreurs du formulaire.', 'Fermer', { duration: 3000, panelClass: 'red-snackbar' });
-      Object.values(this.stepperForm.controls).forEach(control => {
-        control.markAsTouched();
-      });
-      this.subtasksFormArray.controls.forEach(control => control.markAsTouched());
+    if (!this.stepperForm.valid) {
+      this.snackBar.open('Veuillez corriger les erreurs avant de soumettre.', 'Fermer', { duration: 3000 });
       return;
     }
 
-    const formValue = this.stepperForm.value as any;
+    this.isSubmitting.set(true);
 
-    let tagsArray: string[] = [];
-    const rawTagsInput: string | null | undefined = formValue.assign.tagsInput;
-    if (rawTagsInput && typeof rawTagsInput === 'string' && rawTagsInput.trim() !== '') {
-      const tagsString: string = rawTagsInput;
-      tagsArray = tagsString.split(',')
-        .map((tag: string) => tag.trim())
-        .filter((tag: string) => tag !== '');
+    const currentUserId = this.authService.getCurrentUserId();
+    if (!currentUserId) {
+      this.snackBar.open('Vous devez être connecté pour créer ou modifier une tâche.', 'Fermer', { duration: 3000, panelClass: 'red-snackbar' });
+      this.isSubmitting.set(false);
+      return;
     }
 
-    // Conversion des cases cochées en tableau de string
-    const environment: string[] = formValue.mainInfo.environment || [];
+    const formValues = this.stepperForm.value;
 
-    const guidelineRefsArray = formValue.advanced.guideline_refsInput ? formValue.advanced.guideline_refsInput.split(',').map((t: string) => t.trim()).filter((t: string) => t) : [];
-   
-    const taskData: Partial<Task> = {
-      title: formValue.mainInfo.title,
-      description: formValue.mainInfo.description ?? undefined,
-      status: formValue.mainInfo.status,
-      priority: formValue.mainInfo.priority,
-      assigned_to: formValue.assign.assigned_to ?? undefined,
-      due_date: formValue.assign.due_date ?? undefined,
-      tags: tagsArray,
-      slug: formValue.advanced.slug as string,
-      prd_slug: formValue.advanced.prd_slug as string,
-      estimated_hours: formValue.advanced.estimated_hours ?? undefined,
-      actual_hours: formValue.advanced.actual_hours ?? undefined,
-      guideline_refs: guidelineRefsArray,
-      type: this.contextType ? this.contextType as 'task' | 'epic' | 'feature' : formValue.mainInfo.type as 'task' | 'epic' | 'feature',
-      parent_task_id: formValue.advanced.parent_task_id ?? this.contextParentId,
-      environment: environment
+    const taskData = {
+      ...formValues.mainInfo,
+      ...formValues.assign,
+      ...formValues.advanced,
+      tags: formValues.assign.tagsInput.split(',').map((t: string) => t.trim()).filter((t: string) => t),
+      guideline_refs: formValues.advanced.guideline_refsInput.split(',').map((g: string) => g.trim()).filter((g: string) => g),
+      subtasks: formValues.subtasks.subtasks.map((sub: ISubtask) => {
+        // Exclure l'ID si c'est une nouvelle sous-tâche
+        const { id, ...rest } = sub;
+        return id && id.startsWith('temp_') ? rest : sub;
+      })
     };
 
-    let success = false;
-    const currentUserId = this.authService.getCurrentUserId();
+    try {
+      if (this.isEditMode() && this.currentTaskId()) {
+        const taskId = this.currentTaskId()!;
+        // Logique de mise à jour...
+        await this.taskService.updateTask(taskId, taskData);
+        // Gestion des sous-tâches supprimées...
+        for (const subId of this.deletedSubtaskIds) {
+          await this.taskService.deleteSubtask(subId);
+        }
+        this.deletedSubtaskIds = [];
 
-    if (this.currentTaskId() && this.currentTaskId()) {
-      success = await this.taskService.updateTask(this.currentTaskId()!, taskData);
-      const subtasks = this.subtasksFormArray.value as Partial<ISubtask>[];
-      for (const subtask of subtasks) {
-        if (subtask.id) {
-          await this.taskService.updateSubtask(subtask.id, subtask);
-        } else {
-          await this.taskService.createSubtask({ ...subtask, task_id: this.currentTaskId()! } as any);
+        this.snackBar.open('Tâche mise à jour avec succès!', 'Fermer', { duration: 3000, panelClass: 'green-snackbar' });
+        this.router.navigate(['/dashboard']);
+      } else {
+        // Logique de création
+        const projectId = await firstValueFrom(this.store.select(selectSelectedProjectId));
+        if (!projectId) {
+          throw new Error('Aucun projet sélectionné. Impossible de créer la tâche.');
         }
-      }
-      // Suppression des sous-tâches supprimées
-      for (const id of this.deletedSubtaskIds) {
-        await this.taskService.deleteSubtask(id);
-      }
-      this.deletedSubtaskIds = [];
-    } else {
-      if (!currentUserId) {
-        this.snackBar.open('Utilisateur non connecté. Impossible de créer la tâche.', 'Fermer', { duration: 3000, panelClass: 'red-snackbar' });
-        return;
-      }
-      const taskToCreate: Omit<Task, 'id' | 'created_at' | 'updated_at'> = {
-        title: taskData.title!,
-        description: taskData.description,
-        status: taskData.status!,
-        priority: taskData.priority!,
-        assigned_to: taskData.assigned_to,
-        due_date: taskData.due_date,
-        tags: taskData.tags,
-        slug: taskData.slug as string,
-        prd_slug: taskData.prd_slug as string,
-        estimated_hours: taskData.estimated_hours ?? undefined,
-        actual_hours: taskData.actual_hours ?? undefined,
-        guideline_refs: taskData.guideline_refs ?? [],
-        type: taskData.type as 'task' | 'epic' | 'feature',
-        parent_task_id: taskData.parent_task_id ?? null,
-        environment: taskData.environment ?? [],
-        created_by: currentUserId
-      };
- 
-      success = await this.taskService.createTask(taskToCreate);
-      if (success) {
-        const subtasks = this.subtasksFormArray.value as Partial<ISubtask>[];
-        for (const subtask of subtasks) {
-          await this.taskService.createSubtask({ ...subtask, task_id: success } as any);
-        }
+
+        const taskToCreate: Omit<Task, 'id' | 'created_at' | 'updated_at'> = {
+          ...taskData,
+          created_by: currentUserId,
+          project_id: projectId
+        };
+        const newTaskId = await this.taskService.createTask(taskToCreate);
+        this.snackBar.open('Tâche créée avec succès!', 'Fermer', { duration: 3000, panelClass: 'green-snackbar' });
         this.router.navigate(['/dashboard']);
       }
-    }
-
-    if (success) {
-      this.snackBar.open(`Tâche ${this.currentTaskId() ? 'mise à jour' : 'créée'} avec succès!`, 'Fermer', { duration: 2000, panelClass: 'green-snackbar' });
-    } else {
-      this.snackBar.open(`Échec de la ${this.currentTaskId() ? 'mise à jour' : 'création'} de la tâche.`, 'Fermer', { duration: 3000, panelClass: 'red-snackbar' });
+    } catch (error) {
+      console.error("Erreur lors de la soumission de la tâche", error);
+      this.snackBar.open(`Erreur: ${error instanceof Error ? error.message : 'Une erreur inconnue est survenue.'}`, 'Fermer', {
+        duration: 5000,
+        panelClass: 'red-snackbar'
+      });
+    } finally {
+      this.isSubmitting.set(false);
     }
   }
 
   async loadTaskDetailsAndComments(taskId: string): Promise<void> {
     if (!taskId) return;
-    
+
     // Charger les détails de la tâche
     const task = await this.taskService.fetchTaskById(taskId);
     if (task) {
@@ -673,4 +645,4 @@ export class TaskFormComponent implements OnInit {
 function atLeastOneSelectedValidator(control: AbstractControl): ValidationErrors | null {
   const value = control.value;
   return Array.isArray(value) && value.length > 0 ? null : { atLeastOne: true };
-} 
+}

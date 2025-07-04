@@ -1,6 +1,7 @@
 @use "sass:color";
 @use "../../../../styles/variables" as v;
 @use "../../../../styles/mixins" as m;
+@import "../../styles/kanban-variables";
 
 // ============================================================================
 // KANBAN COLUMN - Component Styles
@@ -28,6 +29,48 @@
 
   &:hover {
     box-shadow: v.$shadow-md;
+  }
+
+  // --- Status Color Variants ---
+  &.status-pending {
+    background-color: color.adjust($status-pending-bg, $alpha: -0.5);
+    .column-header {
+      background-color: $status-pending-bg;
+      .column-title,
+      .column-icon {
+        color: $status-pending-text;
+      }
+    }
+  }
+  &.status-in_progress {
+    background-color: color.adjust($status-in-progress-bg, $alpha: -0.5);
+    .column-header {
+      background-color: $status-in-progress-bg;
+      .column-title,
+      .column-icon {
+        color: $status-in-progress-text;
+      }
+    }
+  }
+  &.status-review {
+    background-color: color.adjust($status-review-bg, $alpha: -0.5);
+    .column-header {
+      background-color: $status-review-bg;
+      .column-title,
+      .column-icon {
+        color: $status-review-text;
+      }
+    }
+  }
+  &.status-completed {
+    background-color: color.adjust($status-completed-bg, $alpha: -0.5);
+    .column-header {
+      background-color: $status-completed-bg;
+      .column-title,
+      .column-icon {
+        color: $status-completed-text;
+      }
+    }
   }
 
   // ============================================================================
@@ -637,5 +680,66 @@
   }
   60% {
     transform: translateY(-4px);
+  }
+}
+
+// ============================================================================
+// CDK DRAG & DROP STYLES (Scoped to this component)
+// ============================================================================
+
+// Style for the clone of the item being dragged (the "ghost")
+.drag-preview {
+  box-sizing: border-box;
+  border-radius: v.$border-radius-lg;
+  box-shadow: v.$shadow-lg;
+  transform: rotate(2deg); // Slight rotation for a more "lifted" feel
+  opacity: 0.9;
+  background-color: v.$background-color-form; // Use a variable for consistency
+
+  .feature-preview {
+    display: flex;
+    align-items: center;
+    padding: v.$space-3 v.$space-4;
+    gap: v.$space-3;
+    color: v.$text-color-dark;
+
+    .feature-number {
+      font-weight: v.$font-weight-bold;
+      color: v.$primary-color;
+    }
+
+    .feature-title {
+      font-weight: v.$font-weight-medium;
+    }
+  }
+}
+
+// Style for the placeholder element that appears in the drop zone
+.drag-placeholder {
+  display: block;
+  background: rgba(v.$primary-color, 0.1);
+  border: 2px dashed rgba(v.$primary-color, 0.5);
+  min-height: 120px;
+  margin: v.$space-3 0;
+  border-radius: v.$border-radius-lg;
+  transition: transform 250ms v.$transition-timing-function;
+
+  .placeholder-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 120px;
+    color: rgba(v.$primary-color, 0.8);
+
+    mat-icon {
+      font-size: 2rem;
+    }
+
+    span {
+      font-size: v.$font-size-sm;
+      font-weight: v.$font-weight-medium;
+      margin-top: v.$space-2;
+    }
   }
 }

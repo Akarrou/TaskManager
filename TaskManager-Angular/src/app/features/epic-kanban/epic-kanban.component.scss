@@ -1,5 +1,6 @@
-@use '../../styles/variables' as v;
-@use '../../styles/mixins' as m;
+@use "../../styles/variables" as v;
+@use "../../styles/mixins" as m;
+@import "./styles/kanban-variables";
 
 // ============================================================================
 // EPIC KANBAN - Global Container & States
@@ -68,7 +69,7 @@
       color: v.$text-color-medium;
       margin-bottom: v.$space-6;
     }
-    
+
     button {
       background-color: v.$primary-color;
       color: v.$text-color-inverted;
@@ -152,7 +153,7 @@
 @media (max-width: 1200px) and (min-width: 769px) {
   .epic-kanban-container {
     padding: v.$space-3;
-    
+
     .epic-board {
       .metrics-panel-horizontal {
         @apply w-full mb-6;
@@ -229,7 +230,7 @@
   &::-webkit-scrollbar-thumb {
     background: v.$border-color-medium;
     border-radius: 3px;
-    
+
     &:hover {
       background: v.$secondary-color-light;
     }
@@ -241,7 +242,7 @@
 // ============================================================================
 .kanban-columns-container {
   transition: all 0.3s v.$transition-timing-function;
-  
+
   .kanban-column {
     transition: all 0.2s ease-in-out;
   }
@@ -277,4 +278,14 @@
   to {
     transform: rotate(360deg);
   }
-} 
+}
+
+:host {
+  display: block;
+}
+
+.features-list {
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-4;
+}

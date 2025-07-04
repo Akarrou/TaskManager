@@ -33,6 +33,7 @@
               }
             ],
             "styles": [
+              "node_modules/@angular/material/prebuilt-themes/indigo-pink.css",
               "src/styles.scss"
             ],
             "server": "src/main.server.ts",
@@ -98,13 +99,13 @@
               }
             ],
             "styles": [
+              "node_modules/@angular/material/prebuilt-themes/indigo-pink.css",
               "src/styles.scss"
             ],
             "stylePreprocessorOptions": {
-              "includePaths": [
-                "src/app/styles"
-              ]
+              "includePaths": ["src/app/styles"]
             }
+          }
         }
       }
     }

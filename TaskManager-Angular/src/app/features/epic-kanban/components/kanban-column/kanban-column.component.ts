@@ -4,6 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatBadgeModule } from '@angular/material/badge';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { CdkDropList, CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 
 import { ISubtask } from '../../../tasks/subtask.model';
@@ -21,7 +22,8 @@ import { FeatureCardComponent } from '../feature-card/feature-card.component';
     MatButtonModule,
     MatBadgeModule,
     DragDropModule,
-    FeatureCardComponent
+    FeatureCardComponent,
+    MatTooltipModule
   ],
   templateUrl: './kanban-column.component.html',
   styleUrls: ['./kanban-column.component.scss']

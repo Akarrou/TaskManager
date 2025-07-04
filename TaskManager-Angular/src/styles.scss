@@ -9,6 +9,9 @@
 // Import Google Fonts after @use rules.
 @import url("https://fonts.googleapis.com/icon?family=Material+Icons+Outlined");
 
+/* Importing the Angular Material theme */
+@import "@angular/material/prebuilt-themes/indigo-pink.css";
+
 // Global base styles
 html,
 body {
@@ -26,96 +29,16 @@ body {
   box-sizing: border-box;
 }
 
-// === TABLEAU DASHBOARD GLOBAL ===
-.c-tasks-container {
-  background-color: v.$background-color-form;
-  border-radius: v.$border-radius-lg;
-  border: v.$border-width-1 solid v.$border-color-light;
-  box-shadow: v.$shadow-md;
-  overflow: hidden;
+// ============================================================================
+// CDK DRAG & DROP GLOBAL OVERRIDES
+// ============================================================================
+
+// Style applied to the drop list while an item is being dragged over it.
+.cdk-drop-list-dragging .cdk-drag {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
 }
 
-.c-tasks-table-wrapper {
-  overflow-x: auto;
-}
-
-.c-table {
-  width: 100%;
-  /* min-width: 600px; */
-  border-collapse: collapse;
-
-  &__header {
-    padding: v.$space-3 v.$space-6;
-    text-align: left;
-    font-size: v.$font-size-xs;
-    font-weight: v.$font-weight-bold;
-    color: v.$text-color-light;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-bottom: v.$border-width-1 solid v.$border-color-light;
-  }
-
-  &__row:not(:last-child) {
-    border-bottom: v.$border-width-1 solid v.$border-color-light;
-  }
-
-  &__cell {
-    padding: v.$space-4 v.$space-6;
-    font-size: v.$font-size-sm;
-    color: v.$text-color-medium;
-    white-space: nowrap;
-
-    &:first-child {
-      font-weight: v.$font-weight-medium;
-      color: v.$text-color-dark;
-    }
-  }
-
-  &__actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: v.$space-1;
-  }
-}
-
-.c-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: v.$space-1 v.$space-3;
-  border-radius: v.$border-radius-full;
-  font-size: v.$font-size-sm;
-  font-weight: v.$font-weight-medium;
-  text-transform: capitalize;
-
-  &--status-in-progress {
-    background-color: #e0f2fe;
-    color: #0ea5e9;
-  }
-  &--status-pending {
-    background-color: #fef9c3;
-    color: #f59e0b;
-  }
-  &--status-completed {
-    background-color: #dcfce7;
-    color: #22c55e;
-  }
-  &--priority-high {
-    background-color: #fee2e2;
-    color: #ef4444;
-  }
-  &--priority-medium {
-    background-color: #ffedd5;
-    color: #f97316;
-  }
-  &--priority-low {
-    background-color: #e0e7ff;
-    color: #818cf8;
-  }
-}
-
-.c-table-column--subtask-title {
-  width: 25%;
-}
-.c-table-column--subtask-desc {
-  width: 25%;
+// Make other items in the list move out of the way smoothly
+.cdk-drop-list-dragging .features-list:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
 }

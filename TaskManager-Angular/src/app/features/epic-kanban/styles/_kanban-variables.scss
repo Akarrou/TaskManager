@@ -1,0 +1,20 @@
+// Kanban Semantic Colors
+
+// --- Status Colors ---
+$status-pending-bg: #f3f4f6; // gray-100
+$status-pending-text: #4b5563; // gray-600
+
+$status-in-progress-bg: #dbeafe; // blue-100
+$status-in-progress-text: #2563eb; // blue-600
+
+$status-review-bg: #fef3c7; // amber-100
+$status-review-text: #d97706; // amber-600
+
+$status-completed-bg: #dcfce7; // green-100
+$status-completed-text: #16a34a; // green-600
+
+// --- Priority Colors (for borders or indicators) ---
+$priority-low-color: #22c55e; // green-500
+$priority-medium-color: #3b82f6; // blue-500
+$priority-high-color: #f97316; // orange-500
+$priority-urgent-color: #ef4444; // red-500

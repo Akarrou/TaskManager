@@ -1,6 +1,7 @@
 @use "../../../../styles/variables" as v;
 @use "../../../../styles/mixins" as m;
 @use "sass:color";
+@import "../../../epic-kanban/styles/kanban-variables";
 
 // ============================================================================
 // FEATURE CARD - Component Styles
@@ -53,6 +54,19 @@
 
   &.has-active-tasks {
     --card-indicator-color: #{v.$warning-color};
+  }
+
+  &.priority-low {
+    border-left: 4px solid $priority-low-color;
+  }
+  &.priority-medium {
+    border-left: 4px solid $priority-medium-color;
+  }
+  &.priority-high {
+    border-left: 4px solid $priority-high-color;
+  }
+  &.priority-urgent {
+    border-left: 4px solid $priority-urgent-color;
   }
 
   .mat-mdc-card-header {
