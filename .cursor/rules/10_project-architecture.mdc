@@ -9,236 +9,108 @@ globs: ["**/*"]
 alwaysApply: false
 ---
 
-# 🏛️ Architecture du Projet AgroFlow
+# 🏛️ Architecture du Projet Task Manager
 
 ## Rôle & Contexte
-Ce fichier est la source unique de vérité pour l’architecture, l’arborescence complète et les patterns structurels du projet AgroFlow. Il doit être référencé par toutes les autres règles Cursor.
-
-Ce document centralise la **structure de référence** du projet AgroFlow : arborescence complète, conventions de dossiers, exemples, et patterns structurels. Il doit être référencé par toutes les règles Cursor concernées (backend, frontend, guidelines globales).
+Ce fichier est la source unique de vérité pour l’architecture et l’arborescence du projet Task Manager. Il doit être référencé par toutes les autres règles.
 
 ---
 
-## 📐 Arborescence Complète Backend
+## 📐 Arborescence du Frontend (Angular)
+
+L'arborescence suit la structure standard d'un projet Angular CLI.
 
 ```text
-Back/
+TaskManager-Angular/
   src/
-    main/
-      java/
-        com/
-          logicfractal/
-            AgroFlow/
-              config/                # Configuration Spring, sécurité, CORS, etc.
-              context/               # Contexte d'application (ex : sécurité)
-                security/
-                  jwt/               # Gestion JWT
-              dto/                   # Objets de transfert de données (DTO)
-              dtoMapper/             # Mappers entre entités et DTO
-              entity/                # Entités JPA (modèle métier)
-              enums/                 # Énumérations métiers
-              exception/             # Gestion centralisée des exceptions
-              filter/                # Filtres HTTP/Sécurité
-              repository/            # Interfaces JPA (Spring Data)
-              restController/        # Contrôleurs REST (endpoints)
-              service/               # Logique métier, organisée par domaine
-                account/
-                adress/
-                company/
-                customer/
-                finishedProduct/
-                order/
-                permission/
-                productionLot/
-                productionOrder/
-                rawMaterial/
-                recipe/
-                role/
-                rolePermission/
-                staff/
-                store/
-                supplier/
-                supplierDelivery/
-                supplierOrder/
-                supplierOrderDetail/
-                supplierPayment/
-                user/
-                userPermission/
-      resources/
-        db/
-          migration/                 # Scripts de migration Flyway
-        static/                      # Fichiers statiques (si besoin)
-        templates/                   # Templates (si besoin)
-    test/
-      java/
-        com/
-          logicfractal/
-            AgroFlow/
-              service/               # Tests unitaires/services par domaine
-                ...
-      resources/                     # Ressources de test
-```
-
----
-
-## 📦 Arborescence Complète Frontend (Nx Workspace)
-
-```text
-Front/
-  agroflow-workspace/
-    apps/
-      admin/                        # Application Angular principale (admin)
-        src/
-          app/                      # Modules et composants métier (par domaine)
-            account/
-            company/
-            dashboard/
-            finished-products/
-            home/
-            raw-materials/
-            recipes/
-            stores/
-            suppliers/
-          assets/
-            i18n/                   # Fichiers de traduction par module/composant
-          styles/                   # Styles globaux
-      marketplace/                  # Autre app Angular (marketplace)
-      production/                   # Autre app Angular (production)
-      store/                        # Autre app Angular (store)
-    shared/
-      core/
-        src/
-          lib/
-            guards/
-            interceptors/
-            modules/
-            providers/
-            services/
-      data-access/
-        src/
-          assets/
-            i18n/
-          lib/
-            services/
-            stores/
-      directive/
-        src/
-          lib/
-            permission/
-            ui/
-            validation/
-      guards/
+    app/
+      core/                  # Services transverses, Guards, Intercepteurs
+        guards/
+        services/
+          auth.service.ts    # Logique d'authentification
+          supabase.service.ts # Client et interactions Supabase
+          task.service.ts    # Logique métier des tâches
+      features/              # Modules fonctionnels par domaine
         auth/
-        src/
-          auth/
-          utils/
-        utils/
-      i18n/
-        src/
-          assets/
-            i18n/
-          lib/
-            services/
-      models/
-        src/
-          lib/
-            enums/
-            interfaces/
-            models/
-      pipes/
-        src/
-          lib/
-            form/
-              formcontrol/
-              formgroup/
-      styles/
-        src/
-      ui/
-        src/
-          assets/
-            i18n/
-          lib/
-            components/
-              address/
-              button/
-              confirm-dialog/
-              control-messages/
-              custom-snackbar/
-              data-table/
-              header/
-              help-tooltip/
-              language-selector/
-              login/
-              logo/
-              navigation-bar/
-              permission-debug/
-              price-input/
-              route-animation/
-              spinner/
-              stepper/
-              webcam-capture/
-    scripts/
-      merge-translations.js          # Script de fusion i18n
-    docs/
-    ...
+          login/
+        dashboard/
+        tasks/
+          task-form/
+          task-tree/
+      shared/                # Composants, pipes, directives réutilisables
+        components/
+        pipes/
+        directives/
+      store/                 # État global NgRx
+        reducers/
+        effects/
+        actions/
+        selectors/
+      styles/                # Styles globaux (ex: _variables.scss)
+    assets/                  # Ressources statiques (images, etc.)
+    environments/            # Configuration par environnement
+  ...
 ```
 
 ---
 
 ## 🧑‍💻 Exemples de Patterns Structurels
 
-- **Séparation claire des responsabilités** : chaque dossier a un rôle précis (ex : `service/` = logique métier, `repository/` = accès données, `restController/` = endpoints REST).
-- **Convention de nommage** : tout en anglais, PascalCase pour les classes, kebab-case pour les fichiers de config.
-- **Tests** : chaque domaine métier a son dossier de tests dédié sous `test/java/com/logicfractal/AgroFlow/service/`.
-- **Ressources** : scripts de migration Flyway dans `db/migration/`, templates et statiques séparés.
-- **Frontend** :
-  - **Séparation apps/libs** : `apps/` pour les applications Angular, `libs/` pour les bibliothèques partagées (UI, core, data-access, models, i18n, etc.).
-  - **Organisation par domaine** : chaque domaine métier a son dossier dans `app/` (ex : `raw-materials/`, `suppliers/`).
-  - **i18n** : chaque module/composant a ses propres fichiers de traduction dans `assets/i18n/`.
-  - **Composants réutilisables** : tous les composants UI communs sont dans `shared/ui/src/lib/components/`.
-  - **Styles** : styles globaux dans `styles/`, styles spécifiques dans chaque composant.
-  - **Scripts** : scripts utilitaires (ex : merge i18n) dans `scripts/`.
+- **Séparation claire des responsabilités** : Chaque dossier a un rôle précis (`core` pour la logique transverse, `features` pour les domaines métier, `shared` pour le code réutilisable).
+- **Organisation par feature** : Chaque fonctionnalité métier (ex: `tasks`) est isolée dans son propre dossier sous `features/`, contenant ses composants, services et éventuellement son propre état NgRx.
+- **État global centralisé** : La gestion de l'état avec NgRx est regroupée dans le dossier `src/app/store`.
+- **Convention de nommage** : Tout en anglais, PascalCase pour les classes, kebab-case pour les fichiers.
 
 ---
 
 ## 🔗 Références croisées
 
 - Ce document doit être référencé dans :
-  - [41_guidelines-backend.mdc](mdc:41_guidelines-backend.mdc)
   - [40_guidelines-frontend.mdc](mdc:40_guidelines-frontend.mdc)
-  - [agroflow-project-guidelines.mdc](mdc:agroflow-project-guidelines.mdc)
-  - Toute règle Cursor nécessitant la structure du projet
+  - [task-manager-project-guidelines.mdc](mdc:task-manager-project-guidelines.mdc)
 
 ---
 
-## ⚠️ RÈGLE AUTOMATIQUE : Mise À Jour Obligatoire
+## ⚠️ RÈGLE DE MISE À JOUR : Check-list de sortie
 
-**CHAQUE FOIS qu'un dossier ou fichier est créé/supprimé/déplacé**, l'IA DOIT automatiquement mettre à jour ce fichier d'architecture.
+**AVANT de finaliser une tâche impliquant une modification de la structure du projet**, l'IA doit :
 
-### 🔄 **Workflow Automatique de Synchronisation**
+1.  ✅ **Vérifier la cohérence** : S'assurer que les changements respectent les patterns architecturaux existants.
+2.  ✍️ **Proposer une mise à jour** : Identifier si des sections de ce document sont devenues obsolètes.
+3.  📋 **Générer un plan de mise à jour** : Proposer les modifications à appliquer à ce fichier pour qu'il reflète le nouvel état du projet.
 
-#### 🆕 **Lors de création de nouveaux éléments** :
-1. **Détecter automatiquement** : Nouveaux dossiers, fichiers, modules, composants
-2. **Mettre à jour l'arborescence** : Refléter les changements dans les sections concernées
-3. **Documenter les patterns** : Expliquer la logique structurelle des nouveaux éléments
-4. **Valider la cohérence** : S'assurer que les nouveaux éléments respectent l'architecture existante
+Cette vérification garantit que la documentation architecturale reste synchronisée avec le code.
 
-#### 🗑️ **Lors de suppression d'éléments** :
-1. **Supprimer de l'arborescence** : Retirer les références obsolètes
-2. **Nettoyer les références croisées** : Mettre à jour les liens vers les éléments supprimés
-3. **Documenter les impacts** : Noter les implications architecturales
+### 🔄 **Exemple de proposition de mise à jour**
 
-#### 📁 **Lors de déplacement/restructuration** :
-1. **Refléter la nouvelle organisation** : Mettre à jour les chemins et hiérarchie
-2. **Expliquer la logique** : Documenter les raisons du changement structurel
-3. **Mettre à jour les exemples** : Adapter les patterns et exemples
+```markdown
+### 🔄 Proposition de Mise à Jour de l'Architecture - [Date]
+**Tâche concernée** : #{numéro} - {titre}
+**Changements structurels détectés** :
+- ✅ **Ajouté** : `shared/utils/src/lib/validators/`
+- ❌ **Supprimé** : `shared/core/src/lib/old-validator.ts`
 
-### 🛠️ **Outils de Détection Automatique**
-- `list_dir` : Exploration systématique des structures de dossiers
-- `file_search` : Détection de nouveaux types de fichiers
-- `codebase_search` : Identification de nouveaux patterns architecturaux
-- Comparaison avec l'état documenté précédent
+**Impact et proposition de modification** :
+La nouvelle librairie de validateurs doit être ajoutée à l'arborescence Frontend.
+*Modification proposée pour `10_project-architecture.mdc` :*
+`// ... existing code ...
+    shared/
+      ui/
+      utils/         # <-- AJOUTER CETTE LIGNE
+        src/
+// ...`
+```
 
-### 📋 **Format de Mise À Jour Obligatoire**
+---
+
+## 📝 Bonnes pratiques
+
+- **Synchronisation automatique obligatoire** : Ce document DOIT être mis à jour à chaque modification structurelle
+- **Source unique de vérité** : Utiliser ce document comme référence absolue pour l'architecture AgroFlow
+- **Documentation des patterns** : Chaque nouveau pattern doit être documenté avec ses exemples
+- **Cohérence architecturale** : Valider que chaque ajout respecte les conventions existantes
+- **Traçabilité des changements** : Maintenir un historique des évolutions structurelles
+
 
 Chaque modification doit inclure :
 ```markdown
@@ -253,7 +125,6 @@ Chaque modification doit inclure :
 - [Cohérence avec les patterns existants]
 - [Implications pour les autres modules]
 ```
-
 ### ⚡ **Déclencheurs Automatiques**
 
 Cette mise à jour DOIT être déclenchée automatiquement lors de :
@@ -272,3 +143,4 @@ Cette mise à jour DOIT être déclenchée automatiquement lors de :
 - **Documentation des patterns** : Chaque nouveau pattern doit être documenté avec ses exemples
 - **Cohérence architecturale** : Valider que chaque ajout respecte les conventions existantes
 - **Traçabilité des changements** : Maintenir un historique des évolutions structurelles
+

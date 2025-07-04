@@ -1,0 +1,85 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Règles d'IA – Projet Task Manager
+
+## Rôle & Contexte
+Ce fichier définit les conventions globales, la philosophie de développement, les exigences transverses et le workflow général du projet Task Manager. Il s'applique à tous les modules et à l'IA.
+
+## Contexte du projet
+Task Manager est une application composée d'un **frontend Angular** (Angular 20, Tailwind CSS, NgRx, etc.) et utilisant **Supabase** comme backend (Base de données, Auth, etc.). Ce document définit les conventions générales, l'architecture globale et les bonnes pratiques transverses à respecter dans le projet. Pour les détails spécifiques au frontend, veuillez consulter le fichier de règles dédié :
+- `40_guidelines-frontend.mdc`
+
+---
+
+## 1. Conventions de nommage et Standards Généraux
+- **Nom du Projet** : Task Manager
+- **Langue Principale du Code (hors libellés utilisateur)** : Anglais (pour les noms de variables, fonctions, classes, commentaires techniques, etc.)
+- **Messages de Commit** : En anglais, courts et descriptifs (voir section Workflow).
+
+---
+
+## 2. Structure Générale du Projet
+
+> **Voir l'arborescence complète et les patterns dans [10_project-architecture.mdc](mdc:10_project-architecture.mdc)**
+
+Le projet est contenu dans le dossier `TaskManager-Angular/`.
+
+Consultez la règle `40_guidelines-frontend.mdc` pour les détails de structure interne.
+
+---
+
+## 3. Bonnes Pratiques et Recommandations Transverses
+- **Lisibilité du code** : Privilégier un code clair, concis et bien commenté (en anglais pour les commentaires techniques).
+- **Simplicité (KISS)** : Éviter la complexité inutile.
+- **DRY (Don't Repeat Yourself)** : Factoriser le code pour éviter la duplication.
+- **Gestion des erreurs** : Mettre en place une gestion robuste des erreurs et des exceptions.
+- **Sécurité** : Appliquer les bonnes pratiques de sécurité, notamment la gestion des policies RLS de Supabase.
+
+---
+
+## 4. Workflow et Intégration Continue
+
+- **Contrôle de version** : Utiliser Git avec une stratégie de branches (ex: `feature/<name>`, `develop`, `main`).
+  - Les messages de commit doivent être en anglais, suivre un format concis (ex: `feat: add user login functionality`, `fix: resolve issue with order processing`).
+- **Gestion des tâches** : Utiliser les issues GitHub.
+- **CI/CD** : Des pipelines peuvent être mis en place pour automatiser builds, tests et déploiements (ex. GitHub Actions).
+- **Revue de code** : Procéder à des pull requests avec des revues de code systématiques pour toutes les modifications.
+
+---
+
+## Références complémentaires Générales
+- [10_project-architecture.mdc](mdc:10_project-architecture.mdc)
+- [Documentation Angular](https://angular.dev/)
+- [Documentation Supabase](https://supabase.com/docs)
+- [Principes SOLID](https://fr.wikipedia.org/wiki/SOLID_(informatique))
+
+---
+
+## 5. Qualité & Conformité
+
+### 🚦 Quality Gates
+
+- Respect des principes SOLID
+- Structure de projet conforme
+- Nommage conforme (kebab-case, PascalCase, etc.)
+- Couverture de tests unitaires souhaitable pour les logiques complexes.
+- Conformité stricte aux guidelines techniques (voir 40)
+- Blocage de toute progression si une règle critique n'est pas respectée
+- Validation manuelle obligatoire pour lever un blocage
+
+### 📋 Check-lists
+
+- Problème utilisateur clairement formulé
+- User stories claires
+- Critères d'acceptation définis
+- Conformité aux guidelines référencées
+
+### 🛡️ Gouvernance
+
+- Chaque plan, tâche, commit doit référencer les guidelines utilisées
+- Toute divergence ou non-conformité doit être remontée et bloquer la progression
+- L'IA est responsable de la cohérence et de la traçabilité
+

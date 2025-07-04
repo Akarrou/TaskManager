@@ -23,8 +23,13 @@ Il constitue la **source de vérité documentaire** pour l'ensemble de l'équipe
 - **Consultation et exploitation active** :  
   Lors de la génération d'un PRD, de tâches, ou de toute réflexion/planification, l'IA a l'obligation de consulter et d'exploiter activement la documentation existante dans `@/docs`, en complément des autres règles Cursor déjà en place.  
   L'IA doit s'assurer de la cohérence, de la non-redondance, et de la capitalisation des connaissances documentées.
-- **Format et structure** :  
-  Les fichiers doivent être en Markdown, nommés de façon explicite, et organisés par thématique (ex : `BASE_DE_DONNEES.md`, `FONCTIONNALITES_APPLICATION.md`, etc.).
+- **Format et structure Obligatoires (Documentation-as-Context)** :  
+  Tous les fichiers du dossier `/docs` DOIVENT respecter le format **Documentation-as-Context (DaC)** pour être lisibles par les humains et les IA. Ce format inclut :
+  1.  **Un en-tête YAML Front Matter** (`---`) contenant les métadonnées (`title`, `description`, `tags`, `related_rules`...).
+  2.  **Une structure de titres standardisée** (`## Objectif`, `## Stack Technique`...).
+  3.  L'utilisation de **blocs de contexte** (`> **🤖 Contexte pour l'IA :**`) si nécessaire.
+  
+  Pour le détail exact du template à appliquer, **référez-vous à la structure définie dans la commande `@60_docs-generator.mdc`**.
 - **Synchronisation** :  
   La documentation doit toujours refléter l'état réel du projet.  
   Toute modification de la structure, des fonctionnalités ou des processus doit être documentée sans délai.
