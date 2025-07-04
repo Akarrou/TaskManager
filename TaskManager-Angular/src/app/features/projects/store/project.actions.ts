@@ -34,3 +34,5 @@ export const createProjectFailure = createAction(
     '[Projects API] Create Project Failure',
     props<{ error: any }>()
 );
+
+export const init = createAction('[Projects] Init');

@@ -7,6 +7,8 @@ import { selectSelectedProjectId } from '../../features/projects/store/project.s
 import { switchMap, from, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
+export type { ISubtask };
+
 export interface Task {
   id?: string;
   title: string;

@@ -1,8 +1,7 @@
 <div class="epic-kanban-container">
-  
+
   <!-- Header avec métriques -->
-  <app-epic-header
-    *ngIf="(currentEpic$ | async) && (metrics$ | async)"
+  <app-epic-header *ngIf="(currentEpic$ | async) && (metrics$ | async)"
     [epic]="(currentEpic$ | async)!"
     [metrics]="(metrics$ | async)!"
     [canEdit]="true"
@@ -14,13 +13,12 @@
     (exportBoard)="onExportBoard()"
     (shareBoard)="onShareBoard()">
   </app-epic-header>
-  
+
   <!-- Section des filtres -->
   <app-search-filters></app-search-filters>
-  
+
   <!-- Métriques en haut -->
-  <app-epic-metrics 
-    *ngIf="(currentEpic$ | async) && (metrics$ | async)"
+  <app-epic-metrics *ngIf="(currentEpic$ | async) && (metrics$ | async)"
     [epic]="(currentEpic$ | async)!"
     [features]="(features$ | async) || []"
     [tasks]="(tasks$ | async) || []"
@@ -28,7 +26,8 @@
   </app-epic-metrics>
 
   <!-- État de chargement -->
-  <div *ngIf="loading$ | async" class="loading-state">
+  <div *ngIf="loading$ | async"
+    class="loading-state">
     <div class="loading-content">
       <mat-icon class="loading-spinner">hourglass_empty</mat-icon>
       <span>Chargement du tableau Kanban...</span>
@@ -36,22 +35,25 @@
   </div>
 
   <!-- État d'erreur -->
-  <div *ngIf="error$ | async" class="error-state">
+  <div *ngIf="error$ | async"
+    class="error-state">
     <mat-icon class="error-icon">error_outline</mat-icon>
     <h3>Erreur de chargement</h3>
     <p>{{ error$ | async }}</p>
-    <button mat-raised-button color="primary" (click)="retryLoad()">
+    <button mat-raised-button
+      color="primary"
+      (click)="retryLoad()">
       <mat-icon>refresh</mat-icon>
       Réessayer
     </button>
   </div>
 
   <!-- Tableau Kanban -->
-  <div *ngIf="!(loading$ | async) && !(error$ | async)" class="epic-board">
+  <div *ngIf="!(loading$ | async) && !(error$ | async)"
+    class="epic-board">
     <div class="kanban-board-content">
       <div class="kanban-columns-container">
-        <app-kanban-column
-          *ngFor="let column of featuresByColumn$ | async; trackBy: trackColumn"
+        <app-kanban-column *ngFor="let column of featuresByColumn$ | async; trackBy: trackColumn"
           [column]="column"
           [features]="column.features"
           [isLoading]="(loading$ | async) || false"
@@ -59,6 +61,7 @@
           [featureTasks]="featureTasksMap"
           [connectedDropLists]="getConnectedDropLists(column.statusValue)"
           [highlightedSubtasksByFeature]="highlightedSubtasksByFeature"
+          (featureDrop)="onFeatureDrop($event)"
           (featureClick)="onFeatureClick($event)"
           (featureEdit)="onFeatureEdit($event)"
           (featureDelete)="onFeatureDelete($event)"
@@ -73,4 +76,4 @@
     </div>
   </div>
 
-</div> 
+</div>

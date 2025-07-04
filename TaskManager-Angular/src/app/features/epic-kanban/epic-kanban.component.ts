@@ -2,7 +2,6 @@ import { Component, OnInit, OnDestroy, inject, computed, signal } from '@angular
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
@@ -13,6 +12,7 @@ import { takeUntil, Subject } from 'rxjs';
 import { take } from 'rxjs/operators';
 
 import { Task } from '../../core/services/task';
+type TaskStatus = Task['status'];
 import { TaskService } from '../../core/services/task';
 import { KanbanColumn } from './models/epic-board.model';
 import * as ProjectSelectors from '../projects/store/project.selectors';
@@ -35,12 +35,10 @@ import { ISubtask } from '../tasks/subtask.model';
   imports: [
     CommonModule,
     MatProgressBarModule,
-    MatButtonModule,
     MatIconModule,
     MatCardModule,
     MatDialogModule,
     MatSnackBarModule,
-
     EpicHeaderComponent,
     KanbanColumnComponent,
     EpicMetricsComponent,
@@ -120,8 +118,9 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   }
 
   // Événements des features
-  onFeatureMove(event: { featureId: string; fromColumnId: string; toColumnId: string; newStatus: string }): void {
+  onFeatureMove(event: { featureId: string; fromColumnId: string; toColumnId: string; newStatus: TaskStatus }): void {
     this.store.dispatch(EpicKanbanActions.moveFeature(event));
+    console.log('🔄 Feature moved:', event);
   }
 
   onFeatureExpand(featureId: string): void {
@@ -137,7 +136,7 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   }
 
   // Événements des tâches
-  onTaskStatusChange(event: { task: Task | ISubtask; newStatus: string }): void {
+  onTaskStatusChange(event: { task: Task | ISubtask; newStatus: TaskStatus }): void {
     this.store.dispatch(EpicKanbanActions.updateTaskStatus({
       taskId: event.task.id!,
       newStatus: event.newStatus
@@ -359,14 +358,11 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
 
   onFeatureDrop(event: CdkDragDrop<Task[]>): void {
     if (event.previousContainer === event.container) {
-      // Réorganisation dans la même colonne
+      // Déplacement dans la même colonne (réorganisation)
       moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+      // TODO: Dispatch une action pour sauvegarder le nouvel ordre
     } else {
-      // Déplacement entre colonnes différentes
-      const feature = event.previousContainer.data[event.previousIndex];
-      const newStatus = this.getStatusFromColumnId(event.container.id);
-
-      // Transfer de l'item
+      // Déplacement vers une autre colonne (changement de statut)
       transferArrayItem(
         event.previousContainer.data,
         event.container.data,
@@ -374,37 +370,40 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
         event.currentIndex
       );
 
-      // Dispatch action pour mettre à jour le statut
+      const featureId = event.item.data.id;
+      const newStatus = this.getStatusFromColumnId(event.container.id);
+
+      // Log pour débugger
+      console.log(`%c[DnD] Feature '${featureId}' moved to column '${event.container.id}' (new status: ${newStatus})`, 'color: #3498DB');
+      console.log(`%c[DnD] fromContainer: ${event.previousContainer.id}`, 'color: #9B59B6');
+
+      // Dispatcher l'action NgRx pour mettre à jour le statut
       this.store.dispatch(EpicKanbanActions.moveFeature({
-        featureId: feature.id!,
+        featureId,
         fromColumnId: event.previousContainer.id,
         toColumnId: event.container.id,
-        newStatus: newStatus
+        newStatus
       }));
 
-      // Notification de succès
-      this.snackBar.open(
-        `Feature "${feature.title}" déplacée vers "${this.getColumnDisplayName(newStatus)}"`,
-        'Fermer',
-        { duration: 3000 }
-      );
+      // Afficher un toast de confirmation
+      const columnName = this.getColumnDisplayName(newStatus);
+      this.snackBar.open(`Feature déplacée vers "${columnName}"`, 'OK', {
+        duration: 2000,
+      });
     }
   }
 
-  private getStatusFromColumnId(columnId: string): string {
-    // Extrait le statut depuis l'ID de la colonne (ex: 'column-in_progress' -> 'in_progress')
-    return columnId.replace('column-', '');
+  private getStatusFromColumnId(columnId: string): TaskStatus {
+    // La logique ici peut être simple ou complexe.
+    // Pour l'instant, on fait un mapping direct.
+    // ex: "cdk-drop-list-pending" -> "pending"
+    return (columnId.split('-').pop() || 'pending') as TaskStatus;
   }
 
-  private getColumnDisplayName(status: string): string {
-    switch (status) {
-      case 'pending': return 'À faire';
-      case 'in_progress': return 'En cours';
-      case 'review': return 'Review';
-      case 'completed': return 'Terminé';
-      case 'cancelled': return 'Annulé';
-      default: return status;
-    }
+  private getColumnDisplayName(status: TaskStatus): string {
+    const columns = this.store.selectSignal(EpicKanbanSelectors.selectColumns)();
+    const column = columns.find(c => c.statusValue === status);
+    return column ? column.title : status;
   }
 
   // === INJECTION DE DÉPENDANCES ===

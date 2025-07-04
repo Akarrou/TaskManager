@@ -11,26 +11,26 @@ export const EpicKanbanActions = createActionGroup({
     'Load Epic Board Failure': props<{ error: string }>(),
 
     // Gestion Features
-    'Move Feature': props<{ 
-      featureId: string; 
-      fromColumnId: string; 
-      toColumnId: string; 
-      newStatus: string;
+    'Move Feature': props<{
+      featureId: string;
+      fromColumnId: string;
+      toColumnId: string;
+      newStatus: Task['status'];
     }>(),
-    'Move Feature Success': props<{ 
-      featureId: string; 
-      newStatus: string; 
+    'Move Feature Success': props<{
+      featureId: string;
+      newStatus: Task['status'];
     }>(),
     'Move Feature Failure': props<{ error: string }>(),
 
     // Gestion Tasks
-    'Update Task Status': props<{ 
-      taskId: string; 
-      newStatus: string; 
+    'Update Task Status': props<{
+      taskId: string;
+      newStatus: Task['status'];
     }>(),
-    'Update Task Status Success': props<{ 
-      taskId: string; 
-      newStatus: string; 
+    'Update Task Status Success': props<{
+      taskId: string;
+      newStatus: Task['status'];
     }>(),
     'Update Task Status Failure': props<{ error: string }>(),
 
@@ -45,7 +45,7 @@ export const EpicKanbanActions = createActionGroup({
     'Collapse All Features': emptyProps(),
 
     // T020 - Filtres enrichis
-    'Update Filters': props<{ 
+    'Update Filters': props<{
       searchText?: string;
       priority?: string;
       assignee?: string;
@@ -74,12 +74,12 @@ export const EpicKanbanActions = createActionGroup({
     'Move Feature Complete': props<{ moveEvent: TaskMoveEvent }>(),
 
     // Actions batch
-    'Bulk Update Features': props<{ 
-      featureIds: string[]; 
-      updates: Partial<Task> 
+    'Bulk Update Features': props<{
+      featureIds: string[];
+      updates: Partial<Task>
     }>(),
-    'Bulk Update Features Success': props<{ 
-      updatedFeatures: Task[] 
+    'Bulk Update Features Success': props<{
+      updatedFeatures: Task[]
     }>(),
     'Bulk Update Features Failure': props<{ error: string }>(),
 
@@ -96,4 +96,4 @@ export const EpicKanbanActions = createActionGroup({
     'Create Task Success': props<{ task: Task }>(),
     'Create Task Failure': props<{ error: string }>(),
   }
-}); 
+});

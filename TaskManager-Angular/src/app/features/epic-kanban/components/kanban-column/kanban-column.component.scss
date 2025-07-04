@@ -1,7 +1,7 @@
 @use "sass:color";
 @use "../../../../styles/variables" as v;
 @use "../../../../styles/mixins" as m;
-@import "../../styles/kanban-variables";
+@use "../../../../styles/kanban-variables" as kanban;
 
 // ============================================================================
 // KANBAN COLUMN - Component Styles
@@ -33,42 +33,42 @@
 
   // --- Status Color Variants ---
   &.status-pending {
-    background-color: color.adjust($status-pending-bg, $alpha: -0.5);
+    background-color: color.adjust(kanban.$status-pending-bg, $alpha: -0.5);
     .column-header {
-      background-color: $status-pending-bg;
+      background-color: kanban.$status-pending-bg;
       .column-title,
       .column-icon {
-        color: $status-pending-text;
+        color: kanban.$status-pending-text;
       }
     }
   }
   &.status-in_progress {
-    background-color: color.adjust($status-in-progress-bg, $alpha: -0.5);
+    background-color: color.adjust(kanban.$status-in-progress-bg, $alpha: -0.5);
     .column-header {
-      background-color: $status-in-progress-bg;
+      background-color: kanban.$status-in-progress-bg;
       .column-title,
       .column-icon {
-        color: $status-in-progress-text;
+        color: kanban.$status-in-progress-text;
       }
     }
   }
   &.status-review {
-    background-color: color.adjust($status-review-bg, $alpha: -0.5);
+    background-color: color.adjust(kanban.$status-review-bg, $alpha: -0.5);
     .column-header {
-      background-color: $status-review-bg;
+      background-color: kanban.$status-review-bg;
       .column-title,
       .column-icon {
-        color: $status-review-text;
+        color: kanban.$status-review-text;
       }
     }
   }
   &.status-completed {
-    background-color: color.adjust($status-completed-bg, $alpha: -0.5);
+    background-color: color.adjust(kanban.$status-completed-bg, $alpha: -0.5);
     .column-header {
-      background-color: $status-completed-bg;
+      background-color: kanban.$status-completed-bg;
       .column-title,
       .column-icon {
-        color: $status-completed-text;
+        color: kanban.$status-completed-text;
       }
     }
   }

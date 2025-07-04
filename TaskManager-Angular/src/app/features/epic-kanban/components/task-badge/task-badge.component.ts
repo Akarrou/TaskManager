@@ -6,10 +6,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
-import { ISubtask } from '../../../tasks/subtask.model';
-import { Task } from '../../../../core/services/task';
+import { ISubtask, Task } from '../../../../core/services/task';
 
-type TaskStatus = 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled';
+type TaskStatus = Task['status'];
 type TaskPriority = 'low' | 'medium' | 'high' | 'urgent' | 'None';
 
 @Component({
@@ -32,12 +31,12 @@ export class TaskBadgeComponent implements OnInit, OnChanges {
   @Input({ required: true }) task!: ISubtask | Task;
   @Input() showQuickActions = true;
   @Input() enableNavigation = false;
-  @Output() taskClick = new EventEmitter<ISubtask | Task>();
+  @Output() taskClick = new EventEmitter<Task | ISubtask>();
   @Output() taskUpdate = new EventEmitter<Partial<ISubtask | Task>>();
   @Output() taskDelete = new EventEmitter<string>();
-  @Output() statusChange = new EventEmitter<{ task: ISubtask | Task; newStatus: string }>();
-  @Output() priorityChange = new EventEmitter<{ task: ISubtask | Task; newPriority: string }>();
-  @Output() taskEdit = new EventEmitter<ISubtask | Task>();
+  @Output() statusChange = new EventEmitter<TaskStatus>();
+  @Output() priorityChange = new EventEmitter<string>();
+  @Output() taskEdit = new EventEmitter<Task | ISubtask>();
 
   priorityConfig: { icon: string; label: TaskPriority } = { icon: 'horizontal_rule', label: 'None' };
   nextPriority: TaskPriority = 'low';
@@ -125,12 +124,12 @@ export class TaskBadgeComponent implements OnInit, OnChanges {
 
   onStatusToggle(event: Event): void {
     event.stopPropagation();
-    this.statusChange.emit({ task: this.task, newStatus: this.nextStatus });
+    this.statusChange.emit(this.nextStatus);
   }
 
   onPriorityToggle(event: Event): void {
     event.stopPropagation();
-    this.priorityChange.emit({ task: this.task, newPriority: this.nextPriority });
+    this.priorityChange.emit(this.nextPriority);
   }
 
   onQuickEdit(event: Event): void {
@@ -152,4 +151,10 @@ export class TaskBadgeComponent implements OnInit, OnChanges {
   get detailedTooltip(): string {
     return `Tâche: ${this.task.title}\nStatut: ${this.task.status}`;
   }
-} 
+
+  changeStatus(newStatus: TaskStatus): void {
+    if (this.task.status !== newStatus) {
+      this.statusChange.emit(newStatus);
+    }
+  }
+}

@@ -41,6 +41,7 @@ export class ProjectSelectorComponent implements OnInit {
   onProjectChange(event: Event) {
     const selectedId = (event.target as HTMLSelectElement).value;
     if (selectedId) {
+      localStorage.setItem('selectedProjectId', selectedId);
       this.store.dispatch(ProjectActions.selectProject({ projectId: selectedId }));
     }
   }

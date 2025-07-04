@@ -97,17 +97,23 @@ export const epicKanbanReducer = createReducer(
     error: null
   })),
 
-  on(EpicKanbanActions.moveFeatureSuccess, (state, { featureId, newStatus }) => ({
-    ...state,
-    features: state.features.map(feature =>
-      feature.id === featureId 
+  on(EpicKanbanActions.moveFeatureSuccess, (state, { featureId, newStatus }) => {
+    console.log('%c[DnD Reducer] Received moveFeatureSuccess. Updating state.', 'color: #9B59B6;', { featureId, newStatus });
+
+    const updatedFeatures = state.features.map(feature =>
+      feature.id === featureId
         ? { ...feature, status: newStatus as any }
         : feature
-    ),
-    saving: false,
-    error: null,
-    lastUpdated: new Date()
-  })),
+    );
+
+    return {
+      ...state,
+      features: updatedFeatures,
+      saving: false,
+      error: null,
+      lastUpdated: new Date()
+    };
+  }),
 
   on(EpicKanbanActions.moveFeatureFailure, (state, { error }) => ({
     ...state,
@@ -125,7 +131,7 @@ export const epicKanbanReducer = createReducer(
   on(EpicKanbanActions.updateTaskStatusSuccess, (state, { taskId, newStatus }) => ({
     ...state,
     tasks: state.tasks.map(task =>
-      task.id === taskId 
+      task.id === taskId
         ? { ...task, status: newStatus as any }
         : task
     ),
@@ -273,7 +279,7 @@ export const epicKanbanReducer = createReducer(
   on(EpicKanbanActions.moveFeatureComplete, (state, { moveEvent }) => ({
     ...state,
     features: state.features.map(feature =>
-      feature.id === moveEvent.taskId 
+      feature.id === moveEvent.taskId
         ? { ...feature, status: moveEvent.newStatus as any }
         : feature
     ),
@@ -366,4 +372,4 @@ export const epicKanbanReducer = createReducer(
     saving: false,
     error
   }))
-); 
+);

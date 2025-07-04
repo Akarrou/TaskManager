@@ -88,16 +88,19 @@ export const selectFeaturesByColumn = createSelector(
   (features, columns, filters, tasks) => {
     // T021 - Utiliser le filtrage hiérarchique
     const filteredFeatures = applyHierarchicalFilters(features, tasks, filters);
-    return columns.map(column => ({
+    const columnsWithFeatures = columns.map(column => ({
       ...column,
       features: filteredFeatures.filter(feature => feature.status === column.statusValue)
     }));
+
+    console.log('%c[DnD Selector] Recalculating columns', 'color: #1ABC9C;', columnsWithFeatures);
+    return columnsWithFeatures;
   }
 );
 
 export const selectTasksForFeature = createSelector(
   selectTasks,
-  (tasks) => (featureId: string) => 
+  (tasks) => (featureId: string) =>
     tasks.filter(task => task.parent_task_id === featureId)
 );
 
@@ -106,7 +109,7 @@ export const selectFeatureProgress = createSelector(
   (tasks) => (featureId: string) => {
     const featureTasks = tasks.filter(task => task.parent_task_id === featureId);
     const completedTasks = featureTasks.filter(task => task.status === 'completed');
-    
+
     return {
       total: featureTasks.length,
       completed: completedTasks.length,
@@ -117,13 +120,13 @@ export const selectFeatureProgress = createSelector(
 
 export const selectIsFeatureExpanded = createSelector(
   selectExpandedFeatures,
-  (expandedFeatures) => (featureId: string) => 
+  (expandedFeatures) => (featureId: string) =>
     expandedFeatures.has(featureId)
 );
 
 export const selectColumnWorkload = createSelector(
   selectFeaturesByColumn,
-  (columnFeatures) => 
+  (columnFeatures) =>
     columnFeatures.map(column => ({
       ...column,
       count: column.features.length,
@@ -143,10 +146,10 @@ export const selectEpicProgress = createSelector(
   (features, tasks) => {
     const totalFeatures = features.length;
     const completedFeatures = features.filter(f => f.status === 'completed').length;
-    
+
     const totalTasks = tasks.length;
     const completedTasks = tasks.filter(t => t.status === 'completed').length;
-    
+
     return {
       features: {
         total: totalFeatures,
@@ -187,7 +190,7 @@ export const selectBlockedTasks = createSelector(
 export const selectColumnWithTaskCounts = createSelector(
   selectFeaturesByColumn,
   selectTasks,
-  (columnFeatures, tasks) => 
+  (columnFeatures, tasks) =>
     columnFeatures.map(column => ({
       ...column,
       taskCount: column.features.reduce((total, feature) => {
@@ -199,8 +202,8 @@ export const selectColumnWithTaskCounts = createSelector(
 
 export const selectWipLimitWarnings = createSelector(
   selectColumnWithTaskCounts,
-  (columns) => 
-    columns.filter(column => 
+  (columns) =>
+    columns.filter(column =>
       column.wipLimit && column.features.length >= (column.wipLimit * 0.8)
     )
 );
@@ -217,7 +220,7 @@ export const selectEpicBoardSummary = createSelector(
     completionPercentage: metrics?.progressPercentage || 0,
     avgVelocity: metrics?.velocity?.averageVelocity || 0,
     blockedItems: (metrics?.blockedTasks?.length || 0),
-    overdueItems: features.concat(tasks).filter(item => 
+    overdueItems: features.concat(tasks).filter(item =>
       item.due_date && new Date(item.due_date) < new Date() && item.status !== 'completed'
     ).length
   })
@@ -268,42 +271,42 @@ function applyFilters(features: any[], filters: any) {
       const searchLower = filters.searchText.toLowerCase();
       const matchesTitle = feature.title?.toLowerCase().includes(searchLower);
       const matchesNumber = feature.task_number?.toString().includes(searchLower.replace('#', ''));
-      
+
       if (!matchesTitle && !matchesNumber) {
         return false;
       }
     }
-    
+
     // Filtre par priorité
     if (filters.priority && feature.priority !== filters.priority) {
       return false;
     }
-    
+
     // Filtre par assigné
     if (filters.assignee && feature.assigned_to !== filters.assignee) {
       return false;
     }
-    
+
     // Filtre par statut
     if (filters.status && feature.status !== filters.status) {
       return false;
     }
-    
+
     // T020 - Filtre par environnement
     if (filters.environment && !feature.environment?.includes(filters.environment)) {
       return false;
     }
-    
+
     // T020 - Filtre par tags
     if (filters.tags && filters.tags.length > 0) {
-      const hasMatchingTag = filters.tags.some((tag: string) => 
+      const hasMatchingTag = filters.tags.some((tag: string) =>
         feature.tags?.includes(tag)
       );
       if (!hasMatchingTag) {
         return false;
       }
     }
-    
+
     return true;
   });
 }
@@ -334,4 +337,4 @@ export const selectFilteredFeaturesCount = createSelector(
   (features, tasks, filters) => {
     return applyHierarchicalFilters(features, tasks, filters).length;
   }
-); 
+);

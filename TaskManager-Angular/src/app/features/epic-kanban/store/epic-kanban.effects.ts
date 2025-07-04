@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
-import { catchError, map, switchMap, tap, withLatestFrom, filter } from 'rxjs/operators';
+import { catchError, map, switchMap, tap, withLatestFrom, filter, mergeMap } from 'rxjs/operators';
 import { of, from } from 'rxjs';
 import { Router } from '@angular/router';
 
@@ -65,24 +65,19 @@ export class EpicKanbanEffects {
   moveFeature$ = createEffect(() =>
     this.actions$.pipe(
       ofType(EpicKanbanActions.moveFeature),
-      switchMap(({ featureId, fromColumnId, toColumnId, newStatus }) => {
-        return from(this.taskService.updateTask(featureId, { status: newStatus as any })).pipe(
-          map((success) => {
-            if (success) {
-              return EpicKanbanActions.moveFeatureSuccess({ featureId, newStatus });
-            } else {
-              return EpicKanbanActions.moveFeatureFailure({
-                error: 'Échec de la mise à jour en base de données'
-              });
-            }
+      tap(action => console.log('%c[DnD Effect] Received moveFeature action', 'color: #E67E22;', action)),
+      mergeMap(({ featureId, newStatus }) =>
+        from(this.epicKanbanService.updateFeatureStatus(featureId, newStatus)).pipe(
+          map(() => {
+            console.log('%c[DnD Effect] Service call successful. Dispatching moveFeatureSuccess.', 'color: #2ECC71;');
+            return EpicKanbanActions.moveFeatureSuccess({ featureId, newStatus });
           }),
-          catchError(error => {
-            return of(EpicKanbanActions.moveFeatureFailure({
-              error: error?.message || 'Erreur lors du déplacement de la feature'
-            }));
+          catchError((error) => {
+            console.error('%c[DnD Effect] Service call failed. Dispatching moveFeatureFailure.', 'color: #E74C3C;', error);
+            return of(EpicKanbanActions.moveFeatureFailure({ error: error?.message || 'Unknown error' }));
           })
-        );
-      })
+        )
+      )
     )
   );
 

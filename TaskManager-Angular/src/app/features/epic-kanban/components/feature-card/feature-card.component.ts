@@ -4,7 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatMenuModule } from '@angular/material/menu';
+import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
@@ -13,6 +13,8 @@ import { trigger, state, style, transition, animate } from '@angular/animations'
 import { TaskBadgeComponent } from '../task-badge/task-badge.component';
 import { ISubtask } from '../../../tasks/subtask.model';
 import { Task } from '../../../../core/services/task';
+
+type TaskStatus = Task['status'];
 
 @Component({
   selector: 'app-feature-card',
@@ -66,7 +68,7 @@ export class FeatureCardComponent {
   @Output() featureDelete = new EventEmitter<Task>();
   @Output() addTaskToFeature = new EventEmitter<Task>();
   @Output() toggleExpansion = new EventEmitter<string>();
-  @Output() taskStatusChange = new EventEmitter<{ task: Task | ISubtask; newStatus: string }>();
+  @Output() taskStatusChange = new EventEmitter<{ task: Task | ISubtask; newStatus: TaskStatus }>();
   @Output() taskPriorityChange = new EventEmitter<{ task: Task | ISubtask; newPriority: string }>();
   @Output() taskEdit = new EventEmitter<Task | ISubtask>();
   @Output() taskDelete = new EventEmitter<string>();
@@ -76,7 +78,7 @@ export class FeatureCardComponent {
     const total = this.tasks.length;
     const completed = this.tasks.filter(task => task.status === 'completed').length;
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-    
+
     return { completed, total, percentage };
   }
 
@@ -102,32 +104,32 @@ export class FeatureCardComponent {
   get typeConfig(): { color: string; bgColor: string; borderColor: string; label: string } {
     switch (this.feature.type) {
       case 'epic':
-        return { 
-          color: 'text-red-700', 
-          bgColor: 'bg-red-100', 
+        return {
+          color: 'text-red-700',
+          bgColor: 'bg-red-100',
           borderColor: 'border-red-300',
-          label: 'Epic' 
+          label: 'Epic'
         };
       case 'feature':
-        return { 
-          color: 'text-blue-700', 
-          bgColor: 'bg-blue-100', 
+        return {
+          color: 'text-blue-700',
+          bgColor: 'bg-blue-100',
           borderColor: 'border-blue-300',
-          label: 'Feature' 
+          label: 'Feature'
         };
       case 'task':
-        return { 
-          color: 'text-green-700', 
-          bgColor: 'bg-green-100', 
+        return {
+          color: 'text-green-700',
+          bgColor: 'bg-green-100',
           borderColor: 'border-green-300',
-          label: 'Task' 
+          label: 'Task'
         };
       default:
-        return { 
-          color: 'text-gray-700', 
-          bgColor: 'bg-gray-100', 
+        return {
+          color: 'text-gray-700',
+          bgColor: 'bg-gray-100',
           borderColor: 'border-gray-300',
-          label: 'Unknown' 
+          label: 'Unknown'
         };
     }
   }
@@ -220,23 +222,23 @@ export class FeatureCardComponent {
   /**
    * T018 - Méthode pour changer le statut d'une tâche depuis TaskBadge
    */
-  onTaskStatusChange(event: { task: Task | ISubtask, newStatus: string }): void {
-    this.taskStatusChange.emit(event);
+  onStatusChange(task: Task | ISubtask, newStatus: TaskStatus): void {
+    this.taskStatusChange.emit({ task, newStatus });
   }
 
   formatDate(dateString: string): string {
     const date = new Date(dateString);
     const now = new Date();
     const diffInDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     if (diffInDays === 0) return 'Aujourd\'hui';
     if (diffInDays === 1) return 'Demain';
     if (diffInDays === -1) return 'Hier';
     if (diffInDays > 0 && diffInDays <= 7) return `Dans ${diffInDays}j`;
     if (diffInDays < 0 && diffInDays >= -7) return `Il y a ${Math.abs(diffInDays)}j`;
-    
-    return date.toLocaleDateString('fr-FR', { 
-      day: '2-digit', 
+
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
       month: '2-digit',
       year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
     });
@@ -247,12 +249,12 @@ export class FeatureCardComponent {
    */
   formatAssignee(assignee: string): string {
     if (!assignee) return '';
-    
+
     // Si c'est un email, ne prendre que la partie avant @
     if (assignee.includes('@')) {
       return assignee.split('@')[0];
     }
-    
+
     // Sinon, limiter à 10 caractères
     return assignee.length > 10 ? assignee.substring(0, 10) + '...' : assignee;
   }
@@ -279,8 +281,8 @@ export class FeatureCardComponent {
   }
 
   // T018 - Handle task priority change
-  onTaskPriorityChange(event: { task: Task | ISubtask, newPriority: string }): void {
-    this.taskPriorityChange.emit(event);
+  onPriorityChange(task: Task | ISubtask, newPriority: string): void {
+    this.taskPriorityChange.emit({ task, newPriority });
   }
 
   // T018 - Handle task edit
@@ -291,5 +293,11 @@ export class FeatureCardComponent {
   // T018 - Handle task delete
   onTaskDelete(taskId: string): void {
     this.taskDelete.emit(taskId);
+  }
+
+  onDelete(taskId: string): void {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
+      this.taskDelete.emit(taskId);
+    }
   }
 }
