@@ -20,6 +20,8 @@ Ce fichier centralise toutes les conventions, patterns, anti-patterns et bonnes 
 
 Ce document définit les conventions, l'architecture et les bonnes pratiques spécifiques au développement frontend Angular 19 (Nx workspace, Tailwind CSS, ngx-translate, etc.) du projet AgroFlow.
 
+> **Pour une vue d'ensemble détaillée de l'architecture frontend, consultez le [📄 Document d'Architecture Frontend](./docs/02_Frontend.md).**
+
 ---
 
 # 🧰 Environnement et Dépendances
