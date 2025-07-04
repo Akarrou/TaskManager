@@ -1,0 +1,162 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 00_shared-prompts.mdc
+
+## Rôle & Contexte
+Ce fichier centralise les définitions, fragments réutilisables, formats standard (YAML, JSON, Markdown, Gherkin), conventions de slug et tokens spéciaux utilisés dans toutes les règles Cursor AgroFlow.
+
+---
+
+## 🧠 ROUTAGE INTELLIGENT SIMPLIFIÉ
+
+**INSTRUCTION CRITIQUE** : Avant toute action, analyser la demande utilisateur et appliquer automatiquement la règle appropriée :
+
+| **Si la demande contient** | **Appliquer** | **Action clé** |
+|---------------------------|---------------|----------------|
+| "nouvelle fonctionnalité" | `10_prd-builder.mdc` | Créer PRD avant tout |
+| "composant Angular" | `40_guidelines-frontend.mdc` + `04-i18n.mdc` | Vérifier composants existants |
+| "API" / "backend" | `41_guidelines-backend.mdc` | Respecter architecture Spring |
+| "tâche #123" | `30_impl-plan.mdc` | Récupérer depuis Supabase |
+| "traduction" | `04-i18n.mdc` | Merge obligatoire après |
+| "découper" / "tâches" | `20_task-breakdown.mdc` | Vérifier PRD validé |
+
+**Règles prioritaires :**
+1. PRD obligatoire pour nouvelle fonctionnalité
+2. MCP Supabase pour toute gestion de tâches  
+3. Composants AgroFlow à utiliser en priorité
+4. Merge traductions obligatoire après modification
+
+---
+
+## 📦 Définitions et tokens
+
+- **PRD** : Product Requirements Document, artefact contractuel validé.
+- **Epic** : Macro-fonctionnalité, regroupe plusieurs features.
+- **Feature** : Fonctionnalité métier, module ou composant.
+- **Task** : Action technique ou métier à réaliser.
+- **Sub-task** : Action atomique, souvent liée à un critère d'acceptation.
+- **Guideline** : Règle de développement ou de gouvernance.
+- **Slug** : Identifiant unique, format kebab-case, sans accents.
+
+---
+
+## 📄 Formats d'artefacts
+
+### YAML (exemple mémoire long terme)
+```yaml
+vision: "..."
+constraints:
+  - "..."
+kpis:
+  - id: "..."
+    description: "..."
+```
+
+### JSON (exemple TaskPlan)
+```json
+{
+  "epics": [
+    {
+      "title": "...",
+      "slug": "...",
+      "features": [
+        {
+          "title": "...",
+          "slug": "...",
+          "environment": ["frontend"],
+          "guideline_refs": ["FG", "PG"],
+          "tasks": [
+            {
+              "title": "...",
+              "slug": "...",
+              "environment": ["frontend"],
+              "guideline_refs": ["FG", "PG", "TA"],
+              "subtasks": [
+                {
+                  "title": "...",
+                  "slug": "...",
+                  "environment": ["frontend"],
+                  "estimated_hours": 4,
+                  "guideline_refs": ["FG", "TA"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Markdown (exemple tableau de traçabilité)
+| Niveau   | Slug                         | Titre                                    | Env     | Est. |
+| -------- | ---------------------------- | ---------------------------------------- | ------- | ---- |
+| Epic     | gestion-roles                | Gestion des rôles                        | –       | –    |
+| Feature  | gestion-roles\:backend:1     | API Rôles                                | backend | –    |
+| Task     | gestion-roles\:backend:1:1   | Endpoint POST /roles                     | backend | 8h   |
+| Sub-task | gestion-roles\:backend:1:1:1 | Implémenter scénario « Ajouter un rôle » | backend | 4h   |
+
+### Gherkin (exemple critère d'acceptation)
+```gherkin
+Scenario: Ajouter un rôle
+  Given je suis sur la page de gestion des rôles
+  When je clique sur « Ajouter » et renseigne « éditeur »
+  Then le rôle « éditeur » apparaît dans la liste
+```
+
+---
+
+## 🏷️ Conventions de slug
+
+- `<slug>` : kebab-case du titre, sans accents.
+- `branch` : prd/<slug>
+- `commit` : PRD:<slug> | feat:<slug>
+- Voir aussi : [10_prd-builder.mdc](mdc:10_prd-builder.mdc), section NORMES DE NOMENCLATURE.
+
+---
+
+## 📋 Templates prêts à l'emploi
+
+- `prd-header.md`
+- `gherkin-scenario.md`
+- `risk-register.md`
+
+---
+
+## 🔗 Références croisées
+
+- [10_prd-builder.mdc](mdc:10_prd-builder.mdc)
+- [agroflow-project-guidelines.mdc](mdc:@agroflow-project-guidelines.mdc)
+
+---
+
+## 🚦 Workflow séquentiel : Demande de fonctionnalité → PRD → Tâches
+
+- Avant toute création de PRD, l'agent doit vérifier dans le dossier `@/PRD` si un PRD sur le même sujet (même slug ou sujet proche) existe déjà. Si oui, il doit proposer à l'utilisateur de modifier le PRD existant ou d'en créer un nouveau.
+- Lorsqu'un utilisateur demande la réalisation d'une nouvelle fonctionnalité, l'agent doit utiliser la règle [10_prd-builder.mdc](mdc:10_prd-builder.mdc) pour générer un document PRD structuré.
+- Une fois le PRD validé explicitement par l'utilisateur, le document PRD doit être enregistré dans le dossier `@/PRD` à la racine du projet, en respectant le format de nommage `<slug>-YYYY-MM-DD.md`.
+- Après validation et enregistrement du PRD, l'agent doit demander à l'utilisateur s'il souhaite générer les tâches associées.
+- Si l'utilisateur répond oui, l'agent doit alors utiliser la règle [20_task-breakdown.mdc](mdc:20_task-breakdown.mdc) pour découper le PRD en epics, features, tasks et sub-tasks, en respectant les conventions de mapping et de traçabilité.
+- **Avant d'enregistrer une nouvelle tâche dans Supabase, l'agent doit vérifier si une tâche similaire (même slug ou tag PRD) existe déjà et est associée à la PRD en cours. Si oui, il doit proposer de modifier la tâche existante plutôt que d'en créer une nouvelle.**
+- **Toutes les tâches générées (epics, features, tasks, sub-tasks) doivent être enregistrées directement dans la base Supabase via le MCP Supabase, qui devient la seule source de vérité pour la gestion des tâches. Il est interdit de sauvegarder ces tâches uniquement sous forme de fichier JSON.**
+- Ce workflow garantit la traçabilité contractuelle et la cohérence entre la demande, le PRD et les tickets de développement.
+
+## ⚠️ Vérification préalable du MCP Supabase
+
+Avant toute utilisation du MCP Supabase pour l'enregistrement des tâches, l'agent doit vérifier que le MCP Supabase est opérationnel (connecté et fonctionnel).
+- Si le MCP Supabase n'est pas opérationnel, l'agent doit demander à l'utilisateur d'activer le MCP.
+- Si l'utilisateur ne peut pas activer le MCP, l'agent doit alors enregistrer le JSON des tâches dans le dossier `@/PRD` pour ne pas perdre les données, en attendant la synchronisation ultérieure avec Supabase.
+
+---
+
+## 🔄 Workflow séquentiel : Réalisation d'une tâche
+
+- Lorsqu'un utilisateur souhaite réaliser une tâche, il doit fournir le **numéro de la tâche** (champ `task_number` dans la base Supabase).
+- L'agent récupère toutes les informations de la tâche et de ses sous-tâches et commentaire associées dans Supabase.
+- L'agent doit alors appliquer la règle [30_impl-plan.mdc](mdc:30_impl-plan.mdc) pour produire un plan d'implémentation détaillé : analyse séquentielle, réflexion, plan d'action, estimation, traçabilité.
+- Ce plan doit être validé avant toute implémentation.
+- La traçabilité et la cohérence sont assurées par la mémoire séquentielle et la synchronisation avec Supabase.

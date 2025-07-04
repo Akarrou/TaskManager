@@ -1,0 +1,202 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: Guidelines backend Spring Boot, JPA, sécurité, structure et qualité pour AgroFlow
+globs: ["Back/**/*.java", "Back/**/pom.xml", "Back/src/main/resources/**/*", "Back/src/test/**/*"]
+alwaysApply: false
+---
+
+# 41_guidelines-backend.mdc
+
+## Rôle & Contexte
+Ce fichier centralise toutes les conventions, patterns, anti-patterns et bonnes pratiques Spring Boot, JPA, sécurité, structure et qualité pour le développement backend AgroFlow.
+
+---
+
+## 🟩 Structure recommandée
+
+> **Voir l'arborescence complète et les patterns dans [10_project-architecture.mdc](mdc:10_project-architecture.mdc)**
+
+## ⚠️ RÈGLE FONDAMENTALE : Analyse Préalable de la Structure
+
+**AVANT toute création de classe, package, service ou contrôleur**, l'IA DOIT :
+
+### 🔍 **Investigation Obligatoire**
+1. **Analyser l'architecture existante** : Explorer les packages, les patterns, les conventions déjà en place
+2. **Identifier les implémentations similaires** : Chercher des classes/services existants qui peuvent servir de modèle
+3. **Vérifier les patterns d'architecture** : S'assurer de respecter la séparation des responsabilités (Controller/Service/Repository)
+4. **Consulter les exemples de référence** : Utiliser les contrôleurs et services existants comme base
+
+### 🛠️ **Outils à utiliser systématiquement**
+- `codebase_search` : Recherche sémantique dans le code Java
+- `file_search` : Recherche de classes/interfaces similaires
+- `grep_search` : Recherche de patterns spécifiques (annotations, méthodes)
+- `read_file` : Analyse des classes de référence
+- `list_dir` : Exploration de la structure des packages
+
+### 🎯 **Questions à se poser AVANT de créer**
+- "Cette classe/service existe-t-elle déjà ?"
+- "Quelle est la structure des contrôleurs/services similaires ?"
+- "Quelles annotations sont utilisées dans ce type de classe ?"
+- "Quels sont les patterns d'architecture utilisés ?"
+- "Quelles sont les conventions de nommage dans ce package ?"
+- "Quelles permissions `@RequiresPermission` sont nécessaires ?"
+
+### 📋 **Obligation de Mise À Jour Architecturale**
+**APRÈS toute création/suppression/déplacement**, l'IA DOIT automatiquement mettre à jour `@10_project-architecture.mdc` pour refléter les changements structurels. Voir la section "RÈGLE AUTOMATIQUE : Mise À Jour Obligatoire" dans le fichier d'architecture.
+
+---
+
+## 🏗️ Organisation des Packages
+
+- `config/` : configuration Spring, sécurité, CORS, etc.
+- `context/` : contexte d'application (sécurité, JWT)
+- `dto/` : objets de transfert de données
+- `dtoMapper/` : mappers entité/DTO
+- `entity/` : entités JPA
+- `enums/` : énumérations métiers
+- `exception/` : gestion centralisée des exceptions
+- `filter/` : filtres HTTP/sécurité
+- `repository/` : interfaces JPA (Spring Data)
+- `restController/` : endpoints REST
+- `service/` : logique métier, organisée par domaine
+
+---
+
+## 🧑‍💻 Nommage & standards
+
+- Packages : minuscules, structure par couche fonctionnelle
+- Classes : PascalCase, nom explicite
+- Interfaces : préfixe/suffixe I optionnel, cohérence obligatoire
+- Variables : camelCase, constantes MAJUSCULES_UNDERSCORE
+- Fichiers de configuration : kebab-case
+
+---
+
+## 🚦 Architecture
+
+- Controllers : endpoints REST, validation DTO, pas de logique métier
+- Services : logique métier, orchestrateurs, SOLID
+- Repositories : accès données via JPA
+- Domain/Entity : modèles métiers purs, pas de dépendance à Spring
+- Configuration centralisée dans `config`
+- Exceptions centralisées avec `@ControllerAdvice`
+
+---
+
+## 🛡️ Sécurité
+
+### Authentification & Autorisation
+- **Authentification JWT** : Utilisation de tokens JWT pour l'authentification
+- **Gestion des permissions** : Système basé sur l'annotation `@RequiresPermission`
+- **Secrets** : Variables d'environnement pour les informations sensibles
+- **Validation** : `@Valid`, `@NotNull`, etc. pour la validation des données
+
+### Système de Permissions `@RequiresPermission`
+
+#### Architecture du système
+- **Annotation personnalisée** : `@RequiresPermission(PermissionKey.XXX)`
+- **Aspect AOP** : `RequiresPermissionAspect` intercepte et vérifie les permissions
+- **Énumération** : `PermissionKey` centralise toutes les permissions disponibles
+- **Chargement** : `CustomUserDetailsService` charge les permissions dans Spring Security
+
+#### Structure des permissions
+Les permissions suivent une nomenclature hiérarchique :
+```java
+// Format : DOMAINE.ACTION ou DOMAINE.SOUS_DOMAINE.ACTION
+PRODUCT_CREATE("PRODUCT.CREATE")
+PRODUCT_READ("PRODUCT.READ")
+RAW_MATERIAL_MANAGE_ALL("RAW.MATERIAL.MANAGE.ALL")
+SUPPLIER_MATERIAL_OFFER_READ("SUPPLIER.MATERIAL.OFFER.READ")
+```
+
+#### Utilisation dans les contrôleurs
+```java
+@RestController
+@RequestMapping("/api/products")
+public class ProductController {
+
+    @PostMapping
+    @RequiresPermission(PermissionKey.PRODUCT_CREATE)
+    public ResponseEntity<ProductDTO> createProduct(@RequestBody ProductDTO dto) {
+        // Logique métier
+    }
+
+    @GetMapping("/{id}")
+    @RequiresPermission(PermissionKey.PRODUCT_READ)
+    public ResponseEntity<ProductDTO> getProduct(@PathVariable UUID id) {
+        // Logique métier
+    }
+}
+```
+
+#### Types de permissions
+- **Actions CRUD** : `CREATE`, `READ`, `UPDATE`, `DELETE`
+- **Granularité** : permissions spécifiques (`PRODUCT_READ`) et globales (`PRODUCT_READ_ALL`)
+- **Permissions spéciales** : `SUPER_ADMIN` pour tous les droits
+
+#### Gestion SUPER_ADMIN
+- Le type utilisateur `SUPER_ADMIN` hérite automatiquement de toutes les permissions
+- Vérification double : permission spécifique OU statut SUPER_ADMIN
+- Chargement automatique de toutes les permissions dans `CustomUserDetailsService`
+
+#### Bonnes pratiques
+- **Granularité** : Créer des permissions spécifiques plutôt que génériques
+- **Nomenclature** : Respecter le format `DOMAINE.ACTION` ou `DOMAINE.SOUS_DOMAINE.ACTION`
+- **Cohérence** : Une permission par action métier significative
+- **Documentation** : Documenter les permissions dans les contrôleurs critiques
+
+#### ⚠️ Règles importantes
+- **NE PAS utiliser `@PreAuthorize`** : Utiliser exclusivement `@RequiresPermission`
+- **Système unifié** : AgroFlow a son propre système de permissions via AOP
+- **Cohérence** : Toutes les vérifications de permissions doivent passer par `@RequiresPermission`
+
+#### Fichiers d'implémentation
+- **Annotation** : `context/security/annotations/RequiresPermission.java`
+- **Aspect** : `context/security/annotations/RequiresPermissionAspect.java`
+- **Énumération** : `enums/PermissionKey.java`
+- **Service** : `service/user/CustomUserDetailsService.java`
+- **Exemples** : Voir les contrôleurs dans `restController/`
+
+---
+
+## 🧪 Tests & qualité
+
+- Couverture minimale 80 %
+- JUnit 5, Spring Boot Test, Mockito
+- Base de test H2 ou Testcontainers
+- Pattern Arrange-Act-Assert
+- Noms de tests explicites
+
+---
+
+## ⚙️ Performance & maintenabilité
+
+- Spring Boot Actuator pour le monitoring
+- SLF4J, logs structurés, pas de logs sensibles en prod
+- Flyway pour les migrations
+
+---
+
+## 📝 Documentation
+
+- Javadoc pour classes/services/domaines critiques
+- Swagger/OpenAPI pour documentation automatique
+
+---
+
+## 🚧 CI/CD & workflow
+
+- Branches Git : main, develop, feature/xxx, bugfix/xxx
+- Build Maven, gestion stricte des versions
+- Pipelines CI (build, tests, sonar, analyse de couverture)
+- Pull request obligatoire
+
+---
+
+## 🔗 Références
+- [10_project-architecture.mdc](mdc:10_project-architecture.mdc)
+- [00_shared-prompts.mdc](mdc:00_shared-prompts.mdc)

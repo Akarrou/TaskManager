@@ -1,0 +1,585 @@
+---
+description: Guidelines frontend Angular 19, Nx, Tailwind, ngx-translate pour AgroFlow
+globs: ["Front/agroflow-workspace/**/*.ts", "Front/agroflow-workspace/**/*.html", "Front/agroflow-workspace/**/*.scss", "Front/agroflow-workspace/**/*.json"]
+alwaysApply: false
+---
+---
+description: Guidelines frontend Angular 19, Nx, Tailwind, ngx-translate pour AgroFlow
+globs: ["Front/agroflow-workspace/**/*.{ts,html,scss,json}", "Front/agroflow-workspace/**/package.json"]
+alwaysApply: false
+---
+
+# 40_guidelines-frontend.mdc
+
+## Rôle & Contexte
+Ce fichier centralise toutes les conventions, patterns, anti-patterns et bonnes pratiques Angular 19, Nx, Tailwind, ngx-translate et i18n pour le développement frontend AgroFlow.
+
+---
+
+# 📘 Contexte Général
+
+Ce document définit les conventions, l'architecture et les bonnes pratiques spécifiques au développement frontend Angular 19 (Nx workspace, Tailwind CSS, ngx-translate, etc.) du projet AgroFlow.
+
+---
+
+# 🧰 Environnement et Dépendances
+
+- **Gestion des dépendances** :
+  - Utiliser `pnpm` dans le répertoire `Front/agroflow-workspace`.
+  - Cibler les versions de dépendances compatibles avec **Angular 19**.
+
+---
+
+# 🧱 Structure du Projet (Nx Workspace)
+
+> **Voir l'arborescence complète et les patterns dans [10_project-architecture.mdc](mdc:10_project-architecture.mdc)**
+
+- **`apps/`** : Contient les applications Angular (ex. `admin`).
+- **`libs/`** : Contient les bibliothèques partagées :
+  - `ui/` : Composants réutilisables (boutons, formulaires, modales, etc.).
+  - `core/` : Services essentiels (authentification, intercepteurs, guards).
+  - `data-access/` : Services d'accès aux données et gestion de l'état (stores).
+  - `models/` : Interfaces et types TypeScript.
+  - `i18n/` : Fichiers de traduction et ressources d'internationalisation.
+- **`scripts/`** : Scripts utilitaires (ex. `merge-translations.js`).
+
+---
+
+# 🧑‍💻 Conventions de Nommage et Standards de Codage
+
+- **Composants Angular** :
+  - Nom de fichier au format _kebab-case_. Exemple : `user-profile.component.ts`.
+  - Utiliser des composants autonomes (`standalone: true`) pour favoriser la modularité.
+  - **Structure de fichiers obligatoire** :
+    - Chaque composant DOIT avoir trois fichiers séparés :
+      - `.ts` : fichier TypeScript du composant
+      - `.html` : fichier template HTML (utiliser `templateUrl` dans le décorateur)
+      - `.scss` : fichier de styles SCSS (utiliser `styleUrls` dans le décorateur)
+    - L'utilisation de `template:` dans le décorateur `@Component` est **INTERDITE**. Toujours utiliser `templateUrl:` pour référencer un fichier `.html` externe.
+- **Services Angular** :
+  - Nom de fichier avec le suffixe `.service.ts`. Exemple : `authentication.service.ts`.
+- **Modèles et Interfaces TypeScript** :
+  - Nom de fichier avec le suffixe `.model.ts`. Exemple : `account.model.ts`.
+  - Interfaces préfixées par `I`. Exemple : `IUser`.
+- **TypeScript** :
+  - Activer le _strict mode_ pour garantir la sécurité des types.
+  - Ne jamais utiliser le type `any`, sauf cas exceptionnel dûment justifié.
+  - Préférer l'injection de services via la fonction `inject()` plutôt que via le constructeur.
+  - Utiliser des types explicites et éviter les types implicites.
+  - Appliquer des fonctions pures et favoriser l'immutabilité.
+- **Organisation du code** :
+  - Structurer les fichiers avec l'ordre suivant : imports, décorateur, classe, propriétés, méthodes.
+  - Respecter l'ordre des imports : Angular > RxJS > Modules spécifiques > Imports relatifs.
+
+---
+
+# 🎨 Style et Formatage
+
+- **Linting et Formatage** :
+  - Respecter impérativement les règles définies par ESLint, Prettier et Angular ESLint.
+- **CSS/SCSS** :
+  - Utiliser Tailwind CSS pour le style des composants.
+  - Éviter la manipulation directe du DOM ; utiliser les directives Angular appropriées.
+  - Utiliser `NgOptimizedImage` pour l'optimisation et la maintenabilité.
+- **Performance** :
+  - Implémenter le _lazy loading_ pour les modules non critiques au chargement initial de l'application.
+  - Utiliser les nouvelles directives introduites avec Angular 19.
+  - Appliquer des _pipes_ purs pour les opérations coûteuses en calcul.
+- **Gestion de l'état** :
+  - Utiliser les `signals` pour la gestion réactive de l'état.
+  - Appliquer l'`async pipe` dans les templates pour gérer les observables.
+- **Tests** :
+  - Implémenter des tests unitaires en suivant le pattern Arrange-Act-Assert.
+  - Utiliser des outils tels que Jest ou Karma pour les tests unitaires.
+
+---
+
+# 🎯 Composants Communs AgroFlow
+
+**RÈGLE FONDAMENTALE** : Il est **OBLIGATOIRE** d'utiliser les composants communs d'AgroFlow en priorité absolue lors de la construction de nouvelles fonctionnalités. Ne jamais réinventer ou recréer des composants qui existent déjà.
+
+## 📋 Liste des Composants Disponibles
+
+### 🔧 Composants Utilitaires
+- **`AddressComponent`** (`lib-address`) : Gestion complète des adresses avec `ControlValueAccessor`
+- **`SpinnerComponent`** (`agroflow-spinner`) : Indicateur de chargement avec différentes tailles
+- **`LogoComponent`** (`app-logo`) : Logo AgroFlow avec tailles configurables
+- **`RouteAnimationComponent`** (`lib-route-animation`) : Animations de transition entre routes
+
+### 🎛️ Composants d'Interface
+- **`ButtonComponent`** (`agroflow-button`) : Boutons avec styles cohérents (default, success, danger)
+- **`HeaderComponent`** (`agroflow-header`) : En-tête de l'application avec menu utilisateur
+- **`NavigationBarComponent`** (`agroflow-navigation-bar`) : Barre de navigation avec boutons d'action
+- **`LanguageSelectorComponent`** (`agroflow-language-selector`) : Sélecteur de langue FR/EN
+
+### 📝 Composants de Formulaire
+- **`ControlMessagesComponent`** (`lib-control-messages`) : Affichage des messages d'erreur de validation
+- **`PriceInputComponent`** (`lib-price-input`) : Saisie de prix avec calculs TVA automatiques
+- **`WebcamCaptureComponent`** (`agroflow-webcam-capture`) : Capture d'images via webcam
+
+### 📊 Composants de Données
+- **`DataTableComponent`** (`agroflow-data-table`) : Tables de données avec tri, filtrage et pagination
+- **`StepperComponent`** (`lib-stepper`) : Assistant par étapes (wizard)
+
+### 💬 Composants de Communication
+- **`ConfirmDialogComponent`** (`lib-confirm-dialog`) : Dialogues de confirmation
+- **`CustomSnackbarComponent`** (`lib-custom-snackbar`) : Notifications toast personnalisées
+- **`SnackbarService`** : Service pour gérer les notifications (info, success, warning, error)
+- **`LoginComponent`** (`agroflow-login`) : Composant de connexion complet
+
+## 🎯 Règles d'Utilisation Prioritaire
+
+### ✅ Obligations
+1. **Toujours vérifier** si un composant commun existe avant de créer du code personnalisé
+2. **Utiliser exclusivement** les composants AgroFlow pour :
+   - Tous les boutons → `ButtonComponent`
+   - Toutes les tables → `DataTableComponent`
+   - Toutes les notifications → `SnackbarService`
+   - Tous les spinners → `SpinnerComponent`
+   - Toutes les confirmations → `ConfirmDialogComponent`
+   - Toutes les adresses → `AddressComponent`
+   - Tous les prix → `PriceInputComponent`
+
+### ❌ Interdictions
+- **JAMAIS** utiliser `mat-button`, `mat-raised-button`, etc. → Utiliser `ButtonComponent`
+- **JAMAIS** utiliser `mat-table` → Utiliser `DataTableComponent`
+- **JAMAIS** utiliser `MatSnackBar` directement → Utiliser `SnackbarService`
+- **JAMAIS** créer des spinners custom → Utiliser `SpinnerComponent`
+- **JAMAIS** créer des dialogues de confirmation custom → Utiliser `ConfirmDialogComponent`
+
+### 🔄 Processus de Validation
+Avant toute implémentation, se poser la question :
+1. "Ce composant/cette fonctionnalité existe-t-elle déjà dans les composants communs ?"
+2. "Puis-je adapter un composant existant plutôt que d'en créer un nouveau ?"
+3. "Ai-je consulté la documentation des composants disponibles ?"
+
+### 📚 Localisation des Composants
+- **Chemin** : `Front/agroflow-workspace/shared/ui/src/lib/components/`
+- **Import** : `@agroflow-workspace/ui`
+
+---
+
+# 📝 Formulaires et Angular Material
+
+- **Utilisation obligatoire d'Angular Material** :
+  - **TOUS** les formulaires DOIVENT utiliser Angular Material comme framework UI.
+  - Importer les modules Material nécessaires : `MatFormFieldModule`, `MatInputModule`, `MatSelectModule`, `MatCheckboxModule`, etc.
+  - Utiliser `mat-form-field` avec `appearance="outline"` et `color="primary"` pour tous les champs de saisie.
+
+- **Composant de référence** :
+  - Le composant `raw-material-form` situé dans `Front/agroflow-workspace/apps/admin/src/app/raw-materials/raw-material-form/` est la **référence officielle** pour la création de formulaires.
+  - Respecter sa structure et son organisation pour tous les nouveaux formulaires.
+
+- **Structure de formulaire obligatoire** :
+  - **Sections de formulaire** : Organiser le formulaire en sections logiques avec des titres (`form-section`, `section-title`).
+  - **Responsive design** : Utiliser une grille flexible avec `form-row` et `form-group` pour l'adaptabilité mobile.
+  - **Gestion des états** : Implémenter un état de chargement (`isLoading`) qui désactive le formulaire pendant les opérations.
+  - **Actions de formulaire** : Placer les boutons d'action dans une section dédiée (`form-actions`) en bas du formulaire.
+  - **Styles CSS** : Les styles CSS pour les formulaires sont **déjà disponibles dans les styles communs** d'AgroFlow. Utiliser les classes prédéfinies (`container`, `material-form`, `form-section`, `section-title`, `form-row`, `form-group`, `form-actions`, etc.) sans les redéfinir.
+
+- **Validation et gestion d'erreurs** :
+  - Utiliser `ReactiveFormsModule` avec des `FormControl` typés.
+  - Implémenter la validation avec `Validators` d'Angular.
+  - Utiliser le composant `ControlMessagesComponent` d'AgroFlow pour afficher les messages d'erreur.
+  - Utiliser le pipe `FormControlPipe` pour le typage des contrôles dans les templates.
+
+- **Composants AgroFlow à utiliser** :
+  - **Boutons** : Utiliser exclusivement `ButtonComponent` d'AgroFlow au lieu des boutons Material natifs.
+  - **Spinner** : Utiliser `SpinnerComponent` d'AgroFlow pendant les états de chargement.
+  - **Messages** : Utiliser `SnackbarService` d'AgroFlow pour les notifications de succès/erreur.
+
+- **Bonnes pratiques spécifiques** :
+  - Désactiver le formulaire pendant les opérations (`pointer-events: none` + `opacity: 0.7`).
+  - Marquer tous les champs comme touchés avant la soumission pour afficher les erreurs.
+  - Implémenter une navigation de retour via les `NavigationButton`.
+  - Utiliser des placeholders traduits pour tous les champs de saisie.
+
+---
+
+# 📊 Listes et Tables de Données
+
+- **Utilisation obligatoire du DataTableComponent d'AgroFlow** :
+  - **TOUTES** les listes de données DOIVENT utiliser le composant `agroflow-data-table` d'AgroFlow.
+  - Ne jamais utiliser `mat-table` ou d'autres composants de table directement.
+
+- **Composant de référence pour les listes** :
+  - Le composant `raw-materials` situé dans `Front/agroflow-workspace/apps/admin/src/app/raw-materials/` est la **référence officielle** pour la création de listes de données.
+  - Respecter sa structure et son organisation pour toutes les nouvelles listes.
+
+- **Structure de liste obligatoire** :
+  - **Configuration des colonnes** : Définir les colonnes avec le type `TableColumn[]` incluant les propriétés `name`, `property`, `cols`, `sortable`, `filterable`.
+  - **Actions standardisées** : Utiliser un tableau d'actions avec `icon` et `tooltip` pour les opérations CRUD.
+  - **Gestion des états** : Implémenter des `signals` pour `isLoading` et les données.
+  - **Navigation** : Implémenter `NavButtonsProvider` avec des boutons "Ajouter" et "Actualiser".
+
+- **Fonctionnalités obligatoires** :
+  - **Gestion des clics** : Implémenter `onActionClick`, `onRowClick`, et `onCellClick`.
+  - **Confirmation de suppression** : Utiliser `ConfirmDialogComponent` d'AgroFlow pour les suppressions.
+  - **Copie d'ID** : Permettre la copie des identifiants en cliquant dessus avec le service `Clipboard`.
+  - **Traductions dynamiques** : Implémenter des méthodes de traduction pour les énumérations et listes.
+
+- **Services et composants à utiliser** :
+  - **Table** : Utiliser exclusivement `DataTableComponent` d'AgroFlow.
+  - **Confirmation** : Utiliser `ConfirmDialogComponent` d'AgroFlow pour les dialogues de confirmation.
+  - **Notifications** : Utiliser `SnackbarService` d'AgroFlow pour les messages de succès/erreur.
+  - **Navigation** : Utiliser le `Router` Angular pour la navigation entre les vues.
+
+- **Bonnes pratiques pour les listes** :
+  - Charger les données de référence (ex: companies) avant les données principales.
+  - Implémenter une méthode `refresh` pour recharger les données.
+  - Utiliser des méthodes de rendu personnalisées pour les colonnes complexes.
+  - Gérer les états de chargement de manière granulaire avec des `signals`.
+  - Implémenter la troncature des IDs longs avec possibilité de copie complète.
+
+---
+
+# 📐 Modèles de Référence AgroFlow
+
+**RÈGLE FONDAMENTALE** : Les composants suivants servent de **MODÈLES DE RÉFÉRENCE OFFICIELS** à copier et adapter pour créer de nouvelles fonctionnalités. Ils respectent toutes les bonnes pratiques et conventions d'AgroFlow.
+
+## 🏆 Modèle de Référence Principal : Raw Materials
+
+Le module **`raw-materials`** situé dans `Front/agroflow-workspace/apps/admin/src/app/raw-materials/` est le **MODÈLE COMPLET** à suivre pour créer de nouveaux modules CRUD.
+
+### 📁 Structure Complète du Modèle
+
+```
+raw-materials/
+├── raw-materials.component.ts          # Liste/Table principale
+├── raw-materials.component.html        # Template de liste
+├── raw-materials.component.scss        # Styles de liste
+├── raw-material-form/
+│   ├── raw-material-form.component.ts  # Formulaire Create/Edit
+│   ├── raw-material-form.component.html # Template formulaire
+│   └── raw-material-form.component.scss # Styles formulaire
+└── raw-materials.routes.ts             # Configuration des routes
+```
+
+### 🎯 Fonctionnalités Implémentées (À Copier)
+
+#### ✅ Composant Liste (`raw-materials.component.ts`)
+- **DataTableComponent** avec configuration complète des colonnes
+- **Signals** pour la gestion d'état (`isLoading`, `rawMaterials`, `companies`)
+- **Actions CRUD** : Edit, Delete avec confirmations
+- **Navigation** : Implémentation de `NavButtonsProvider` et `TitleProvider`
+- **Traductions dynamiques** : Méthodes de rendu pour énumérations
+- **Gestion des clics** : `onActionClick`, `onRowClick`, `onCellClick`
+- **Copie d'ID** : Fonctionnalité de copie des identifiants
+- **Chargement de données liées** : Companies avant Raw Materials
+
+#### ✅ Composant Formulaire (`raw-material-form.component.ts`)
+- **Angular Material** complet avec tous les modules nécessaires
+- **ReactiveFormsModule** avec `FormControl` typés
+- **Validation** complète avec `ControlMessagesComponent`
+- **Gestion des énumérations** : StorageCondition, Allergen
+- **Mode Create/Edit** : Detection automatique avec paramètres de route
+- **États de chargement** : Spinner et désactivation de formulaire
+- **Navigation** : Boutons de retour et actions
+- **Structure CSS** : Utilisation des classes communes AgroFlow
+
+#### ✅ Routes (`raw-materials.routes.ts`)
+- **Configuration standard** : Liste, Create, Edit
+- **Paramètres** : Gestion des IDs pour l'édition
+- **Lazy Loading** : Structure modulaire
+
+### 🔄 Processus de Copie du Modèle
+
+1. **Dupliquer** le dossier `raw-materials/` entier
+2. **Renommer** tous les fichiers avec le nouveau nom d'entité
+3. **Remplacer** toutes les occurrences de "RawMaterial" par la nouvelle entité
+4. **Adapter** les colonnes, champs et validations selon les besoins
+5. **Mettre à jour** les traductions dans les fichiers i18n
+6. **Configurer** les routes dans le module parent
+
+### 🎨 Éléments Spécifiques à Adapter
+
+#### Colonnes DataTable
+```typescript
+protected readonly columns: TableColumn[] = [
+  { name: 'ENTITY.FORM.ID', property: 'entityId', isId: true, cols: 1 },
+  { name: 'ENTITY.FORM.NAME', property: 'name', cols: 2, sortable: true },
+  // ... autres colonnes selon l'entité
+  { name: 'COMMON.ACTIONS', property: 'actions', isAction: true, cols: 1 },
+];
+```
+
+#### Formulaire ReactiveForm
+```typescript
+this.entityForm = this.fb.group<EntityFormGroup>({
+  name: this.fb.control('', { validators: [Validators.required] }),
+  // ... autres champs selon l'entité
+});
+```
+
+#### Services et Imports
+- Adapter les `inject()` de services selon l'entité
+- Mettre à jour les imports des models et énumérations
+- Configurer les appels API appropriés
+
+## ⚠️ Règles de Copie Strictes
+
+### ✅ À Conserver Obligatoirement
+- **Structure des fichiers** : 3 fichiers séparés (.ts, .html, .scss)
+- **Composants AgroFlow** : ButtonComponent, DataTableComponent, etc.
+- **Patterns de code** : Signals, inject(), FormGroup typé
+- **Gestion d'erreurs** : SnackbarService pour toutes les notifications
+- **Navigation** : Implémentation des providers TitleProvider/NavButtonsProvider
+
+### ❌ À NE JAMAIS Modifier
+- **Architecture générale** : Structure des dossiers et fichiers
+- **Composants utilisés** : Toujours les composants communs AgroFlow
+- **Patterns de state** : Signals et gestion réactive
+- **Conventions de nommage** : Kebab-case, suffixes, etc.
+
+### 🔄 À Adapter Selon l'Entité
+- **Noms des propriétés** : Selon le modèle de données
+- **Validations** : Selon les règles métier
+- **Colonnes de table** : Selon les données à afficher
+- **Traductions** : Clés spécifiques à l'entité
+
+---
+
+# 🧭 Navigation et Providers AgroFlow
+
+## 📋 TitleProvider et NavButtonsProvider
+
+**RÈGLE FONDAMENTALE** : Tous les composants de pages principales DOIVENT implémenter `TitleProvider` et `NavButtonsProvider` pour assurer une navigation cohérente dans l'application.
+
+### 🎯 Fonctionnement dans l'Architecture
+
+L'architecture AgroFlow utilise un système de routes hiérarchiques avec `home.routes.ts` comme point central :
+
+```typescript
+// home.routes.ts - Configuration centralisée
+export const homeRoutes: Route[] = [
+  {
+    path: '',
+    component: HomeComponent, // Composant conteneur
+    children: [
+      {
+        path: 'raw-materials',
+        loadChildren: () => import('../raw-materials/raw-materials.routes')
+          .then((m) => m.RAW_MATERIALS_ROUTES),
+      },
+      {
+        path: 'suppliers',
+        loadChildren: () => import('../suppliers/suppliers.routes')
+          .then((m) => m.SUPPLIERS_ROUTES),
+      },
+      // ... autres modules
+    ],
+  },
+];
+```
+
+### 🔧 Interface TitleProvider
+
+**Objectif** : Fournir le titre de la page de manière dynamique et traduite.
+
+```typescript
+interface TitleProvider {
+  getTitle(): string;
+}
+```
+
+#### ✅ Implémentation Obligatoire
+```typescript
+export class MyEntityComponent implements TitleProvider {
+  private readonly translateService = inject(TranslateService);
+
+  getTitle(): string {
+    return this.translateService.instant('MY_ENTITY.TITLE');
+  }
+}
+```
+
+#### 🎯 Bonnes Pratiques TitleProvider
+- **Toujours utiliser** `TranslateService.instant()` pour les traductions
+- **Nom de clé** : Format `ENTITY.TITLE` (ex: `RAW_MATERIAL.TITLE`)
+- **Mode Edit** : Adapter le titre selon le contexte (Create/Edit)
+
+```typescript
+// Exemple avec mode Create/Edit
+getTitle(): string {
+  return this.isEditMode
+    ? this.translateService.instant('MY_ENTITY.FORM.EDIT_TITLE')
+    : this.translateService.instant('MY_ENTITY.FORM.NEW_TITLE');
+}
+```
+
+### 🔧 Interface NavButtonsProvider
+
+**Objectif** : Fournir les boutons d'action de la barre de navigation.
+
+```typescript
+interface NavButtonsProvider {
+  navButtons(): NavigationButton[];
+}
+
+interface NavigationButton {
+  label: string;
+  icon?: string;
+  route?: string | string[];
+  tooltip?: string;
+  disabled?: boolean;
+  action?: () => void;
+}
+```
+
+#### ✅ Implémentation Standard pour Listes
+```typescript
+export class MyEntityListComponent implements NavButtonsProvider {
+  private readonly translateService = inject(TranslateService);
+
+  navButtons(): NavigationButton[] {
+    return [
+      {
+        label: this.translateService.instant('MY_ENTITY.ADD_BUTTON'),
+        icon: 'add',
+        action: () => this.addEntity(),
+      },
+      {
+        label: this.translateService.instant('COMMON.REFRESH'),
+        icon: 'refresh',
+        action: () => this.refreshList(),
+      },
+    ];
+  }
+}
+```
+
+#### ✅ Implémentation Standard pour Formulaires
+```typescript
+export class MyEntityFormComponent implements NavButtonsProvider {
+  private readonly translateService = inject(TranslateService);
+
+  navButtons(): NavigationButton[] {
+    return [
+      {
+        icon: 'arrow_back',
+        label: this.translateService.instant('COMMON.BACK'),
+        tooltip: this.translateService.instant('COMMON.BACK'),
+        action: () => this.onCancel(),
+      },
+    ];
+  }
+}
+```
+
+### 🎯 Patterns d'Actions Standard
+
+#### 📋 Actions pour Composants Liste
+```typescript
+navButtons(): NavigationButton[] {
+  return [
+    // Bouton Ajouter - OBLIGATOIRE
+    {
+      label: this.translateService.instant('ENTITY.ADD_BUTTON'),
+      icon: 'add',
+      action: () => this.router.navigate(['/home/my-entity/new']),
+    },
+    // Bouton Actualiser - OBLIGATOIRE
+    {
+      label: this.translateService.instant('COMMON.REFRESH'),
+      icon: 'refresh',
+      action: () => this.refreshList(),
+    },
+    // Boutons optionnels selon les besoins
+    {
+      label: this.translateService.instant('ENTITY.EXPORT'),
+      icon: 'download',
+      action: () => this.exportData(),
+    },
+  ];
+}
+```
+
+#### 📝 Actions pour Composants Formulaire
+```typescript
+navButtons(): NavigationButton[] {
+  return [
+    // Bouton Retour - OBLIGATOIRE
+    {
+      icon: 'arrow_back',
+      label: this.translateService.instant('COMMON.BACK'),
+      tooltip: this.translateService.instant('COMMON.BACK'),
+      action: () => this.router.navigate(['/home/my-entity']),
+    },
+    // Boutons optionnels
+    {
+      label: this.translateService.instant('COMMON.SAVE_AND_CONTINUE'),
+      icon: 'save',
+      action: () => this.saveAndContinue(),
+      disabled: !this.entityForm.valid,
+    },
+  ];
+}
+```
+
+### 🔄 Intégration avec NavigationBarComponent
+
+Les providers sont automatiquement consommés par `NavigationBarComponent` :
+
+```html
+<!-- Navigation Bar utilise automatiquement les providers -->
+<agroflow-navigation-bar
+  [title]="componentInstance.getTitle()"
+  [navigationButtons]="componentInstance.navButtons()"
+  [homeRoute]="'/home/dashboard'"
+>
+</agroflow-navigation-bar>
+```
+
+### ⚠️ Règles Obligatoires
+
+#### ✅ À Respecter Absolument
+1. **Tous les composants de page** DOIVENT implémenter les deux providers
+2. **Traductions** : Toujours utiliser `translateService.instant()`
+3. **Icônes** : Utiliser les icônes Material Design standard
+4. **Actions** : Préférer `action()` à `route` pour plus de flexibilité
+5. **Nommage** : Suivre les conventions de clés de traduction
+
+#### ❌ Erreurs à Éviter
+- **Ne jamais** retourner des chaînes hardcodées (non traduites)
+- **Ne jamais** omettre l'implémentation des providers
+- **Ne jamais** utiliser des actions complexes directement dans navButtons()
+- **Ne jamais** oublier les icônes pour les boutons principaux
+
+#### 🎯 Clés de Traduction Standard
+```typescript
+// Pour les listes
+'ENTITY.TITLE'           // Titre de la page liste
+'ENTITY.ADD_BUTTON'      // Bouton d'ajout
+'COMMON.REFRESH'         // Bouton actualiser
+
+// Pour les formulaires
+'ENTITY.FORM.NEW_TITLE'  // Titre création
+'ENTITY.FORM.EDIT_TITLE' // Titre édition
+'COMMON.BACK'            // Bouton retour
+```
+
+---
+
+# 🌐 Internationalisation (i18n)
+
+- ngx-translate, structure des fichiers : `src/assets/i18n/`
+- Fichiers par composant : `[nom-du-composant]-fr.json`, `[nom-du-composant]-en.json`
+- Clés en MAJUSCULES, structure hiérarchique
+- Jamais de modification directe des fichiers globaux fr.json/en.json
+- Script de merge obligatoire après modification : `pnpm run merge-translations`
+- Lazy loading des fichiers de traduction
+
+---
+
+# 🧪 Tests
+
+- Tests unitaires obligatoires (Jest ou Karma)
+- Pattern Arrange-Act-Assert
+
+---
+
+# 🔗 Références
+
+- [10_project-architecture.mdc](mdc:10_project-architecture.mdc)
+- [@04-i18n.mdc](mdc:@04-i18n.mdc)
+- [00_shared-prompts.mdc](mdc:00_shared-prompts.mdc)

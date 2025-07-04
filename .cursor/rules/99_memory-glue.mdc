@@ -1,0 +1,33 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: Mémoire séquentielle, synchronisation MCP/Supabase, graphe des tâches et traçabilité
+globs: ["**/*"]
+alwaysApply: false
+---
+
+# 99_memory-glue.mdc
+
+## Rôle & Contexte
+Ce fichier gère la mémoire séquentielle, la synchronisation avec MCP/Supabase, le graphe des tâches et la traçabilité des décisions, feedbacks et tickets AgroFlow.
+
+---
+
+## 🧠 Mémoire & Traçabilité
+
+- Synchronisation mémoire séquentielle (MÉMOIRE_LONG_TERME, MÉMOIRE_SÉQUENTIELLE)
+- Graphe des tâches, liens PRD/tickets, guideline_refs
+- Apprentissage cumulatif, feedbacks, rétro mensuelle
+- Historique des décisions, inputs stakeholders, escalade en cas de conflit
+- Blocage automatique si incohérence détectée
+
+---
+
+## 🔗 Références
+
+- [taskMaster.md](mdc:PRD/taskMaster.md)
+- [10_prd-builder.mdc](mdc:10_prd-builder.mdc)
+- [00_shared-prompts.mdc](mdc:00_shared-prompts.mdc)

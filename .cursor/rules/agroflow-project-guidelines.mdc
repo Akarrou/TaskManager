@@ -1,0 +1,183 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Règle qui s'applique à tous les projets 
+alwaysApply: true
+---
+# Règles d'IA – Projet AgroFlow
+
+## Rôle & Contexte
+Ce fichier définit les conventions globales, la philosophie de développement, les exigences transverses et le workflow général du projet AgroFlow. Il s'applique à tous les modules et à l'IA.
+
+## Contexte du projet
+AgroFlow est une application fullstack composée d'un **frontend Angular** (Nx workspace, Tailwind CSS, ngx-translate, etc.) et d'un **backend Spring Boot** (JPA, Spring Security, Maven). Ce document définit les conventions générales, l'architecture globale et les bonnes pratiques transverses à respecter dans le projet. Pour les détails spécifiques au frontend, backend et à l'internationalisation, veuillez consulter les fichiers de règles dédiés :
+- `40_guidelines-frontend.mdc`
+- `41_guidelines-backend.mdc`
+- `04-i18n.mdc`
+
+---
+
+## 1. Conventions de nommage et Standards Généraux
+- **Nom du Projet** : AgroFlow
+- **Langue Principale du Code (hors libellés utilisateur)** : Anglais (pour les noms de variables, fonctions, classes, commentaires techniques, etc.)
+- **Messages de Commit** : En anglais, courts et descriptifs (voir section Workflow).
+
+---
+
+## 2. Structure Générale du Projet
+
+> **Voir l'arborescence complète et les patterns dans [10_project-architecture.mdc](mdc:10_project-architecture.mdc)**
+
+Le projet est organisé en deux blocs principaux :
+- **`Front/`** : Contient l'application frontend Angular gérée avec un workspace Nx.
+- **`Back/`** : Contient l'application backend Spring Boot.
+
+Consultez les règles `40_guidelines-frontend.mdc` et `41_guidelines-backend.mdc` pour les détails de structure interne de ces blocs.
+
+---
+
+## 3. Bonnes Pratiques et Recommandations Transverses
+- **Lisibilité du code** : Privilégier un code clair, concis et bien commenté (en anglais pour les commentaires techniques).
+- **Simplicité (KISS)** : Éviter la complexité inutile.
+- **DRY (Don't Repeat Yourself)** : Factoriser le code pour éviter la duplication.
+- **Gestion des erreurs** : Mettre en place une gestion robuste des erreurs et des exceptions.
+- **Sécurité** : Appliquer les bonnes pratiques de sécurité à tous les niveaux de l'application (voir aussi règles spécifiques backend).
+
+---
+
+## 4. Workflow et Intégration Continue
+
+- **Contrôle de version** : Utiliser Git avec une stratégie de branches (ex: feature, develop, main).
+  - Les messages de commit doivent être en anglais, suivre un format concis (ex: `feat: add user login functionality`, `fix: resolve issue with order processing`).
+- **CI/CD** : Mettre en place des pipelines pour automatiser builds, tests et déploiements (ex. GitHub Actions, Jenkins).
+- **Scripts automatiques** : Exécuter les scripts de pré-build (ex. `pnpm run merge-translations` pour le frontend) avant chaque build.
+- **Revue de code** : Procéder à des pull requests avec des revues de code systématiques pour toutes les modifications.
+
+---
+
+## 5. Instructions Spécifiques pour l'IA
+
+### ⚡ Pensée et Mémoire Séquentielle pour le Développement
+
+#### Principe Cognitif Fondamental
+Avant toute création ou modification de fonctionnalité, l'IA doit adopter une **approche de pensée séquentielle structurée** :
+
+1. **🧠 Réflexion Préalable** : Phase de compréhension profonde de la demande et de ses implications
+2. **🔗 Consultation de la Mémoire** : Recherche active des solutions, patterns et leçons antérieures
+3. **💡 Synthèse Conceptuelle** : Construction mentale de la solution optimale
+4. **✅ Validation Architecturale** : Vérification de la cohérence avec l'écosystème AgroFlow
+
+#### Mémoire Séquentielle du Développement
+L'IA doit maintenir et exploiter une **mémoire cumulative** des développements :
+
+- **🏗️ Patterns Architecturaux Validés** : Solutions et architectures qui ont fait leurs preuves
+- **🚫 Anti-Patterns Identifiés** : Approches problématiques à éviter absolument
+- **🔧 Conventions Établies** : Standards de code et pratiques adoptées dans le projet
+- **📈 Évolution du Projet** : Compréhension de la trajectoire et des orientations d'AgroFlow
+- **🎯 Décisions Techniques** : Historique des choix architecturaux et leurs justifications
+
+#### Format de Réflexion Obligatoire
+Pour chaque développement significatif, inclure une section **"💭 Analyse Développement"** :
+
+```markdown
+### 💭 Analyse Développement
+
+#### 🧠 Compréhension de la Demande
+[Analyse profonde des besoins et implications]
+
+#### 🔗 Mémoire Consultée
+- **Patterns réutilisables** : [Solutions similaires déjà implémentées]
+- **Conventions établies** : [Standards déjà adoptés]
+- **Anti-patterns évités** : [Erreurs à ne pas reproduire]
+
+#### 🎯 Approche Conceptuelle
+[Solution envisagée après réflexion et justification]
+
+#### ⚠️ Points d'Attention
+[Risques, défis ou aspects critiques identifiés]
+```
+
+---
+
+### 📋 Processus de Développement Enrichi
+
+Lorsque l'IA génère ou modifie du code pour AgroFlow, elle doit :
+
+- **Langue de communication** : Toujours répondre en Français (fr).
+- **Messages de commit pour l'IA** : Toujours proposer des messages de commit en Anglais, très courts et descriptifs.
+- **Développement de Fonctionnalités et Correction de Bugs avec Approche Cognitive** :
+    
+    **Phase Cognitive Préliminaire :**
+    0. **🧠 Activation de la Réflexion** : Prendre un moment de "pensée silencieuse" pour comprendre profondément la demande
+    1. **🔗 Consultation de la Mémoire Séquentielle** : Rechercher activement les patterns, solutions et leçons des développements antérieurs
+    2. **💡 Synthèse Conceptuelle** : Construire mentalement l'approche optimale en capitalisant sur l'expérience accumulée
+    
+    **Phase de Planification Enrichie :**
+    3. **📋 Analyse et Planification Réflexive** : Analyser la demande en intégrant les insights de la phase cognitive et proposer un plan détaillé des étapes envisagées (approche, fichiers impactés, stratégie de test, réutilisation de patterns). Inclure obligatoirement la section "💭 Analyse Développement". Si la fonctionnalité est conséquente, découper en sous-tâches gérables.
+    4. **✅ Validation du Plan Cognitif** : Soumettre ce plan enrichi à l'utilisateur pour validation avant toute implémentation.
+    
+    **Phase d'Implémentation Consciente :**
+    5. **🔨 Implémentation Séquentielle Guidée** : Une fois le plan validé, procéder étape par étape en maintenant la continuité cognitive (référencer les patterns utilisés, éviter les anti-patterns identifiés, informer de l'avancement à chaque étape majeure).
+- **Respecter les conventions avec continuité cognitive** : Appliquer les standards de nommage et de codage en capitalisant sur les conventions déjà établies et mémorisées lors des développements antérieurs (`@01_frontend-guidelines.mdc`, `@02_backend-guidelines.mdc`, `@04-i18n.mdc`).
+- **Se référer aux règles spécifiques avec mémoire** : Pour des tâches spécialisées, consulter les règles dédiées tout en conservant la mémoire des patterns et solutions déjà validés dans ces domaines.
+- **Organisation du code consciente** : Organiser le code selon la structure définie, en harmonisant avec les architectures déjà implémentées et validées.
+- **Performance et Sécurité optimisées** : Appliquer les recommandations en capitalisant sur les optimisations et mesures de sécurité déjà identifiées et validées dans le projet.
+
+### 🎯 Exigences Cognitives Transverses
+
+**Comportements Cognitifs Requis :**
+- **🧠 Toujours commencer par la réflexion** : Aucun développement sans phase de pensée préalable
+- **🔗 Consulter systématiquement la mémoire** : Rechercher activement les éléments réutilisables
+- **💡 Optimiser conceptuellement** : Chercher les améliorations avant l'implémentation
+- **📈 Maintenir la continuité évolutive** : Inscrire chaque développement dans la trajectoire du projet
+
+**Comportements Cognitifs Interdits :**
+- **🚫 Développer sans réflexion** : Jamais d'implémentation directe sans phase cognitive
+- **🚫 Ignorer l'expérience acquise** : Ne pas reproduire des solutions déjà optimisées
+- **🚫 Créer sans cohérence** : Éviter les architectures qui rompent l'harmonie du projet
+- **🚫 Répéter les erreurs passées** : Ne pas reproduire les anti-patterns identifiés
+
+---
+
+## Références complémentaires Générales
+- [10_project-architecture.mdc](mdc:10_project-architecture.mdc)
+- [Guide Nx Workspace](mdc:https:/nx.dev/latest/angular/getting-started/what-is-nx)
+- [Documentation Générale Spring](mdc:https:/spring.io/docs)
+- [Principes SOLID](mdc:https:/fr.wikipedia.org/wiki/SOLID_(informatique))
+
+---
+
+## 6. Impact de l'Approche Cognitive sur AgroFlow
+
+### 🎯 Philosophie du Développement Intelligent
+Cette méthodologie enrichie transforme l'approche de développement d'AgroFlow en intégrant une **intelligence cognitive séquentielle** qui :
+
+- **🧠 Réfléchit avant d'agir** : Chaque développement est précédé d'une analyse approfondie
+- **🔗 Capitalise sur l'expérience** : Chaque solution enrichit une mémoire réutilisable
+- **💡 Optimise en continu** : Les solutions s'améliorent par apprentissage cumulatif
+- **🎯 Maintient la cohérence** : L'évolution du projet suit une logique architecturale harmonieuse
+
+### 🏆 Bénéfices Attendus pour AgroFlow
+- **Qualité de code supérieure** : Solutions mûries par la réflexion et l'expérience
+- **Cohérence architecturale** : Développements harmonieux avec l'existant
+- **Efficacité accrue** : Réutilisation intelligente des patterns validés
+- **Évolution maîtrisée** : Croissance du projet selon une vision cohérente
+- **Réduction des erreurs** : Apprentissage cumulatif des bonnes pratiques
+
+### 🚀 Vision à Long Terme
+Chaque fonctionnalité développée avec cette approche cognitive contribue à faire d'AgroFlow une application de plus en plus robuste, cohérente et maintenable, où chaque nouvelle addition renforce l'ensemble plutôt que de l'alourdir.
+
+---
+
+*Happy coding avec intelligence cognitive ! Respectez ces règles pour garantir l'évolution optimale et cohérente du code dans AgroFlow !*
+
+---
+
+## Références croisées
+
+- [50_docs-management.mdc](mdc:50_docs-management.mdc) – Obligation de consultation et de mise à jour de la documentation @/docs dans tous les workflows IA/projet.
+
+

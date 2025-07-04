@@ -1,0 +1,42 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: Gestion et utilisation du dossier documentation (@/docs) - source de vérité documentaire
+globs: ["docs/**/*", "**/README.md", "**/*.md"]
+alwaysApply: false
+---
+
+# Gestion et Utilisation du Dossier Documentation (@/docs) – AgroFlow
+
+## Rôle & Contexte
+
+Le dossier `@/docs` à la racine du projet AgroFlow contient la documentation officielle du projet (fonctionnalités, base de données, etc.) au format Markdown (`.md`).  
+Il constitue la **source de vérité documentaire** pour l'ensemble de l'équipe et de l'IA.
+
+## Règles Obligatoires
+
+- **Mise à jour systématique** :  
+  À chaque évolution majeure du projet (nouvelle fonctionnalité, évolution de la base de données, etc.), l'IA doit mettre à jour ou compléter la documentation concernée dans `@/docs`.
+- **Consultation et exploitation active** :  
+  Lors de la génération d'un PRD, de tâches, ou de toute réflexion/planification, l'IA a l'obligation de consulter et d'exploiter activement la documentation existante dans `@/docs`, en complément des autres règles Cursor déjà en place.  
+  L'IA doit s'assurer de la cohérence, de la non-redondance, et de la capitalisation des connaissances documentées.
+- **Format et structure** :  
+  Les fichiers doivent être en Markdown, nommés de façon explicite, et organisés par thématique (ex : `BASE_DE_DONNEES.md`, `FONCTIONNALITES_APPLICATION.md`, etc.).
+- **Synchronisation** :  
+  La documentation doit toujours refléter l'état réel du projet.  
+  Toute modification de la structure, des fonctionnalités ou des processus doit être documentée sans délai.
+- **Exploitation documentaire** :  
+  L'IA peut et doit utiliser le contenu de `@/docs` comme source d'exemples, de définitions, ou de contexte lors de la génération de PRD, de tâches, ou de tout livrable.
+
+## Bonnes Pratiques
+
+- Privilégier la clarté, la concision et la structuration logique.
+- Éviter la duplication d'information entre les règles Cursor et la documentation utilisateur.
+- Utiliser des titres explicites et des tables des matières si nécessaire.
+
+## Lien avec les autres règles
+
+- Cette règle s'applique en complément des workflows PRD/tâches et doit être référencée dans toute règle de génération de livrables.

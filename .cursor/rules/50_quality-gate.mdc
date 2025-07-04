@@ -1,0 +1,58 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+---
+description: Quality gates, check-lists et exigences de conformité pour tout livrable AgroFlow
+globs: ["**/*.{ts,java}", "**/test/**/*", "**/spec/**/*"]
+alwaysApply: false
+---
+
+# 50_quality-gate.mdc
+
+## Rôle & Contexte
+Ce fichier définit les quality gates, check-lists et exigences de conformité à respecter pour tout livrable, plan ou PRD AgroFlow.
+
+## Rôle
+Quality gate : vérification SOLID, structure, nomenclature, couverture de tests, conformité aux guidelines, blocage si KO.
+
+---
+
+## 🚦 Quality Gates
+
+- Respect des principes SOLID
+- Structure de projet conforme (frontend : Nx, backend : packages)
+- Nommage conforme (kebab-case, PascalCase, etc.)
+- Couverture de tests minimale (80 % backend, tests unitaires frontend)
+- Conformité stricte aux guidelines techniques (voir 40/41)
+- Blocage de toute progression si une règle critique n’est pas respectée
+- Validation manuelle obligatoire pour lever un blocage
+
+---
+
+## 📋 Check-lists
+
+- Problème utilisateur clairement formulé
+- Objectifs SMART
+- User stories exhaustives
+- Critères d’acceptation Gherkin
+- Conformité aux guidelines référencées
+
+---
+
+## 🛡️ Gouvernance
+
+- Chaque PRD, plan, tâche, commit doit référencer les guidelines utilisées
+- Toute divergence ou non-conformité doit être remontée et bloquer la progression
+- L’IA est responsable de la cohérence et de la traçabilité
+
+---
+
+## 🔗 Références
+
+- [10_prd-builder.mdc](mdc:10_prd-builder.mdc)
+- [@agroflow-project-guidelines.mdc](mdc:@agroflow-project-guidelines.mdc)
+- [40_guidelines-frontend.mdc](mdc:40_guidelines-frontend.mdc)
+- [41_guidelines-backend.mdc](mdc:41_guidelines-backend.mdc)
+- [00_shared-prompts.mdc](mdc:00_shared-prompts.mdc)

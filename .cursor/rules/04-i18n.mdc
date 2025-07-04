@@ -1,0 +1,62 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+
+description: Règles d’internationalisation (i18n) pour Angular avec ngx-translate
+globs: ["**/i18n/**/*", "**/*-fr.json", "**/*-en.json", "Front/agroflow-workspace/**/assets/i18n/**/*"]
+alwaysApply: false
+------------------
+
+# 🌐 Internationalisation avec ngx-translate
+
+## 📁 Structure des fichiers de traduction
+
+* **Emplacement** : `src/assets/i18n/`
+* **Nommage** :
+
+  * Pour chaque composant, créer deux fichiers :
+
+    * `[nom-du-composant]-fr.json`
+    * `[nom-du-composant]-en.json`
+  * Exemple pour `UserProfileComponent` :
+
+    * `user-profile-fr.json`
+    * `user-profile-en.json`
+
+## 🔑 Conventions de clés de traduction
+
+* Utiliser des clés en MAJUSCULES avec une structure hiérarchique :
+
+  * Format : `COMPONENT.SECTION.CLE_SPECIFIQUE`
+  * Exemple :
+
+    ```json
+    {
+      "USER_PROFILE": {
+        "TITLE": "Profil Utilisateur",
+        "EDIT_BUTTON": "Modifier"
+      }
+    }
+    ```
+
+## 📌 Bonnes pratiques
+
+* **Ne pas modifier directement** les fichiers globaux `fr.json` et `en.json` situés à la racine du répertoire `i18n`.
+* **Scripts automatiques** : Exécuter `pnpm run merge-translations` avant chaque build pour consolider les traductions.
+* **Merge obligatoire après modification** : **À chaque fois qu'une traduction est ajoutée ou modifiée** dans un fichier JSON de traduction (`*-fr.json` ou `*-en.json`), il est **OBLIGATOIRE** de lancer immédiatement la commande de merge pour synchroniser les fichiers globaux.
+* **Lazy loading** : Charger les fichiers de traduction spécifiques aux modules uniquement lorsque ceux-ci sont chargés.
+* **Gestion des langues** : Utiliser un service dédié pour gérer le changement de langue à l'exécution.
+
+## 🔧 Commandes utiles
+
+* **Merge des traductions pour l'application admin** :
+  ```bash
+  cd ${workspaceFolder}/Front/agroflow-workspace && node scripts/merge-translations.js admin
+  ```
+  Cette commande consolide tous les fichiers de traduction individuels des composants en fichiers globaux `fr.json` et `en.json` pour l'application admin.
+
+## Rôle & Contexte
+Ce fichier définit les règles d’internationalisation (i18n) pour Angular avec ngx-translate dans AgroFlow : structure, conventions, bonnes pratiques et commandes utiles.

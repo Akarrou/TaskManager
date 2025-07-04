@@ -1,0 +1,260 @@
+---
+description: Génération et validation de PRD (Product Requirements Document) pour nouvelles fonctionnalités AgroFlow
+globs: ["PRD/**/*", "**/*.md"]
+alwaysApply: false
+---
+---
+description: Génération et validation de PRD (Product Requirements Document) pour nouvelles fonctionnalités AgroFlow
+globs: ["PRD/**/*", "**/PRD/**/*", "docs/**/*.md"]
+alwaysApply: false
+---
+
+# 10_prd-builder.mdc
+
+## Rôle & Contexte
+Ce fichier définit la procédure, la gouvernance et les check-lists pour la génération et la validation des PRD AgroFlow. Il est la référence unique pour tout ce qui concerne le Product Requirements Document (PRD).
+
+## ⚠️ Vérification préalable d'existence de PRD
+
+Avant toute création d'un nouveau PRD, l'agent doit vérifier dans le dossier `@/PRD` si un PRD sur le même sujet (même slug ou sujet proche) existe déjà.
+- Si un PRD existe déjà, l'agent doit proposer à l'utilisateur de modifier le PRD existant ou d'en créer un nouveau.
+- Si aucun PRD pertinent n'est trouvé, l'agent poursuit la création d'un nouveau PRD sans demander à l'utilisateur, s'il peut créer la nouvelle PRD.
+
+---
+
+## 📝 Procédure Générale PRD
+
+1. **Penser‑pas‑à‑pas** : expose d'abord ton raisonnement interne dans un bloc `COGITO:` puis génère la section PRD dans un bloc `PRD:`.
+2. Après génération :
+   - Résume la section en **max 2 phrases** → ajoute‑la à `MÉMOIRE_SÉQUENTIELLE`.
+   - Si la section modifie les fondations (**vision, contraintes, KPIs**), mets à jour `MÉMOIRE_LONG_TERME`.
+3. Termine toujours par `NEXT_STEP_SUGGESTION: <étape suivante>`.
+4. Attends la **validation explicite** de l'utilisateur avant de poursuivre.
+
+---
+
+## 📋 Étapes du PRD
+
+- Vision & problème
+- Objectifs SMART & KPIs
+- Personae & parcours
+- User stories détaillées
+- Spécifications fonctionnelles
+- Spécifications non‑fonctionnelles (perf, sécurité, i18n…)
+- Dépendances & risques
+- Roadmap & jalons
+- Critères d'acceptation (scénarios **Gherkin Given/When/Then**)
+- Validation utilisateur
+
+---
+
+## 📄 Templates & Nomenclature
+
+- PRD header (titre, date, contexte)
+- Tableaux de traçabilité
+- Scénarios Gherkin
+- Registre des risques
+- Nom de fichier : `<slug>-YYYY-MM-DD.md` (kebab‑case, sans accents)
+- Emplacement : dossier `@/PRD` à la racine du projet
+- Branch : `prd/<slug>`
+- Commit : `PRD:<slug>`
+
+---
+
+## 🛡️ Gouvernance & Rôle de l'IA
+
+| Aspect           | Exigence                                                                                  |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| **Autorité**     | L'IA est _source of truth_ pour la cohérence du PRD ; toute divergence est remontée.      |
+| **Vérification** | Revue automatisée : lint Markdown, validation YAML/JSON, orthographe, conformité Gherkin. |
+| **Issue Git**    | Création/liaison d'une _issue_ « PRD Review » assignée aux parties prenantes.             |
+| **Escalade**     | Conflit non résolu → **blocage** jusqu'à résolution.                                      |
+
+---
+
+## ✅ Check-lists par étape
+
+<details>
+<summary>Vision & problème</summary>
+
+- [ ] Problème utilisateur clairement formulé
+- [ ] Impact business quantifié
+- [ ] Alignement stratégie produit
+
+</details>
+
+<details>
+<summary>Objectifs SMART & KPIs</summary>
+
+- [ ] S = Spécifique
+- [ ] M = Mesurable
+- [ ] A = Atteignable
+- [ ] R = Réaliste
+- [ ] T = Temporel
+- [ ] KPIs définis et mesurables
+
+</details>
+
+<details>
+<summary>User stories détaillées</summary>
+
+- [ ] User stories exhaustives, format « En tant que… »
+- [ ] Rôles/personae couverts
+- [ ] Parcours utilisateur complet
+- [ ] Priorisation des user stories
+
+</details>
+
+<details>
+<summary>Spécifications fonctionnelles</summary>
+
+- [ ] Fonctionnalités listées et décrites
+- [ ] Cas d'usage principaux et alternatifs
+- [ ] Règles métier explicites
+- [ ] Interfaces/API précisées si besoin
+
+</details>
+
+<details>
+<summary>Spécifications non-fonctionnelles</summary>
+
+- [ ] Contraintes de performance
+- [ ] Contraintes de sécurité
+- [ ] Contraintes d'i18n/accessibilité
+- [ ] Contraintes techniques (infra, compatibilité, etc.)
+
+</details>
+
+<details>
+<summary>Dépendances & risques</summary>
+
+- [ ] Dépendances externes identifiées
+- [ ] Risques projet listés et évalués
+- [ ] Plan de mitigation pour chaque risque majeur
+
+</details>
+
+<details>
+<summary>Roadmap & jalons</summary>
+
+- [ ] Découpage en lots/versions
+- [ ] Dates ou jalons clés définis
+- [ ] Critères de passage entre jalons
+
+</details>
+
+<details>
+<summary>Critères d'acceptation (Gherkin)</summary>
+
+- [ ] Scénarios Gherkin exhaustifs
+- [ ] Cas nominaux et erreurs couverts
+- [ ] Critères d'acceptation validés avec le métier
+
+</details>
+
+<details>
+<summary>Validation utilisateur</summary>
+
+- [ ] Relecture par toutes les parties prenantes
+- [ ] Validation explicite obtenue
+- [ ] PRD archivé et versionné
+
+</details>
+
+---
+
+## CONTRAINTES
+
+- Appliquer les principes **SOLID** et Oncle Bob.
+- Formats : Markdown + tableaux pour traçabilité, JSON‑schemas si besoin.
+- **Gouvernance Git** : chaque PRD est versionné ; la branche et le message de commit contiennent l'ID PRD (`prd/<slug>` et `PRD:<slug>`).
+- Aucun contenu hors‑scope.
+
+---
+
+## Guidelines & Standards applicables
+
+| Domaine              | Document                        | Chemin                     | Dernière révision |
+| -------------------- | ------------------------------- | -------------------------- | ----------------- |
+| Frontend             | 40_guidelines-frontend.mdc      | @/docs/guidelines/frontend | 2025‑06‑09        |
+| Backend              | 41_guidelines-backend.mdc       | @/docs/guidelines/backend  | 2025‑06‑09        |
+| Internationalisation | 04-i18n.mdc                     | @/docs/guidelines/i18n     | 2025‑06‑09        |
+| Global               | 10_project-architecture.mdc     | @/docs/guidelines          | 2025‑06‑09        |
+
+> L'IA filtre ce tableau aux domaines réellement concernés par la fonctionnalité et met à jour la date via `git log`.
+
+---
+
+## 📄 Génération, Validation & Gestion des PRD
+
+1. Générer automatiquement un PRD structuré :
+   - Titre de la fonctionnalité
+   - Date de création
+   - Contexte et objectifs
+   - Description fonctionnelle
+   - Contraintes et règles métier
+   - Critères d'acceptation
+   - Points d'attention / risques
+   - Questions ouvertes
+2. **Nom de fichier** : `<slug>-YYYY-MM-DD.md` (kebab‑case, sans accents), proposé à l'utilisateur.
+3. **Emplacement** : dossier `@/PRD` à la racine du projet.
+4. **Validation utilisateur** obligatoire avant planification ou implémentation.
+5. Le PRD devient la **référence contractuelle** ; toute modification ultérieure doit être documentée et validée.
+6. L'IA alimente sa mémoire séquentielle et la base de connaissances AgroFlow.
+
+> **Prompt final standard**
+>
+> ```text
+> Voici le document PRD pour la fonctionnalité demandée.
+> Nom du fichier proposé : <slug>-YYYY-MM-DD.md
+> As‑tu des questions ou des modifications à apporter ?
+> Merci de valider ou d'indiquer les ajustements avant de poursuivre.
+> ```
+
+---
+
+## PIPELINE CI/CD
+
+1. **Artefact** : PDF via Pandoc.
+2. **Job `validate-prd`** : lint + validation + test Gherkin.
+3. Publication artefacts `prd-artifacts/<slug>/`.
+4. **Job `validate-guidelines`** : vérifie tableau Guidelines, existence fichiers, date < 90 j.
+
+---
+
+## TRANSITION VERS TASKMASTER MODE
+
+> Pré‑requis : PRD validé + artefact CI.
+> L'IA lit les Guidelines pour renseigner `guideline_refs` dans chaque task.
+
+---
+
+## AMÉLIORATION CONTINUE
+
+Feedbacks → `MÉMOIRE_SÉQUENTIELLE` ; rétro mensuelle.
+
+---
+
+## ERREURS & RED FLAGS (extrait)
+
+| Code   | Situation                        | Action IA                 |
+| ------ | -------------------------------- | ------------------------- |
+| GL-201 | Guideline requise non référencée | Ajouter + revalidation    |
+| GL-202 | `guideline_refs` vide            | Bloquer création ticket   |
+| GL-203 | Guideline obsolète               | Avertir + proposer update |
+
+---
+
+## Annexes & Références
+
+- [Templates PRD](mdc:PRD)
+- [40_guidelines-frontend.mdc](mdc:40_guidelines-frontend.mdc)
+- [41_guidelines-backend.mdc](mdc:41_guidelines-backend.mdc)
+- [04-i18n.mdc](mdc:04-i18n.mdc)
+- [10_project-architecture.mdc](mdc:10_project-architecture.mdc)
+
+---
+
+## Références croisées
+
+- [50_docs-management.mdc](mdc:50_docs-management.mdc) – Obligation de consultation et de mise à jour de la documentation @/docs lors de la génération ou modification de PRD.
