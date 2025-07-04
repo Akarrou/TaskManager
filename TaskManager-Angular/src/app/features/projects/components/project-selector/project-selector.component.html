@@ -1,0 +1,12 @@
+<div *ngIf="projects$ | async as projects"
+  class="relative">
+  <select *ngIf="projects.length > 0"
+    class="appearance-none w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
+    [ngModel]="(selectedProject$ | async)?.id"
+    (change)="onProjectChange($event)">
+    <option *ngFor="let project of projects"
+      [value]="project.id">
+      {{ project.name }}
+    </option>
+  </select>
+</div>

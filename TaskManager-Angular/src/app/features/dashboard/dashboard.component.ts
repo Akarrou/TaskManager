@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -17,7 +17,7 @@ import { MinimalDndComponent } from '../tasks/minimal-dnd.component';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatDialogModule,TaskSearchComponent, TaskTreeComponent, MinimalDndComponent],
+  imports: [CommonModule, MatIconModule, MatDialogModule, TaskSearchComponent, TaskTreeComponent, MinimalDndComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -27,7 +27,7 @@ export class DashboardComponent implements OnInit {
   private router = inject(Router);
   private dialog = inject(MatDialog);
   private userService = inject(UserService);
-  
+
   supabaseStatus = signal<'connecting' | 'connected' | 'error'>('connecting');
   statusMessage = signal('Connexion en cours...');
 
@@ -59,42 +59,23 @@ export class DashboardComponent implements OnInit {
     ];
   });
 
-  async ngOnInit() {
-    await this.checkSupabaseConnection();
-    await this.loadUsers();
-    
-    // Attendre que les tâches soient chargées, puis initialiser
-    if (this.tasks().length > 0) {
-      // Initialiser filteredTasks avec toutes les tâches
-      this.filteredTasks.set(this.tasks());
-      
-      // Lecture des filtres depuis localStorage
-      const savedFilters = localStorage.getItem('dashboardFilters');
-      if (savedFilters) {
-        try {
-          const parsed = JSON.parse(savedFilters);
-          this.currentSearchFilters.set(parsed);
-          this.onSearchFiltersChange(parsed);
-        } catch (e) {
-          // Si parsing échoue, ignorer
-        }
-      }
-    }
+  constructor() {
+    effect(() => {
+      const allTasks = this.tasks();
+      this.applyFilters(allTasks, this.currentSearchFilters());
+    });
   }
 
-  private async checkSupabaseConnection() {
-    this.statusMessage.set('Vérification de la connexion Supabase...');
-    try {
-      await this.taskService.loadTasks();
-      this.supabaseStatus.set('connected');
-      this.statusMessage.set('Connecté à Supabase.');
-      
-      // Initialiser filteredTasks après le chargement des tâches
-      const loadedTasks = this.tasks();
-      this.filteredTasks.set(loadedTasks);
-    } catch (error: any) {
-      this.supabaseStatus.set('error');
-      this.statusMessage.set(`Erreur de connexion: ${error.message || 'Vérifiez la console'}`);
+  async ngOnInit() {
+    await this.loadUsers();
+
+    // Lecture des filtres depuis localStorage au démarrage
+    const savedFilters = localStorage.getItem('dashboardFilters');
+    if (savedFilters) {
+      try {
+        const parsed = JSON.parse(savedFilters);
+        this.currentSearchFilters.set(parsed);
+      } catch (e) { /* Ignorer si parsing échoue */ }
     }
   }
 
@@ -146,9 +127,7 @@ export class DashboardComponent implements OnInit {
   }
 
   async refreshData() {
-    this.statusMessage.set('Rafraîchissement des données...');
-    this.supabaseStatus.set('connecting');
-    await this.checkSupabaseConnection();
+    await this.taskService.loadTasks();
   }
 
   async debugTasks() {
@@ -174,8 +153,8 @@ export class DashboardComponent implements OnInit {
   async deleteTask(id: string): Promise<void> {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '400px',
-      data: { 
-        title: 'Confirmation de suppression de tâches', 
+      data: {
+        title: 'Confirmation de suppression de tâches',
         message: 'Êtes-vous sûr de vouloir supprimer cette tâche ?\\nCette action est irréversible.'
       }
     });
@@ -196,15 +175,14 @@ export class DashboardComponent implements OnInit {
   }
 
   onSearchFiltersChange(filters: SearchFilters) {
-    // Mettre à jour le signal des filtres actuels
     this.currentSearchFilters.set(filters);
-    
-    // Sauvegarde dans localStorage
     localStorage.setItem('dashboardFilters', JSON.stringify(filters));
-    
-    const allTasks = this.tasks();
-    let filtered = [...allTasks]; // Créer une copie pour éviter les mutations
-    
+    this.applyFilters(this.tasks(), filters);
+  }
+
+  private applyFilters(tasks: Task[], filters: SearchFilters) {
+    let filtered = tasks;
+
     if (filters.searchText) {
       const search = filters.searchText.toLowerCase();
       filtered = filtered.filter(task =>
@@ -214,37 +192,36 @@ export class DashboardComponent implements OnInit {
         (task.task_number && task.task_number.toString().includes(search))
       );
     }
-    
+
     if (filters.status) {
       filtered = filtered.filter(task => task.status === filters.status);
     }
-    
+
     if (filters.priority) {
       filtered = filtered.filter(task => task.priority === filters.priority);
     }
-    
+
     if (filters.environment) {
       filtered = filtered.filter(task => task.environment && task.environment.includes(filters.environment));
     }
-    
+
     if (filters.type) {
       filtered = filtered.filter(task => task.type === filters.type);
     }
-    
+
     if (filters.prd_slug && typeof filters.prd_slug === 'string' && filters.prd_slug.trim()) {
       filtered = filtered.filter(task => task.prd_slug && task.prd_slug.toLowerCase().includes(filters.prd_slug!.toLowerCase()));
     }
-    
+
     if (filters.tag && typeof filters.tag === 'string' && filters.tag.trim()) {
       filtered = filtered.filter(task => task.tags && task.tags.some(tag => tag.toLowerCase().includes(filters.tag!.toLowerCase())));
     }
 
-    // Logique pour inclure les descendants si on filtre par epic ou feature
     if (filters.type === 'epic' || filters.type === 'feature') {
       const descendants = new Set<string>();
       function collectDescendants(task: Task) {
         descendants.add(task.id!);
-        for (const child of allTasks) {
+        for (const child of tasks) {
           if (child.parent_task_id === task.id) {
             collectDescendants(child);
           }
@@ -253,7 +230,7 @@ export class DashboardComponent implements OnInit {
       for (const root of filtered) {
         collectDescendants(root);
       }
-      filtered = allTasks.filter(t => descendants.has(t.id!));
+      filtered = tasks.filter(t => descendants.has(t.id!));
     }
 
     this.filteredTasks.set(filtered);
@@ -279,7 +256,6 @@ export class DashboardComponent implements OnInit {
     return priorityMap[priority] || priority;
   }
 
-  // --- Export roadmap amélioré ---
   private buildTaskTree(tasks: Task[]): any[] {
     const nodeMap = new Map<string, any>();
     const roots: any[] = [];
@@ -343,11 +319,6 @@ export class DashboardComponent implements OnInit {
     window.URL.revokeObjectURL(url);
   }
 
-  /**
-   * Retourne la liste des racines à afficher dans l'arborescence :
-   * - Si aucun filtre sur type, retourne l'arbre complet filtré
-   * - Si filtre sur epic ou feature, retourne le sous-arbre complet pour chaque tâche filtrée
-   */
   getFilteredTreeTasks(): Task[] {
     return this.filteredTasks();
   }

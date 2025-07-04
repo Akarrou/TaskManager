@@ -42,6 +42,18 @@ export const routes: Routes = [
     data: { renderMode: 'client' }
   },
   {
+    path: 'projects',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/projects/components/project-list/project-list.component').then(m => m.ProjectListComponent),
+    title: 'Mes Projets - AgroFlow Task Manager'
+  },
+  {
+    path: 'projects/new',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/projects/components/project-form/project-form.component').then(m => m.ProjectFormComponent),
+    title: 'Nouveau Projet - AgroFlow Task Manager'
+  },
+  {
     path: '**',
     redirectTo: '/dashboard'
   }

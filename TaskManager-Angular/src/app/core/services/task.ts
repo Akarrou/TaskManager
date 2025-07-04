@@ -1,6 +1,11 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { SupabaseService } from './supabase';
 import { ISubtask } from '../../features/tasks/subtask.model';
+import { Store } from '@ngrx/store';
+import { AppState } from '../../app.state';
+import { selectSelectedProjectId } from '../../features/projects/store/project.selectors';
+import { switchMap, from, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 export interface Task {
   id?: string;
@@ -46,6 +51,7 @@ export interface TaskComment {
 })
 export class TaskService {
   private supabaseService = inject(SupabaseService);
+  private store = inject(Store<AppState>);
 
   // Signaux Angular pour state management moderne
   private tasksSignal = signal<Task[]>([]);
@@ -58,33 +64,44 @@ export class TaskService {
   readonly error = this.errorSignal.asReadonly();
 
   readonly totalTasks = computed(() => this.tasksSignal().length);
-  readonly completedTasks = computed(() => 
+  readonly completedTasks = computed(() =>
     this.tasksSignal().filter(task => task.status === 'completed').length
   );
-  readonly pendingTasks = computed(() => 
+  readonly pendingTasks = computed(() =>
     this.tasksSignal().filter(task => task.status === 'pending').length
   );
-  readonly inProgressTasks = computed(() => 
+  readonly inProgressTasks = computed(() =>
     this.tasksSignal().filter(task => task.status === 'in_progress').length
   );
 
   constructor() {
+    // Effet qui écoute les changements de projet et recharge les tâches
+    effect(() => {
+      const selectedProjectId = this.store.selectSignal(selectSelectedProjectId);
+      const projectId = selectedProjectId(); // On récupère la valeur du signal
+      if (projectId) {
+        this.loadTasksForProject(projectId);
+      } else {
+        this.tasksSignal.set([]); // Pas de projet, pas de tâches
+      }
+    });
   }
 
-  // ÉTAPE 2: Méthode simple pour charger les tâches
-  async loadTasks(): Promise<void> {
+  // Méthode simple pour charger les tâches d'un projet spécifique
+  private async loadTasksForProject(projectId: string): Promise<void> {
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
 
     try {
       const { data, error } = await this.supabaseService.tasks
         .select('*')
+        .eq('project_id', projectId) // Le filtrage crucial
         .order('created_at', { ascending: false });
 
       if (error) {
         const errorMessage = this.supabaseService.handleError(error);
         this.errorSignal.set(errorMessage);
-        this.tasksSignal.set([]); // Reset en cas d'erreur
+        this.tasksSignal.set([]);
       } else {
         this.tasksSignal.set(data || []);
       }
@@ -97,6 +114,18 @@ export class TaskService {
     }
   }
 
+  // L'ancienne méthode loadTasks n'est plus directement utilisée,
+  // mais on peut la garder pour des cas sans projet ou la supprimer.
+  // Pour l'instant, je la laisse pour ne pas casser d'autres dépendances.
+  async loadTasks(): Promise<void> {
+    console.warn("loadTasks() est dépréciée. Le chargement est maintenant piloté par le projet sélectionné.");
+    // Optionnel: charger les tâches du projet actif si on veut garder cette méthode
+    const projectId = this.store.selectSignal(selectSelectedProjectId)();
+    if (projectId) {
+      await this.loadTasksForProject(projectId);
+    }
+  }
+
   // Méthode pour obtenir les statistiques
   getStats() {
     return {
@@ -104,8 +133,8 @@ export class TaskService {
       completed: this.completedTasks(),
       pending: this.pendingTasks(),
       inProgress: this.inProgressTasks(),
-      completionRate: this.totalTasks() > 0 
-        ? Math.round((this.completedTasks() / this.totalTasks()) * 100) 
+      completionRate: this.totalTasks() > 0
+        ? Math.round((this.completedTasks() / this.totalTasks()) * 100)
         : 0
     };
   }
@@ -113,7 +142,7 @@ export class TaskService {
   // ÉTAPE 3: Méthode pour créer des données de test
   async createSampleTasks(): Promise<void> {
     this.loadingSignal.set(true);
-    
+
     const sampleTasks: Omit<Task, 'id' | 'created_at' | 'updated_at'>[] = [
       {
         title: '🌱 Plantation de tomates',
@@ -221,10 +250,10 @@ export class TaskService {
     } catch (error) {
       const errorMessage = 'Erreur inattendue lors de la création des données test';
       this.errorSignal.set(errorMessage);
-         } finally {
-       this.loadingSignal.set(false);
-     }
-   }
+    } finally {
+      this.loadingSignal.set(false);
+    }
+  }
 
   // ÉTAPE 4: CRUD complet des tâches
   async createTask(task: Omit<Task, 'id' | 'created_at' | 'updated_at'>): Promise<boolean> {
@@ -234,7 +263,7 @@ export class TaskService {
     // On retire task_number et subtasks si présents
     // On s'assure que les champs array sont bien formatés
     const { task_number, subtasks, ...taskWithoutNumber } = task;
-   
+
     // Nettoyage du payload : suppression des clés undefined
     const cleanedPayload: Record<string, any> = {};
     Object.entries(taskWithoutNumber).forEach(([key, value]) => {
@@ -359,7 +388,7 @@ export class TaskService {
       const result = await this.supabaseService.tasks
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       return result;
     } catch (error) {
       return { error };

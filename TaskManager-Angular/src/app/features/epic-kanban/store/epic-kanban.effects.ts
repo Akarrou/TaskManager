@@ -1,8 +1,9 @@
 import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
-import { catchError, map, switchMap } from 'rxjs/operators';
+import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { of, from } from 'rxjs';
+import { Router } from '@angular/router';
 
 import { EpicKanbanActions } from './epic-kanban.actions';
 import { EpicKanbanService } from '../services/epic-kanban.service';
@@ -14,6 +15,7 @@ export class EpicKanbanEffects {
   private store = inject(Store);
   private epicKanbanService = inject(EpicKanbanService);
   private taskService = inject(TaskService);
+  private router = inject(Router);
 
   // Charger Epic Board
   loadEpicBoard$ = createEffect(() =>
@@ -22,32 +24,41 @@ export class EpicKanbanEffects {
       switchMap(({ epicId }) =>
         from(this.epicKanbanService.loadEpicBoard(epicId)).pipe(
           map(epicBoard => EpicKanbanActions.loadEpicBoardSuccess({ epicBoard })),
-          catchError(error => of(EpicKanbanActions.loadEpicBoardFailure({ 
-            error: error?.message || 'Erreur lors du chargement du board Epic' 
+          catchError(error => of(EpicKanbanActions.loadEpicBoardFailure({
+            error: error?.message || 'Erreur lors du chargement du board Epic'
           })))
         )
       )
     )
   );
 
+  // Redirection en cas d'échec de chargement du board
+  loadEpicBoardFailure$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(EpicKanbanActions.loadEpicBoardFailure),
+      tap(() => this.router.navigate(['/dashboard']))
+    ),
+    { dispatch: false }
+  );
+
   // Déplacer Feature
   moveFeature$ = createEffect(() =>
     this.actions$.pipe(
       ofType(EpicKanbanActions.moveFeature),
-      switchMap(({ featureId, fromColumnId, toColumnId, newStatus }) => {        
+      switchMap(({ featureId, fromColumnId, toColumnId, newStatus }) => {
         return from(this.taskService.updateTask(featureId, { status: newStatus as any })).pipe(
           map((success) => {
             if (success) {
               return EpicKanbanActions.moveFeatureSuccess({ featureId, newStatus });
             } else {
-              return EpicKanbanActions.moveFeatureFailure({ 
-                error: 'Échec de la mise à jour en base de données' 
+              return EpicKanbanActions.moveFeatureFailure({
+                error: 'Échec de la mise à jour en base de données'
               });
             }
           }),
           catchError(error => {
-            return of(EpicKanbanActions.moveFeatureFailure({ 
-              error: error?.message || 'Erreur lors du déplacement de la feature' 
+            return of(EpicKanbanActions.moveFeatureFailure({
+              error: error?.message || 'Erreur lors du déplacement de la feature'
             }));
           })
         );
@@ -62,8 +73,8 @@ export class EpicKanbanEffects {
       switchMap(({ taskId, newStatus }) =>
         from(this.taskService.updateTask(taskId, { status: newStatus as any })).pipe(
           map(() => EpicKanbanActions.updateTaskStatusSuccess({ taskId, newStatus })),
-          catchError(error => of(EpicKanbanActions.updateTaskStatusFailure({ 
-            error: error?.message || 'Erreur lors de la mise à jour du statut' 
+          catchError(error => of(EpicKanbanActions.updateTaskStatusFailure({
+            error: error?.message || 'Erreur lors de la mise à jour du statut'
           })))
         )
       )
@@ -97,16 +108,16 @@ export class EpicKanbanEffects {
           switchMap(epicKanbanState => {
             if (epicKanbanState?.currentEpic?.id) {
               return from(this.epicKanbanService.loadEpicBoard(epicKanbanState.currentEpic.id)).pipe(
-                map(epicBoard => EpicKanbanActions.refreshMetricsSuccess({ 
-                  metrics: epicBoard.metrics 
+                map(epicBoard => EpicKanbanActions.refreshMetricsSuccess({
+                  metrics: epicBoard.metrics
                 })),
-                catchError(error => of(EpicKanbanActions.refreshMetricsFailure({ 
-                  error: error?.message || 'Erreur lors du rafraîchissement des métriques' 
+                catchError(error => of(EpicKanbanActions.refreshMetricsFailure({
+                  error: error?.message || 'Erreur lors du rafraîchissement des métriques'
                 })))
               );
             }
-            return of(EpicKanbanActions.refreshMetricsFailure({ 
-              error: 'Aucun epic actuel trouvé' 
+            return of(EpicKanbanActions.refreshMetricsFailure({
+              error: 'Aucun epic actuel trouvé'
             }));
           })
         );
@@ -119,25 +130,25 @@ export class EpicKanbanEffects {
     this.actions$.pipe(
       ofType(EpicKanbanActions.bulkUpdateFeatures),
       switchMap(({ featureIds, updates }) => {
-        const updatePromises = featureIds.map(id => 
+        const updatePromises = featureIds.map(id =>
           this.taskService.updateTask(id, updates)
         );
-        
+
         return from(Promise.all(updatePromises)).pipe(
           switchMap(() =>
             // Recharger les données pour obtenir les features mises à jour
             from(this.taskService.loadTasks()).pipe(
               map(() => {
                 const allTasks = this.taskService.tasks();
-                const updatedFeatures = allTasks.filter(task => 
+                const updatedFeatures = allTasks.filter(task =>
                   featureIds.includes(task.id || '') && task.type === 'feature'
                 );
                 return EpicKanbanActions.bulkUpdateFeaturesSuccess({ updatedFeatures });
               })
             )
           ),
-          catchError(error => of(EpicKanbanActions.bulkUpdateFeaturesFailure({ 
-            error: error?.message || 'Erreur lors de la mise à jour des features' 
+          catchError(error => of(EpicKanbanActions.bulkUpdateFeaturesFailure({
+            error: error?.message || 'Erreur lors de la mise à jour des features'
           })))
         );
       })
@@ -159,8 +170,8 @@ export class EpicKanbanEffects {
       switchMap(({ task }) =>
         from(this.taskService.updateTask(task.id!, task)).pipe(
           map(() => EpicKanbanActions.updateTaskSuccess({ task })),
-          catchError(error => of(EpicKanbanActions.updateTaskFailure({ 
-            error: error?.message || 'Erreur lors de la mise à jour de la tâche' 
+          catchError(error => of(EpicKanbanActions.updateTaskFailure({
+            error: error?.message || 'Erreur lors de la mise à jour de la tâche'
           })))
         )
       )
@@ -174,8 +185,8 @@ export class EpicKanbanEffects {
       switchMap(({ taskId }) =>
         from(this.taskService.deleteTask(taskId)).pipe(
           map(() => EpicKanbanActions.deleteTaskSuccess({ taskId })),
-          catchError(error => of(EpicKanbanActions.deleteTaskFailure({ 
-            error: error?.message || 'Erreur lors de la suppression de la tâche' 
+          catchError(error => of(EpicKanbanActions.deleteTaskFailure({
+            error: error?.message || 'Erreur lors de la suppression de la tâche'
           })))
         )
       )
@@ -193,15 +204,15 @@ export class EpicKanbanEffects {
         };
         return from(this.taskService.createTask(taskToCreate as any)).pipe(
           map(success => EpicKanbanActions.createTaskSuccess({ task: task as Task })),
-          catchError(error => of(EpicKanbanActions.createTaskFailure({ 
-            error: error?.message || 'Erreur lors de la création de la tâche' 
+          catchError(error => of(EpicKanbanActions.createTaskFailure({
+            error: error?.message || 'Erreur lors de la création de la tâche'
           })))
         );
       })
     )
   );
 
-  // T018 - Auto-refresh après operations sur tasks  
+  // T018 - Auto-refresh après operations sur tasks
   autoRefreshAfterTaskOperations$ = createEffect(() =>
     this.actions$.pipe(
       ofType(
@@ -212,4 +223,4 @@ export class EpicKanbanEffects {
       map(() => EpicKanbanActions.refreshMetrics())
     )
   );
-} 
+}

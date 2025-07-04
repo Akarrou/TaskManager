@@ -9,12 +9,13 @@ import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 
 import { Store } from '@ngrx/store';
-import {  takeUntil, Subject } from 'rxjs';
+import { takeUntil, Subject } from 'rxjs';
 import { takeUntil as takeUntilOperator } from 'rxjs/operators';
 
 import { Task } from '../../core/services/task';
 import { TaskService } from '../../core/services/task';
 import { KanbanColumn } from './models/epic-board.model';
+import * as ProjectSelectors from '../projects/store/project.selectors';
 import { EpicKanbanActions } from './store/epic-kanban.actions';
 import * as EpicKanbanSelectors from './store/epic-kanban.selectors';
 
@@ -49,7 +50,7 @@ import { ISubtask } from '../tasks/subtask.model';
   styleUrls: ['./epic-kanban.component.scss']
 })
 export class EpicKanbanComponent implements OnInit, OnDestroy {
-  
+
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private store = inject(Store);
@@ -67,10 +68,13 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   expandedFeatures$ = this.store.select(EpicKanbanSelectors.selectExpandedFeatures);
   filteredFeaturesCount = this.store.selectSignal(EpicKanbanSelectors.selectFilteredFeaturesCount);
 
+  // Nouveaux sélecteurs pour les projets
+  selectedProjectId$ = this.store.select(ProjectSelectors.selectSelectedProjectId);
+
   // Local state for template
   expandedFeaturesSet = new Set<string>();
   featureTasksMap: { [featureId: string]: (Task | ISubtask)[] } = {};
-  
+
   // Current epic ID
   epicId: string | null = null;
 
@@ -86,6 +90,7 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadEpicFromRoute();
     this.subscribeToStoreChanges();
+    this.subscribeToProjectChanges();
   }
 
   ngOnDestroy(): void {
@@ -135,7 +140,7 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
 
   // Événements des tâches
   onTaskStatusChange(event: { task: Task | ISubtask; newStatus: string }): void {
-    this.store.dispatch(EpicKanbanActions.updateTaskStatus({ 
+    this.store.dispatch(EpicKanbanActions.updateTaskStatus({
       taskId: event.task.id!,
       newStatus: event.newStatus
     }));
@@ -207,10 +212,10 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
 
   onSaveEpic(epicData: Partial<Task>): void {
     // Dispatch action pour sauvegarder l'epic
-    this.store.dispatch(EpicKanbanActions.updateEpic({ 
-      epic: epicData 
+    this.store.dispatch(EpicKanbanActions.updateEpic({
+      epic: epicData
     }));
-    
+
     // Notification de succès
     this.snackBar.open('Epic mis à jour avec succès', 'Fermer', {
       duration: 3000,
@@ -237,7 +242,7 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
             if (success) {
               // Navigation vers le dashboard après suppression
               this.router.navigate(['/dashboard']);
-              
+
               this.snackBar.open('Epic supprimé avec succès', 'Fermer', {
                 duration: 3000,
                 horizontalPosition: 'right',
@@ -273,7 +278,7 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
       const dataStr = JSON.stringify(exportData, null, 2);
       const dataBlob = new Blob([dataStr], { type: 'application/json' });
       const url = URL.createObjectURL(dataBlob);
-      
+
       const link = document.createElement('a');
       link.href = url;
       link.download = `epic-${epic.task_number || epic.id}-kanban-${new Date().toISOString().split('T')[0]}.json`;
@@ -293,7 +298,7 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   onShareBoard(): void {
     // Création d'un lien de partage (URL actuelle)
     const shareUrl = window.location.href;
-    
+
     // Utiliser l'API Web Share si disponible
     if (navigator.share) {
       navigator.share({
@@ -362,7 +367,7 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
       // Déplacement entre colonnes différentes
       const feature = event.previousContainer.data[event.previousIndex];
       const newStatus = this.getStatusFromColumnId(event.container.id);
-      
+
       // Transfer de l'item
       transferArrayItem(
         event.previousContainer.data,
@@ -412,25 +417,25 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   // T018 - Handle task priority change
   onTaskPriorityChange(event: { task: Task | ISubtask, newPriority: string }): void {
     console.log('🔄 Changement de priorité task:', event.task.id, 'Nouvelle priorité:', event.newPriority);
-    
-    this.store.dispatch(EpicKanbanActions.updateTask({ 
-      task: { 
-        ...(event.task as Task), 
+
+    this.store.dispatch(EpicKanbanActions.updateTask({
+      task: {
+        ...(event.task as Task),
         priority: event.newPriority as 'low' | 'medium' | 'high' | 'urgent'
-      } 
+      }
     }));
   }
 
   // T018 - Handle task edit - Navigate to task edit or open modal
   onTaskEdit(task: Task | ISubtask): void {
     console.log('✏️ Édition task:', task.id);
-    
+
     // Option 1: Navigation vers page d'édition
     // this.router.navigate(['/tasks', task.id, 'edit']);
-    
+
     // Option 2: Modal d'édition (à implémenter plus tard)
     // this.openTaskEditModal(task);
-    
+
     // Pour l'instant, on log seulement
     console.log('Task edit modal à implémenter:', task);
   }
@@ -438,11 +443,11 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   // T018 - Handle task delete
   onTaskDelete(taskId: string): void {
     console.log('🗑️ Suppression task:', taskId);
-    
+
     // Confirmation avant suppression
     const taskToDelete = this.featureTasksMap[this.epicId!].find(t => t.id === taskId);
     const confirmed = confirm(`Êtes-vous sûr de vouloir supprimer la tâche "${taskToDelete?.title}" ?`);
-    
+
     if (confirmed) {
       this.store.dispatch(EpicKanbanActions.deleteTask({ taskId }));
     }
@@ -458,10 +463,23 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
     console.log('Add task to feature:', feature);
     // TODO: Ouvrir le dialog de création de tâche avec parent_id = feature.id
     // Temporairement, on peut naviguer vers le formulaire de création de tâche
-    this.router.navigate(['/tasks/new'], { 
-      queryParams: { 
+    this.router.navigate(['/tasks/new'], {
+      queryParams: {
         parent_id: feature.id,
         epic_id: this.route.snapshot.paramMap.get('id')
+      }
+    });
+  }
+
+  private subscribeToProjectChanges(): void {
+    this.selectedProjectId$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(projectId => {
+      if (projectId && this.epicId) {
+        // Le projet a changé, on doit recharger le board
+        // pour s'assurer que l'epic est bien dans le contexte du nouveau projet.
+        console.log(`Project changed to ${projectId}, reloading epic ${this.epicId}`);
+        this.store.dispatch(EpicKanbanActions.loadEpicBoard({ epicId: this.epicId }));
       }
     });
   }

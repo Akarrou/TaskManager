@@ -1,0 +1,48 @@
+<div class="max-w-2xl mx-auto mt-10">
+    <div class="bg-white rounded-lg shadow-xl p-6 md:p-8">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">Créer un nouveau projet</h1>
+
+        <form [formGroup]="form"
+            (ngSubmit)="onSubmit()">
+            <!-- Champ Nom du projet -->
+            <div class="mb-4">
+                <label for="name"
+                    class="block text-gray-700 font-semibold mb-2">Nom du projet</label>
+                <input id="name"
+                    type="text"
+                    formControlName="name"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    [ngClass]="{ 'border-red-500': form.get('name')?.invalid && form.get('name')?.touched }">
+                <div *ngIf="form.get('name')?.invalid && form.get('name')?.touched"
+                    class="text-red-600 text-sm mt-1">
+                    <span *ngIf="form.get('name')?.errors?.['required']">Le nom est requis.</span>
+                    <span *ngIf="form.get('name')?.errors?.['minlength']">Le nom doit contenir au moins 3 caractères.</span>
+                </div>
+            </div>
+
+            <!-- Champ Description -->
+            <div class="mb-6">
+                <label for="description"
+                    class="block text-gray-700 font-semibold mb-2">Description</label>
+                <textarea id="description"
+                    formControlName="description"
+                    rows="4"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+
+            <!-- Boutons d'action -->
+            <div class="flex justify-end space-x-4">
+                <button type="button"
+                    (click)="onCancel()"
+                    class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                    Annuler
+                </button>
+                <button type="submit"
+                    [disabled]="form.invalid"
+                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+                    Sauvegarder
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

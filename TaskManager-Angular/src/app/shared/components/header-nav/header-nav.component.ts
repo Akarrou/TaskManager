@@ -3,16 +3,22 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
 import { LogoComponent } from '../logo/logo.component';
+import { ProjectSelectorComponent } from '../../../features/projects/components/project-selector/project-selector.component';
 
 @Component({
   selector: 'app-header-nav',
   standalone: true,
-  imports: [CommonModule, RouterModule, LogoComponent],
+  imports: [CommonModule, RouterModule, LogoComponent, ProjectSelectorComponent],
   template: `
     <header class="header-nav">
       <div class="nav-container">
         <!-- Logo et titre -->
         <app-logo></app-logo>
+
+        <!-- Sélecteur de projet -->
+        <div class="project-selector-container">
+          <app-project-selector></app-project-selector>
+        </div>
 
         <!-- Navigation principale -->
         <nav class="nav-menu" role="navigation" aria-label="Navigation principale">
@@ -22,7 +28,7 @@ import { LogoComponent } from '../logo/logo.component';
 
         <!-- Actions utilisateur -->
         <div class="nav-actions">
-          <button 
+          <button
             class="profile-btn"
             aria-label="Menu profil"
             title="Menu profil"
@@ -56,7 +62,7 @@ import { LogoComponent } from '../logo/logo.component';
         </div>
 
         <!-- Bouton menu mobile -->
-        <button 
+        <button
           class="mobile-menu-btn"
           aria-label="Menu mobile"
           (click)="toggleMobileMenu()"
@@ -95,6 +101,14 @@ import { LogoComponent } from '../logo/logo.component';
       justify-content: space-between;
       padding: 0 2rem;
       height: 70px;
+    }
+
+    .project-selector-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 0 2rem;
     }
 
     .nav-menu {
@@ -362,7 +376,7 @@ export class HeaderNavComponent {
   private router = inject(Router);
 
   currentUser = this.authService.currentUser;
-  
+
   activeRoute = signal('dashboard');
   notificationCount = signal(3);
   showProfileMenu = signal(false);
@@ -393,4 +407,4 @@ export class HeaderNavComponent {
     this.closeProfileMenu();
     this.router.navigate(['/login']);
   }
-} 
+}

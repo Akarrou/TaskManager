@@ -15,9 +15,11 @@ export function logger(reducer: ActionReducer<AppState>): ActionReducer<AppState
 }
 
 import { epicKanbanReducer } from '../../features/epic-kanban/store/epic-kanban.reducer';
+import { reducer as projectReducer } from '../../features/projects/store/project.reducer';
 
 export const reducers: ActionReducerMap<AppState> = {
-  epicKanban: epicKanbanReducer
+  epicKanban: epicKanbanReducer,
+  projects: projectReducer
 };
 
-export const metaReducers: MetaReducer<AppState>[] = isDevMode() ? [logger] : []; 
+export const metaReducers: MetaReducer<AppState>[] = isDevMode() ? [logger] : [];
