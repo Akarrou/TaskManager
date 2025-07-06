@@ -5,8 +5,8 @@
       <div class="panel-title-header-content">
         <mat-icon>dashboard</mat-icon>
         <span class="epic-number"
-          *ngIf="epic?.task_number">#E{{ epic?.task_number }}</span>
-        <span class="epic-title">{{ epic?.title || 'Epic sans titre' }}</span>
+          *ngIf="item?.task_number">#{{itemNumberConfig.icon}}{{ item?.task_number }}</span>
+        <span class="epic-title">{{ item?.title || 'Item sans titre' }}</span>
       </div>
 
       <mat-chip-set class="status-badge">
@@ -44,10 +44,10 @@
         </button>
         <mat-menu #actionsMenu="matMenu">
           <button mat-menu-item
-            (click)="onEditEpic()"
+            (click)="onEditItem()"
             *ngIf="canEdit">
             <mat-icon>edit</mat-icon>
-            <span>Modifier l'epic</span>
+            <span>Modifier l'item</span>
           </button>
           <mat-divider></mat-divider>
           <button mat-menu-item
@@ -62,11 +62,11 @@
           </button>
           <mat-divider *ngIf="canEdit"></mat-divider>
           <button mat-menu-item
-            (click)="onDeleteEpic()"
+            (click)="onDeleteItem()"
             class="delete-action"
             *ngIf="canEdit">
             <mat-icon>delete</mat-icon>
-            <span>Supprimer l'epic</span>
+            <span>Supprimer l'item</span>
           </button>
         </mat-menu>
       </div>
@@ -89,7 +89,7 @@
                     [(ngModel)]="editedTitle"
                     (keydown)="onTitleKeydown($event)"
                     (blur)="saveTitle()"
-                    placeholder="Titre de l'epic..."
+                    placeholder="Titre de l'item..."
                     #titleInput>
                   <button mat-icon-button
                     matSuffix
@@ -110,7 +110,7 @@
 
             <!-- Description -->
             <p class="epic-description"
-              *ngIf="epic?.description">{{ epic?.description }}</p>
+              *ngIf="item?.description">{{ item?.description }}</p>
           </div>
         </div>
       </mat-card-header>
@@ -159,40 +159,40 @@
         <!-- Informations supplémentaires -->
         <div class="epic-meta">
           <div class="meta-item"
-            *ngIf="epic?.due_date"
+            *ngIf="item?.dueDate"
             [class.is-overdue]="isOverdue">
             <mat-icon>schedule</mat-icon>
-            <span>Échéance: {{ formatDate(epic!.due_date!) }}</span>
+            <span>Échéance: {{ formatDate(item!.dueDate!) }}</span>
           </div>
 
           <div class="meta-item"
-            *ngIf="epic?.assigned_to">
+            *ngIf="item?.assignee">
             <mat-icon>person</mat-icon>
-            <span>Assigné à: {{ epic?.assigned_to }}</span>
+            <span>Assigné à: {{ item?.assignee }}</span>
           </div>
 
           <div class="meta-item"
-            *ngIf="epic?.prd_slug">
+            *ngIf="item?.prd_slug">
             <mat-icon>description</mat-icon>
-            <span>PRD: {{ epic?.prd_slug }}</span>
+            <span>PRD: {{ item?.prd_slug }}</span>
           </div>
 
           <div class="meta-item"
-            *ngIf="epic?.environment && epic!.environment!.length > 0">
+            *ngIf="item?.environment && item!.environment!.length > 0">
             <mat-icon>computer</mat-icon>
-            <span>Environnements: {{ epic!.environment!.join(', ') }}</span>
+            <span>Environnements: {{ item!.environment!.join(', ') }}</span>
           </div>
         </div>
 
         <!-- Tags Section améliorée -->
         <div class="tags-section"
-          *ngIf="epic?.tags && epic!.tags!.length > 0">
+          *ngIf="item?.tags && item!.tags!.length > 0">
           <div class="tags-header">
             <mat-icon>local_offer</mat-icon>
             <span class="tags-label">Tags</span>
           </div>
           <mat-chip-set class="tags-list">
-            <mat-chip *ngFor="let tag of epic!.tags!"
+            <mat-chip *ngFor="let tag of item!.tags!"
               class="tag-chip">{{ tag }}</mat-chip>
           </mat-chip-set>
         </div>

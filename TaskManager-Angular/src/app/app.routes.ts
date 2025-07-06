@@ -42,6 +42,13 @@ export const routes: Routes = [
     data: { renderMode: 'client' }
   },
   {
+    path: 'features/:featureId/tasks-kanban',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/feature-kanban/feature-kanban.component').then(m => m.FeatureKanbanComponent),
+    title: 'Feature Tasks Kanban - AgroFlow Task Manager',
+    data: { renderMode: 'client' }
+  },
+  {
     path: 'projects',
     canActivate: [authGuard],
     loadComponent: () => import('./features/projects/components/project-list/project-list.component').then(m => m.ProjectListComponent),

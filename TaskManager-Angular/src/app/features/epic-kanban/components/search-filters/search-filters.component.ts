@@ -9,13 +9,13 @@ import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 
 import { EpicKanbanActions } from '../../store/epic-kanban.actions';
-import { 
-  selectEpicKanbanFilters, 
-  selectUniqueAssignees, 
-  selectUniqueEnvironments,
-  selectUniqueTags,
-  selectFilteredFeaturesCount
-} from '../../store/epic-kanban.selectors';
+// import {
+//   selectEpicKanbanFilters,
+//   selectUniqueAssignees,
+//   selectUniqueEnvironments,
+//   selectUniqueTags,
+//   selectFilteredFeaturesCount
+// } from '../../store/epic-kanban.selectors';
 import { UserService } from '../../../../core/services/user.service';
 
 export interface KanbanSearchFilters {
@@ -31,7 +31,7 @@ export interface KanbanSearchFilters {
   selector: 'app-search-filters',
   standalone: true,
   imports: [
-    CommonModule, 
+    CommonModule,
     MatIconModule,
     MatChipsModule,
     MatButtonModule,
@@ -44,7 +44,7 @@ export class SearchFiltersComponent implements OnInit, OnDestroy {
   private store = inject(Store);
   private userService = inject(UserService);
   private destroy$ = new Subject<void>();
-  
+
   // État local des filtres
   searchText = signal('');
   priorityFilter = signal('');
@@ -52,19 +52,19 @@ export class SearchFiltersComponent implements OnInit, OnDestroy {
   statusFilter = signal('');
   environmentFilter = signal('');
   tagsFilter = signal<string[]>([]);
-  
+
   // État d'expansion du panel
   isExpanded = signal(false);
-  
+
   // Données du store
   availableUsers = signal<{ id: string; email: string }[]>([]);
   uniqueAssignees = signal<string[]>([]);
   uniqueEnvironments = signal<string[]>([]);
   uniqueTags = signal<string[]>([]);
-  
+
   // Subject pour la recherche avec debounce
   private searchSubject$ = new Subject<string>();
-  
+
   // Options pour les selects avec icônes
   statusOptions = [
     { value: 'pending', label: 'En attente', icon: 'radio_button_unchecked', color: '#6B7280' },
@@ -72,7 +72,7 @@ export class SearchFiltersComponent implements OnInit, OnDestroy {
     { value: 'review', label: 'Review', icon: 'rate_review', color: '#3B82F6' },
     { value: 'completed', label: 'Terminé', icon: 'check_circle', color: '#10B981' }
   ];
-  
+
   priorityOptions = [
     { value: 'low', label: 'Basse', icon: 'arrow_downward', color: '#6B7280' },
     { value: 'medium', label: 'Moyenne', icon: 'remove', color: '#F59E0B' },
@@ -91,9 +91,9 @@ export class SearchFiltersComponent implements OnInit, OnDestroy {
   // Signal calculé pour savoir si des filtres sont actifs
   hasActiveFilters = computed(() => {
     return !!(
-      this.searchText() || 
-      this.priorityFilter() || 
-      this.assigneeFilter() || 
+      this.searchText() ||
+      this.priorityFilter() ||
+      this.assigneeFilter() ||
       this.statusFilter() ||
       this.environmentFilter() ||
       this.tagsFilter().length > 0
@@ -135,13 +135,13 @@ export class SearchFiltersComponent implements OnInit, OnDestroy {
     const assignee = this.assigneeFilter();
     if (!assignee) return '';
     if (assignee === 'unassigned') return 'Non assigné';
-    
+
     const user = this.availableUsers().find((u: { id: string; email: string }) => u.id === assignee);
     return user ? user.email : assignee;
   });
 
   // T020 - Filtres rapides par priorité
-  quickPriorityFilters = computed(() => 
+  quickPriorityFilters = computed(() =>
     this.priorityOptions.map(option => ({
       ...option,
       isActive: this.priorityFilter() === option.value,
@@ -150,7 +150,7 @@ export class SearchFiltersComponent implements OnInit, OnDestroy {
   );
 
   // T020 - Filtres rapides par statut
-  quickStatusFilters = computed(() => 
+  quickStatusFilters = computed(() =>
     this.statusOptions.map(option => ({
       ...option,
       isActive: this.statusFilter() === option.value,
@@ -178,7 +178,7 @@ export class SearchFiltersComponent implements OnInit, OnDestroy {
 
   // Compteur de features filtrées
   filteredFeaturesCount = signal(0);
-  
+
   // Computed pour savoir si on doit afficher le compteur
   showFeaturesCount = computed(() => {
     return this.hasActiveFilters() || this.filteredFeaturesCount() >= 0;
@@ -198,14 +198,14 @@ export class SearchFiltersComponent implements OnInit, OnDestroy {
     await this.loadUsers();
 
     // Écouter les changements du store
-    this.subscribeToStore();
+    // this.subscribeToStore();
 
     // Écouter le compteur de features filtrées
-    this.store.select(selectFilteredFeaturesCount).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(count => {
-      this.filteredFeaturesCount.set(count);
-    });
+    // this.store.select(selectFilteredFeaturesCount).pipe(
+    //   takeUntil(this.destroy$)
+    // ).subscribe(count => {
+    //   this.filteredFeaturesCount.set(count);
+    // });
   }
 
   ngOnDestroy() {
@@ -229,39 +229,39 @@ export class SearchFiltersComponent implements OnInit, OnDestroy {
 
   private subscribeToStore() {
     // Écouter les changements de filtres depuis le store
-    this.store.select(selectEpicKanbanFilters).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe((filters: KanbanSearchFilters | null) => {
-      if (filters) {
-        this.searchText.set(filters.searchText || '');
-        this.priorityFilter.set(filters.priority || '');
-        this.assigneeFilter.set(filters.assignee || '');
-        this.statusFilter.set(filters.status || '');
-        this.environmentFilter.set(filters.environment || '');
-        this.tagsFilter.set(filters.tags || []);
-      }
-    });
+    // this.store.select(selectEpicKanbanFilters).pipe(
+    //   takeUntil(this.destroy$)
+    // ).subscribe((filters: KanbanSearchFilters | null) => {
+    //   if (filters) {
+    //     this.searchText.set(filters.searchText || '');
+    //     this.priorityFilter.set(filters.priority || '');
+    //     this.assigneeFilter.set(filters.assignee || '');
+    //     this.statusFilter.set(filters.status || '');
+    //     this.environmentFilter.set(filters.environment || '');
+    //     this.tagsFilter.set(filters.tags || []);
+    //   }
+    // });
 
     // T020 - Écouter les assignés uniques
-    this.store.select(selectUniqueAssignees).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe((assignees: string[]) => {
-      this.uniqueAssignees.set(assignees);
-    });
+    // this.store.select(selectUniqueAssignees).pipe(
+    //   takeUntil(this.destroy$)
+    // ).subscribe((assignees: string[]) => {
+    //   this.uniqueAssignees.set(assignees);
+    // });
 
     // T020 - Écouter les environnements uniques
-    this.store.select(selectUniqueEnvironments).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe((environments: string[]) => {
-      this.uniqueEnvironments.set(environments);
-    });
+    // this.store.select(selectUniqueEnvironments).pipe(
+    //   takeUntil(this.destroy$)
+    // ).subscribe((environments: string[]) => {
+    //   this.uniqueEnvironments.set(environments);
+    // });
 
     // T020 - Écouter les tags uniques
-    this.store.select(selectUniqueTags).pipe(
-      takeUntil(this.destroy$)
-    ).subscribe((tags: string[]) => {
-      this.uniqueTags.set(tags);
-    });
+    // this.store.select(selectUniqueTags).pipe(
+    //   takeUntil(this.destroy$)
+    // ).subscribe((tags: string[]) => {
+    //   this.uniqueTags.set(tags);
+    // });
   }
 
   // Méthodes pour gérer les changements de filtres
@@ -354,7 +354,7 @@ export class SearchFiltersComponent implements OnInit, OnDestroy {
     this.statusFilter.set('');
     this.environmentFilter.set('');
     this.tagsFilter.set([]);
-    
+
     this.store.dispatch(EpicKanbanActions.clearFilters());
   }
 
@@ -390,4 +390,4 @@ export class SearchFiltersComponent implements OnInit, OnDestroy {
   clearAllFilters(): void {
     this.store.dispatch(EpicKanbanActions.clearFilters());
   }
-} 
+}

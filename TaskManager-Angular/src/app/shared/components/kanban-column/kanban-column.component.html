@@ -23,19 +23,12 @@
     </div>
   </div>
 
-  <!-- WIP Limit Warning -->
-  <div *ngIf="column.wipLimit && features.length > column.wipLimit"
-    class="wip-warning">
-    <mat-icon>warning</mat-icon>
-    <span>Limite WIP dépassée ({{ features.length }}/{{ column.wipLimit }})</span>
-  </div>
-
   <!-- Column Content -->
   <div class="column-content"
     [class.collapsed]="column.isCollapsed"
     cdkDropList
-    [id]="'column-' + column.statusValue"
-    [cdkDropListData]="features"
+    [id]="column.id"
+    [cdkDropListData]="items"
     [cdkDropListConnectedTo]="connectedDropLists"
     (cdkDropListDropped)="onDrop($event)">
 
@@ -46,21 +39,22 @@
       <span>Chargement...</span>
     </div>
 
-    <!-- Features List -->
+    <!-- Items List -->
     <div *ngIf="!isLoading"
       class="features-list">
 
-      <!-- Feature Cards -->
-      <div *ngFor="let feature of features; trackBy: trackFeature"
+      <!-- Item Cards -->
+      <div *ngFor="let item of items; trackBy: trackItem"
         cdkDrag
-        [cdkDragData]="feature">
+        [cdkDragData]="item">
 
         <!-- Drag Preview (optional custom preview) -->
         <div *cdkDragPreview
           class="drag-preview">
           <div class="feature-preview">
-            <span class="feature-number">#F{{ feature.task_number }}</span>
-            <span class="feature-title">{{ feature.title }}</span>
+            <span class="feature-number"
+              *ngIf="item.task_number">#{{ item.type_icon }}{{ item.task_number }}</span>
+            <span class="feature-title">{{ item.title }}</span>
           </div>
         </div>
 
@@ -73,29 +67,20 @@
           </div>
         </div>
 
-        <app-feature-card [feature]="feature"
-          [tasks]="getFeatureTasks(feature.id!)"
-          [isExpanded]="isFeatureExpanded(feature.id!)"
+        <app-kanban-card [item]="item"
           [showProgress]="true"
-          [highlightedTaskIds]="highlightedSubtasksByFeature[feature.id!] || []"
-          (featureClick)="onFeatureClick($event)"
-          (featureEdit)="onFeatureEdit($event)"
-          (featureDelete)="onFeatureDelete($event)"
-          (addTaskToFeature)="onAddTaskToFeature($event)"
-          (toggleExpansion)="onToggleFeatureExpansion($event)"
-          (taskStatusChange)="onTaskStatusChange($event)"
-          (taskPriorityChange)="onTaskPriorityChange($event)"
-          (taskEdit)="onTaskEdit($event)"
-          (taskDelete)="onTaskDelete($event)">
-        </app-feature-card>
+          (itemEdit)="onItemEdit($event)"
+          (itemDelete)="onItemDelete($event)"
+          (itemClick)="onItemClick($event)">
+        </app-kanban-card>
       </div>
 
       <!-- Empty State -->
-      <div *ngIf="features.length === 0 && !isLoading"
+      <div *ngIf="items.length === 0 && !isLoading"
         class="empty-state">
         <mat-icon>inbox</mat-icon>
-        <span>Aucune feature</span>
-        <small class="drop-hint">Glissez une feature ici</small>
+        <span>Aucun élément</span>
+        <small class="drop-hint">Glissez un élément ici</small>
       </div>
 
     </div>

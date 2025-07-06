@@ -1,7 +1,7 @@
-@use "../../../../styles/variables" as v;
-@use "../../../../styles/mixins" as m;
+@use "../../../styles/variables" as v;
+@use "../../../styles/mixins" as m;
 @use "sass:color";
-@use "../../../../styles/kanban-variables";
+@use "../../../styles/kanban-variables";
 
 // ============================================================================
 // FEATURE CARD - Component Styles
@@ -57,16 +57,16 @@
   }
 
   &.priority-low {
-    border-left: 4px solid $priority-low-color;
+    border-left: 4px solid kanban-variables.$priority-low-color;
   }
   &.priority-medium {
-    border-left: 4px solid $priority-medium-color;
+    border-left: 4px solid kanban-variables.$priority-medium-color;
   }
   &.priority-high {
-    border-left: 4px solid $priority-high-color;
+    border-left: 4px solid kanban-variables.$priority-high-color;
   }
   &.priority-urgent {
-    border-left: 4px solid $priority-urgent-color;
+    border-left: 4px solid kanban-variables.$priority-urgent-color;
   }
 
   .mat-mdc-card-header {

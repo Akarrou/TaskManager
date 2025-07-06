@@ -13,11 +13,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
 
-import { Task } from '../../../../core/services/task';
-import { EpicMetrics } from '../../models/epic-board.model';
+import { KanbanItem } from '../../../features/epic-kanban/models/kanban-item.model';
+import { EpicMetrics } from '../../../features/epic-kanban/models/epic-board.model';
 
 @Component({
-  selector: 'app-epic-header',
+  selector: 'app-item-header',
   standalone: true,
   imports: [
     CommonModule,
@@ -34,19 +34,19 @@ import { EpicMetrics } from '../../models/epic-board.model';
     MatDividerModule,
     MatExpansionModule
   ],
-  templateUrl: './epic-header.component.html',
-  styleUrls: ['./epic-header.component.scss']
+  templateUrl: './item-header.component.html',
+  styleUrls: ['./item-header.component.scss']
 })
-export class EpicHeaderComponent {
-  @Input() epic: Task | undefined;
+export class ItemHeaderComponent {
+  @Input() item: KanbanItem | undefined;
   @Input() metrics: EpicMetrics | undefined;
   @Input() canEdit = true;
-  
+
   @Output() navigateBack = new EventEmitter<void>();
   @Output() refreshBoard = new EventEmitter<void>();
-  @Output() editEpic = new EventEmitter<Task>();
-  @Output() saveEpic = new EventEmitter<Partial<Task>>();
-  @Output() deleteEpic = new EventEmitter<Task>();
+  @Output() editItem = new EventEmitter<KanbanItem>();
+  @Output() saveItem = new EventEmitter<Partial<KanbanItem>>();
+  @Output() deleteItem = new EventEmitter<KanbanItem>();
   @Output() exportBoard = new EventEmitter<void>();
   @Output() shareBoard = new EventEmitter<void>();
 
@@ -62,15 +62,15 @@ export class EpicHeaderComponent {
     this.refreshBoard.emit();
   }
 
-  onEditEpic(): void {
-    if (this.epic) {
-      this.editEpic.emit(this.epic);
+  onEditItem(): void {
+    if (this.item) {
+      this.editItem.emit(this.item);
     }
   }
 
-  onDeleteEpic(): void {
-    if (this.epic) {
-      this.deleteEpic.emit(this.epic);
+  onDeleteItem(): void {
+    if (this.item) {
+      this.deleteItem.emit(this.item);
     }
   }
 
@@ -84,16 +84,16 @@ export class EpicHeaderComponent {
 
   // Édition inline du titre
   startEditingTitle(): void {
-    if (!this.canEdit || !this.epic) return;
-    this.editedTitle.set(this.epic.title || '');
+    if (!this.canEdit || !this.item) return;
+    this.editedTitle.set(this.item.title || '');
     this.isEditingTitle.set(true);
   }
 
   saveTitle(): void {
-    if (!this.epic) return;
+    if (!this.item) return;
     const newTitle = this.editedTitle().trim();
-    if (newTitle && newTitle !== this.epic.title) {
-      this.saveEpic.emit({ title: newTitle });
+    if (newTitle && newTitle !== this.item.title) {
+      this.saveItem.emit({ title: newTitle });
     }
     this.cancelEditingTitle();
   }
@@ -114,17 +114,42 @@ export class EpicHeaderComponent {
   }
 
   // Configuration du numéro epic coloré
-  get epicNumberConfig(): { color: string; bgColor: string; label: string } {
-    return {
-      color: 'text-red-700',
-      bgColor: 'bg-red-100 border-red-300',
-      label: 'Epic'
-    };
+  get itemNumberConfig(): { color: string; bgColor: string; label: string; icon: string } {
+    switch (this.item?.type) {
+      case 'epic':
+        return {
+          color: 'text-red-700',
+          bgColor: 'bg-red-100 border-red-300',
+          label: 'Epic',
+          icon: 'E'
+        };
+      case 'feature':
+        return {
+          color: 'text-blue-700',
+          bgColor: 'bg-blue-100 border-blue-300',
+          label: 'Feature',
+          icon: 'F'
+        };
+      case 'task':
+        return {
+          color: 'text-green-700',
+          bgColor: 'bg-green-100 border-green-300',
+          label: 'Tâche',
+          icon: 'T'
+        };
+      default:
+        return {
+          color: 'text-gray-700',
+          bgColor: 'bg-gray-100 border-gray-300',
+          label: 'Item',
+          icon: ''
+        };
+    }
   }
 
   // Status configuration enrichie
   getStatusIcon(): string {
-    switch (this.epic?.status) {
+    switch (this.item?.status) {
       case 'completed': return 'check_circle';
       case 'in_progress': return 'hourglass_empty';
       case 'pending': return 'schedule';
@@ -134,7 +159,7 @@ export class EpicHeaderComponent {
   }
 
   getStatusColor(): string {
-    switch (this.epic?.status) {
+    switch (this.item?.status) {
       case 'completed': return 'text-green-600';
       case 'in_progress': return 'text-orange-500';
       case 'pending': return 'text-gray-500';
@@ -144,7 +169,7 @@ export class EpicHeaderComponent {
   }
 
   getStatusLabel(): string {
-    switch (this.epic?.status) {
+    switch (this.item?.status) {
       case 'completed': return 'Terminé';
       case 'in_progress': return 'En cours';
       case 'pending': return 'En attente';
@@ -155,7 +180,7 @@ export class EpicHeaderComponent {
 
   // Priority configuration
   getPriorityIcon(): string {
-    switch (this.epic?.priority) {
+    switch (this.item?.priority) {
       case 'urgent': return 'priority_high';
       case 'high': return 'arrow_upward';
       case 'medium': return 'remove';
@@ -165,7 +190,7 @@ export class EpicHeaderComponent {
   }
 
   getPriorityColor(): string {
-    switch (this.epic?.priority) {
+    switch (this.item?.priority) {
       case 'urgent': return 'text-red-600';
       case 'high': return 'text-orange-500';
       case 'medium': return 'text-blue-500';
@@ -175,7 +200,7 @@ export class EpicHeaderComponent {
   }
 
   getPriorityLabel(): string {
-    switch (this.epic?.priority) {
+    switch (this.item?.priority) {
       case 'urgent': return 'Urgent';
       case 'high': return 'Haute';
       case 'medium': return 'Moyenne';
@@ -193,17 +218,17 @@ export class EpicHeaderComponent {
   }
 
   get isOverdue(): boolean {
-    if (!this.epic?.due_date) return false;
-    const dueDate = new Date(this.epic.due_date);
+    if (!this.item?.dueDate) return false;
+    const dueDate = new Date(this.item.dueDate);
     const today = new Date();
-    return dueDate < today && this.epic.status !== 'completed';
+    return dueDate < today && this.item.status !== 'completed';
   }
 
   // Formatage des dates
   formatDate(dateString: string): string {
     const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', { 
-      day: '2-digit', 
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
       month: '2-digit',
       year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
     });
@@ -211,13 +236,10 @@ export class EpicHeaderComponent {
 
   // Estimation et temps
   get hasTimeTracking(): boolean {
-    return (this.epic?.estimated_hours || 0) > 0 || (this.epic?.actual_hours || 0) > 0;
+    return false;
   }
 
   get timeTrackingProgress(): number {
-    const estimated = this.epic?.estimated_hours || 0;
-    const actual = this.epic?.actual_hours || 0;
-    if (estimated === 0) return 0;
-    return Math.min((actual / estimated) * 100, 100);
+    return 0;
   }
-} 
+}

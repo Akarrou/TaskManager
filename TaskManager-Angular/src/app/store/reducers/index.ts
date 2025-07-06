@@ -4,21 +4,27 @@ import {
   ActionReducerMap,
   MetaReducer
 } from '@ngrx/store';
-import { AppState } from '../../app.state'; // Ajustement du chemin si app.state.ts est au même niveau que le dossier store
+import { AppState } from '../../app.state';
 
 // Log all actions and state changes to the console in development mode
 export function logger(reducer: ActionReducer<AppState>): ActionReducer<AppState> {
   return (state, action) => {
     const result = reducer(state, action);
+    console.group(action.type);
+    console.log('prev state', state);
+    console.log('action', action);
+    console.log('next state', result);
+    console.groupEnd();
+
     return result;
   };
 }
 
-import { epicKanbanReducer } from '../../features/epic-kanban/store/epic-kanban.reducer';
+import * as fromEpicKanban from '../../features/epic-kanban/store';
 import { reducer as projectReducer } from '../../features/projects/store/project.reducer';
 
 export const reducers: ActionReducerMap<AppState> = {
-  epicKanban: epicKanbanReducer,
+  epicKanban: fromEpicKanban.epicKanbanReducer,
   projects: projectReducer
 };
 

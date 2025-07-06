@@ -86,11 +86,9 @@ export class EpicKanbanEffects {
     this.actions$.pipe(
       ofType(EpicKanbanActions.updateTaskStatus),
       switchMap(({ taskId, newStatus }) =>
-        from(this.taskService.updateTask(taskId, { status: newStatus as any })).pipe(
-          map(() => EpicKanbanActions.updateTaskStatusSuccess({ taskId, newStatus })),
-          catchError(error => of(EpicKanbanActions.updateTaskStatusFailure({
-            error: error?.message || 'Erreur lors de la mise à jour du statut'
-          })))
+        from(this.taskService.updateTask(taskId, { status: newStatus as Task['status'] })).pipe(
+          map(() => ({ type: '[Kanban] Update Task Status NoOp' })),
+          catchError(error => of(EpicKanbanActions.updateTaskStatusFailure({ error })))
         )
       )
     )
@@ -116,26 +114,22 @@ export class EpicKanbanEffects {
   refreshMetrics$ = createEffect(() =>
     this.actions$.pipe(
       ofType(EpicKanbanActions.refreshMetrics),
-      switchMap(() => {
-        // Récupérer l'epic ID depuis le store ou depuis le state actuel
-        const currentState = this.store.pipe(map(state => (state as any).epicKanban));
-        return currentState.pipe(
-          switchMap(epicKanbanState => {
-            if (epicKanbanState?.currentEpic?.id) {
-              return from(this.epicKanbanService.loadEpicBoard(epicKanbanState.currentEpic.id)).pipe(
-                map(epicBoard => EpicKanbanActions.refreshMetricsSuccess({
-                  metrics: epicBoard.metrics
-                })),
-                catchError(error => of(EpicKanbanActions.refreshMetricsFailure({
-                  error: error?.message || 'Erreur lors du rafraîchissement des métriques'
-                })))
-              );
-            }
-            return of(EpicKanbanActions.refreshMetricsFailure({
-              error: 'Aucun epic actuel trouvé'
-            }));
-          })
-        );
+      withLatestFrom(this.store.select(selectCurrentEpic)),
+      switchMap(([action, currentEpic]) => {
+        if (currentEpic?.id) {
+          return from(this.epicKanbanService.loadEpicBoard(currentEpic.id)).pipe(
+            map(epicBoard => EpicKanbanActions.refreshMetricsSuccess({
+              metrics: epicBoard.metrics
+            })),
+            catchError(error => of(EpicKanbanActions.refreshMetricsFailure({
+              error: error?.message || 'Erreur lors du rafraîchissement des métriques'
+            })))
+          );
+        }
+        // Si pas d'epic, on ne fait rien et on évite la boucle.
+        // L'erreur sera gérée par le composant qui essaie d'afficher les métriques.
+        // On peut aussi dispatcher une action "noop" si nécessaire.
+        return of({ type: '[Metrics] No current epic to refresh' });
       })
     )
   );
@@ -200,9 +194,7 @@ export class EpicKanbanEffects {
       switchMap(({ taskId }) =>
         from(this.taskService.deleteTask(taskId)).pipe(
           map(() => EpicKanbanActions.deleteTaskSuccess({ taskId })),
-          catchError(error => of(EpicKanbanActions.deleteTaskFailure({
-            error: error?.message || 'Erreur lors de la suppression de la tâche'
-          })))
+          catchError(error => of(EpicKanbanActions.deleteTaskFailure({ error })))
         )
       )
     )
@@ -236,6 +228,18 @@ export class EpicKanbanEffects {
         EpicKanbanActions.createTaskSuccess
       ),
       map(() => EpicKanbanActions.refreshMetrics())
+    )
+  );
+
+  loadFeatureTasks$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(EpicKanbanActions.loadFeatureTasks),
+      switchMap(({ featureId }) =>
+        from(this.taskService.getTasksForFeature(featureId)).pipe(
+          map(tasks => EpicKanbanActions.loadFeatureTasksSuccess({ tasks: tasks })),
+          catchError(error => of(EpicKanbanActions.loadFeatureTasksFailure({ error })))
+        )
+      )
     )
   );
 }

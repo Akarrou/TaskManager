@@ -1,0 +1,43 @@
+<div class="generic-kanban-container">
+  <h2 *ngIf="title"
+    class="kanban-title">{{ title }}</h2>
+
+  <!-- État de chargement -->
+  <div *ngIf="loading"
+    class="loading-state">
+    <div class="loading-content">
+      <mat-icon class="loading-spinner">hourglass_empty</mat-icon>
+      <span>Chargement du tableau...</span>
+    </div>
+  </div>
+
+  <!-- État d'erreur -->
+  <div *ngIf="error"
+    class="error-state">
+    <mat-icon class="error-icon">error_outline</mat-icon>
+    <h3>Erreur de chargement</h3>
+    <p>{{ error }}</p>
+    <button mat-raised-button
+      color="primary"
+      (click)="retryLoad.emit()">
+      <mat-icon>refresh</mat-icon>
+      Réessayer
+    </button>
+  </div>
+
+  <!-- Tableau Kanban -->
+  <div *ngIf="!loading && !error"
+    class="kanban-board-content"
+    cdkDropListGroup>
+    <div class="kanban-columns-container">
+      <app-kanban-column *ngFor="let column of columns; trackBy: trackColumn"
+        [column]="column"
+        [items]="itemsByColumn[column.id] || []"
+        [isLoading]="loading"
+        (itemDrop)="onItemDrop($event)"
+        (itemEdit)="onItemEdit($event)"
+        (itemDelete)="onItemDelete($event)">
+      </app-kanban-column>
+    </div>
+  </div>
+</div>

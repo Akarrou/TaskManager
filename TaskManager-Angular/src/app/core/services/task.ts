@@ -33,6 +33,8 @@ export interface Task {
   type: 'epic' | 'feature' | 'task';
   parent_task_id?: string | null;
   project_id: string;
+  epic_id?: string;
+  feature_id?: string;
 }
 
 // Nouvelle interface pour les commentaires
@@ -163,7 +165,9 @@ export class TaskService {
         type: 'task',
         guideline_refs: [],
         parent_task_id: null,
-        project_id: ''
+        project_id: '',
+        epic_id: '',
+        feature_id: ''
       },
       {
         title: '💧 Vérification du système d\'irrigation',
@@ -182,7 +186,9 @@ export class TaskService {
         type: 'task',
         guideline_refs: [],
         parent_task_id: null,
-        project_id: ''
+        project_id: '',
+        epic_id: '',
+        feature_id: ''
       },
       {
         title: '🚜 Entretien tracteur',
@@ -201,7 +207,9 @@ export class TaskService {
         type: 'task',
         guideline_refs: [],
         parent_task_id: null,
-        project_id: ''
+        project_id: '',
+        epic_id: '',
+        feature_id: ''
       },
       {
         title: '📊 Rapport mensuel',
@@ -220,7 +228,9 @@ export class TaskService {
         type: 'task',
         guideline_refs: [],
         parent_task_id: null,
-        project_id: ''
+        project_id: '',
+        epic_id: '',
+        feature_id: ''
       },
       {
         title: 'Inspection qualité récolte',
@@ -239,7 +249,9 @@ export class TaskService {
         type: 'task',
         guideline_refs: [],
         parent_task_id: null,
-        project_id: ''
+        project_id: '',
+        epic_id: '',
+        feature_id: ''
       }
     ];
 
@@ -468,12 +480,25 @@ export class TaskService {
       .select('*')
       .eq('id', id)
       .single();
-    if (error || !data) {
+
+    if (error) {
+      console.error('Error fetching task by ID:', error.message);
       return null;
     }
-    // Charger les sous-tâches associées
-    const subtasks = await this.getSubtasksForTask(id);
-    return { ...data, subtasks } as Task;
+    return data;
+  }
+
+  async getTasksForFeature(featureId: string): Promise<Task[]> {
+    const { data, error } = await this.supabaseService.tasks
+      .select('*')
+      .eq('parent_task_id', featureId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching tasks for feature:', error.message);
+      return [];
+    }
+    return data || [];
   }
 
   // Nouvelle méthode pour récupérer les commentaires d'une tâche

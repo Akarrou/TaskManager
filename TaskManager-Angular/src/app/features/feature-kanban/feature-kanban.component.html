@@ -1,0 +1,8 @@
+<app-generic-kanban [title]="(feature$ | async)?.title || 'Kanban'"
+    [items]="(tasks$ | async) || []"
+    [columns]="columns"
+    [loading]="(loading$ | async) || false"
+    [error]="(error$ | async) || null"
+    (itemDropped)="onItemDropped($event)"
+    (itemEdited)="onItemEdited($event)"
+    (itemDeleted)="onItemDeleted($event)"></app-generic-kanban>

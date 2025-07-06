@@ -1,6 +1,7 @@
-import { createActionGroup, emptyProps, props } from '@ngrx/store';
+import { createAction, props, createActionGroup, emptyProps } from '@ngrx/store';
 import { Task } from '../../../core/services/task';
 import { EpicBoard, KanbanColumn, EpicMetrics, TaskMoveEvent } from '../models/epic-board.model';
+import { KanbanItem } from '../models/kanban-item.model';
 
 export const EpicKanbanActions = createActionGroup({
   source: 'Epic Kanban',
@@ -84,8 +85,8 @@ export const EpicKanbanActions = createActionGroup({
     'Bulk Update Features Failure': props<{ error: string }>(),
 
     // T018 - Task CRUD Actions
-    'Update Task': props<{ task: Task }>(),
-    'Update Task Success': props<{ task: Task }>(),
+    'Update Task': props<{ task: Partial<Task> & { id: string } }>(),
+    'Update Task Success': props<{ task: Partial<Task> & { id: string } }>(),
     'Update Task Failure': props<{ error: string }>(),
 
     'Delete Task': props<{ taskId: string }>(),
@@ -95,5 +96,38 @@ export const EpicKanbanActions = createActionGroup({
     'Create Task': props<{ task: Partial<Task> }>(),
     'Create Task Success': props<{ task: Task }>(),
     'Create Task Failure': props<{ error: string }>(),
+
+    // Actions for Feature-specific Kanban View
+    'Load Feature Tasks': props<{ featureId: string }>(),
+    'Load Feature Tasks Success': props<{ tasks: Task[] }>(),
+    'Load Feature Tasks Failure': props<{ error: any }>(),
+
+    // Generic Task actions (if they don't exist elsewhere)
+    'Update Feature Status': props<{ featureId: string; newStatus: string }>(),
+    'Update Feature Status Success': props<{ feature: KanbanItem }>(),
+    'Update Feature Status Failure': props<{ error: any }>(),
+
+    'Delete Feature': props<{ featureId: string }>(),
+    'Delete Feature Success': props<{ featureId: string }>(),
+    'Delete Feature Failure': props<{ error: any }>(),
+
+    'Load Epic Kanban Success': props<{ board: EpicBoard }>(),
+    'Load Epic Kanban Failure': props<{ error: string }>(),
+
+    'Move Task': props<{ event: TaskMoveEvent }>(),
   }
 });
+
+// Actions for Feature-specific Kanban View
+export const loadFeatureTasks = createAction('[Feature Kanban] Load Tasks for Feature', props<{ featureId: string }>());
+export const loadFeatureTasksSuccess = createAction('[Feature Kanban API] Load Tasks for Feature Success', props<{ tasks: Task[] }>());
+export const loadFeatureTasksFailure = createAction('[Feature Kanban API] Load Tasks for Feature Failure', props<{ error: any }>());
+
+// Generic Task actions that might be used by both kanbans
+export const updateTaskStatus = createAction('[Kanban] Update Task Status', props<{ taskId: string; newStatus: string }>());
+export const updateTaskStatusSuccess = createAction('[Kanban API] Update Task Status Success', props<{ task: KanbanItem }>());
+export const updateTaskStatusFailure = createAction('[Kanban API] Update Task Status Failure', props<{ error: any }>());
+
+export const deleteTask = createAction('[Kanban] Delete Task', props<{ taskId: string }>());
+export const deleteTaskSuccess = createAction('[Kanban API] Delete Task Success', props<{ taskId: string }>());
+export const deleteTaskFailure = createAction('[Kanban API] Delete Task Failure', props<{ error: any }>());

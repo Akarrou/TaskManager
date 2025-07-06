@@ -1,375 +1,76 @@
 import { createReducer, on } from '@ngrx/store';
+import { EpicKanbanActions, loadFeatureTasks, loadFeatureTasksSuccess, loadFeatureTasksFailure, updateTaskStatus } from './epic-kanban.actions';
 import { Task } from '../../../core/services/task';
-import { EpicBoard, KanbanColumn, EpicMetrics } from '../models/epic-board.model';
-import { DEFAULT_KANBAN_COLUMNS } from '../models/kanban-constants';
-import { EpicKanbanActions } from './epic-kanban.actions';
+import { EpicMetrics } from '../models/epic-board.model';
+
+export const epicKanbanFeatureKey = 'epicKanban';
 
 export interface EpicKanbanState {
-  // Données principales
-  epicBoard: EpicBoard | null;
-  currentEpic: Task | null;
+  epic: Task | null;
   features: Task[];
   tasks: Task[];
-  columns: KanbanColumn[];
   metrics: EpicMetrics | null;
-
-  // États UI
-  expandedFeatures: Set<string>;
   loading: boolean;
+  loadingTasks: boolean;
   saving: boolean;
   error: string | null;
-
-  // T020 - Filtres enrichis
-  filters: {
-    searchText: string;
-    priority: string | null;
-    assignee: string | null;
-    status: string | null;
-    environment: string | null;
-    tags: string[];
-  };
-
-  // Meta
-  lastUpdated: Date | null;
+  expandedFeatures: Set<string>;
 }
 
 export const initialState: EpicKanbanState = {
-  // Données principales
-  epicBoard: null,
-  currentEpic: null,
+  epic: null,
   features: [],
   tasks: [],
-  columns: [...DEFAULT_KANBAN_COLUMNS],
   metrics: null,
-
-  // États UI
-  expandedFeatures: new Set<string>(),
   loading: false,
+  loadingTasks: false,
   saving: false,
   error: null,
-
-  // T020 - Filtres enrichis
-  filters: {
-    searchText: '',
-    priority: null,
-    assignee: null,
-    status: null,
-    environment: null,
-    tags: []
-  },
-
-  // Meta
-  lastUpdated: null
+  expandedFeatures: new Set<string>(),
 };
 
 export const epicKanbanReducer = createReducer(
   initialState,
-
-  // Chargement Epic Board
-  on(EpicKanbanActions.loadEpicBoard, (state) => ({
-    ...state,
-    loading: true,
-    error: null
-  })),
-
+  on(EpicKanbanActions.loadEpicBoard, (state) => ({ ...state, loading: true, error: null })),
   on(EpicKanbanActions.loadEpicBoardSuccess, (state, { epicBoard }) => ({
     ...state,
-    epicBoard,
-    currentEpic: epicBoard.epic,
+    loading: false,
+    epic: epicBoard.epic,
     features: epicBoard.features,
-    tasks: epicBoard.tasks,
+    tasks: epicBoard.tasks, // Store all tasks initially
     metrics: epicBoard.metrics,
-    loading: false,
-    error: null,
-    lastUpdated: new Date()
   })),
+  on(EpicKanbanActions.loadEpicBoardFailure, (state, { error }) => ({ ...state, loading: false, error })),
 
-  on(EpicKanbanActions.loadEpicBoardFailure, (state, { error }) => ({
+  // Reducers for Feature Kanban
+  on(loadFeatureTasks, (state) => ({ ...state, loadingTasks: true, error: null })),
+  on(loadFeatureTasksSuccess, (state, { tasks }) => ({
     ...state,
-    loading: false,
-    error
+    loadingTasks: false,
+    tasks: tasks, // Here we expect tasks of type Task[], not KanbanItem[]
   })),
+  on(loadFeatureTasksFailure, (state, { error }) => ({ ...state, loadingTasks: false, error })),
 
-  // Gestion Features - Move
-  on(EpicKanbanActions.moveFeature, (state) => ({
+  // Optimistic update for task status
+  on(updateTaskStatus, (state, { taskId, newStatus }) => ({
     ...state,
-    saving: true,
-    error: null
+    tasks: state.tasks.map(t => t.id === taskId ? { ...t, status: newStatus as Task['status'] } : t)
   })),
 
-  on(EpicKanbanActions.moveFeatureSuccess, (state, { featureId, newStatus }) => {
-    console.log('%c[DnD Reducer] Received moveFeatureSuccess. Updating state.', 'color: #9B59B6;', { featureId, newStatus });
-
-    const updatedFeatures = state.features.map(feature =>
-      feature.id === featureId
-        ? { ...feature, status: newStatus as any }
-        : feature
-    );
-
-    return {
-      ...state,
-      features: updatedFeatures,
-      saving: false,
-      error: null,
-      lastUpdated: new Date()
-    };
-  }),
-
-  on(EpicKanbanActions.moveFeatureFailure, (state, { error }) => ({
-    ...state,
-    saving: false,
-    error
-  })),
-
-  // Gestion Tasks - Update Status
-  on(EpicKanbanActions.updateTaskStatus, (state) => ({
-    ...state,
-    saving: true,
-    error: null
-  })),
-
-  on(EpicKanbanActions.updateTaskStatusSuccess, (state, { taskId, newStatus }) => ({
-    ...state,
-    tasks: state.tasks.map(task =>
-      task.id === taskId
-        ? { ...task, status: newStatus as any }
-        : task
-    ),
-    saving: false,
-    error: null,
-    lastUpdated: new Date()
-  })),
-
-  on(EpicKanbanActions.updateTaskStatusFailure, (state, { error }) => ({
-    ...state,
-    saving: false,
-    error
-  })),
-
-  // Gestion des colonnes
-  on(EpicKanbanActions.updateColumnsConfiguration, (state) => ({
-    ...state,
-    saving: true,
-    error: null
-  })),
-
-  on(EpicKanbanActions.updateColumnsConfigurationSuccess, (state, { columns }) => ({
-    ...state,
-    columns,
-    saving: false,
-    error: null,
-    lastUpdated: new Date()
-  })),
-
-  on(EpicKanbanActions.updateColumnsConfigurationFailure, (state, { error }) => ({
-    ...state,
-    saving: false,
-    error
-  })),
-
-  // Expansion des features
-  on(EpicKanbanActions.toggleFeatureExpansion, (state, { featureId }) => {
-    const newExpandedFeatures = new Set(state.expandedFeatures);
-    if (newExpandedFeatures.has(featureId)) {
-      newExpandedFeatures.delete(featureId);
-    } else {
-      newExpandedFeatures.add(featureId);
-    }
-    return {
-      ...state,
-      expandedFeatures: newExpandedFeatures
-    };
-  }),
-
-  on(EpicKanbanActions.expandAllFeatures, (state) => ({
-    ...state,
-    expandedFeatures: new Set(state.features.map(f => f.id).filter((id): id is string => id !== undefined))
-  })),
-
-  on(EpicKanbanActions.collapseAllFeatures, (state) => ({
-    ...state,
-    expandedFeatures: new Set<string>()
-  })),
-
-  // T020 - Filtres enrichis
-  on(EpicKanbanActions.updateFilters, (state, { searchText, priority, assignee, status, environment, tags }) => ({
-    ...state,
-    filters: {
-      ...state.filters,
-      ...(searchText !== undefined && { searchText }),
-      ...(priority !== undefined && { priority }),
-      ...(assignee !== undefined && { assignee }),
-      ...(status !== undefined && { status }),
-      ...(environment !== undefined && { environment }),
-      ...(tags !== undefined && { tags })
-    }
-  })),
-
-  on(EpicKanbanActions.clearFilters, (state) => ({
-    ...state,
-    filters: {
-      searchText: '',
-      priority: null,
-      assignee: null,
-      status: null,
-      environment: null,
-      tags: []
-    }
-  })),
-
-  // Actions sur Epic
-  on(EpicKanbanActions.updateEpic, (state) => ({
-    ...state,
-    saving: true,
-    error: null
-  })),
-
-  on(EpicKanbanActions.updateEpicSuccess, (state, { epic }) => ({
-    ...state,
-    currentEpic: epic,
-    epicBoard: state.epicBoard ? { ...state.epicBoard, epic } : null,
-    saving: false,
-    error: null,
-    lastUpdated: new Date()
-  })),
-
-  on(EpicKanbanActions.updateEpicFailure, (state, { error }) => ({
-    ...state,
-    saving: false,
-    error
-  })),
-
-  // Métriques
-  on(EpicKanbanActions.refreshMetrics, (state) => ({
-    ...state,
-    loading: true,
-    error: null
-  })),
-
-  on(EpicKanbanActions.refreshMetricsSuccess, (state, { metrics }) => ({
-    ...state,
-    metrics,
-    loading: false,
-    error: null,
-    lastUpdated: new Date()
-  })),
-
-  on(EpicKanbanActions.refreshMetricsFailure, (state, { error }) => ({
-    ...state,
-    loading: false,
-    error
-  })),
-
-  // Reset state
-  on(EpicKanbanActions.resetEpicKanbanState, () => ({
-    ...initialState
-  })),
-
-  // Drag & Drop state
-  on(EpicKanbanActions.startFeatureDrag, (state, { featureId }) => ({
-    ...state,
-    // Peut ajouter un état de drag si nécessaire
-  })),
-
-  on(EpicKanbanActions.endFeatureDrag, (state) => ({
-    ...state,
-    // Reset drag state si nécessaire
-  })),
-
-  on(EpicKanbanActions.moveFeatureComplete, (state, { moveEvent }) => ({
-    ...state,
-    features: state.features.map(feature =>
-      feature.id === moveEvent.taskId
-        ? { ...feature, status: moveEvent.newStatus as any }
-        : feature
-    ),
-    lastUpdated: new Date()
-  })),
-
-  // Bulk operations
-  on(EpicKanbanActions.bulkUpdateFeatures, (state) => ({
-    ...state,
-    saving: true,
-    error: null
-  })),
-
-  on(EpicKanbanActions.bulkUpdateFeaturesSuccess, (state, { updatedFeatures }) => ({
-    ...state,
-    features: state.features.map(feature => {
-      const updated = updatedFeatures.find(u => u.id === feature.id);
-      return updated || feature;
-    }),
-    saving: false,
-    error: null,
-    lastUpdated: new Date()
-  })),
-
-  on(EpicKanbanActions.bulkUpdateFeaturesFailure, (state, { error }) => ({
-    ...state,
-    saving: false,
-    error
-  })),
-
-  // T018 - Task CRUD Operations
-  on(EpicKanbanActions.updateTask, (state) => ({
-    ...state,
-    saving: true,
-    error: null
-  })),
-
+  // Handle task updates from main epic view as well
   on(EpicKanbanActions.updateTaskSuccess, (state, { task }) => ({
     ...state,
-    tasks: state.tasks.map(t =>
-      t.id === task.id ? { ...t, ...task } : t
-    ),
-    saving: false,
-    error: null,
-    lastUpdated: new Date()
+    tasks: state.tasks.map(t => t.id === task.id ? { ...t, ...task } : t),
+    features: state.features.map(f => f.id === task.id ? { ...f, ...task } : f),
   })),
 
-  on(EpicKanbanActions.updateTaskFailure, (state, { error }) => ({
-    ...state,
-    saving: false,
-    error
-  })),
-
-  on(EpicKanbanActions.deleteTask, (state) => ({
-    ...state,
-    saving: true,
-    error: null
-  })),
-
-  on(EpicKanbanActions.deleteTaskSuccess, (state, { taskId }) => ({
-    ...state,
-    tasks: state.tasks.filter(task => task.id !== taskId),
-    saving: false,
-    error: null,
-    lastUpdated: new Date()
-  })),
-
-  on(EpicKanbanActions.deleteTaskFailure, (state, { error }) => ({
-    ...state,
-    saving: false,
-    error
-  })),
-
-  on(EpicKanbanActions.createTask, (state) => ({
-    ...state,
-    saving: true,
-    error: null
-  })),
-
-  on(EpicKanbanActions.createTaskSuccess, (state, { task }) => ({
-    ...state,
-    tasks: [...state.tasks, task],
-    saving: false,
-    error: null,
-    lastUpdated: new Date()
-  })),
-
-  on(EpicKanbanActions.createTaskFailure, (state, { error }) => ({
-    ...state,
-    saving: false,
-    error
-  }))
+  on(EpicKanbanActions.toggleFeatureExpansion, (state, { featureId }) => {
+    const newSet = new Set(state.expandedFeatures);
+    if (newSet.has(featureId)) {
+      newSet.delete(featureId);
+    } else {
+      newSet.add(featureId);
+    }
+    return { ...state, expandedFeatures: newSet };
+  })
 );

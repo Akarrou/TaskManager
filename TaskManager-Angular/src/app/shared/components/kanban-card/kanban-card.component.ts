@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,15 +9,17 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { trigger, state, style, transition, animate } from '@angular/animations';
+import { Router } from '@angular/router';
 
-import { TaskBadgeComponent } from '../task-badge/task-badge.component';
-import { ISubtask } from '../../../tasks/subtask.model';
-import { Task } from '../../../../core/services/task';
+import { TaskBadgeComponent } from '../../../features/epic-kanban/components/task-badge/task-badge.component';
+import { ISubtask } from '../../../features/tasks/subtask.model';
+import { Task } from '../../../core/services/task';
+import { KanbanItem } from '../../../features/epic-kanban/models/kanban-item.model';
 
 type TaskStatus = Task['status'];
 
 @Component({
-  selector: 'app-feature-card',
+  selector: 'app-kanban-card',
   standalone: true,
   imports: [
     CommonModule,
@@ -31,8 +33,8 @@ type TaskStatus = Task['status'];
     MatDividerModule,
     TaskBadgeComponent
   ],
-  templateUrl: './feature-card.component.html',
-  styleUrls: ['./feature-card.component.scss'],
+  templateUrl: './kanban-card.component.html',
+  styleUrls: ['./kanban-card.component.scss'],
   animations: [
     trigger('expandCollapse', [
       state('collapsed', style({
@@ -55,26 +57,28 @@ type TaskStatus = Task['status'];
     ])
   ]
 })
-export class FeatureCardComponent {
-  @Input() feature!: Task;
+export class KanbanCardComponent {
+  private router = inject(Router);
+
+  @Input() item!: KanbanItem;
   @Input() showProgress = true;
   @Input() isExpanded = false;
   @Input() isDragging = false;
   @Input() tasks: (Task | ISubtask)[] = [];
   @Input() highlightedTaskIds: string[] = [];
 
-  @Output() featureClick = new EventEmitter<Task>();
-  @Output() featureEdit = new EventEmitter<Task>();
-  @Output() featureDelete = new EventEmitter<Task>();
-  @Output() addTaskToFeature = new EventEmitter<Task>();
+  @Output() itemClick = new EventEmitter<KanbanItem>();
+  @Output() itemEdit = new EventEmitter<KanbanItem>();
+  @Output() itemDelete = new EventEmitter<KanbanItem>();
+  @Output() addTaskToItem = new EventEmitter<KanbanItem>();
   @Output() toggleExpansion = new EventEmitter<string>();
   @Output() taskStatusChange = new EventEmitter<{ task: Task | ISubtask; newStatus: TaskStatus }>();
   @Output() taskPriorityChange = new EventEmitter<{ task: Task | ISubtask; newPriority: string }>();
   @Output() taskEdit = new EventEmitter<Task | ISubtask>();
   @Output() taskDelete = new EventEmitter<string>();
-  @Output() featureToggleExpanded = new EventEmitter<Task>();
+  @Output() itemToggleExpanded = new EventEmitter<KanbanItem>();
 
-  get featureProgress(): { completed: number; total: number; percentage: number } {
+  get itemProgress(): { completed: number; total: number; percentage: number } {
     const total = this.tasks.length;
     const completed = this.tasks.filter(task => task.status === 'completed').length;
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
@@ -83,7 +87,7 @@ export class FeatureCardComponent {
   }
 
   get priorityConfig(): { icon: string; color: string; label: string } {
-    switch (this.feature.priority) {
+    switch (this.item.priority) {
       case 'urgent':
         return { icon: 'priority_high', color: 'text-purple-600', label: 'Urgent' };
       case 'high':
@@ -98,11 +102,11 @@ export class FeatureCardComponent {
   }
 
   get statusConfig(): { icon: string; color: string; label: string } {
-    return this.getTaskStatusConfig(this.feature);
+    return this.getTaskStatusConfig(this.item);
   }
 
   get typeConfig(): { color: string; bgColor: string; borderColor: string; label: string } {
-    switch (this.feature.type) {
+    switch (this.item.type) {
       case 'epic':
         return {
           color: 'text-red-700',
@@ -135,10 +139,10 @@ export class FeatureCardComponent {
   }
 
   get isOverdue(): boolean {
-    if (!this.feature.due_date) return false;
-    const dueDate = new Date(this.feature.due_date);
+    if (!this.item.dueDate) return false;
+    const dueDate = new Date(this.item.dueDate);
     const today = new Date();
-    return dueDate < today && this.feature.status !== 'completed';
+    return dueDate < today && this.item.status !== 'completed';
   }
 
   get hasActiveTasks(): boolean {
@@ -154,7 +158,7 @@ export class FeatureCardComponent {
   /**
    * T011 - Méthode pour obtenir la config de statut d'une tâche spécifique
    */
-  getTaskStatusConfig(task: Task): { icon: string; color: string; label: string } {
+  getTaskStatusConfig(task: KanbanItem): { icon: string; color: string; label: string } {
     switch (task.status) {
       case 'pending':
         return { icon: 'schedule', color: 'text-gray-500', label: 'En attente' };
@@ -190,33 +194,39 @@ export class FeatureCardComponent {
   }
 
   onCardClick(): void {
-    this.featureClick.emit(this.feature);
+    this.itemClick.emit(this.item);
   }
 
   onEditClick(event: Event): void {
     event.stopPropagation();
-    this.featureEdit.emit(this.feature);
+    this.itemEdit.emit(this.item);
   }
 
   onDeleteClick(event: Event): void {
     event.stopPropagation();
-    this.featureDelete.emit(this.feature);
+    this.itemDelete.emit(this.item);
   }
 
   onAddTaskClick(event: Event): void {
     event.stopPropagation();
-    this.addTaskToFeature.emit(this.feature);
+    this.addTaskToItem.emit(this.item);
   }
 
   onToggleExpansion(event: Event): void {
     event.stopPropagation();
-    if (this.feature.id) {
-      this.toggleExpansion.emit(this.feature.id);
+    if (typeof this.item.id === 'string') {
+      this.toggleExpansion.emit(this.item.id);
     }
   }
 
+  onNavigateToTasksKanban(event: Event): void {
+    event.stopPropagation();
+    this.router.navigate(['/features', this.item.id, 'tasks-kanban']);
+  }
+
   onTaskClick(task: Task | ISubtask): void {
-    this.featureClick.emit(task as Task);
+    // This might need further refactoring if sub-items are also KanbanItems
+    console.log('Task clicked:', task);
   }
 
   /**
@@ -226,41 +236,27 @@ export class FeatureCardComponent {
     this.taskStatusChange.emit({ task, newStatus });
   }
 
-  formatDate(dateString: string): string {
+  formatDate(dateString: string | undefined): string {
+    if (!dateString) return '';
     const date = new Date(dateString);
-    const now = new Date();
-    const diffInDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (diffInDays === 0) return 'Aujourd\'hui';
-    if (diffInDays === 1) return 'Demain';
-    if (diffInDays === -1) return 'Hier';
-    if (diffInDays > 0 && diffInDays <= 7) return `Dans ${diffInDays}j`;
-    if (diffInDays < 0 && diffInDays >= -7) return `Il y a ${Math.abs(diffInDays)}j`;
-
-    return date.toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-    });
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
   }
 
   /**
    * T011 - Format d'affichage amélioré pour les assignations
    */
-  formatAssignee(assignee: string): string {
-    if (!assignee) return '';
-
-    // Si c'est un email, ne prendre que la partie avant @
-    if (assignee.includes('@')) {
-      return assignee.split('@')[0];
-    }
-
-    // Sinon, limiter à 10 caractères
-    return assignee.length > 10 ? assignee.substring(0, 10) + '...' : assignee;
+  formatAssignee(assigneeId: string | undefined): string {
+    if (!assigneeId) return 'Non assignée';
+    // This is a placeholder. In a real app, you'd resolve the user's name from their ID.
+    // For now, we'll just show the last 4 chars of the UUID.
+    return `User...${assigneeId.slice(-4)}`;
   }
 
   trackTask(index: number, task: Task | ISubtask): string {
-    return task.id || index.toString();
+    return task.id as string;
   }
 
   /**
@@ -277,7 +273,7 @@ export class FeatureCardComponent {
    * T011 - TrackBy function pour les tags
    */
   trackTag(index: number, tag: string): string {
-    return tag || index.toString();
+    return tag;
   }
 
   // T018 - Handle task priority change
@@ -296,8 +292,6 @@ export class FeatureCardComponent {
   }
 
   onDelete(taskId: string): void {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
-      this.taskDelete.emit(taskId);
-    }
+    this.itemDelete.emit(this.item);
   }
 }
