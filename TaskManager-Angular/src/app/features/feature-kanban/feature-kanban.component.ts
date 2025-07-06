@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { Store, select } from '@ngrx/store';
 import { Observable } from 'rxjs';
 
@@ -8,8 +8,9 @@ import { GenericKanbanComponent } from '../../shared/components/generic-kanban/g
 import { KanbanItem } from '../epic-kanban/models/kanban-item.model';
 import { KanbanColumn } from '../epic-kanban/models/epic-board.model';
 import { DEFAULT_KANBAN_COLUMNS } from '../epic-kanban/models/kanban-constants';
-import * as FeatureKanbanActions from '../epic-kanban/store/epic-kanban.actions';
+import { EpicKanbanActions } from '../epic-kanban/store/epic-kanban.actions';
 import * as fromFeatureKanban from '../epic-kanban/store/epic-kanban.selectors';
+import { Task } from '../../core/services/task';
 
 @Component({
   selector: 'app-feature-kanban',
@@ -43,12 +44,12 @@ export class FeatureKanbanComponent implements OnInit {
   loadTasks(): void {
     const featureId = this.route.snapshot.paramMap.get('featureId');
     if (featureId) {
-      this.store.dispatch(FeatureKanbanActions.loadFeatureTasks({ featureId }));
+      this.store.dispatch(EpicKanbanActions.loadFeatureTasks({ featureId }));
     }
   }
 
-  onItemDropped(event: { item: KanbanItem; newStatus: string }): void {
-    this.store.dispatch(FeatureKanbanActions.updateTaskStatus({
+  onItemDropped(event: { item: KanbanItem; newStatus: Task['status'] }): void {
+    this.store.dispatch(EpicKanbanActions.updateTaskStatus({
       taskId: event.item.id as string,
       newStatus: event.newStatus
     }));
@@ -61,7 +62,7 @@ export class FeatureKanbanComponent implements OnInit {
 
   onItemDeleted(item: KanbanItem): void {
     console.log('Deleting item:', item);
-    this.store.dispatch(FeatureKanbanActions.deleteTask({ taskId: item.id as string }));
+    this.store.dispatch(EpicKanbanActions.deleteTask({ taskId: item.id as string }));
   }
 }
 

@@ -7,6 +7,7 @@ import { KanbanColumnComponent } from '../kanban-column/kanban-column.component'
 import { KanbanItem } from '../../../features/epic-kanban/models/kanban-item.model';
 import { KanbanColumn } from '../../../features/epic-kanban/models/epic-board.model';
 import { NgIf, NgFor } from '@angular/common';
+import { Task } from '../../../core/services/task';
 
 @Component({
   selector: 'app-generic-kanban',
@@ -30,7 +31,7 @@ export class GenericKanbanComponent {
   @Input() loading: boolean = false;
   @Input() error: string | null = null;
 
-  @Output() itemDropped = new EventEmitter<{ item: KanbanItem; newStatus: string }>();
+  @Output() itemDropped = new EventEmitter<{ item: KanbanItem; newStatus: Task['status'] }>();
   @Output() itemEdited = new EventEmitter<KanbanItem>();
   @Output() itemDeleted = new EventEmitter<KanbanItem>();
   @Output() retryLoad = new EventEmitter<void>();
@@ -50,7 +51,7 @@ export class GenericKanbanComponent {
 
   onItemDrop(event: CdkDragDrop<KanbanItem[]>) {
     const item = event.item.data;
-    const newStatus = event.container.id;
+    const newStatus = event.container.id as Task['status'];
     this.itemDropped.emit({ item, newStatus });
   }
 

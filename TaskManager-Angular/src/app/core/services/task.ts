@@ -489,20 +489,33 @@ export class TaskService {
   }
 
   async getTasksForFeature(featureId: string): Promise<Task[]> {
-    const { data, error } = await this.supabaseService.tasks
-      .select('*')
-      .eq('parent_task_id', featureId)
-      .order('created_at', { ascending: true });
+    this.loadingSignal.set(true);
+    this.errorSignal.set(null);
 
-    if (error) {
-      console.error('Error fetching tasks for feature:', error.message);
+    try {
+      const { data, error } = await this.supabaseService.tasks
+        .select('*')
+        .eq('parent_task_id', featureId);
+
+      if (error) {
+        throw error;
+      }
+      return data || [];
+    } catch (error: any) {
+      this.errorSignal.set(this.supabaseService.handleError(error));
       return [];
+    } finally {
+      this.loadingSignal.set(false);
     }
-    return data || [];
   }
 
   // Nouvelle méthode pour récupérer les commentaires d'une tâche
   async getCommentsForTask(taskId: string): Promise<TaskComment[] | null> {
+    if (!taskId) {
+      this.errorSignal.set('Task ID is required');
+      return null;
+    }
+
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
 

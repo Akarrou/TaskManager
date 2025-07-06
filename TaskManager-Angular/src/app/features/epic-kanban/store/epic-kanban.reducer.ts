@@ -1,5 +1,5 @@
 import { createReducer, on } from '@ngrx/store';
-import { EpicKanbanActions, loadFeatureTasks, loadFeatureTasksSuccess, loadFeatureTasksFailure, updateTaskStatus } from './epic-kanban.actions';
+import { EpicKanbanActions } from './epic-kanban.actions';
 import { Task } from '../../../core/services/task';
 import { EpicMetrics } from '../models/epic-board.model';
 
@@ -9,6 +9,7 @@ export interface EpicKanbanState {
   epic: Task | null;
   features: Task[];
   tasks: Task[];
+  featureTasks: Task[]; // Tasks for the feature-specific kanban
   metrics: EpicMetrics | null;
   loading: boolean;
   loadingTasks: boolean;
@@ -21,6 +22,7 @@ export const initialState: EpicKanbanState = {
   epic: null,
   features: [],
   tasks: [],
+  featureTasks: [],
   metrics: null,
   loading: false,
   loadingTasks: false,
@@ -43,19 +45,23 @@ export const epicKanbanReducer = createReducer(
   on(EpicKanbanActions.loadEpicBoardFailure, (state, { error }) => ({ ...state, loading: false, error })),
 
   // Reducers for Feature Kanban
-  on(loadFeatureTasks, (state) => ({ ...state, loadingTasks: true, error: null })),
-  on(loadFeatureTasksSuccess, (state, { tasks }) => ({
+  on(EpicKanbanActions.loadFeatureTasks, (state) => ({ ...state, loadingTasks: true, error: null, featureTasks: [] })),
+  on(EpicKanbanActions.loadFeatureTasksSuccess, (state, { tasks }) => ({
     ...state,
     loadingTasks: false,
-    tasks: tasks, // Here we expect tasks of type Task[], not KanbanItem[]
+    featureTasks: tasks,
   })),
-  on(loadFeatureTasksFailure, (state, { error }) => ({ ...state, loadingTasks: false, error })),
+  on(EpicKanbanActions.loadFeatureTasksFailure, (state, { error }) => ({ ...state, loadingTasks: false, error })),
 
   // Optimistic update for task status
-  on(updateTaskStatus, (state, { taskId, newStatus }) => ({
-    ...state,
-    tasks: state.tasks.map(t => t.id === taskId ? { ...t, status: newStatus as Task['status'] } : t)
-  })),
+  on(EpicKanbanActions.updateTaskStatus, (state, { taskId, newStatus }) => {
+    const newStatusTyped = newStatus as Task['status'];
+    return {
+      ...state,
+      tasks: state.tasks.map(t => t.id === taskId ? { ...t, status: newStatusTyped } : t),
+      featureTasks: state.featureTasks.map(t => t.id === taskId ? { ...t, status: newStatusTyped } : t)
+    };
+  }),
 
   // Optimistic update for feature movement
   on(EpicKanbanActions.moveFeature, (state, { featureId, newStatus }) => {

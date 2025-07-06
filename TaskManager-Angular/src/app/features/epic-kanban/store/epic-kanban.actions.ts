@@ -117,17 +117,3 @@ export const EpicKanbanActions = createActionGroup({
     'Move Task': props<{ event: TaskMoveEvent }>(),
   }
 });
-
-// Actions for Feature-specific Kanban View
-export const loadFeatureTasks = createAction('[Feature Kanban] Load Tasks for Feature', props<{ featureId: string }>());
-export const loadFeatureTasksSuccess = createAction('[Feature Kanban API] Load Tasks for Feature Success', props<{ tasks: Task[] }>());
-export const loadFeatureTasksFailure = createAction('[Feature Kanban API] Load Tasks for Feature Failure', props<{ error: any }>());
-
-// Generic Task actions that might be used by both kanbans
-export const updateTaskStatus = createAction('[Kanban] Update Task Status', props<{ taskId: string; newStatus: string }>());
-export const updateTaskStatusSuccess = createAction('[Kanban API] Update Task Status Success', props<{ task: KanbanItem }>());
-export const updateTaskStatusFailure = createAction('[Kanban API] Update Task Status Failure', props<{ error: any }>());
-
-export const deleteTask = createAction('[Kanban] Delete Task', props<{ taskId: string }>());
-export const deleteTaskSuccess = createAction('[Kanban API] Delete Task Success', props<{ taskId: string }>());
-export const deleteTaskFailure = createAction('[Kanban API] Delete Task Failure', props<{ error: any }>());

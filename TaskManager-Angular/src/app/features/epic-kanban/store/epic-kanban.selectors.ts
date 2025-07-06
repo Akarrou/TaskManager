@@ -56,8 +56,14 @@ export const selectTasksForCurrentFeature = createSelector(
   (tasks, featureId) => tasks.filter(t => t.feature_id === featureId)
 );
 
+// New selector for the dedicated feature kanban tasks
+export const selectFeatureTasks = createSelector(
+  selectEpicKanbanState,
+  (state) => state.featureTasks
+);
+
 export const selectTasksForCurrentFeatureAsKanbanItems = createSelector(
-  selectTasksForCurrentFeature,
+  selectFeatureTasks,
   (tasks): KanbanItem[] => tasks.map(t => taskToKanbanItem(t as unknown as Task))
 );
 
