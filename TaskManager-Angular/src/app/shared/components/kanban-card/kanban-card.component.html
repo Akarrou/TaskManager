@@ -12,13 +12,23 @@
   <div class="card-content">
     <!-- Header: Type and Menu -->
     <div class="card-header">
-      <mat-chip-listbox aria-label="Item type">
-        <mat-chip class="type-chip"
-          [ngClass]="typeConfig.bgColor"
-          selected>
-          {{ typeConfig.label }}
-        </mat-chip>
-      </mat-chip-listbox>
+      <div class="header-left">
+        <mat-chip-listbox aria-label="Item type">
+          <mat-chip class="type-chip"
+            [ngClass]="[typeConfig.bgColor, typeConfig.color, typeConfig.borderColor]"
+            selected>
+            {{ typeConfig.label }}
+          </mat-chip>
+        </mat-chip-listbox>
+        @if (item.task_number) {
+        <span class="item-number"
+          [ngClass]="[itemNumberConfig.color, itemNumberConfig.bgColor]"
+          [matTooltip]="itemNumberConfig.label">
+          #{{ itemNumberConfig.icon }}{{ item.task_number }}
+        </span>
+        }
+      </div>
+
       <button mat-icon-button
         class="menu-button"
         [matMenuTriggerFor]="cardMenu"
@@ -28,8 +38,12 @@
     </div>
 
     <!-- Title -->
-    <p class="card-title"
-      [matTooltip]="item.title">{{ item.title }}</p>
+    <div class="card-header-content">
+      <div class="card-title-row">
+        <h3 class="kanban-card-title"
+          [matTooltip]="item.title">{{ item.title }}</h3>
+      </div>
+    </div>
 
     <!-- Tags -->
     <div *ngIf="item.tags && item.tags.length > 0"

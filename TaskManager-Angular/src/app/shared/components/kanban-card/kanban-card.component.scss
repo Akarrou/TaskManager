@@ -1,7 +1,7 @@
 @use "../../../styles/variables" as v;
 @use "../../../styles/mixins" as m;
 @use "sass:color";
-@use "../../../styles/kanban-variables";
+@use "../../../styles/kanban-variables" as kanban;
 
 // ============================================================================
 // FEATURE CARD - Component Styles
@@ -12,6 +12,7 @@
 
 :host {
   display: block;
+  position: relative;
 }
 
 .kanban-card {
@@ -62,7 +63,7 @@
 }
 
 .card-content {
-  padding: v.$space-3 v.$space-4 v.$space-3 calc(#{v.$space-4} + 5px);
+  padding: 0 v.$space-3 v.$space-2;
   display: flex;
   flex-direction: column;
   gap: v.$space-3;
@@ -72,35 +73,55 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: v.$space-2;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+  }
 
   .type-chip {
-    height: 24px;
-    font-size: v.$font-size-xs;
-    font-weight: v.$font-weight-medium;
-    border-radius: v.$border-radius-sm;
-    padding: 0 v.$space-2;
-    border: none;
+    font-size: v.$font-size-xs !important;
+    font-weight: v.$font-weight-bold !important;
+    min-height: 24px !important;
+    line-height: 1 !important;
+    padding: 2px 8px !important;
+    border-radius: v.$border-radius-md !important;
+  }
 
-    &.bg-red-100 {
-      color: v.$danger-text;
-    }
-    &.bg-blue-100 {
-      color: v.$primary-color-dark;
-    }
-    &.bg-green-100 {
-      color: v.$success-color;
-    }
+  .item-number {
+    padding: v.$space-1 v.$space-2;
+    border-radius: v.$border-radius-md;
+    font-size: v.$font-size-xs;
+    font-weight: v.$font-weight-bold;
+    border: 1px solid v.$border-color-light;
+    min-height: 24px;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+  }
+
+  .card-title-row {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+  }
+  .kanban-card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.3;
+    vertical-align: middle;
+    // Truncate long titles
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px; // Adjust as needed
   }
 
   .menu-button {
-    color: v.$text-color-light;
-    width: 32px;
-    height: 32px;
-    line-height: 32px;
-    &:hover {
-      background-color: v.$background-color-hover;
-      color: v.$text-color-dark;
-    }
+    flex-shrink: 0;
   }
 }
 
@@ -126,7 +147,7 @@
     font-size: v.$font-size-xs;
     background-color: v.$background-color-light;
     color: v.$text-color-medium;
-    border-radius: v.$border-radius-full;
+    border-radius: v.$border-radius-sm;
     padding: 0 v.$space-2;
 
     &.more-tags {
@@ -623,4 +644,83 @@
 
 .highlighted-task {
   animation: highlightFadeIn 0.6s ease-out;
+}
+
+// Add global style for item-number
+.item-number {
+  padding: v.$space-1 v.$space-2;
+  border-radius: v.$border-radius-md;
+  font-size: v.$font-size-xs;
+  font-weight: v.$font-weight-bold;
+  border: 1px solid;
+  display: inline-block;
+
+  // Epic styles
+  &.text-red-700.bg-red-100 {
+    color: #b91c1c;
+    background-color: #fee2e2;
+    border-color: #fca5a5;
+  }
+
+  // Feature styles
+  &.text-blue-700.bg-blue-100 {
+    color: #1d4ed8;
+    background-color: #dbeafe;
+    border-color: #93c5fd;
+  }
+
+  // Task styles
+  &.text-green-700.bg-green-100 {
+    color: #15803d;
+    background-color: #dcfce7;
+    border-color: #86efac;
+  }
+
+  // Default styles
+  &.text-gray-700.bg-gray-100 {
+    color: #374151;
+    background-color: #f3f4f6;
+    border-color: #d1d5db;
+  }
+}
+
+// Type chip color classes
+.bg-red-100 {
+  background-color: #fee2e2;
+}
+.text-red-700 {
+  color: #b91c1c;
+}
+.border-red-300 {
+  border-color: #fca5a5;
+}
+
+.bg-blue-100 {
+  background-color: #dbeafe;
+}
+.text-blue-700 {
+  color: #1d4ed8;
+}
+.border-blue-300 {
+  border-color: #93c5fd;
+}
+
+.bg-green-100 {
+  background-color: #dcfce7;
+}
+.text-green-700 {
+  color: #15803d;
+}
+.border-green-300 {
+  border-color: #86efac;
+}
+
+.bg-gray-100 {
+  background-color: #f3f4f6;
+}
+.text-gray-700 {
+  color: #374151;
+}
+.border-gray-300 {
+  border-color: #d1d5db;
 }

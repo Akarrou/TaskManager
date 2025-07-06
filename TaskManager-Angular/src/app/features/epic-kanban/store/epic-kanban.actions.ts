@@ -1,4 +1,4 @@
-import { createAction, props, createActionGroup, emptyProps } from '@ngrx/store';
+import { props, createActionGroup, emptyProps } from '@ngrx/store';
 import { Task } from '../../../core/services/task';
 import { EpicBoard, KanbanColumn, EpicMetrics, TaskMoveEvent } from '../models/epic-board.model';
 import { KanbanItem } from '../models/kanban-item.model';
@@ -99,7 +99,7 @@ export const EpicKanbanActions = createActionGroup({
 
     // Actions for Feature-specific Kanban View
     'Load Feature Tasks': props<{ featureId: string }>(),
-    'Load Feature Tasks Success': props<{ tasks: Task[] }>(),
+    'Load Feature Tasks Success': props<{ feature: Task, tasks: Task[] }>(),
     'Load Feature Tasks Failure': props<{ error: any }>(),
 
     // Generic Task actions (if they don't exist elsewhere)

@@ -126,7 +126,8 @@
 // Main Header Content inside Panel
 // ============================================================================
 .epic-header {
-  padding: v.$space-4 v.$space-6;
+  padding: 16px;
+  background-color: #f9f9f9;
 }
 
 // Header Actions (Back, Refresh, More...)
@@ -515,8 +516,25 @@
   gap: v.$space-2;
   justify-content: space-between;
 }
+
 .panel-title-header-content {
   display: flex;
   align-items: center;
-  gap: v.$space-2;
+  gap: 8px;
+}
+
+.title-and-desc {
+  display: flex;
+  flex-direction: column;
+
+  .epic-title {
+    font-weight: 500;
+  }
+
+  .epic-description {
+    font-size: 0.85rem;
+    color: #666;
+    margin: 0;
+    font-weight: 400;
+  }
 }

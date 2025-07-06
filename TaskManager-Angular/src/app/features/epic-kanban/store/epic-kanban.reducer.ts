@@ -10,6 +10,7 @@ export interface EpicKanbanState {
   features: Task[];
   tasks: Task[];
   featureTasks: Task[]; // Tasks for the feature-specific kanban
+  currentFeatureId: string | null; // ID of the feature being viewed
   metrics: EpicMetrics | null;
   loading: boolean;
   loadingTasks: boolean;
@@ -23,6 +24,7 @@ export const initialState: EpicKanbanState = {
   features: [],
   tasks: [],
   featureTasks: [],
+  currentFeatureId: null,
   metrics: null,
   loading: false,
   loadingTasks: false,
@@ -45,12 +47,27 @@ export const epicKanbanReducer = createReducer(
   on(EpicKanbanActions.loadEpicBoardFailure, (state, { error }) => ({ ...state, loading: false, error })),
 
   // Reducers for Feature Kanban
-  on(EpicKanbanActions.loadFeatureTasks, (state) => ({ ...state, loadingTasks: true, error: null, featureTasks: [] })),
-  on(EpicKanbanActions.loadFeatureTasksSuccess, (state, { tasks }) => ({
+  on(EpicKanbanActions.loadFeatureTasks, (state, { featureId }) => ({
     ...state,
-    loadingTasks: false,
-    featureTasks: tasks,
+    loadingTasks: true,
+    error: null,
+    featureTasks: [],
+    currentFeatureId: featureId
   })),
+  on(EpicKanbanActions.loadFeatureTasksSuccess, (state, { feature, tasks }) => {
+    // Upsert the feature into the features array
+    const featureExists = state.features.some(f => f.id === feature.id);
+    const updatedFeatures = featureExists
+      ? state.features.map(f => f.id === feature.id ? feature : f)
+      : [...state.features, feature];
+
+    return {
+      ...state,
+      loadingTasks: false,
+      featureTasks: tasks,
+      features: updatedFeatures,
+    };
+  }),
   on(EpicKanbanActions.loadFeatureTasksFailure, (state, { error }) => ({ ...state, loadingTasks: false, error })),
 
   // Optimistic update for task status

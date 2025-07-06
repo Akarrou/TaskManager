@@ -84,6 +84,39 @@ export class KanbanCardComponent {
     return { completed, total, percentage };
   }
 
+  get itemNumberConfig(): { color: string; bgColor: string; label: string; icon: string } {
+    switch (this.item?.type) {
+      case 'epic':
+        return {
+          color: 'text-red-700',
+          bgColor: 'bg-red-100 border-red-300',
+          label: 'Epic',
+          icon: 'E'
+        };
+      case 'feature':
+        return {
+          color: 'text-blue-700',
+          bgColor: 'bg-blue-100 border-blue-300',
+          label: 'Feature',
+          icon: 'F'
+        };
+      case 'task':
+        return {
+          color: 'text-green-700',
+          bgColor: 'bg-green-100 border-green-300',
+          label: 'Tâche',
+          icon: 'T'
+        };
+      default:
+        return {
+          color: 'text-gray-700',
+          bgColor: 'bg-gray-100 border-gray-300',
+          label: 'Item',
+          icon: ''
+        };
+    }
+  }
+
   get priorityConfig(): { icon: string; color: string; label: string } {
     switch (this.item.priority) {
       case 'urgent':

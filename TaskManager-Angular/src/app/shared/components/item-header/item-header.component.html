@@ -6,7 +6,9 @@
         <mat-icon>dashboard</mat-icon>
         <span class="epic-number"
           *ngIf="item?.task_number">#{{itemNumberConfig.icon}}{{ item?.task_number }}</span>
-        <span class="epic-title">{{ item?.title || 'Item sans titre' }}</span>
+        <div class="title-and-desc">
+          <span class="epic-title">{{ item?.title || 'Item sans titre' }}</span>
+        </div>
       </div>
 
       <mat-chip-set class="status-badge">

@@ -20,7 +20,7 @@ export const selectCurrentEpic = createSelector(selectEpicKanbanState, state => 
 
 export const selectColumns = createSelector(
   selectEpicKanbanState,
-  (state) => DEFAULT_KANBAN_COLUMNS
+  () => DEFAULT_KANBAN_COLUMNS
 );
 
 export const selectCurrentEpicAsKanbanItem = createSelector(
@@ -35,8 +35,8 @@ export const selectFeaturesAsKanbanItems = createSelector(
 
 // Selectors for Feature Kanban View
 export const selectCurrentFeatureId = createSelector(
-  selectRouterState,
-  (router) => router?.state?.root?.firstChild?.params['featureId']
+  selectEpicKanbanState,
+  (state) => state.currentFeatureId
 );
 
 export const selectCurrentFeature = createSelector(

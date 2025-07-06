@@ -1,9 +1,14 @@
-<app-generic-kanban [title]="(feature$ | async)?.title || 'Kanban'"
-  [items]="(tasks$ | async) || []"
-  [columns]="columns"
-  [loading]="(loading$ | async) || false"
-  [error]="(error$ | async) || null"
-  (itemDropped)="onItemDropped($event)"
-  (itemEdited)="onItemEdited($event)"
-  (itemDeleted)="onItemDeleted($event)">
-</app-generic-kanban>
+<div class="feature-kanban-container p-4">
+  <app-item-header [item]="(feature$ | async)!"
+    (navigateBack)="onNavigateBack()">
+  </app-item-header>
+
+  <app-generic-kanban [items]="(tasks$ | async)!"
+    [columns]="columns"
+    [loading]="(loading$ | async)!"
+    [error]="(error$ | async)"
+    (itemDropped)="onItemDropped($event)"
+    (itemEdited)="onItemEdited($event)"
+    (itemDeleted)="onItemDeleted($event)">
+  </app-generic-kanban>
+</div>

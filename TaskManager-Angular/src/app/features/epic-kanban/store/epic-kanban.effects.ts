@@ -235,8 +235,16 @@ export class EpicKanbanEffects {
     this.actions$.pipe(
       ofType(EpicKanbanActions.loadFeatureTasks),
       switchMap(({ featureId }) =>
-        from(this.taskService.getTasksForFeature(featureId)).pipe(
-          map(tasks => EpicKanbanActions.loadFeatureTasksSuccess({ tasks: tasks })),
+        from(Promise.all([
+          this.taskService.fetchTaskById(featureId),
+          this.taskService.getTasksForFeature(featureId)
+        ])).pipe(
+          map(([feature, tasks]) => {
+            if (!feature) {
+              return EpicKanbanActions.loadFeatureTasksFailure({ error: 'Feature not found' });
+            }
+            return EpicKanbanActions.loadFeatureTasksSuccess({ feature, tasks });
+          }),
           catchError(error => of(EpicKanbanActions.loadFeatureTasksFailure({ error })))
         )
       )
