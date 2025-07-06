@@ -10,6 +10,8 @@ export interface KanbanItem {
     tags?: string[];
     assignee?: string;
     dueDate?: string;
+    commentCount?: number;
+    attachmentCount?: number;
     prd_slug?: string;
     environment?: string[];
     subItems?: KanbanItem[];

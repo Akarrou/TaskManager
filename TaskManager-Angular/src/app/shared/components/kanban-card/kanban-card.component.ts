@@ -11,7 +11,6 @@ import { MatDividerModule } from '@angular/material/divider';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 import { Router } from '@angular/router';
 
-import { TaskBadgeComponent } from '../../../features/epic-kanban/components/task-badge/task-badge.component';
 import { ISubtask } from '../../../features/tasks/subtask.model';
 import { Task } from '../../../core/services/task';
 import { KanbanItem } from '../../../features/epic-kanban/models/kanban-item.model';
@@ -31,7 +30,6 @@ type TaskStatus = Task['status'];
     MatProgressBarModule,
     MatTooltipModule,
     MatDividerModule,
-    TaskBadgeComponent
   ],
   templateUrl: './kanban-card.component.html',
   styleUrls: ['./kanban-card.component.scss'],

@@ -14,21 +14,16 @@
   display: block;
 }
 
-.feature-card {
-  --card-border-color: #{v.$border-color-light};
-  --card-bg-color: #{v.$background-color-form};
-  --card-indicator-color: transparent;
-
-  display: block;
-  background-color: var(--card-bg-color);
-  border: v.$border-width-1 solid var(--card-border-color);
-  border-left: 4px solid var(--card-indicator-color);
+.kanban-card {
+  position: relative;
+  padding: 0;
   border-radius: v.$border-radius-md;
+  background-color: v.$background-color-form;
+  border: 1px solid v.$border-color-light;
   box-shadow: v.$shadow-sm;
+  transition: all 0.2s v.$transition-timing-function;
+  cursor: pointer;
   overflow: hidden;
-  transition: transform v.$transition-duration v.$transition-timing-function,
-    box-shadow v.$transition-duration v.$transition-timing-function,
-    border-color v.$transition-duration v.$transition-timing-function;
 
   &:hover {
     transform: translateY(-2px);
@@ -36,46 +31,169 @@
     border-color: v.$primary-color-light;
   }
 
-  &:focus-visible {
-    @include m.focus-ring(v.$primary-color);
-  }
-
-  &.dragging {
-    opacity: 0.6;
-    transform: rotate(1deg) translateY(-2px);
+  &.is-dragging {
     box-shadow: v.$shadow-lg;
+    transform: scale(1.05) rotate(3deg);
+  }
+}
+
+.priority-indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background-color: v.$secondary-color;
+  border-top-left-radius: v.$border-radius-md;
+  border-bottom-left-radius: v.$border-radius-md;
+
+  &[data-priority="low"] {
+    background-color: v.$success-color;
+  }
+  &[data-priority="medium"] {
+    background-color: v.$warning-color;
+  }
+  &[data-priority="high"] {
+    background-color: v.$error-color;
+  }
+  &[data-priority="urgent"] {
+    background-color: v.$accent-color;
+  }
+}
+
+.card-content {
+  padding: v.$space-3 v.$space-4 v.$space-3 calc(#{v.$space-4} + 5px);
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-3;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .type-chip {
+    height: 24px;
+    font-size: v.$font-size-xs;
+    font-weight: v.$font-weight-medium;
+    border-radius: v.$border-radius-sm;
+    padding: 0 v.$space-2;
+    border: none;
+
+    &.bg-red-100 {
+      color: v.$danger-text;
+    }
+    &.bg-blue-100 {
+      color: v.$primary-color-dark;
+    }
+    &.bg-green-100 {
+      color: v.$success-color;
+    }
   }
 
-  &.overdue {
-    --card-border-color: #{v.$danger-border};
-    --card-bg-color: #{v.$danger-bg};
-    --card-indicator-color: #{v.$error-color};
+  .menu-button {
+    color: v.$text-color-light;
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+    &:hover {
+      background-color: v.$background-color-hover;
+      color: v.$text-color-dark;
+    }
   }
+}
 
-  &.has-active-tasks {
-    --card-indicator-color: #{v.$warning-color};
-  }
+.card-title {
+  font-size: v.$font-size-base;
+  font-weight: v.$font-weight-medium;
+  color: v.$text-color-darkest;
+  line-height: 1.4;
+  margin: 0;
+  // Ellipsis for long titles
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-  &.priority-low {
-    border-left: 4px solid kanban-variables.$priority-low-color;
+.tags-container {
+  .mat-chip-listbox {
+    display: flex;
+    gap: v.$space-2;
   }
-  &.priority-medium {
-    border-left: 4px solid kanban-variables.$priority-medium-color;
-  }
-  &.priority-high {
-    border-left: 4px solid kanban-variables.$priority-high-color;
-  }
-  &.priority-urgent {
-    border-left: 4px solid kanban-variables.$priority-urgent-color;
-  }
+  .tag-chip {
+    height: 22px;
+    font-size: v.$font-size-xs;
+    background-color: v.$background-color-light;
+    color: v.$text-color-medium;
+    border-radius: v.$border-radius-full;
+    padding: 0 v.$space-2;
 
-  .mat-mdc-card-header {
-    padding: v.$space-3 !important;
-    border-bottom: v.$border-width-1 solid v.$border-color-light;
+    &.more-tags {
+      font-weight: v.$font-weight-bold;
+      color: v.$primary-color-dark;
+    }
   }
+}
 
-  .mat-mdc-card-content {
-    padding: v.$space-3 !important;
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: v.$space-2;
+}
+
+.metrics {
+  display: flex;
+  align-items: center;
+  gap: v.$space-4;
+  color: v.$text-color-light;
+  font-size: v.$font-size-sm;
+
+  .metric-item {
+    display: flex;
+    align-items: center;
+    gap: v.$space-1;
+
+    mat-icon {
+      font-size: 18px;
+    }
+
+    &.date.is-overdue {
+      color: v.$error-color;
+      font-weight: v.$font-weight-bold;
+    }
+  }
+}
+
+.assignee {
+  .avatar-placeholder {
+    width: 28px;
+    height: 28px;
+    border-radius: v.$border-radius-full;
+    background-color: v.$secondary-color-light;
+    color: v.$text-color-inverted;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-bold;
+    text-transform: uppercase;
+    border: 2px solid v.$background-color-form;
+  }
+}
+
+// Styles for the menu itself
+::ng-deep .kanban-card-menu {
+  .mat-mdc-menu-content {
+    padding: v.$space-2 0 !important;
+  }
+  .mat-mdc-menu-item {
+    height: 40px;
+    font-size: v.$font-size-sm;
+    .mat-icon {
+      margin-right: v.$space-3;
+    }
   }
 }
 
@@ -108,13 +226,6 @@
 // ============================================================================
 // CONTENT ELEMENTS
 // ============================================================================
-.feature-card__title {
-  font-size: v.$font-size-base;
-  font-weight: v.$font-weight-medium;
-  color: v.$text-color-dark;
-  margin-bottom: v.$space-2;
-}
-
 .feature-card__description {
   font-size: v.$font-size-sm;
   color: v.$text-color-medium;
