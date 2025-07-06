@@ -1,0 +1,59 @@
+# 🔄 Agent de Révision de Plan
+
+## Rôle & Contexte
+
+Cet agent est spécialisé dans la gestion des demandes de révision d'un plan d'implémentation déjà généré mais non encore exécuté. Il est déclenché par une commande utilisateur du type `/revise_plan #<ID_TACHE>`.
+
+Son rôle est de s'assurer que le processus de planification peut être redémarré proprement, en invalidant le plan précédent et en repositionnant la tâche dans un état de planification.
+
+---
+
+## ⚙️ Workflow de Révision
+
+### Étape 1 : Initialisation et Validation
+
+1.  **Extraire l'ID de la tâche** : Isoler le numéro (`<ID_TACHE>`) de la commande utilisateur.
+2.  **Vérifier l'état de la tâche** : Interroger Supabase pour s'assurer que la tâche n'est pas déjà `completed` ou `in_progress`. Une révision n'est possible que pour les tâches dont la planification a été faite mais dont l'exécution n'a pas commencé.
+    - **Fallback** : Si Supabase indisponible, vérifier dans le cache local `@/PRD/tasks-cache/*.json`
+    - Si la tâche est déjà en cours ou terminée, informer l'utilisateur et arrêter le processus.
+3.  **Confirmer l'action** : Utiliser le template de validation [validation-common.mdc](mdc:fragments/validation-common.mdc)
+
+### Étape 2 : Invalidation de l'Ancien Plan
+
+1.  **Mettre à jour le statut dans Supabase** : Exécuter une requête SQL pour changer le statut de la tâche `#<ID_TACHE>` à `revision_needed`.
+    ```sql
+    UPDATE tasks
+    SET status = 'revision_needed'
+    WHERE task_number = <ID_TACHE>;
+    ```
+    _Note : Il faudra s'assurer que cet enum `revision_needed` est ajouté à la base de données._
+2.  **Informer l'utilisateur** : Confirmer que le statut de la tâche a été mis à jour et que le plan précédent est invalidé.
+
+### Étape 3 : Relance de la Planification
+
+1.  **Informer l'utilisateur** : _"La tâche #<ID_TACHE> est maintenant prête pour une nouvelle planification. Pour générer un nouveau plan, veuillez relancer la commande : `réalise la tâche #<ID_TACHE>`."_
+2.  **Ne pas enchaîner automatiquement** : L'agent s'arrête ici. Il ne doit pas relancer lui-même l'orchestrateur pour éviter les boucles. L'action de relancer la planification doit venir explicitement de l'utilisateur.
+
+---
+
+## 🚦 Diagramme de Flux
+
+```mermaid
+graph TD
+    A[Début : "/revise_plan #123"] --> B[Récupérer Tâche #123<br/>depuis Supabase];
+    B --> C{Statut est 'pending'<br/>ou 'planned' ?};
+    C -- Oui --> D[Demander confirmation<br/>pour réviser];
+    C -- Non --> F[Informer l'utilisateur<br/>que la révision est impossible];
+    F --> G[Arrêt];
+    D --> E{Confirmation ?};
+    E -- Oui --> H[UPDATE tasks<br/>SET status = 'revision_needed'<br/>WHERE id = 123];
+    H --> I[Informer et inviter<br/>à relancer la planification];
+    I --> G;
+    E -- Non --> G;
+```
+
+description:
+globs:
+alwaysApply: false
+
+---

@@ -1,22 +1,15 @@
----
-description: Génération et validation de PRD (Product Requirements Document) pour nouvelles fonctionnalités AgroFlow
-globs: ["PRD/**/*", "**/*.md"]
-alwaysApply: false
----
----
-description: Génération et validation de PRD (Product Requirements Document) pour nouvelles fonctionnalités AgroFlow
-globs: ["PRD/**/*", "**/PRD/**/*", "docs/**/*.md"]
-alwaysApply: false
----
-
 # 10_prd-builder.mdc
 
 ## Rôle & Contexte
+
 Ce fichier définit la procédure, la gouvernance et les check-lists pour la génération et la validation des PRD AgroFlow. Il est la référence unique pour tout ce qui concerne le Product Requirements Document (PRD).
+
+> **Monitoring :** L'exécution de cette règle est monitorée via [metrics-logger.mdc](mdc:fragments/metrics-logger.mdc).
 
 ## ⚠️ Vérification préalable d'existence de PRD
 
 Avant toute création d'un nouveau PRD, l'agent doit vérifier dans le dossier `@/PRD` si un PRD sur le même sujet (même slug ou sujet proche) existe déjà.
+
 - Si un PRD existe déjà, l'agent doit proposer à l'utilisateur de modifier le PRD existant ou d'en créer un nouveau.
 - Si aucun PRD pertinent n'est trouvé, l'agent poursuit la création d'un nouveau PRD sans demander à l'utilisateur, s'il peut créer la nouvelle PRD.
 
@@ -174,12 +167,12 @@ Avant toute création d'un nouveau PRD, l'agent doit vérifier dans le dossier `
 
 ## Guidelines & Standards applicables
 
-| Domaine              | Document                        | Chemin                     | Dernière révision |
-| -------------------- | ------------------------------- | -------------------------- | ----------------- |
-| Frontend             | 40_guidelines-frontend.mdc      | @/docs/guidelines/frontend | 2025‑06‑09        |
-| Backend              | 41_guidelines-backend.mdc       | @/docs/guidelines/backend  | 2025‑06‑09        |
-| Internationalisation | 04-i18n.mdc                     | @/docs/guidelines/i18n     | 2025‑06‑09        |
-| Global               | 10_project-architecture.mdc     | @/docs/guidelines          | 2025‑06‑09        |
+| Domaine              | Document                    | Chemin                     | Dernière révision |
+| -------------------- | --------------------------- | -------------------------- | ----------------- |
+| Frontend             | 40_guidelines-frontend.mdc  | @/docs/guidelines/frontend | 2025‑06‑09        |
+| Backend              | 41_guidelines-backend.mdc   | @/docs/guidelines/backend  | 2025‑06‑09        |
+| Internationalisation | 04-i18n.mdc                 | @/docs/guidelines/i18n     | 2025‑06‑09        |
+| Global               | 10_project-architecture.mdc | @/docs/guidelines          | 2025‑06‑09        |
 
 > L'IA filtre ce tableau aux domaines réellement concernés par la fonctionnalité et met à jour la date via `git log`.
 
@@ -254,6 +247,14 @@ Feedbacks → `MÉMOIRE_SÉQUENTIELLE` ; rétro mensuelle.
 - [10_project-architecture.mdc](mdc:10_project-architecture.mdc)
 
 ---
+
+## Références croisées
+
+- [50_docs-management.mdc](mdc:50_docs-management.mdc) – Obligation de consultation et de mise à jour de la documentation @/docs lors de la génération ou modification de PRD.
+
+## Références croisées
+
+- [50_docs-management.mdc](mdc:50_docs-management.mdc) – Obligation de consultation et de mise à jour de la documentation @/docs lors de la génération ou modification de PRD.
 
 ## Références croisées
 

@@ -1,16 +1,19 @@
-# Task Manager
+# TaskManager-Angular
 
-Task Manager est une application de gestion de tâches pour petite équipe, construite avec Angular et Supabase.
+Ce projet est une application de gestion de tâches de type Kanban, développée avec Angular.
 
 ## 📚 Documentation
 
-Ce projet utilise une documentation centralisée dans le dossier `/docs` pour fournir un contexte détaillé sur son architecture, sa configuration et son utilisation.
+La documentation complète du projet est disponible dans le dossier [`/docs`](./docs). Vous y trouverez :
 
-Veuillez consulter les documents suivants pour bien démarrer :
+- **[📄 01_Introduction.md](./docs/01_Introduction.md)**: Présentation générale du projet, de son objectif et de sa stack technique.
+- **[💻 02_Frontend.md](./docs/02_Frontend.md)**: Détails sur l'architecture du frontend, les conventions et les patterns.
+- **[🚀 04_Quick-Start-Guide.md](./docs/04_Quick-Start-Guide.md)**: Instructions pour installer et lancer le projet en local.
+- **[🚢 05_Deployment-Guide.md](./docs/05_Deployment-Guide.md)**: Guide pour déployer l'application avec Docker.
 
-- **[📄 01_Introduction.md](./docs/01_Introduction.md)** : Vue d'ensemble du projet, de ses objectifs et de sa stack technique.
-- **[💻 02_Frontend.md](./docs/02_Frontend.md)** : Détails sur l'architecture de l'application Angular.
-- **[🚀 04_Quick-Start-Guide.md](./docs/04_Quick-Start-Guide.md)** : Instructions pour installer et lancer le projet en local.
+## 🚀 Lancement Rapide
+
+Pour lancer le projet rapidement, suivez le [guide de démarrage rapide](./docs/04_Quick-Start-Guide.md).
 
 ---
 

@@ -1,106 +1,88 @@
 ---
-description: 
-globs: 
-alwaysApply: false
----
----
 description: Architecture du projet AgroFlow - source unique de vérité pour la structure
 globs: ["**/*"]
 alwaysApply: false
 ---
 
-# 🏛️ Architecture du Projet Task Manager
+# 🏛️ Architecture du Projet TaskManager
 
 ## Rôle & Contexte
-Ce fichier est la source unique de vérité pour l’architecture et l’arborescence du projet Task Manager. Il doit être référencé par toutes les autres règles.
+
+Ce fichier est la source unique de vérité pour l’architecture, l’arborescence et les patterns structurels du projet TaskManager. Il doit être référencé par toutes les autres règles Cursor.
 
 ---
 
-## 📐 Arborescence du Frontend (Angular)
+## 📐 Arborescence du Projet
 
-L'arborescence suit la structure standard d'un projet Angular CLI.
+Le projet est une application Angular autonome située dans le répertoire `TaskManager-Angular`.
 
 ```text
 TaskManager-Angular/
   src/
     app/
-      core/                  # Services transverses, Guards, Intercepteurs
-        guards/
-        services/
-          auth.service.ts    # Logique d'authentification
-          supabase.service.ts # Client et interactions Supabase
-          task.service.ts    # Logique métier des tâches
-      features/              # Modules fonctionnels par domaine
-        auth/
-          login/
-        dashboard/
-        tasks/
+      core/
+        guards/                   # Guards de route (ex: AuthGuard)
+        services/                 # Services Core (AuthService, SupabaseService, etc.)
+      features/                   # Modules fonctionnels (Feature Modules)
+        auth/                     # Authentification (login, etc.)
+        dashboard/                # Dashboard principal
+        projects/                 # Gestion des projets
+        tasks/                    # Gestion des tâches (création, édition, vue)
           task-form/
           task-tree/
-      shared/                # Composants, pipes, directives réutilisables
-        components/
-        pipes/
-        directives/
-      store/                 # État global NgRx
+      shared/
+        components/               # Composants partagés et réutilisables (UI)
+          confirm-dialog/
+          generic-kanban/
+          header-nav/
+          kanban-card/
+        models/                   # Modèles de données partagés (déplacer les modèles ici)
+        pipes/                    # Pipes partagés
+        store/                    # Logique NGRX (si partagée)
+      store/                      # Configuration principale du store NGRX
         reducers/
-        effects/
-        actions/
-        selectors/
-      styles/                # Styles globaux (ex: _variables.scss)
-    assets/                  # Ressources statiques (images, etc.)
-    environments/            # Configuration par environnement
-  ...
+      assets/
+        images/
+      environments/               # Fichiers d'environnement (dev, prod)
+      styles/                     # Styles globaux (variables, mixins SCSS)
+    main.ts                       # Point d'entrée principal de l'application
+    styles.scss                   # Fichier de styles global
+  angular.json                    # Configuration du projet Angular
+  package.json                    # Dépendances et scripts
+  tailwind.config.js              # Configuration de Tailwind CSS
 ```
 
 ---
 
-## 🧑‍💻 Exemples de Patterns Structurels
+## 🧑‍💻 Patterns Structurels
 
-- **Séparation claire des responsabilités** : Chaque dossier a un rôle précis (`core` pour la logique transverse, `features` pour les domaines métier, `shared` pour le code réutilisable).
-- **Organisation par feature** : Chaque fonctionnalité métier (ex: `tasks`) est isolée dans son propre dossier sous `features/`, contenant ses composants, services et éventuellement son propre état NgRx.
-- **État global centralisé** : La gestion de l'état avec NgRx est regroupée dans le dossier `src/app/store`.
-- **Convention de nommage** : Tout en anglais, PascalCase pour les classes, kebab-case pour les fichiers.
+- **Organisation par fonctionnalités (`features`)** : Le code est organisé en modules basés sur les fonctionnalités métier (ex: `projects`, `tasks`). Chaque "feature" est auto-contenue autant que possible (ses propres composants, services, et état NGRX).
 
----
+- **`core` vs `shared`** :
 
-## 🔗 Références croisées
+  - `core/` : Contient les services et guards qui ne doivent être instanciés qu'une seule fois dans toute l'application (ex: `AuthService`).
+  - `shared/` : Contient les composants, pipes, et directives réutilisables à travers les différents modules fonctionnels.
 
-- Ce document doit être référencé dans :
-  - [40_guidelines-frontend.mdc](mdc:40_guidelines-frontend.mdc)
-  - [task-manager-project-guidelines.mdc](mdc:task-manager-project-guidelines.mdc)
+- **Gestion d'état avec NgRx** :
+
+  - Chaque module fonctionnel (`feature`) possède son propre "slice" de state dans le store NgRx (`actions`, `reducer`, `selectors`, `effects`).
+  - Un store principal (`src/app/store`) assemble les différents reducers.
+
+- **Convention de nommage** :
+  - Fichiers : `kebab-case` (ex: `task-form.component.ts`).
+  - Classes : `PascalCase` (ex: `TaskFormComponent`).
+  - Sélecteurs de composants : `app-kebab-case` (ex: `app-task-form`).
 
 ---
 
 ## ⚠️ RÈGLE DE MISE À JOUR : Check-list de sortie
 
-**AVANT de finaliser une tâche impliquant une modification de la structure du projet**, l'IA doit :
+**AVANT de finaliser une tâche impliquant une modification de la structure du projet** (création/suppression/déplacement de modules, services critiques), l'IA doit :
 
-1.  ✅ **Vérifier la cohérence** : S'assurer que les changements respectent les patterns architecturaux existants.
-2.  ✍️ **Proposer une mise à jour** : Identifier si des sections de ce document sont devenues obsolètes.
+1.  ✅ **Vérifier la cohérence** : S'assurer que les changements respectent les patterns architecturaux décrits ici.
+2.  ✍️ **Proposer une mise à jour** : Identifier les sections de ce document devenues obsolètes.
 3.  📋 **Générer un plan de mise à jour** : Proposer les modifications à appliquer à ce fichier pour qu'il reflète le nouvel état du projet.
 
-Cette vérification garantit que la documentation architecturale reste synchronisée avec le code.
-
-### 🔄 **Exemple de proposition de mise à jour**
-
-```markdown
-### 🔄 Proposition de Mise à Jour de l'Architecture - [Date]
-**Tâche concernée** : #{numéro} - {titre}
-**Changements structurels détectés** :
-- ✅ **Ajouté** : `shared/utils/src/lib/validators/`
-- ❌ **Supprimé** : `shared/core/src/lib/old-validator.ts`
-
-**Impact et proposition de modification** :
-La nouvelle librairie de validateurs doit être ajoutée à l'arborescence Frontend.
-*Modification proposée pour `10_project-architecture.mdc` :*
-`// ... existing code ...
-    shared/
-      ui/
-      utils/         # <-- AJOUTER CETTE LIGNE
-        src/
-// ...`
-```
-
 ---
 
 ## 📝 Bonnes pratiques
@@ -111,36 +93,6 @@ La nouvelle librairie de validateurs doit être ajoutée à l'arborescence Front
 - **Cohérence architecturale** : Valider que chaque ajout respecte les conventions existantes
 - **Traçabilité des changements** : Maintenir un historique des évolutions structurelles
 
-
-Chaque modification doit inclure :
-```markdown
-### 🔄 Mise À Jour Architecture - [Date]
-**Changements détectés** :
-- ✅ **Ajouté** : [Nouveaux éléments avec chemins]
-- ❌ **Supprimé** : [Éléments retirés]
-- 📁 **Déplacé** : [Ancienne → Nouvelle position]
-
-**Impact architectural** :
-- [Explication de la logique structurelle]
-- [Cohérence avec les patterns existants]
-- [Implications pour les autres modules]
-```
-### ⚡ **Déclencheurs Automatiques**
-
-Cette mise à jour DOIT être déclenchée automatiquement lors de :
-- Création de nouveaux composants Angular (`ng generate component`)
-- Ajout de nouveaux services, controllers, entités
-- Création de nouveaux modules ou libraries
-- Modification de la structure des dossiers
-- Ajout de nouveaux types de fichiers (configurations, migrations, etc.)
-
----
-
-## 📝 Bonnes pratiques
-
-- **Synchronisation automatique obligatoire** : Ce document DOIT être mis à jour à chaque modification structurelle
-- **Source unique de vérité** : Utiliser ce document comme référence absolue pour l'architecture AgroFlow
 - **Documentation des patterns** : Chaque nouveau pattern doit être documenté avec ses exemples
 - **Cohérence architecturale** : Valider que chaque ajout respecte les conventions existantes
 - **Traçabilité des changements** : Maintenir un historique des évolutions structurelles
-

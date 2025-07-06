@@ -1,0 +1,23 @@
+# 🗣️ Fragment de Feedback Utilisateur
+
+## 🎯 Objectif
+
+Recueillir un feedback simple et rapide de l'utilisateur à la fin d'un workflow complexe pour alimenter le processus d'amélioration continue.
+
+## ❓ Question Standard
+
+À la fin d'une exécution réussie de `40_code-executor.mdc` ou d'un autre workflow significatif, poser la question suivante :
+
+> ---
+>
+> **Amélioration Continue**
+>
+> Ce workflow s'est-il déroulé comme prévu ?
+>
+> - 👍 Oui
+> - 👎 Non
+> - 🤔 Oui, mais avec des problèmes
+>
+> Votre feedback est précieux pour améliorer ma performance.
+
+## alwaysApply: false

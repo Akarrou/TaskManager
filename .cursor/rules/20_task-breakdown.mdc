@@ -1,13 +1,9 @@
----
-description: 
-globs: 
-alwaysApply: false
----
 # 20_task-breakdown.mdc (version enrichie & alignée TaskMaster)
 
 ## 🎯 Rôle & Contexte
 
 Cette règle définit la méthode officielle pour transformer un PRD (Product Requirements Document) en tickets de travail structurés (epics, features, tasks, sub-tasks) dans AgroFlow, en garantissant :
+
 - la traçabilité contractuelle,
 - la cohérence des slugs,
 - l'enregistrement systématique dans Supabase via le MCP,
@@ -18,11 +14,11 @@ Cette règle définit la méthode officielle pour transformer un PRD (Product Re
 
 ## 1. 🗂️ Mapping PRD → Tickets
 
-| Section PRD                   | Niveau ticket | Champs obligatoires                                         | Notes                            |
-| ----------------------------- | ------------- | ----------------------------------------------------------- | -------------------------------- |
-| **User Story**                | Epic          | `title`, `slug`, `type = 'epic'`, `tags += ['user-story']`  | Slug hérite du PRD (kebab‑case). |
-| **Description fonctionnelle** | Feature       | `title`, `slug`, `type = 'feature'`, `parent_task_id`, `environment` | Un Feature ↔ module fonctionnel. |
-| **Critère d'acceptation**     | Sub‑task      | `title`, `slug`, `task_id`, `environment`, `estimated_hours` | 1 scénario Gherkin = 1 sub‑task. |
+| Section PRD                   | Niveau ticket | Champs obligatoires                                                                       | Notes                            |
+| ----------------------------- | ------------- | ----------------------------------------------------------------------------------------- | -------------------------------- |
+| **User Story**                | Epic          | `title`, `slug`, `type = 'epic'`, `tags += ['user-story']`                                | Slug hérite du PRD (kebab‑case). |
+| **Description fonctionnelle** | Feature       | `title`, `slug`, `type = 'feature'`, `parent_task_id`, `environment`                      | Un Feature ↔ module fonctionnel. |
+| **Critère d'acceptation**     | Sub‑task      | `title`, `slug`, `task_id`, `environment`, `estimated_hours`                              | 1 scénario Gherkin = 1 sub‑task. |
 | **Contrainte ou risque**      | Task          | `title`, `slug`, `type = 'task'`, `parent_task_id`, `priority = high`, `tags += ['risk']` | Si risque : tag `risk`.          |
 
 - **Découpage par environnement** :  
@@ -40,6 +36,7 @@ Cette règle définit la méthode officielle pour transformer un PRD (Product Re
 <task-slug>     ::= <feature-slug>:<num>
 <subtask-slug>  ::= <task-slug>:<num>
 ```
+
 - Les slugs sont utilisés pour : branches Git (`prd/<slug>`), commits (`PRD:<slug>`), tags (`PRD:<slug>`).
 - **Hiérarchie** : chaque ligne de la table `tasks` doit comporter un champ `type` (`epic`, `feature`, `task`) et un champ `parent_task_id` (uuid) pour relier chaque niveau à son parent. Les sous-tâches utilisent le champ `task_id` pour pointer vers leur tâche parente.
 
@@ -90,6 +87,7 @@ Cette règle définit la méthode officielle pour transformer un PRD (Product Re
   ]
 }
 ```
+
 - L'IA fournit ce JSON **et** une vue Markdown avant création effective dans Supabase.
 
 ---
@@ -113,10 +111,26 @@ Cette règle définit la méthode officielle pour transformer un PRD (Product Re
 - Chaque ticket reçoit `tags += ['PRD:<slug>']`.
 - Le PRD enrichit la section **Roadmap** avec un tableau des slugs générés.
 - Les liens croisés sont mis à jour automatiquement lors de la génération TaskPlan.
-- Champ `guideline_refs` (array) rempli automatiquement :  
-  - frontend → ["FG","PG","TA"]  
-  - backend → ["BG","PG","TA"]  
+- Champ `guideline_refs` (array) rempli automatiquement :
+  - frontend → ["FG","PG","TA"]
+  - backend → ["BG","PG","TA"]
   - ops → ["PG","TA"]
+
+---
+
+### 5.1. 🏷️ Assignation des Tags de Workflow
+
+Pour pré-qualifier une tâche et permettre à l'orchestrateur (`35_task-orchestrator.mdc`) de choisir le bon workflow (standard ou Fast Track), l'IA doit systématiquement ajouter des tags de workflow en plus des tags de structure, en se basant sur la nature de la demande.
+
+**Table de correspondance des tags de workflow :**
+
+| **Si la demande initiale concerne...**           | **Ajouter le(s) tag(s) au champ `tags`** | **Exemple de demande**                              |
+| :----------------------------------------------- | :--------------------------------------- | :-------------------------------------------------- |
+| Une correction d'anomalie, un bug report         | `bug`, `fix`                             | "Le bouton de sauvegarde ne marche pas"             |
+| Une simple modification de texte/libellé         | `typo`, `content`                        | "Changer le titre de la page d'accueil"             |
+| Uniquement la mise à jour de documentation       | `docs`                                   | "Mettre à jour le README du backend"                |
+| Un remaniement technique sans impact fonctionnel | `refactor`                               | "Extraire la logique de validation dans un service" |
+| Une question de performance                      | `performance`                            | "Optimiser la requête de la page des produits"      |
 
 ---
 
@@ -125,13 +139,17 @@ Cette règle définit la méthode officielle pour transformer un PRD (Product Re
 - **Obligation** :  
   Chaque ticket généré (epic, feature, task, sub-task) doit être enregistré dans la base Supabase via le MCP Supabase, qui est la source de vérité pour la gestion des tâches AgroFlow.
 - **Vérification anti-doublon** :  
-  Avant d'enregistrer une nouvelle tâche, vérifier si une tâche similaire (même slug ou tag PRD) existe déjà dans Supabase. Si oui, proposer la modification plutôt que la création.
+  **Validation Anti-Doublon :** Appliquer la procédure [validation-common.mdc](mdc:fragments/validation-common.mdc) - Section Anti-Doublon
 - **Structure** :  
   Respecter les tables et relations attendues par le MCP Supabase (`tasks`, `subtasks`), en utilisant les bons champs (`type`, `parent_task_id`, `task_id`, etc.).
 - **Anti-pattern** :  
   Ne jamais stocker les tickets uniquement en mémoire locale ou dans un autre système (ex : Redis). Supabase est la seule source de vérité.
 - **Fallback** :  
-  Si Supabase n'est pas disponible, stocker temporairement le JSON dans le dossier PRD, mais la synchronisation avec Supabase reste obligatoire dès que possible.
+  **Fallback automatique** : Si Supabase n'est pas disponible, basculer automatiquement vers le mode dégradé :
+- Stocker le JSON dans `@/PRD/tasks-cache/<timestamp>_tasks.json`
+- Créer un fichier de synchronisation `sync-pending.log`
+- Continuer le workflow normalement
+- Synchroniser automatiquement dès que Supabase est disponible
 
 ---
 
@@ -144,14 +162,17 @@ Le champ `task_number` dans Supabase est **auto-incrémenté** (`GENERATED ALWAY
 ### 📋 Séquence de Création Obligatoire
 
 #### 1️⃣ **Créer les Epics d'abord** (par ordre de priorité métier)
+
 ```sql
 -- Epic 1 : Fonctionnalités critiques (authentification, sécurité)
--- Epic 2 : Fonctionnalités principales (gestion métier)  
+-- Epic 2 : Fonctionnalités principales (gestion métier)
 -- Epic 3 : Fonctionnalités avancées (rapports, analytics)
 ```
 
 #### 2️⃣ **Créer les Features par Epic** (par ordre de dépendance)
+
 Pour chaque Epic, créer les Features dans l'ordre logique :
+
 ```sql
 -- Feature 1 : Backend/API d'abord (fondation)
 -- Feature 2 : Frontend/UI ensuite (consommation)
@@ -159,10 +180,12 @@ Pour chaque Epic, créer les Features dans l'ordre logique :
 ```
 
 #### 3️⃣ **Créer les Tasks par Feature** (par ordre d'exécution technique)
+
 Pour chaque Feature, créer les Tasks selon les dépendances :
+
 ```sql
 -- Task 1 : Modèles/Entités (fondation)
--- Task 2 : Services/Logique métier  
+-- Task 2 : Services/Logique métier
 -- Task 3 : Contrôleurs/API
 -- Task 4 : Composants/Interface
 -- Task 5 : Tests/Validation
@@ -173,18 +196,21 @@ Pour chaque Feature, créer les Tasks selon les dépendances :
 Avant la création, l'IA DOIT analyser :
 
 #### **Dépendances techniques** :
+
 - Backend avant Frontend
 - Entités avant Services
 - Services avant Contrôleurs
 - API avant composants UI
 
 #### **Dépendances fonctionnelles** :
+
 - Authentification avant autorisation
 - CRUD de base avant fonctionnalités avancées
 - Gestion des utilisateurs avant gestion des rôles
 - Configuration avant utilisation
 
 #### **Dépendances de données** :
+
 - Tables de référence avant tables métier
 - Données maîtres avant données transactionnelles
 - Schéma de base avant migrations complexes
@@ -192,140 +218,39 @@ Avant la création, l'IA DOIT analyser :
 ### 📊 Exemple Concret : Epic "Gestion des Stocks"
 
 **Ordre de création logique :**
+
 ```
-1. Epic : Gestion des Stocks                    (task_number: 1)
-2. Feature : Backend - Entités Stock             (task_number: 2)
-3. Feature : Backend - API Stock                 (task_number: 3)  
-4. Feature : Frontend - Interface Stock          (task_number: 4)
-5. Task : Créer entité RawMaterial               (task_number: 5)
-6. Task : Créer service RawMaterialService       (task_number: 6)
-7. Task : Créer contrôleur RawMaterialController (task_number: 7)
-8. Task : Créer composant RawMaterialList        (task_number: 8)
-9. Task : Créer composant RawMaterialForm        (task_number: 9)
+**Résumé** :
+Cette règle fusionnée garantit que tout découpage de PRD en tâches de développement est fait de façon structurée, traçable et centralisée dans Supabase, selon le protocole TaskMaster.
+**Aucune tâche ne doit être créée ou suivie ailleurs que dans Supabase.**
+**L'IA doit toujours appliquer les contrôles automatiques (Red Flags) et respecter le protocole d'interaction.**
 ```
-
-### ⚙️ Algorithme de Tri Automatique
-
-L'IA doit appliquer cet algorithme avant création :
-
-```python
-def trier_taches_par_ordre_logique(taches):
-    # 1. Trier par type (epic > feature > task)
-    # 2. Trier par environnement (backend > frontend > OPS)
-    # 3. Trier par dépendance technique (entité > service > controller > UI)
-    # 4. Trier par priorité métier (critique > normal > optionnel)
-    return taches_triees
-```
-
-### 🚨 Contrôles de Cohérence
-
-Avant chaque création de tâche, vérifier :
-
-- [ ] **Dépendances satisfaites** : Toutes les tâches prérequises sont déjà créées
-- [ ] **Ordre technique** : Backend avant Frontend
-- [ ] **Ordre fonctionnel** : Fondations avant spécialisation  
-- [ ] **Numérotation cohérente** : Les numéros reflètent l'ordre d'exécution
-
-### 📝 Template de Planification
-
-```markdown
-## Plan de Création Séquentielle
-
-### Phase 1 : Epics (ordre de priorité métier)
-1. Epic A : [Titre] - Priorité critique
-2. Epic B : [Titre] - Priorité normale
-
-### Phase 2 : Features (ordre de dépendance par Epic)
-Epic A :
-1. Feature A1 : Backend - [Titre]
-2. Feature A2 : Frontend - [Titre]
-
-### Phase 3 : Tasks (ordre technique par Feature)  
-Feature A1 :
-1. Task A1.1 : Entité - [Titre]
-2. Task A1.2 : Service - [Titre]
-3. Task A1.3 : Controller - [Titre]
-```
-
-### ⚠️ Red Flags - Ordre Logique
-
-| Code   | Situation                                   | Action IA                            |
-|--------|---------------------------------------------|--------------------------------------|
-| TM-201 | Frontend créé avant Backend correspondant   | Réorganiser l'ordre de création     |
-| TM-202 | Contrôleur créé avant Service               | Déplacer le contrôleur après service|
-| TM-203 | Feature créée avant Epic parent             | Créer l'Epic d'abord                |
-| TM-204 | Tâches sans analyse des dépendances         | Analyser et réordonner              |
 
 ---
 
-## 7. 🚦 Protocole d'interaction (TaskMaster)
+## 7. 🔄 Boucle de Validation du Plan (Quality Gate)
 
-1. **Clarification** : demander les sections PRD manquantes.
-2. **Proposition** : envoyer `TaskPlan` JSON + Markdown.
-3. **Validation** : créer tickets via Supabase.
-4. **Feedback** : confirmer réussite ou signaler erreur.
+**RÈGLE CRITIQUE :** La création des tâches dans Supabase ne doit **JAMAIS** être automatique. Elle est conditionnée par votre validation explicite.
 
----
+### Étape 1 : Présentation du Plan de Tâches
 
-## 8. 🛑 Red Flags & contrôles automatiques
+Une fois l'analyse du PRD terminée, je dois vous présenter le plan de décomposition complet sous deux formats :
 
-| Code   | Situation                             | Action IA                  |
-| ------ | ------------------------------------- | -------------------------- |
-| TM‑101 | User Story sans critère d'acceptation | Demander scénarios Gherkin |
-| TM‑102 | Task sans environnement unique        | Scinder la task            |
-| TM‑103 | Estimation manquante                  | Proposer XS = 2h           |
-| TM‑104 | Slug non conforme                     | Recalculer slug kebab‑case |
-| TM‑105 | guideline_refs vide                   | Bloquer création           |
-| TM‑201 | Frontend créé avant Backend correspondant | Réorganiser l'ordre de création |
-| TM‑202 | Contrôleur créé avant Service         | Déplacer le contrôleur après service |
-| TM‑203 | Feature créée avant Epic parent       | Créer l'Epic d'abord       |
-| TM‑204 | Tâches sans analyse des dépendances   | Analyser et réordonner     |
+1.  Une vue **Markdown** claire et lisible.
+2.  Le bloc de code **JSON** (`TaskPlan`) qui sera utilisé pour la création.
 
----
+### Étape 2 : Demande de Validation Explicite
 
-## 9. 📋 Exemples
+Après avoir présenté le plan, je dois m'arrêter et vous poser la question suivante :
 
-### Extrait PRD
+> **Le plan de décomposition des tâches vous convient-il ? Puis-je procéder à leur création dans Supabase ?**
 
-```
-En tant qu'Administrateur,
-Je souhaite gérer les rôles utilisateurs,
-Afin de contrôler l'accès aux modules.
-```
+### Étape 3 : Exécution ou Itération
 
-#### Gherkin
+- **Si vous répondez "Oui"** (ou une affirmation équivalente) : J'exécute les commandes de création des tâches dans Supabase en respectant scrupuleusement l'ordre défini.
+- **Si vous répondez "Non"** (ou demandez des modifications) : Je me mets en attente de vos instructions pour réviser le plan de tâches. Je ne procède à aucune création.
 
-```gherkin
-Scenario: Ajouter un rôle
-  Given je suis sur la page de gestion des rôles
-  When je clique sur « Ajouter » et renseigne « éditeur »
-  Then le rôle « éditeur » apparaît dans la liste
-```
-
-### Plan de tâches généré (Markdown)
-
-| Niveau   | Slug                         | Titre                                    | Env     | Est. |
-| -------- | ---------------------------- | ---------------------------------------- | ------- | ---- |
-| Epic     | gestion-roles                | Gestion des rôles                        | –       | –    |
-| Feature  | gestion-roles\:backend:1     | API Rôles                                | backend | –    |
-| Task     | gestion-roles\:backend:1:1   | Endpoint POST /roles                     | backend | 8h   |
-| Sub-task | gestion-roles\:backend:1:1:1 | Implémenter scénario « Ajouter un rôle » | backend | 4h   |
-
----
-
-## 10. 📚 Annexes
-
-- Schéma JSON complet des tables Supabase (voir taskMaster.md).
-- Exemples de requêtes INSERT/UPDATE/SELECT.
-- Historique des versions.
-
----
-
-## Références croisées
-
-- [50_docs-management.mdc](mdc:50_docs-management.mdc) – Obligation de consultation et de mise à jour de la documentation @/docs lors du découpage en tâches ou sous-tâches.
-
-**Résumé** :  
-Cette règle fusionnée garantit que tout découpage de PRD en tâches de développement est fait de façon structurée, traçable et centralisée dans Supabase, selon le protocole TaskMaster.  
-**Aucune tâche ne doit être créée ou suivie ailleurs que dans Supabase.**  
+**Résumé** :
+Cette règle fusionnée garantit que tout découpage de PRD en tâches de développement est fait de façon structurée, traçable et centralisée dans Supabase, selon le protocole TaskMaster.
+**Aucune tâche ne doit être créée ou suivie ailleurs que dans Supabase.**
 **L'IA doit toujours appliquer les contrôles automatiques (Red Flags) et respecter le protocole d'interaction.**

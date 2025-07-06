@@ -1,0 +1,153 @@
+---
+description: Guidelines de performance pour optimiser le système de règles AgroFlow
+globs: ["**/*.mdc"]
+alwaysApply: false
+---
+
+# 🚀 Guidelines de Performance
+
+## 🎯 Objectif
+
+Définir les bonnes pratiques de performance pour le système de règles et les workflows AgroFlow.
+
+## ⚡ Performance des Règles
+
+### Temps de Réponse Cibles
+
+- **Validation simple** : < 100ms
+- **Recherche MCP Supabase** : < 500ms
+- **Génération PRD** : < 2s
+- **Création tâches** : < 1s par tâche
+
+### Optimisations Recommandées
+
+1. **Cache intelligent** : Utiliser les caches locaux systématiquement
+2. **Requêtes parallèles** : Grouper les appels MCP
+3. **Validation anticipée** : Valider dès que possible
+4. **Interruption rapide** : Échec rapide sur erreur critique
+
+## 📊 Métriques de Monitoring
+
+### KPIs Système
+
+- **Taux de succès** : > 95%
+- **Temps de résolution** : < 30s par workflow
+- **Utilisation cache** : > 70%
+- **Erreurs MCP** : < 5%
+
+### Benchmarks
+
+```javascript
+// Benchmark validation
+const startTime = performance.now();
+await validationProcess();
+const duration = performance.now() - startTime;
+console.log(`Validation: ${duration}ms`);
+```
+
+## 🛡️ Gestion des Ressources
+
+### Limites Recommandées
+
+- **Taille fichier PRD** : < 50KB
+- **Nombre tâches par PRD** : < 20
+- **Profondeur hiérarchie** : < 5 niveaux
+- **Cache size** : < 100MB
+
+### Nettoyage Automatique
+
+1. **Cache obsolète** : Nettoyer > 24h
+2. **Logs anciens** : Rotation 7 jours
+3. **Temp files** : Suppression immédiate
+4. **Fallback data** : Sync puis purge
+
+## 🔧 Optimisations Techniques
+
+### Patterns Efficaces
+
+```javascript
+// Pattern: Validation groupée
+const validationResults = await Promise.allSettled([
+  validatePRD(),
+  validateTasks(),
+  validatePermissions(),
+]);
+
+// Pattern: Cache first
+const cachedData = getFromCache(key);
+if (!cachedData) {
+  const data = await fetchFromSupabase();
+  setCache(key, data);
+  return data;
+}
+```
+
+### Anti-Patterns à Éviter
+
+- ❌ Validation séquentielle
+- ❌ Appels MCP redondants
+- ❌ Cache non utilisé
+- ❌ Génération synchrone bloquante
+
+## 📈 Stratégies d'Amélioration
+
+### Performance Progressive
+
+1. **Mesurer** : Établir baseline actuelle
+2. **Identifier** : Points de friction principaux
+3. **Optimiser** : Solutions ciblées
+4. **Valider** : Mesurer l'amélioration
+
+### Monitoring Continu
+
+- **Logs structurés** : Timing + métadata
+- **Alertes intelligentes** : Seuils adaptatifs
+- **Dashboards** : Vue temps réel
+- **Reports** : Analyse tendances
+
+## 🎯 Checklist Performance
+
+### Avant Déploiement
+
+- [ ] Benchmarks exécutés
+- [ ] Métriques dans les cibles
+- [ ] Cache configuré
+- [ ] Fallbacks testés
+
+### En Production
+
+- [ ] Monitoring actif
+- [ ] Alertes configurées
+- [ ] Nettoyage automatique
+- [ ] Optimisations continues
+
+## 📋 Templates de Monitoring
+
+### Rapport Performance
+
+```markdown
+## 📊 Rapport Performance - {DATE}
+
+### Métriques Clés
+
+- **Temps moyen** : {AVERAGE_TIME}ms
+- **Taux succès** : {SUCCESS_RATE}%
+- **Pic charge** : {PEAK_LOAD}
+
+### Recommandations
+
+{OPTIMIZATION_SUGGESTIONS}
+```
+
+### Alert Template
+
+```markdown
+## 🚨 Alerte Performance
+
+**Métrique** : {METRIC_NAME}
+**Valeur** : {CURRENT_VALUE}
+**Seuil** : {THRESHOLD}
+**Impact** : {SEVERITY}
+
+**Action requise** : {RECOMMENDED_ACTION}
+```

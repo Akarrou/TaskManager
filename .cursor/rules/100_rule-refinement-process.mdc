@@ -1,0 +1,56 @@
+# 📜 Règle : 100_rule-refinement-process
+
+## Rôle & Contexte
+
+Cette méta-règle définit le processus de gouvernance pour l'amélioration continue du système de règles AgroFlow. Elle n'est pas déclenchée par un workflow de développement, mais sert de guide pour l'ingénieur IA pour maintenir et optimiser les règles.
+
+---
+
+## 🔄 Le Cycle d'Amélioration Itératif
+
+Le processus de raffinement des règles suit un cycle en 4 étapes : **Mesurer → Analyser → Proposer → Implémenter**.
+
+### 1. Mesurer (Collecte de Données)
+
+- **Quoi** : Collecter passivement les données issues du monitoring et des feedbacks.
+  - **Métriques de Performance** : Logs générés via `metrics-logger.mdc`.
+  - **Feedbacks Utilisateur** : Réponses collectées via `user-feedback-prompt.mdc`.
+- **Où** : Les données sont stockées conceptuellement pour une analyse ultérieure.
+
+### 2. Analyser (Détection de Patrons)
+
+- **Quoi** : Analyser périodiquement les données collectées pour identifier des tendances.
+- **Exemples de "Red Flags" à rechercher** :
+  - **Performance** : Une règle (`10_prd-builder`) dont le temps d'exécution `duration_ms` augmente constamment sur plusieurs exécutions.
+  - **Fiabilité** : Un appel MCP (`mcp_supabase_query`) qui a un taux d'échec (`status: "failure"`) élevé.
+  - **Expérience Utilisateur** : Un workflow qui reçoit fréquemment un feedback "👎 Non".
+  - **Cohérence** : Des déviations par rapport aux scénarios définis dans `99_rules-test-suite.mdc`.
+
+### 3. Proposer (Plan d'Action)
+
+- **Quoi** : Basé sur l'analyse, formuler une proposition d'amélioration claire.
+- **Format de la Proposition** :
+  - **Problème** : Description concise du problème détecté (ex: "La règle `25_prp-builder` est 30% plus lente depuis la dernière mise à jour.").
+  - **Cause Racine (Hypothèse)** : Hypothèse sur la cause du problème (ex: "L'analyse statique du codebase est devenue inefficace.").
+  - **Solution Proposée** : Changement spécifique à apporter à une ou plusieurs règles (ex: "Remplacer `codebase_search` par une recherche `grep` plus ciblée pour ce cas.").
+  - **Impact Attendu** : Métrique quantifiable (ex: "Réduire le temps d'exécution de 200ms.").
+  - **Risques** : Risques de régression potentiels.
+
+### 4. Implémenter (Application du Changement)
+
+- **Quoi** : Appliquer la modification proposée après validation de l'utilisateur.
+- **Processus d'Implémentation** :
+  1.  **Validation Utilisateur** : Présenter la proposition à l'utilisateur pour approbation.
+  2.  **Modification** : Appliquer le changement sur la ou les règles concernées.
+  3.  **Tests de Non-Régression** : Exécuter manuellement les scénarios pertinents de `99_rules-test-suite.mdc` pour s'assurer que le changement n'a pas d'effets de bord négatifs.
+  4.  **Déploiement** : La nouvelle version de la règle est active. Le cycle recommence.
+
+---
+
+## 🔗 Références Croisées
+
+- [metrics-logger.mdc](mdc:fragments/metrics-logger.mdc)
+- [user-feedback-prompt.mdc](mdc:fragments/user-feedback-prompt.mdc)
+- [99_rules-test-suite.mdc](mdc:99_rules-test-suite.mdc)
+
+---

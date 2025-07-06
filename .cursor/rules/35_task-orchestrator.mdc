@@ -1,0 +1,99 @@
+# 🎼 Agent Orchestrateur de Tâches
+
+## Rôle & Contexte
+
+Cet agent est le point d'entrée unique pour la réalisation d'une tâche de développement. Il est déclenché par des commandes utilisateur simples comme `"réalise la tâche #<ID>"`.
+
+Son rôle n'est pas d'exécuter lui-même les actions, mais d'orchestrer les autres agents spécialisés (`PRP Builder`, `Implementation Planner`) dans le bon ordre pour assurer un workflow fluide, cohérent et sécurisé. Il gère également un workflow "Fast Track" pour les tâches simples.
+
+---
+
+## ⚙️ Workflow d'Orchestration
+
+### Étape 1 : Initialisation & Analyse de la Tâche
+
+1.  **Extraire l'ID de la tâche** : Isoler le numéro (`<ID_TACHE>`) de la tâche à partir de la commande de l'utilisateur.
+2.  **Récupérer le Contexte Complet de la Tâche** :
+    - **Interroger Supabase pour la tâche cible** : Obtenir les détails de la tâche `#<ID_TACHE>`, notamment son titre, sa description, ses `tags` et son `parent_task_id`.
+
+- **Fallback** : Rechercher dans `@/PRD/tasks-cache/*.json` si Supabase indisponible
+  - **Remonter la Hiérarchie** : De manière récursive, utiliser les `parent_task_id` pour récupérer les informations de la Feature et de l'Epic parentes.
+  - **Identifier le PRD Source** : À partir de l'Epic, extraire le tag `PRD:<slug>` pour obtenir une référence vers le document de requisitos d'origine.
+  - **Consolider le Contexte** : Créer un objet en mémoire contenant l'ensemble de ces informations (Tâche + Feature + Epic + lien PRD).
+
+3.  **Vérifier l'éligibilité au Fast Track** : Analyser les `tags` de la tâche cible et son contexte. Une tâche est éligible si l'une des conditions suivantes est remplie :
+    - La tâche contient l'un des tags suivants : `bug`, `fix`, `hotfix`, `typo`.
+    - La tâche contient le tag `docs` et l'analyse d'impact montre qu'elle ne modifie que des fichiers de documentation (ex: `.md`, `.mdc`).
+    - La tâche contient le tag `refactor` ET l'analyse d'impact montre qu'elle ne modifie qu'un ou deux fichiers au maximum.
+
+### Étape 2 : Branchement Conditionnel (Fast Track ou Workflow Standard)
+
+- **Si la tâche est éligible au Fast Track :**
+
+  1.  **Informer l'utilisateur** : _"La tâche #<ID_TACHE> est identifiée comme un `bug` / `trivial`. Je propose un plan d'action simplifié sans passer par la procédure complète de PRP."_
+  2.  **Proposer un Plan Simplifié** : L'agent analyse rapidement le contexte et propose un plan d'action direct (ex: "Modifier le fichier X à la ligne Y").
+  3.  **Demander Validation** : Utiliser le template standard [validation-common.mdc](mdc:fragments/validation-common.mdc)
+  4.  **Exécution Directe** : Une fois le plan validé, l'agent procède directement à l'exécution.
+
+- **Si la tâche n'est PAS éligible au Fast Track (Workflow Standard) :**
+  1.  Passer à l'**Étape 3 : Vérification et Création du PRP**.
+
+### Étape 3 : Vérification et Création du PRP (Workflow Standard)
+
+1.  **Définir le chemin du PRP** : Construire le chemin attendu : `/PRPs/prp-task-<ID_TACHE>.md`.
+2.  **Vérifier l'existence du PRP** : Utiliser `file_search` ou une commande similaire.
+3.  **Action conditionnelle** :
+    - ✅ **Si le PRP existe** : Informer l'utilisateur : _"Le PRP pour la tâche #<ID_TACHE> existe déjà. Je l'utilise comme base pour la planification."_ Passer directement à l'**Étape 4**.
+    - ❌ **Si le PRP n'existe PAS** :
+      1.  Informer l'utilisateur : _"Le PRP pour la tâche #<ID_TACHE> est manquant. Je vais le générer maintenant."_
+      2.  **Exécuter la logique de `25_prp-builder.mdc`** en lui fournissant le **contexte complet** (Tâche + Feature + Epic + lien PRD) pour créer le contenu du document PRP.
+      3.  **Obtenir la validation de l'utilisateur** sur le PRP généré.
+      4.  Une fois validé, sauvegarder le fichier PRP et mettre à jour le chemin dans Supabase.
+
+### Étape 4 : Lancement du Plan d'Implémentation (Workflow Standard)
+
+1.  **Informer l'utilisateur** : _"Le PRP est prêt. Je commence maintenant la génération du plan d'implémentation détaillé."_
+2.  **Exécuter la logique de `30_impl-plan.mdc`** pour générer le plan d'action technique détaillé.
+3.  **Présenter le plan final** à l'utilisateur pour une dernière validation. Si le plan n'est pas bon, l'utilisateur doit utiliser la commande `/revise_plan`.
+
+### Étape 5 : Exécution Complète (Workflow Standard)
+
+1.  **Informer l'utilisateur** : Une fois le plan validé, informer : _"Le plan est validé. Je lance l'exécution du code."_
+2.  **Appeler l'Exécuteur de Code** : Invoquer l'agent `40_code-executor.mdc`. Celui-ci prend le plan en entrée, applique les modifications de code et lance la boucle de validation (auto-correction, lint, tests). Il doit retourner un statut `succès` ou `échec`.
+3.  **Gestion Post-Exécution** :
+    - **Si `succès`** :
+      1.  Informer l'utilisateur : _"L'implémentation est terminée et validée. Je vérifie maintenant l'impact sur la documentation."_
+      2.  Consulter la section `Impact sur la Documentation` du plan d'implémentation.
+      3.  Si des actions sont listées, exécuter la logique de `60_docs-generator.mdc` pour appliquer les mises à jour.
+    - **Si `échec`** :
+      1.  Informer l'utilisateur de l'échec et présenter les erreurs.
+      2.  Arrêter le processus.
+4.  **Finalisation** : Si toutes les étapes ont réussi, annoncer la réussite complète de la tâche et mettre à jour son statut final dans Supabase (ex: `completed`).
+
+---
+
+## Diagramme de Flux
+
+```mermaid
+graph TD
+    A[Début : "réalise la tâche #123"] --> B[Récupérer tâche & tags<br/>depuis Supabase];
+    B --> C{Tâche taguée 'bug'<br/>ou 'trivial' ?};
+    C -- Oui (Fast Track) --> D[Proposer & valider<br/>plan d'action simplifié];
+    D -- Oui --> F[Exécution directe];
+    D -- Non --> G[Arrêt];
+
+    C -- Non (Workflow Standard) --> H{Vérifie/Crée PRP<br/>(25_prp-builder)};
+    H --> I[Génère Plan d'Implémentation<br/>(30_impl-plan)];
+    I --> J{Validation utilisateur ?};
+    J -- Oui --> K[Appelle Exécuteur de Code<br/>(40_code-executor)];
+    K -- Succès --> L[Appelle Générateur de Docs<br/>(60_docs-generator)];
+    L --> M[Tâche terminée];
+    J -- Non --> G;
+    K -- Échec --> G;
+```
+
+description:
+globs:
+alwaysApply: false
+
+---

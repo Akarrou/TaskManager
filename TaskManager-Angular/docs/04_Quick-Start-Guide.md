@@ -2,41 +2,43 @@
 
 ## 📋 Prérequis
 
-- **Node.js**: v20.11.0 ou supérieure
-- **pnpm**: `npm install -g pnpm`
+- **Node.js**: Il est recommandé d'utiliser `nvm` pour gérer la version de Node.js. Le projet est configuré pour utiliser la version `22.16.0`.
+- **pnpm**: Le projet utilise `pnpm` comme gestionnaire de paquets.
 
 ## 🚀 Lancement en Développement
 
-1.  **Cloner le repository** :
+1.  **Clonez le repository** :
 
     ```bash
-    git clone <URL_DU_REPO>
+    git clone [URL_DU_REPO]
+    ```
+
+2.  **Placez-vous dans le bon dossier** :
+
+    ```bash
     cd TaskManager-Angular
     ```
 
-2.  **Installer les dépendances** :
+3.  **Configurez la bonne version de Node.js** [[memory:413473]]:
+
+    ```bash
+    nvm use 22.16.0
+    ```
+
+4.  **Installez les dépendances** [[memory:2254613]]:
 
     ```bash
     pnpm install
     ```
 
-3.  **Configurer les variables d'environnement** :
+5.  **Configurez les variables d'environnement Supabase** :
+    Créez un fichier `src/environments/environment.ts` et `src/environments/environment.prod.ts` en vous basant sur les fichiers `.example` et remplissez les clés d'API Supabase.
 
-    - Créer un fichier `src/environments/environment.ts` et `src/environments/environment.development.ts` en vous basant sur `src/environments/environment.example.ts`.
-    - Renseigner vos clés d'API Supabase :
-      ```typescript
-      export const environment = {
-        production: false,
-        supabaseUrl: "VOTRE_URL_SUPABASE",
-        supabaseKey: "VOTRE_CLE_ANON_SUPABASE",
-      };
-      ```
-
-4.  **Lancer le serveur de développement** :
+6.  **Lancez le serveur de développement** :
     ```bash
     pnpm start
     ```
 
 ## ✅ Vérification
 
-L'application doit être accessible sur `http://localhost:4200`.
+L'application doit être accessible sur `http://localhost:4010`. Le hot-reloading est activé [[memory:413502]].

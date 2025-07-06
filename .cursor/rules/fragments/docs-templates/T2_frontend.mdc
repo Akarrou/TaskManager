@@ -1,0 +1,26 @@
+# 2. Documentation Frontend
+
+## 🎯 Objectif
+
+[Décrire le rôle de l'application frontend dans l'écosystème du projet.]
+
+## 🛠️ Stack Technique Spécifique
+
+- **Framework Principal:** [ex: Angular 17]
+- **Librairie de Composants UI:** [ex: Tailwind CSS, Angular Material]
+- **Gestion d'état (State Management):** [ex: NgRx, Ngrx Signal Store]
+- **Tests:** [ex: Jest, Cypress]
+
+## 🏗️ Structure des Dossiers Clés
+
+- `apps/`: Contient les applications principales.
+- `libs/`: Contient les librairies partagées (UI, data-access, etc.).
+
+## 🤖 Contexte pour l'IA
+
+[Instructions spécifiques pour l'IA concernant le frontend. Ex: "Toujours créer les composants en mode standalone." ou "Utiliser le `data-access` pour les appels API."].
+description:
+globs:
+alwaysApply: false
+
+---

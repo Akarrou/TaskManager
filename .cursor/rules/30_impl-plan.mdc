@@ -1,452 +1,125 @@
----
-description: 
-globs: 
-alwaysApply: false
----
----
-description: Plan d'implémentation détaillé et analyse séquentielle pilotée par MCP Supabase
-globs: ["Front/agroflow-workspace/**/*", "Back/**/*", "**/*.ts", "**/*.java"]
-alwaysApply: false
----
+# 📝 Plan d'Implémentation Détaillé (Piloté par PRP)
 
 ## Rôle & Contexte
-Ce fichier définit la méthodologie d'analyse séquentielle et le format du plan d'implémentation détaillé pour chaque tâche, piloté par MCP Supabase. Il garantit la traçabilité, la réflexion et la cohérence des actions de développement AgroFlow.
 
-# Plan d'Implémentation Détailé & Analyse Séquentielle Pilotée par MCP Supabase – Projet AgroFlow
-
-## Rôle et Contexte
-Pour chaque (sous-)tâche, fournir un plan d'implémentation détaillé, traçable et structuré, piloté par MCP Supabase : analyse, investigation du code, plan d'action, plan de commit/branche, liens vers guidelines. MCP Supabase est la source de vérité unique pour toutes les tâches de développement AgroFlow.
-- **Lors de la génération du plan d'implémentation, l'IA doit systématiquement lire le champ `guideline_refs` de la tâche dans la table tasks, relire le contenu des guidelines référencées, et analyser la structure du projet avant de proposer le plan d'implémentation.**
+Ce document définit la méthodologie pour créer un plan d'implémentation technique détaillé pour une tâche spécifique. Son exécution est **strictement conditionnée par l'existence préalable d'un "Product Requirement Prompt" (PRP) validé** pour la tâche concernée. L'agent utilise le PRP comme source de vérité principale pour son analyse et sa planification.
 
 ---
 
-## 1. 🧠 Méthodologie d'Analyse Séquentielle
+## 0. 🚦 Prérequis : Lecture du PRP
+
+Avant toute analyse, l'agent doit impérativement :
+
+1.  **Identifier le PRP** : Construire le chemin du fichier attendu : `/PRPs/prp-task-{TASK_NUMBER}.md`.
+2.  **Vérifier son Existence** : Contrôler la présence de ce fichier.
+3.  **Agir en Conséquence** :
+    - ✅ **Si le fichier existe** : Le lire intégralement. Le PRP devient la base pour toutes les étapes suivantes (contexte, analyse, plan d'action, validation).
+    - ❌ **Si le fichier n'existe PAS** : **Arrêter immédiatement le processus.** Informer l'utilisateur qu'un PRP est manquant et qu'il doit être généré via la commande : `crée un prp pour la tâche #{TASK_NUMBER}`. **NE PAS CONTINUER SANS PRP.**
+
+---
+
+## 1. 🧠 Méthodologie d'Analyse (Basée sur le PRP)
 
 ### Principe Fondamental
-- **Pensée séquentielle structurée** pour chaque tâche : réflexion initiale, analyse contextuelle, synthèse progressive, validation conceptuelle.
-- **Mémoire cumulative** : patterns, anti-patterns, décisions architecturales, continuité analytique.
-- **Traçabilité Supabase** : toute tâche doit être formalisée et suivie dans MCP Supabase.
-- **Hiérarchie explicite** : pour chaque tâche, l'agent doit utiliser les champs `type` (`epic`, `feature`, `task`) et `parent_task_id` dans la table `tasks` pour reconstituer la hiérarchie complète (epic → feature → task). Pour les sous-tâches, utiliser le champ `task_id` pour retrouver la tâche parente.
-- **L'IA doit, pour chaque plan d'implémentation, lire le champ `guideline_refs` de la tâche, relire le contenu des guidelines référencées, et analyser la structure réelle du projet (architecture, modules, patterns) avant de proposer le plan d'action.**
 
-### 1.1 Vérification et Activation de MCP Supabase
-- Toujours vérifier que MCP Supabase est actif et le `project_id` connu avant toute analyse.
-- Utiliser les commandes `mcp_supabase_list_projects` et `mcp_supabase_execute_sql` pour tester la connexion et récupérer les tâches.
-- En cas d'erreur ou d'absence de tâches, informer l'utilisateur et proposer des solutions (voir instructions détaillées dans l'ancienne règle 03).
+Le plan d'implémentation est une **extension technique et détaillée** du PRP.
 
-### 1.2 Processus de Pensée Structurée
-- **Réflexion pré-analyse** : comprendre l'intention profonde, activer la mémoire séquentielle, identifier patterns/anti-patterns, capitaliser sur l'expérience.
-- **Décomposition analytique** : diviser la tâche en sous-problèmes, simuler différents scénarios, évaluer alternatives, anticiper conséquences.
-- **Synthèse et validation** : vérifier la cohérence globale, valider l'architecture, optimiser conceptuellement.
-- **Remontée hiérarchique** : pour chaque tâche, reconstituer la hiérarchie complète (epic, feature, task) en utilisant les champs `type` et `parent_task_id` dans la table `tasks`.
-
-#### Format de réflexion obligatoire
-```markdown
-### 💭 Réflexion Analytique
-
-#### 🧠 Pensée Initiale
-[Réflexion sur la compréhension profonde de la tâche et ses enjeux]
-
-#### 🔗 Mémoire Séquentielle Activée
-- **Tâches similaires** : [Références aux analyses antérieures pertinentes]
-- **Patterns réutilisables** : [Solutions/architectures déjà identifiées]
-- **Leçons apprises** : [Enseignements des analyses précédentes]
-
-#### 🎯 Stratégie Conceptuelle
-[Approche choisie après réflexion et justification]
-
-#### ⚠️ Points d'Attention Identifiés
-[Risques, défis ou aspects critiques détectés pendant la réflexion]
-```
-
-### 1.3 Investigation du Code Existant
-- **Backend** : entités JPA, repositories, services, controllers, DTOs, mappers, configuration.
-- **Frontend** : composants Angular, services, modèles/interfaces, routing, i18n, UI components.
-- **Analyse des dépendances** : relations, imports, architecture, tâches liées.
-- **Outils** : mcp_supabase_execute_sql, codebase_search, file_search, read_file, grep_search.
-
-### 1.4 Questions Clés à se Poser
-- Qu'est-ce qui existe déjà ? Qu'est-ce qui manque ? Qu'est-ce qui doit être modifié ? Quelles sont les dépendances ? Y a-t-il des tâches liées dans Supabase ?
-- Quelle est la hiérarchie de cette tâche ? (retrouver l'epic et la feature parents via `parent_task_id` et `type`)
-- Quelles erreurs puis-je éviter grâce à l'expérience ? Quels patterns puis-je réutiliser ?
+- **Réflexion Analytique** : Utiliser les sections `All Needed Context` et `Known Gotchas` du PRP pour nourrir la réflexion.
+- **Hiérarchie de Tâches** : Récupérer la hiérarchie (Epic → Feature → Tâche) depuis Supabase pour contextualiser le plan.
+- **Guidelines** : Consulter les guidelines (`guideline_refs` de la tâche) pour s'assurer de la conformité technique.
 
 ---
 
-## 2. 📋 Livrable Opérationnel – Plan d'Implémentation Détailé
+## 2. 📋 Livrable : Plan d'Implémentation Détaillé
 
-### 2.1 Format de rapport détaillé (Markdown)
+L'agent doit produire un rapport Markdown structuré comme suit :
 
 ```markdown
-## 📋 Analyse de la Tâche #{TASK_NUMBER} : [Titre de la tâche]
+## 📋 Plan d'Implémentation pour la Tâche #{TASK_NUMBER} : [Titre de la tâche]
 
 ### 💭 Réflexion Analytique
 
-#### 🧠 Pensée Initiale
-[Réflexion sur la compréhension profonde de la tâche et ses enjeux]
-
-#### 🔗 Mémoire Séquentielle Activée
-- **Tâches similaires** : [Références aux analyses antérieures pertinentes]
-- **Patterns réutilisables** : [Solutions/architectures déjà identifiées]
-- **Leçons apprises** : [Enseignements des analyses précédentes]
+> (Synthèse de la réflexion de l'agent, basée sur les "Known Gotchas" et le contexte du PRP)
 
 #### 🎯 Stratégie Conceptuelle
-[Approche choisie après réflexion et justification]
+
+> (Approche technique choisie pour répondre au "Goal" du PRP)
 
 #### ⚠️ Points d'Attention Identifiés
-[Risques, défis ou aspects critiques détectés pendant la réflexion]
+
+> (Risques et défis spécifiques à l'implémentation)
 
 ### 🏷️ Hiérarchie de la Tâche
+
 - **Epic parent** : [Titre, slug, uuid]
 - **Feature parente** : [Titre, slug, uuid]
 - **Tâche courante** : [Titre, slug, uuid]
 
-### 📊 Informations de la Tâche
-- **Numéro** : {TASK_NUMBER}
-- **Statut** : {Status}
-- **Priorité** : {Priority}
-- **Assigné à** : {Assignee}
-- **Catégorie** : {Category}
-- **Date d'échéance** : {DueDate}
+### 🔍 État Actuel du Code (Basé sur le PRP)
 
-### 🔍 État Actuel du Code
-**Backend :**
-- ✅ **Existant** : [Liste des éléments déjà implémentés]
-- ❌ **Manquant** : [Liste des éléments absents]
-- ⚠️ **À modifier** : [Liste des éléments à corriger/améliorer]
-
-**Frontend :**
-- ✅ **Existant** : [Liste des composants/services déjà implémentés]
-- ❌ **Manquant** : [Liste des éléments absents]
-- ⚠️ **À modifier** : [Liste des éléments à corriger/améliorer]
+> (Synthèse de l'analyse des fichiers mentionnés dans la section `All Needed Context` du PRP)
 
 ### 📝 Plan d'Action Détaillé
 
+> (Détail technique du **Implementation Blueprint** du PRP)
+
 #### Phase 1 : Backend
-1. **[Action 1]** : [Description précise avec fichiers concernés]
-...
+
+1.  **[Action 1]** : [Description précise avec fichiers concernés]
+2.  ...
 
 #### Phase 2 : Frontend
-1. **[Action 1]** : [Description précise avec fichiers concernés]
-...
 
-#### Phase 3 : Intégration et Tests (si applicable)
-1. **[Action de test]** : [Description des tests à effectuer]
-...
+1.  **[Action 1]** : [Description précise avec fichiers concernés]
+2.  ...
 
-### 🔗 Dépendances Identifiées
-- **Prérequis** : [Tâches/éléments qui doivent être terminés avant]
-- **Impact** : [Autres modules/fonctionnalités impactés]
-- **Tâches liées dans Supabase** : [Numéros des tâches connexes trouvées]
+#### Phase 3 : Impact sur la Documentation
+
+> (Basé sur les changements de code, lister ici les fichiers de `/docs` à créer ou mettre à jour, en s'appuyant sur `60_docs-generator.mdc`)
+
+1.  **Mettre à jour** `docs/03_Backend.md` pour refléter le nouvel endpoint.
+2.  **Créer** `docs/features/new-feature.md` pour décrire la nouvelle fonctionnalité.
+
+#### Phase 4 : Tests de Validation
+
+> Pour cette phase, le processus est défini dans le fragment `.cursor/rules/fragments/validation-loop-template.mdc`. Vous devrez l'exécuter à la fin de l'implémentation.
+
+### 🔗 Dépendances
+
+> (Rappel des dépendances identifiées dans le PRP)
 
 ### ⏱️ Estimation
+
 - **Complexité** : [Faible/Moyenne/Élevée]
 - **Temps estimé** : [Estimation en jours/heures]
-- **Risques** : [Points d'attention particuliers]
 
-### 🚀 Prochaines Étapes Supabase
-- **Changement de statut proposé** : [Nouveau statut à appliquer]
-- **Mise à jour des champs** : [Champs à modifier dans Supabase]
+> Si ce plan ne vous convient pas, vous pouvez demander une révision en utilisant la commande : `/revise_plan #{TASK_NUMBER}`
 ```
-
-### 2.2 Plan de commit/branche et workflow Git
-
-#### 🚦 Workflow obligatoire avant toute nouvelle tâche
-1. **Vérification de la branche courante** : `git branch` ou `git status`
-2. **Positionnement sur main** : `git checkout main`
-3. **Mise à jour** : `git pull origin main`
-4. **Création de la nouvelle branche** : `git checkout -b feature/task/{TASK_NUMBER}-{titre-simplifie}`
-5. **Vérification** : Confirmer que le travail commence bien sur la nouvelle branche
-
-#### 📝 Conventions de nommage
-- **Format de branche** : `feature/task/{TASK_NUMBER}-{titre-simplifie}`
-- **Commit initial** : `"Start task #{TASK_NUMBER}: {titre}"`
-- **Exemple** : `feature/task/123-gestion-roles-backend`
-
-#### ⚠️ Règles de sécurité Git
-- **JAMAIS** travailler directement sur la branche `main`
-- **TOUJOURS** créer une nouvelle branche depuis `main` à jour
-- **OBLIGATOIRE** : vérifier la branche active avant de commencer le développement
-
-### 2.3 Gestion automatique du statut via MCP Supabase
-
-#### 🚀 Workflow de début de tâche (OBLIGATOIRE)
-1. **Vérification MCP Supabase** : S'assurer que la connexion est active
-2. **Récupération des informations** : Lire la tâche depuis Supabase
-3. **Vérification hiérarchique** : Vérifier et mettre à jour les statuts de la feature et de l'epic parents
-4. **Mise à jour du statut** : Passer automatiquement en `in_progress`
-5. **Traçabilité** : Enregistrer l'heure de début et l'assignee
-
-**Commandes SQL automatiques (dans l'ordre) :**
-
-1. **Récupération de la hiérarchie :**
-```sql
--- Récupérer la tâche et identifier sa hiérarchie
-SELECT t.id, t.task_number, t.parent_task_id, t.type,
-       f.id as feature_id, f.task_number as feature_number, f.status as feature_status,
-       e.id as epic_id, e.task_number as epic_number, e.status as epic_status
-FROM tasks t
-LEFT JOIN tasks f ON (t.type = 'task' AND f.id = t.parent_task_id AND f.type = 'feature')
-LEFT JOIN tasks e ON (f.parent_task_id = e.id AND e.type = 'epic')
-WHERE t.task_number = {TASK_NUMBER};
-```
-
-2. **Mise à jour de l'epic parent (si nécessaire) :**
-```sql
-UPDATE tasks 
-SET status = 'in_progress', 
-    started_at = COALESCE(started_at, NOW())
-WHERE id = {EPIC_ID} 
-  AND status = 'pending';
-```
-
-3. **Mise à jour de la feature parente (si nécessaire) :**
-```sql
-UPDATE tasks 
-SET status = 'in_progress', 
-    started_at = COALESCE(started_at, NOW())
-WHERE id = {FEATURE_ID} 
-  AND status = 'pending';
-```
-
-4. **Mise à jour de la tâche courante :**
-```sql
-UPDATE tasks 
-SET status = 'in_progress', 
-    started_at = NOW(),
-    assignee = '59052db0-b51b-43a0-ac89-dafe1ef7d6a7'
-WHERE task_number = {TASK_NUMBER};
-```
-
-#### ✅ Workflow de fin de tâche (OBLIGATOIRE)
-1. **Validation du travail terminé** : S'assurer que tous les critères sont remplis
-2. **Mise à jour du statut** : Passer automatiquement en `completed`
-3. **Vérification hiérarchique ascendante** : Vérifier si la feature et l'epic parents peuvent être terminés
-4. **Traçabilité** : Enregistrer l'heure de fin
-5. **Commit final** : `"Complete task #{TASK_NUMBER}: {titre}"`
-
-**Commandes SQL automatiques (dans l'ordre) :**
-
-1. **Mise à jour de la tâche courante :**
-```sql
-UPDATE tasks 
-SET status = 'completed', 
-    completed_at = NOW()
-WHERE task_number = {TASK_NUMBER};
-```
-
-2. **Récupération de la hiérarchie :**
-```sql
--- Récupérer la tâche et identifier sa hiérarchie
-SELECT t.id, t.task_number, t.parent_task_id, t.type,
-       f.id as feature_id, f.task_number as feature_number, f.status as feature_status,
-       e.id as epic_id, e.task_number as epic_number, e.status as epic_status
-FROM tasks t
-LEFT JOIN tasks f ON (t.type = 'task' AND f.id = t.parent_task_id AND f.type = 'feature')
-LEFT JOIN tasks e ON (f.parent_task_id = e.id AND e.type = 'epic')
-WHERE t.task_number = {TASK_NUMBER};
-```
-
-3. **Vérification et mise à jour de la feature parente :**
-```sql
--- Vérifier si toutes les tâches de la feature sont terminées
-UPDATE tasks 
-SET status = 'completed', 
-    completed_at = NOW()
-WHERE id = {FEATURE_ID}
-  AND status = 'in_progress'
-  AND NOT EXISTS (
-    SELECT 1 FROM tasks child_tasks 
-    WHERE child_tasks.parent_task_id = {FEATURE_ID} 
-      AND child_tasks.type = 'task'
-      AND child_tasks.status != 'completed'
-  );
-```
-
-4. **Vérification et mise à jour de l'epic parent :**
-```sql
--- Vérifier si toutes les features de l'epic sont terminées
-UPDATE tasks 
-SET status = 'completed', 
-    completed_at = NOW()
-WHERE id = {EPIC_ID}
-  AND status = 'in_progress'
-  AND NOT EXISTS (
-    SELECT 1 FROM tasks child_features 
-    WHERE child_features.parent_task_id = {EPIC_ID} 
-      AND child_features.type = 'feature'
-      AND child_features.status != 'completed'
-  );
-```
-
-#### 📊 États de tâche reconnus
-- **`pending`** : Tâche créée, en attente de démarrage
-- **`in_progress`** : Tâche en cours de réalisation
-- **`completed`** : Tâche terminée avec succès
-- **`blocked`** : Tâche bloquée (nécessite une intervention)
-- **`cancelled`** : Tâche annulée
-
-#### 🔍 Vérifications obligatoires
-- **Avant de commencer** : Vérifier que la tâche existe et est en statut `pending`
-- **Pendant le travail** : La tâche DOIT être en statut `in_progress`
-- **Avant de terminer** : Vérifier que tous les critères d'acceptation sont remplis
-- **Traçabilité** : Chaque changement de statut DOIT être tracé avec horodatage
-
-#### 🔗 Règles de Cohérence Hiérarchique
-
-##### 🔽 Cascade Descendante (Début de tâche)
-- **Cascade descendante obligatoire** : Quand une tâche démarre, sa feature et son epic parents doivent automatiquement passer en `in_progress` s'ils sont encore en `pending`
-- **Logique hiérarchique** : Epic → Feature → Task - tous les niveaux parents doivent être actifs
-- **Préservation des dates** : Utiliser `COALESCE(started_at, NOW())` pour ne pas écraser une date de début existante
-- **Vérification conditionnelle** : Ne mettre à jour que les éléments parents en statut `pending`
-
-##### 🔼 Cascade Ascendante (Fin de tâche)
-- **Cascade ascendante automatique** : Quand une tâche se termine, vérifier si sa feature parente peut être terminée
-- **Vérification feature** : Si toutes les tâches d'une feature sont `completed`, la feature passe automatiquement en `completed`
-- **Vérification epic** : Si toutes les features d'un epic sont `completed`, l'epic passe automatiquement en `completed`
-- **Conditions strictes** : Utiliser `NOT EXISTS` pour s'assurer qu'aucune tâche/feature enfant n'est encore active
-- **Mise à jour conditionnelle** : Ne terminer que les éléments parents en statut `in_progress`
-
-##### 📊 Schéma de Cascade Bidirectionnelle
-```
-DÉBUT DE TÂCHE (Cascade ⬇️)          FIN DE TÂCHE (Cascade ⬆️)
-================================      ================================
-
-Epic (pending) ──────────────────►    Epic (in_progress)
-  ⬇️ auto in_progress                    ⬆️ auto completed si toutes 
-                                           features terminées
-Feature (pending) ────────────────►    Feature (in_progress)  
-  ⬇️ auto in_progress                    ⬆️ auto completed si toutes
-                                           tâches terminées
-Task (pending → in_progress)           Task (in_progress → completed)
-
-RÉSULTAT : Hiérarchie cohérente       RÉSULTAT : Complétion automatique
-```
-
-#### ⚠️ Règles de sécurité Supabase
-- **TOUJOURS** vérifier la connexion MCP avant toute opération
-- **JAMAIS** modifier le statut manuellement sans passer par la procédure
-- **OBLIGATOIRE** : utiliser l'UUID utilisateur par défaut : `59052db0-b51b-43a0-ac89-dafe1ef7d6a7`
-- **SYSTÉMATIQUE** : horodater chaque changement de statut
-- **HIÉRARCHIQUE** : Toujours vérifier et mettre à jour la hiérarchie complète (epic/feature/task)
-
-### 2.4 Suivi de progression et logging (RECOMMANDÉ)
-
-#### 📝 Points de contrôle réguliers
-Pendant l'exécution d'une tâche, il est **fortement recommandé** de noter l'évolution via des commentaires dans Supabase :
-
-**Situations nécessitant un logging :**
-- **Obstacles rencontrés** : Problèmes techniques, blocages, dépendances manquantes
-- **Décisions techniques** : Choix d'architecture, changements d'approche
-- **Étapes franchies** : Validation de sous-tâches, points de contrôle
-- **Temps passé** : Estimation vs réalité, complexité inattendue
-- **Découvertes** : Insights techniques, patterns identifiés
-
-#### 🔄 Commande de logging automatique
-```sql
-UPDATE tasks 
-SET comments = COALESCE(comments, '') || 
-    E'\n[' || NOW() || '] ' || '{MESSAGE_DE_PROGRESSION}'
-WHERE task_number = {TASK_NUMBER};
-```
-
-#### 📊 Exemples de messages de progression
-```
-[2024-01-15 14:30] ✅ Backend: Entité RawMaterial créée avec succès
-[2024-01-15 15:15] ⚠️ Problème: Conflit avec enum existant, résolution en cours
-[2024-01-15 16:45] 🔄 Frontend: Composant liste terminé, passage au formulaire
-[2024-01-15 17:20] 💡 Décision: Utilisation de DataTableComponent au lieu de mat-table
-[2024-01-15 18:00] ✅ Tests: Validation des critères d'acceptation OK
-```
-
-#### 🎯 Jalons de progression recommandés
-1. **25% - Analyse terminée** : Code existant analysé, plan validé
-2. **50% - Backend terminé** : Entités, services, controllers implémentés
-3. **75% - Frontend terminé** : Composants, routing, i18n implémentés
-4. **100% - Intégration terminée** : Tests passés, critères d'acceptation validés
-
-#### 🔍 Avantages du logging de progression
-- **Traçabilité** : Historique détaillé des décisions et obstacles
-- **Apprentissage** : Capitalisation des insights pour futures tâches
-- **Débogage** : Identification rapide des problèmes récurrents
-- **Estimation** : Amélioration des estimations futures
-- **Collaboration** : Visibilité pour l'équipe sur l'avancement
-
-#### ⏰ Moments automatiques de mise à jour (OBLIGATOIRE)
-
-**Les commentaires de progression seront mis à jour automatiquement à chaque commit Git :**
-
-1. **Au début de la tâche** (commit initial) :
-   ```bash
-   git commit -m "Start task #{TASK_NUMBER}: {titre}"
-   ```
-   ```sql
-   UPDATE tasks SET comments = '[' || NOW() || '] 🚀 Début de la tâche - Branche créée et plan validé'
-   WHERE task_number = {TASK_NUMBER};
-   ```
-
-2. **À chaque commit significatif** (automatique) :
-   Le message de commit sera automatiquement ajouté aux commentaires de la tâche :
-   ```sql
-   UPDATE tasks SET comments = COALESCE(comments, '') || 
-       E'\n[' || NOW() || '] 📝 Commit: {MESSAGE_DU_COMMIT}'
-   WHERE task_number = {TASK_NUMBER};
-   ```
-
-3. **À la fin de la tâche** (commit final) :
-   ```bash
-   git commit -m "Complete task #{TASK_NUMBER}: {titre}"
-   ```
-   ```sql
-   UPDATE tasks SET comments = COALESCE(comments, '') || 
-       E'\n[' || NOW() || '] ✅ Tâche terminée - Tous les critères d\'acceptation validés'
-   WHERE task_number = {TASK_NUMBER};
-   ```
-
-#### 🔗 Intégration Git + Supabase
-**Workflow automatique à chaque commit :**
-1. **Développeur/IA fait un commit** → `git commit -m "message"`
-2. **Extraction automatique** → Récupération du numéro de tâche depuis la branche
-3. **Mise à jour Supabase** → Ajout du message de commit aux commentaires
-4. **Horodatage** → Traçabilité complète avec timestamps
-
-#### 📝 Format des messages de commit recommandés
-- `feat(#123): add RawMaterial entity and repository`
-- `fix(#123): resolve enum conflict in StorageCondition`
-- `ui(#123): implement RawMaterial list component`
-- `test(#123): validate all acceptance criteria`
-
-#### 🔄 Impact sur les habitudes de commit de l'IA
-
-**Cette règle encourage naturellement l'agent IA à :**
-
-- **Commits plus fréquents** : Chaque commit devient un point de progression tracé
-- **Messages plus descriptifs** : Les messages servent de documentation de progression
-- **Granularité fine** : Découpage du travail en étapes atomiques et logiques
-- **Meilleure traçabilité** : Historique Git plus détaillé et exploitable
-- **Feedback utilisateur** : Visibilité en temps réel de l'avancement
-
-#### 📦 Stratégie de commit recommandée pour l'IA
-1. **Commit après chaque fichier significatif** : Entité, service, composant
-2. **Commit après chaque phase logique** : Backend complet, frontend complet
-3. **Commit après résolution de problème** : Correction de bug, conflit résolu
-4. **Commit après validation** : Tests passés, critère d'acceptation validé
-
-#### 🎯 Bénéfices pour l'utilisateur
-- **Suivi en temps réel** : Voir l'IA progresser étape par étape
-- **Rollback précis** : Revenir à un état spécifique facilement
-- **Compréhension du processus** : Voir comment l'IA structure son travail
-- **Historique détaillé** : Traçabilité complète des décisions et actions
-
-#### 📊 Fréquence recommandée
-- **Minimum obligatoire** : Début, milieu, fin de tâche
-- **Optimal** : À chaque étape logique significative (fichier créé/modifié)
-- **Temps réel** : Dès qu'une action concrète est terminée
 
 ---
 
-## 3. 🔗 Références
+## 3. ⚙️ Exécution et Workflow
+
+### 3.1 Workflow Git
+
+- **Branche** : Créer une branche `feature/task/{TASK_NUMBER}-{titre-simplifie}` depuis `main`.
+- **Commits** : Effectuer des commits fréquents et descriptifs. Le message de chaque commit sera ajouté aux commentaires de la tâche dans Supabase.
+  - `feat(#123): ...`
+  - `fix(#123): ...`
+  - `test(#123): ...`
+
+### 3.2 Gestion du Statut dans Supabase
+
+- **Début de Tâche** : Au premier commit, la tâche passe automatiquement à `in_progress`. Ses parents (feature, epic) passent aussi à `in_progress` si ce n'est pas déjà le cas.
+- **Fin de Tâche** : Une fois la boucle de validation du fragment `validation-loop-template.mdc` réussie et validée par l'utilisateur, la tâche passe à `completed`. Si toutes les tâches sœurs sont complétées, la feature parente passe aussi à `completed` (et ainsi de suite pour l'epic).
+
+---
+
+## 4. 🔗 Références
+
+- Le PRP associé (`/PRPs/prp-task-{TASK_NUMBER}.md`)
 - [10_project-architecture.mdc](mdc:10_project-architecture.mdc)
 - [40_guidelines-frontend.mdc](mdc:40_guidelines-frontend.mdc)
 - [41_guidelines-backend.mdc](mdc:41_guidelines-backend.mdc)
 - [20_task-breakdown.mdc](mdc:20_task-breakdown.mdc)
-- [Qualité & Quality Gate](mdc:50_quality-gate.mdc)
+- [Quality Gate](mdc:50_quality-gate.mdc)

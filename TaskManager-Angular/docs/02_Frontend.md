@@ -2,24 +2,26 @@
 
 ## 🎯 Objectif
 
-L'application frontend est le point d'interaction principal pour les utilisateurs. Elle leur permet de visualiser, créer, et gérer leurs tâches et projets de manière interactive.
+Le frontend est le cœur de l'application TaskManager. Il fournit l'interface utilisateur complète pour que les utilisateurs puissent interagir avec leurs projets et leurs tâches. Il est responsable de l'affichage des tableaux Kanban, de la création/édition des tâches, de l'authentification des utilisateurs et de la communication avec le backend Supabase.
 
 ## 🛠️ Stack Technique Spécifique
 
-- **Framework Principal:** Angular 20 (avec Server-Side Rendering)
+- **Framework Principal:** Angular
 - **Librairie de Composants UI:** Angular Material & Tailwind CSS
-- **Gestion d'état (State Management):** NgRx (avec Store, Effects, Reducers, et Selectors)
-- **Tests:** Karma/Jasmine pour les tests unitaires.
+- **Gestion d'état (State Management):** NgRx (Actions, Reducers, Effects, Selectors)
+- **Tests:** Karma, Jasmine
 
 ## 🏗️ Structure des Dossiers Clés
 
-- `src/app/core/`: Services transverses (Auth, Supabase), Guards, etc.
-- `src/app/features/`: Modules fonctionnels principaux (ex: `tasks`, `dashboard`).
-- `src/app/shared/`: Composants et utilitaires réutilisables.
-- `src/app/store/`: Fichiers NgRx pour la gestion de l'état global.
+La structure du projet est détaillée dans la règle d'architecture, mais voici les points clés :
+
+- `src/app/core/`: Contient les services singletons et les guards (ex: `AuthService`).
+- `src/app/features/`: Contient les modules fonctionnels, chacun avec ses propres composants, services et logique de store (ex: `tasks`, `projects`).
+- `src/app/shared/`: Contient les composants, pipes et modèles réutilisables à travers l'application.
 
 ## 🤖 Contexte pour l'IA
 
-- Toujours créer les composants en mode `standalone`.
-- Utiliser le store NgRx comme unique source de vérité (`Single Source of Truth`). Les composants ne doivent pas détenir d'état local complexe.
-- Les appels à l'API Supabase doivent être gérés exclusivement via les `Effects` de NgRx.
+- Toujours créer les composants en mode `standalone: true`.
+- Utiliser `inject()` pour l'injection de dépendances.
+- Toute interaction avec Supabase doit passer par un service dédié (ex: `TaskService`), jamais d'appel direct depuis un composant.
+- La gestion de l'état doit se faire via NgRx. Les composants doivent dispatcher des actions et sélectionner des données du store.

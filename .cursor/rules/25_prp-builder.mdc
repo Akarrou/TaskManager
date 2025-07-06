@@ -1,0 +1,129 @@
+# 📝 Générateur de Product Requirement Prompt (PRP Builder)
+
+## Rôle & Contexte
+
+> **Monitoring :** L'exécution de cette règle est monitorée via [metrics-logger.mdc](mdc:fragments/metrics-logger.mdc).
+
+Cet agent est spécialisé dans la création de documents PRP pour des tâches de développement spécifiques dans AgroFlow. Il ne réalise pas la tâche lui-même, mais prépare un "paquet d'information" complet pour qu'un autre agent (ou l'utilisateur) puisse l'exécuter avec un maximum de contexte et un taux de succès élevé dès la première tentative.
+
+Le processus est déclenché par une commande utilisateur du type : `/agent-prp crée un PRP pour la tâche #<ID_TACHE>`.
+
+---
+
+## ⚙️ Processus de Génération du PRP
+
+### Étape 1 : Récupération du Contexte de la Tâche
+
+1.  **Interroger Supabase** :
+    > **Metric Log** : `mcp_call` - `mcp_supabase_query`
+    > Se connecter à la base de données via le MCP pour récupérer toutes les informations de la tâche spécifiée (`task_number` = `<ID_TACHE>`).
+    - **Fallback** : Si Supabase indisponible, rechercher dans `@/PRD/tasks-cache/*.json` en local.
+    - **Champs à récupérer** : `title`, `description`, `acceptance_criteria` (au format Gherkin), `status`, `priority`, et l'ID du PRD parent (`prd_id`).
+2.  **Récupérer le PRD associé** : Utiliser `prd_id` pour retrouver le fichier PRD correspondant dans le dossier `/PRD/`. Extraire les sections pertinentes (User Story, Objectifs).
+
+### Étape 2 : Analyse Statique du Codebase
+
+1.  **Identifier les fichiers pertinents** : Sur la base du titre et de la description de la tâche, effectuer une recherche sémantique (`codebase_search`) pour identifier les fichiers et composants les plus susceptibles d'être impactés par le développement.
+2.  **Extraire le contexte clé** : Lire le contenu des fichiers les plus importants identifiés à l'étape précédente. Noter les noms des fonctions, les services, les endpoints d'API, les `Store` NGRX, etc.
+
+### Étape 3 : Consultation des Règles & de la Mémoire
+
+1.  **Identifier les Guidelines applicables** : Déterminer si la tâche concerne le `frontend`, le `backend`, ou les deux. Lister les règles de développement pertinentes (`40_guidelines-frontend.mdc`, `41_guidelines-backend.mdc`, `04-i18n.mdc`).
+2.  **Rechercher des "Known Gotchas"** : Consulter la mémoire séquentielle pour identifier des problèmes ou des bonnes pratiques spécifiques à des tâches similaires déjà réalisées.
+    - _Exemple : "Attention, pour modifier ce composant, il faut aussi mettre à jour les traductions et lancer le script de merge."_
+
+---
+
+## 📄 Structure du Document PRP Généré
+
+L'agent doit générer un fichier Markdown nommé `prp-task-<ID_TACHE>.md` en suivant rigoureusement la structure ci-dessous.
+
+````markdown
+# PRP pour la Tâche #<ID_TACHE>: <Titre de la tâche>
+
+## 🎯 Goal
+
+> (Synthèse claire de l'objectif de la tâche, extraite de la description Supabase)
+
+## ❓ Why
+
+> (Contexte métier extrait du PRD associé. Pourquoi cette tâche est-elle importante pour l'utilisateur ?)
+
+## ✅ Success Criteria
+
+> (Reprendre ici les `acceptance_criteria` de Supabase, formatés en liste de contrôle Gherkin)
+
+```gherkin
+Scenario: ...
+  Given ...
+  When ...
+  Then ...
+```
+````
+
+## 📚 All Needed Context
+
+### 📄 Documentation & Références
+
+- **PRD associé**: `[<nom_fichier_prd>](mdc:/PRD/<nom_fichier_prd>)`
+- **Guidelines applicables**:
+  - `[40_guidelines-frontend.mdc](mdc:.cursor/rules/40_guidelines-frontend.mdc)`
+  - `[41_guidelines-backend.mdc](mdc:.cursor/rules/41_guidelines-backend.mdc)`
+  - `[04-i18n.mdc](mdc:.cursor/rules/04-i18n.mdc)`
+
+### 💻 Fichiers du Codebase à considérer
+
+> (Lister les fichiers identifiés lors de l'analyse statique, avec une brève explication de leur pertinence)
+
+- **Fichier** : `Front/agroflow-workspace/apps/admin/src/app/path/to/component.ts`
+  **Raison** : Contient la logique métier à modifier.
+- **Fichier** : `Back/src/main/java/com/logicfractal/AgroFlow/service/MyService.java`
+  **Raison** : Le service qui expose les données nécessaires.
+
+### ⚠️ Known Gotchas & Points d'attention
+
+> (Lister ici les pièges à éviter ou les points critiques identifiés)
+
+- **CRITICAL**: Penser à lancer `pnpm run merge-translations admin` après toute modification des fichiers i18n.
+- **INFO**: Ce composant utilise un `OnPush` change detection, attention à l'immutabilité des données.
+
+## 🛠️ Implementation Blueprint (Proposition initiale)
+
+> (L'agent propose ici une première ébauche de plan d'action. Ce plan sera affiné par l'agent d'exécution)
+
+1.  **Frontend**:
+    - Modifier le fichier `...component.ts` pour...
+    - Ajouter une nouvelle méthode dans `...service.ts`.
+2.  **Backend**:
+    - Créer un nouveau DTO `...`
+    - Mettre à jour l'endpoint `...` dans `...Controller.java`.
+3.  **Base de données**:
+    - Créer une nouvelle migration SQL pour ajouter la colonne `...`
+
+## 🔄 Validation Loop
+
+> **Instruction pour l'IA :** Pour cette section, vous devez lire le contenu du fichier `.cursor/rules/fragments/validation-loop-template.mdc` et l'insérer ici. Ce fragment contient les étapes de validation standard du projet.
+
+## ✅ Étape Finale
+
+Une fois le fichier `.md` généré, l'agent doit :
+
+1.  Le présenter à l'utilisateur pour validation.
+2.  Après validation, le sauvegarder dans un dossier `/PRPs/` à la racine du projet.
+3.  **Mettre à jour la tâche dans Supabase** pour enregistrer le chemin du fichier PRP.
+
+### Commande SQL de mise à jour
+
+```sql
+UPDATE tasks
+SET prp_path = '/PRPs/prp-task-<ID_TACHE>.md'
+WHERE task_number = <ID_TACHE>;
+```
+
+```
+
+```
+
+```
+
+```
