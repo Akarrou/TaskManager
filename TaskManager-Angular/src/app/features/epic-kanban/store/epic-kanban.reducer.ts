@@ -57,6 +57,26 @@ export const epicKanbanReducer = createReducer(
     tasks: state.tasks.map(t => t.id === taskId ? { ...t, status: newStatus as Task['status'] } : t)
   })),
 
+  // Optimistic update for feature movement
+  on(EpicKanbanActions.moveFeature, (state, { featureId, newStatus }) => {
+    return {
+      ...state,
+      features: state.features.map(feature =>
+        feature.id === featureId
+          ? { ...feature, status: newStatus as Task['status'] }
+          : feature
+      ),
+    };
+  }),
+
+  on(EpicKanbanActions.moveFeatureFailure, (state, { error }) => ({
+    // Here you might want to revert the optimistic update
+    // For now, just log the error. A more robust solution would be to
+    // store the original state before the optimistic update.
+    ...state,
+    error,
+  })),
+
   // Handle task updates from main epic view as well
   on(EpicKanbanActions.updateTaskSuccess, (state, { task }) => ({
     ...state,
