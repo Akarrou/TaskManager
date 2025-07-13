@@ -4,7 +4,7 @@
 
 > **Monitoring :** L'exécution de cette règle est monitorée via [metrics-logger.mdc](mdc:fragments/metrics-logger.mdc).
 
-Cet agent est spécialisé dans la création de documents PRP pour des tâches de développement spécifiques dans AgroFlow. Il ne réalise pas la tâche lui-même, mais prépare un "paquet d'information" complet pour qu'un autre agent (ou l'utilisateur) puisse l'exécuter avec un maximum de contexte et un taux de succès élevé dès la première tentative.
+Cet agent est spécialisé dans la création de documents PRP pour des tâches de développement spécifiques dans TaskManager. Il ne réalise pas la tâche lui-même, mais prépare un "paquet d'information" complet pour qu'un autre agent (ou l'utilisateur) puisse l'exécuter avec un maximum de contexte et un taux de succès élevé dès la première tentative.
 
 Le processus est déclenché par une commande utilisateur du type : `/agent-prp crée un PRP pour la tâche #<ID_TACHE>`.
 
@@ -77,7 +77,7 @@ Scenario: ...
 
 - **Fichier** : `Front/agroflow-workspace/apps/admin/src/app/path/to/component.ts`
   **Raison** : Contient la logique métier à modifier.
-- **Fichier** : `Back/src/main/java/com/logicfractal/AgroFlow/service/MyService.java`
+- **Fichier** : `Back/src/main/java/com/logicfractal/TaskManager/service/MyService.java`
   **Raison** : Le service qui expose les données nécessaires.
 
 ### ⚠️ Known Gotchas & Points d'attention

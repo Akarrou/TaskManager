@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude mcp get:*)",
+      "Bash(find:*)",
+      "Bash(claude mcp:*)",
+      "mcp__supabase__list_projects",
+      "mcp__supabase__execute_sql",
+      "mcp__ide__getDiagnostics"
+    ]
+  },
+  "enableAllProjectMcpServers": false
+}

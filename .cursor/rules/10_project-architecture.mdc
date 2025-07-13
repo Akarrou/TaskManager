@@ -1,5 +1,5 @@
 ---
-description: Architecture du projet AgroFlow - source unique de vérité pour la structure
+description: Architecture du projet TaskManager - source unique de vérité pour la structure
 globs: ["**/*"]
 alwaysApply: false
 ---
@@ -88,11 +88,7 @@ TaskManager-Angular/
 ## 📝 Bonnes pratiques
 
 - **Synchronisation automatique obligatoire** : Ce document DOIT être mis à jour à chaque modification structurelle
-- **Source unique de vérité** : Utiliser ce document comme référence absolue pour l'architecture AgroFlow
-- **Documentation des patterns** : Chaque nouveau pattern doit être documenté avec ses exemples
-- **Cohérence architecturale** : Valider que chaque ajout respecte les conventions existantes
-- **Traçabilité des changements** : Maintenir un historique des évolutions structurelles
-
+- **Source unique de vérité** : Utiliser ce document comme référence absolue pour l'architecture TaskManager
 - **Documentation des patterns** : Chaque nouveau pattern doit être documenté avec ses exemples
 - **Cohérence architecturale** : Valider que chaque ajout respecte les conventions existantes
 - **Traçabilité des changements** : Maintenir un historique des évolutions structurelles

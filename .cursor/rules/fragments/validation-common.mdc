@@ -1,5 +1,5 @@
 ---
-description: Fragment centralisé pour toutes les validations communes du système AgroFlow
+description: Fragment centralisé pour toutes les validations communes du système TaskManager
 globs: ["**/*.mdc"]
 alwaysApply: false
 ---

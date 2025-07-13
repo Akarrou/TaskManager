@@ -1,3 +1,21 @@
 .feature-kanban-container {
   padding: 1rem;
 }
+
+.navigation-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  
+  .nav-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    
+    mat-icon {
+      font-size: 1.2rem;
+      height: 1.2rem;
+      width: 1.2rem;
+    }
+  }
+}

@@ -14,6 +14,7 @@ export interface KanbanItem {
     attachmentCount?: number;
     prd_slug?: string;
     environment?: string[];
+    parent_task_id?: string;
     subItems?: KanbanItem[];
     progress?: {
         completed: number;

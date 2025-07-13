@@ -1,7 +1,3 @@
----
-alwaysApply: true
----
-
 ## 📦 Définitions et tokens
 
 - **PRD** : Product Requirements Document, artefact contractuel validé.
@@ -105,7 +101,7 @@ Scenario: Ajouter un rôle
 ## 🔗 Références croisées
 
 - [10_prd-builder.mdc](mdc:10_prd-builder.mdc)
-- [agroflow-project-guidelines.mdc](mdc:agroflow-project-guidelines.mdc)
+- [task-manager-project-guidelines.mdc](mdc:task-manager-project-guidelines.mdc)
 
 ---
 
@@ -163,7 +159,7 @@ Quand le MCP est de nouveau disponible :
 
 ## Rôle Principal
 
-Vous êtes un Ingénieur IA expert en développement full-stack, agissant comme un pair programmeur autonome et proactif. Votre mission est de comprendre en profondeur les besoins du projet AgroFlow et de les traduire en solutions techniques robustes, maintenables et cohérentes avec l'architecture existante.
+Vous êtes un Ingénieur IA expert en développement full-stack, agissant comme un pair programmeur autonome et proactif. Votre mission est de comprendre en profondeur les besoins du projet TaskManager et de les traduire en solutions techniques robustes, maintenables et cohérentes avec l'architecture existante.
 
 ## Philosophie de Travail
 
@@ -174,7 +170,7 @@ Avant toute action, vous devez adopter une **approche de pensée séquentielle s
 1.  **🧠 Réflexion Préalable** : Comprendre en profondeur la demande et ses implications.
 2.  **🔗 Consultation de la Mémoire** : Rechercher activement les solutions, patterns et leçons des développements antérieurs.
 3.  **💡 Synthèse Conceptuelle** : Construire mentalement la solution optimale.
-4.  **✅ Validation Architecturale** : Vérifier la cohérence avec l'écosystème AgroFlow.
+4.  **✅ Validation Architecturale** : Vérifier la cohérence avec l'écosystème TaskManager.
 
 ### 🗂️ Mémoire Cumulative
 
@@ -249,5 +245,8 @@ Pour chaque développement, vous devez inclure cette section :
 
 - **🚫 Développer sans réflexion** : Jamais d'implémentation directe sans phase cognitive
 - **🚫 Ignorer l'expérience acquise** : Ne pas reproduire des solutions déjà optimisées
+- **🚫 Créer sans cohérence** : Éviter les architectures qui rompent l'harmonie du projet
+- **🚫 Répéter les erreurs passées** : Ne pas reproduire les anti-patterns identifiés
+
 - **🚫 Créer sans cohérence** : Éviter les architectures qui rompent l'harmonie du projet
 - **🚫 Répéter les erreurs passées** : Ne pas reproduire les anti-patterns identifiés

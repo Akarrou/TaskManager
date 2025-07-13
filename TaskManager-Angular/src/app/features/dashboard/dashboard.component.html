@@ -3,21 +3,32 @@
         <div class="c-main-content">
           <div class="c-main-content__header">
             <div>
-              <h1 class="c-main-content__title">Tableau de bord des tâches</h1>
-              <p class="c-main-content__subtitle">Aperçu de toutes les tâches et de leurs états actuels.</p>
+              <h1 class="c-main-content__title">Dashboard des Epics</h1>
+              <p class="c-main-content__subtitle">Liste des Epics du projet sélectionné</p>
             </div>
-            <div class="export-roadmap-btns">
-              <button class="btn-secondary" (click)="exportRoadmapMarkdown()">
-                <span class="material-icons-outlined">download</span> Exporter Markdown
+            <div class="action-buttons">
+              <button mat-raised-button color="primary" (click)="navigateToNewTaskForm()" class="create-task-btn">
+                <mat-icon>add</mat-icon>
+                Créer une tâche
               </button>
-              <button class="btn-secondary" (click)="exportRoadmapJson()">
-                <span class="material-icons-outlined">download</span> Exporter JSON
+              <button mat-raised-button color="accent" (click)="exportRoadmapMarkdown()" class="export-btn">
+                <mat-icon>download</mat-icon>
+                Exporter Markdown
+              </button>
+              <button mat-raised-button color="accent" (click)="exportRoadmapJson()" class="export-btn">
+                <mat-icon>download</mat-icon>
+                Exporter JSON
               </button>
             </div>
           </div>
 
-    
+          <!-- Project Info -->
+          <div class="project-info" *ngIf="selectedProject$ | async as selectedProject">
+            <h2>Projet: {{ selectedProject.name }}</h2>
+            <p>{{ selectedProject.description }}</p>
+          </div>
 
+          <!-- Stats Cards -->
           <section class="c-stats-grid">
             <div class="c-stat-card" *ngFor="let stat of stats()">
               <div class="c-stat-card__header">
@@ -30,12 +41,73 @@
             </div>
           </section>
 
-          <!-- Filtres interactifs -->
-          <div class="c-filters">
-            <app-task-search class="c-filters" (filtersChange)="onSearchFiltersChange($event)" [filters]="currentSearchFilters()"></app-task-search>
-          </div>
-      <!-- Vue arborescente des tâches -->
-      <app-task-tree [tasks]="getFilteredTreeTasks()"></app-task-tree>
+          <!-- Epics List -->
+          <section class="epics-section">
+            <h2 class="section-title">Epics du projet</h2>
+            
+            <div class="epics-list" *ngIf="epicsForSelectedProject().length > 0; else noEpics">
+              <mat-card *ngFor="let epic of epicsForSelectedProject(); trackBy: trackEpic" class="epic-card">
+                <mat-card-header>
+                  <div mat-card-avatar class="epic-avatar">
+                    <mat-icon>star</mat-icon>
+                  </div>
+                  <mat-card-title class="epic-title">
+                    #{{ epic.task_number }} {{ epic.title }}
+                  </mat-card-title>
+                  <mat-card-subtitle class="epic-status">
+                    <span class="status-badge status-{{ epic.status }}">
+                      {{ getStatusLabel(epic.status) }}
+                    </span>
+                    <span class="priority-badge priority-{{ epic.priority }}" *ngIf="epic.priority">
+                      {{ getPriorityLabel(epic.priority) }}
+                    </span>
+                  </mat-card-subtitle>
+                </mat-card-header>
+                
+                <mat-card-content>
+                  <p class="epic-description" *ngIf="epic.description">{{ epic.description }}</p>
+                  
+                  <div class="epic-meta" *ngIf="epic.prd_slug || epic.due_date || epic.estimated_hours">
+                    <div class="meta-item" *ngIf="epic.prd_slug">
+                      <mat-icon>description</mat-icon>
+                      <span>PRD: {{ epic.prd_slug }}</span>
+                    </div>
+                    <div class="meta-item" *ngIf="epic.due_date">
+                      <mat-icon>schedule</mat-icon>
+                      <span>Échéance: {{ epic.due_date | date:'medium' }}</span>
+                    </div>
+                    <div class="meta-item" *ngIf="epic.estimated_hours">
+                      <mat-icon>access_time</mat-icon>
+                      <span>{{ epic.estimated_hours }}h estimées</span>
+                    </div>
+                  </div>
+                </mat-card-content>
+                
+                <mat-card-actions>
+                  <button mat-raised-button (click)="navigateToEpicKanban(epic)" class="kanban-btn">
+                    <mat-icon>view_kanban</mat-icon>
+                    Voir Kanban
+                  </button>
+                  <button mat-stroked-button (click)="navigateToEditTaskForm(epic)" class="edit-btn">
+                    <mat-icon>edit</mat-icon>
+                    Modifier
+                  </button>
+                </mat-card-actions>
+              </mat-card>
+            </div>
+
+            <ng-template #noEpics>
+              <div class="no-epics">
+                <mat-icon class="no-epics-icon">playlist_add</mat-icon>
+                <h3>Aucun Epic trouvé</h3>
+                <p>Il n'y a pas encore d'Epics pour le projet sélectionné. Créez votre premier Epic pour commencer à organiser vos tâches.</p>
+                <button mat-raised-button (click)="navigateToNewTaskForm()">
+                  <mat-icon>add</mat-icon>
+                  Créer le premier Epic
+                </button>
+              </div>
+            </ng-template>
+          </section>
         
         </div>
       </main>
@@ -63,10 +135,4 @@
         </div>
       </footer>
 
-      <!-- Bouton flottant pour créer une nouvelle tâche -->
-      <button  mat-button class="fab-create-task" (click)="navigateToNewTaskForm()">
-        <mat-icon class="text-white">add</mat-icon>
-      </button>
-    <app-minimal-dnd></app-minimal-dnd>
-    
     </div> 

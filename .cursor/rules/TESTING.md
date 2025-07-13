@@ -1,8 +1,8 @@
-# 🧪 Suite de Tests des Règles AgroFlow
+# 🧪 Suite de Tests des Règles TaskManager
 
 ## 🎯 Objectif
 
-Valider la logique, la cohérence et la non-régression du système de règles AgroFlow. Ce document sert de "cahier de tests" à exécuter manuellement après toute modification significative d'une règle.
+Valider la logique, la cohérence et la non-régression du système de règles TaskManager. Ce document sert de "cahier de tests" à exécuter manuellement après toute modification significative d'une règle.
 
 ---
 

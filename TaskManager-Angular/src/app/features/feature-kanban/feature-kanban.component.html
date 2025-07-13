@@ -3,6 +3,25 @@
     (navigateBack)="onNavigateBack()">
   </app-item-header>
 
+  <!-- Navigation Buttons -->
+  <div class="navigation-buttons mb-4 flex gap-2">
+    <button mat-raised-button 
+            color="primary"
+            (click)="onNavigateToDashboard()"
+            class="nav-button">
+      <mat-icon>dashboard</mat-icon>
+      Retour au Dashboard
+    </button>
+    
+    <button mat-raised-button 
+            color="accent"
+            (click)="onNavigateToEpicKanban()"
+            class="nav-button">
+      <mat-icon>view_kanban</mat-icon>
+      Retour au Kanban Epics
+    </button>
+  </div>
+
   <app-generic-kanban [items]="(tasks$ | async)!"
     [columns]="columns"
     [loading]="(loading$ | async)!"

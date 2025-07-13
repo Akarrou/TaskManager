@@ -97,5 +97,8 @@ function taskToKanbanItem(task: Task): KanbanItem {
     tags: task.tags,
     assignee: task.assigned_to,
     dueDate: task.due_date,
+    prd_slug: task.prd_slug,
+    environment: task.environment,
+    ...(task as any).parent_task_id && { parent_task_id: (task as any).parent_task_id }
   };
 }

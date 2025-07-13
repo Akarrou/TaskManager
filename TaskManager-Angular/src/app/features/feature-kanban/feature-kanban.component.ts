@@ -1,8 +1,10 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Store, select } from '@ngrx/store';
 import { Observable } from 'rxjs';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 
 import { GenericKanbanComponent } from '../../shared/components/generic-kanban/generic-kanban.component';
 import { ItemHeaderComponent } from '../../shared/components/item-header/item-header.component';
@@ -16,7 +18,7 @@ import { Task } from '../../core/services/task';
 @Component({
   selector: 'app-feature-kanban',
   standalone: true,
-  imports: [CommonModule, GenericKanbanComponent, ItemHeaderComponent],
+  imports: [CommonModule, GenericKanbanComponent, ItemHeaderComponent, MatButtonModule, MatIconModule],
   templateUrl: './feature-kanban.component.html',
   styleUrls: ['./feature-kanban.component.scss'],
 })
@@ -24,6 +26,7 @@ export class FeatureKanbanComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private store = inject(Store);
   private location = inject(Location);
+  private router = inject(Router);
 
   feature$: Observable<KanbanItem | null | undefined>;
   tasks$: Observable<KanbanItem[]>;
@@ -70,6 +73,24 @@ export class FeatureKanbanComponent implements OnInit {
 
   onNavigateBack(): void {
     this.location.back();
+  }
+
+  onNavigateToDashboard(): void {
+    this.router.navigate(['/dashboard']);
+  }
+
+  onNavigateToEpicKanban(): void {
+    // Pour naviguer vers le kanban epic, nous devons récupérer l'ID de l'epic parent de cette feature
+    this.feature$.subscribe((feature: KanbanItem | null | undefined) => {
+      if (feature?.parent_task_id) {
+        console.log('Navigating to epic kanban with parent_task_id:', feature.parent_task_id);
+        this.router.navigate(['/epic', feature.parent_task_id, 'kanban']);
+      } else {
+        console.warn('No parent_task_id found for feature:', feature);
+        // Fallback: retourner au dashboard si pas d'epic parent trouvé
+        this.router.navigate(['/dashboard']);
+      }
+    }).unsubscribe();
   }
 }
 

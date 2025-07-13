@@ -1,5 +1,5 @@
 ---
-description: Templates standardisés pour tous les formats de sortie du système AgroFlow
+description: Templates standardisés pour tous les formats de sortie du système TaskManager
 globs: ["**/*.mdc"]
 alwaysApply: false
 ---

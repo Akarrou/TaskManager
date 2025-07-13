@@ -1,5 +1,5 @@
 ---
-description: Guidelines de performance pour optimiser le système de règles AgroFlow
+description: Guidelines de performance pour optimiser le système de règles TaskManager
 globs: ["**/*.mdc"]
 alwaysApply: false
 ---
@@ -8,7 +8,7 @@ alwaysApply: false
 
 ## 🎯 Objectif
 
-Définir les bonnes pratiques de performance pour le système de règles et les workflows AgroFlow.
+Définir les bonnes pratiques de performance pour le système de règles et les workflows TaskManager.
 
 ## ⚡ Performance des Règles
 

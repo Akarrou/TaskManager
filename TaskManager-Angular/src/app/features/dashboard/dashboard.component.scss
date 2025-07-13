@@ -1,6 +1,6 @@
 @use "sass:color";
-@use '../../styles/variables' as v;
-@use '../../styles/mixins' as m;
+@use "../../styles/variables" as v;
+@use "../../styles/mixins" as m;
 
 // ==========================================================================
 // Main Dashboard Layout
@@ -104,10 +104,22 @@
       font-size: v.$font-size-2xl;
     }
 
-    &--total { background-color: color.adjust(v.$primary-color, $alpha: -0.8); color: v.$primary-color; }
-    &--in-progress { background-color: color.adjust(#0ea5e9, $alpha: -0.8); color: #0ea5e9; }
-    &--completed { background-color: color.adjust(v.$success-color, $alpha: -0.8); color: v.$success-color; }
-    &--todo { background-color: color.adjust(v.$warning-color, $alpha: -0.8); color: v.$warning-color; }
+    &--total {
+      background-color: color.adjust(v.$primary-color, $alpha: -0.8);
+      color: v.$primary-color;
+    }
+    &--in-progress {
+      background-color: color.adjust(#0ea5e9, $alpha: -0.8);
+      color: #0ea5e9;
+    }
+    &--completed {
+      background-color: color.adjust(v.$success-color, $alpha: -0.8);
+      color: v.$success-color;
+    }
+    &--todo {
+      background-color: color.adjust(v.$warning-color, $alpha: -0.8);
+      color: v.$warning-color;
+    }
   }
 
   &__value {
@@ -126,7 +138,6 @@
   align-items: center;
   gap: v.$space-4;
   width: 100%;
-
 }
 
 // ==========================================================================
@@ -199,7 +210,6 @@
   text-align: center;
 }
 
-
 // ==========================================================================
 // Reusable Components
 // ==========================================================================
@@ -254,13 +264,31 @@
   text-transform: capitalize;
 
   // Hardcoded colors for badges as they are specific combinations
-  &--status-in-progress { background-color: #e0f2fe; color: #0ea5e9; }
-  &--status-pending { background-color: #fef9c3; color: #f59e0b; }
-  &--status-completed { background-color: #dcfce7; color: #22c55e; }
-  
-  &--priority-high { background-color: #fee2e2; color: #ef4444; }
-  &--priority-medium { background-color: #ffedd5; color: #f97316; }
-  &--priority-low { background-color: #e0e7ff; color: #818cf8; }
+  &--status-in-progress {
+    background-color: #e0f2fe;
+    color: #0ea5e9;
+  }
+  &--status-pending {
+    background-color: #fef9c3;
+    color: #f59e0b;
+  }
+  &--status-completed {
+    background-color: #dcfce7;
+    color: #22c55e;
+  }
+
+  &--priority-high {
+    background-color: #fee2e2;
+    color: #ef4444;
+  }
+  &--priority-medium {
+    background-color: #ffedd5;
+    color: #f97316;
+  }
+  &--priority-low {
+    background-color: #e0e7ff;
+    color: #818cf8;
+  }
 }
 
 .c-search-input {
@@ -282,18 +310,20 @@
   &__field {
     width: 100%;
     height: 38px;
-    padding: v.$border-radius-lg v.$border-radius-lg v.$border-radius-lg v.$border-radius-lg;
+    padding: v.$border-radius-lg v.$border-radius-lg v.$border-radius-lg
+      v.$border-radius-lg;
     font-size: v.$font-size-sm;
     background-color: v.$background-color-form;
     border: 1px solid v.$border-color-medium;
     border-radius: v.$border-radius-md;
     color: v.$text-color-dark;
-    transition: v.$transition-colors v.$transition-duration v.$transition-timing-function;
+    transition: v.$transition-colors v.$transition-duration
+      v.$transition-timing-function;
 
     &::placeholder {
       color: v.$text-color-light;
     }
-    
+
     &:focus {
       outline: none;
       border-color: v.$primary-color;
@@ -313,7 +343,7 @@
   background-repeat: no-repeat;
   border: 2px solid v.$border-color-light;
   transition: border-color v.$transition-duration v.$transition-timing-function;
-  
+
   &:hover {
     border-color: v.$primary-color;
   }
@@ -414,7 +444,7 @@
     right: 16px;
     bottom: 16px;
   }
-} 
+}
 .hover-line:hover {
   background-color: #cbcbd9;
   cursor: pointer;
@@ -424,4 +454,423 @@
 .export-roadmap-btns {
   display: flex;
   gap: v.$space-2;
+}
+
+// ==========================================================================
+// PROFESSIONAL EPIC DASHBOARD DESIGN
+// ==========================================================================
+
+// Header section with refined action buttons
+.action-buttons {
+  @include m.flex-center-y;
+  gap: v.$space-4;
+  flex-wrap: wrap;
+
+  .create-task-btn {
+    @include m.button-solid(v.$primary-color);
+    height: 44px;
+    padding: 0 v.$space-6;
+    font-weight: v.$font-weight-semibold;
+    font-size: v.$font-size-sm;
+    border-radius: v.$border-radius-lg;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+
+    mat-icon {
+      margin-right: v.$space-2;
+      font-size: 1.125rem;
+    }
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  .export-btn {
+    @include m.button-stroked(v.$border-color-medium);
+    height: 44px;
+    padding: 0 v.$space-5;
+    font-weight: v.$font-weight-medium;
+    font-size: v.$font-size-sm;
+    border-radius: v.$border-radius-lg;
+    background-color: v.$background-color-form;
+
+    mat-icon {
+      margin-right: v.$space-2;
+      font-size: 1.125rem;
+      color: v.$secondary-color;
+    }
+
+    &:hover {
+      border-color: v.$primary-color-light;
+      background-color: v.$primary-color-lightest;
+      color: v.$primary-color-dark;
+
+      mat-icon {
+        color: v.$primary-color;
+      }
+    }
+  }
+}
+
+// Refined project info section with glass morphism effect
+.project-info {
+  @include m.panel-base;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(248, 250, 252, 0.95) 100%
+  );
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: v.$space-8;
+  margin-bottom: v.$space-10;
+  border-left: 4px solid v.$primary-color;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      v.$primary-color-light 50%,
+      transparent 100%
+    );
+  }
+
+  h2 {
+    margin: 0 0 v.$space-3 0;
+    color: v.$text-color-darkest;
+    font-weight: v.$font-weight-bold;
+    font-size: v.$font-size-xl;
+    letter-spacing: -0.025em;
+  }
+
+  p {
+    margin: 0;
+    color: v.$text-color-medium;
+    font-size: v.$font-size-base;
+    line-height: 1.6;
+  }
+}
+
+// Epics section with improved typography
+.epics-section {
+  margin-top: v.$space-10;
+
+  .section-title {
+    font-size: v.$font-size-2xl;
+    font-weight: v.$font-weight-bold;
+    color: v.$text-color-darkest;
+    margin-bottom: v.$space-8;
+    letter-spacing: -0.025em;
+    position: relative;
+    padding-bottom: v.$space-4;
+
+    &::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(
+        90deg,
+        v.$primary-color,
+        v.$primary-color-light
+      );
+      border-radius: v.$border-radius-full;
+    }
+  }
+}
+
+// Enhanced grid with better spacing
+.epics-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: v.$space-8;
+  margin-top: v.$space-6;
+
+  @media (max-width: v.$breakpoint-lg) {
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: v.$space-6;
+  }
+
+  @media (max-width: v.$breakpoint-md) {
+    grid-template-columns: 1fr;
+    gap: v.$space-6;
+  }
+}
+
+// Professional epic card design
+.epic-card {
+  @include m.panel-base;
+  background: v.$background-color-form;
+  border-radius: v.$border-radius-xl;
+  border: 1px solid v.$border-color-light;
+  overflow: hidden;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+
+  // Subtle accent border
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, v.$primary-color, v.$accent-color);
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    border-color: v.$primary-color-light;
+  }
+
+  // Epic header styling
+  mat-card-header {
+    padding: v.$space-6 v.$space-6 v.$space-4 v.$space-6;
+
+    .epic-avatar {
+      background: linear-gradient(135deg, v.$primary-color, v.$accent-color);
+      width: 48px;
+      height: 48px;
+
+      mat-icon {
+        color: white;
+        font-size: 1.5rem;
+      }
+    }
+
+    .epic-title {
+      font-weight: v.$font-weight-bold;
+      color: v.$text-color-darkest;
+      font-size: v.$font-size-lg;
+      letter-spacing: -0.025em;
+      line-height: 1.4;
+      margin-bottom: v.$space-1;
+    }
+
+    .epic-status {
+      @include m.flex-center-y;
+      gap: v.$space-3;
+      flex-wrap: wrap;
+      margin-top: v.$space-2;
+    }
+  }
+
+  // Content area
+  mat-card-content {
+    padding: 0 v.$space-6 v.$space-6 v.$space-6;
+    height: 100%;
+
+    .epic-description {
+      color: v.$text-color-medium;
+      margin-bottom: v.$space-6;
+      line-height: 1.6;
+      font-size: v.$font-size-base;
+    }
+
+    .epic-meta {
+      display: flex;
+      flex-direction: column;
+      gap: v.$space-3;
+
+      .meta-item {
+        @include m.flex-center-y;
+        gap: v.$space-3;
+        color: v.$text-color-medium;
+        font-size: v.$font-size-sm;
+        padding: v.$space-2;
+        border-radius: v.$border-radius-md;
+        background-color: v.$background-color-light;
+
+        mat-icon {
+          font-size: 1.125rem;
+          color: v.$primary-color;
+          width: 20px;
+          height: 20px;
+        }
+
+        span {
+          font-weight: v.$font-weight-medium;
+        }
+      }
+    }
+  }
+}
+
+// Professional status and priority badges
+.status-badge {
+  padding: v.$space-2 v.$space-3;
+  border-radius: v.$border-radius-full;
+  font-size: v.$font-size-xs;
+  font-weight: v.$font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  &.status-pending {
+    background-color: rgba(251, 191, 36, 0.1);
+    color: #d97706;
+    border: 1px solid rgba(251, 191, 36, 0.2);
+  }
+
+  &.status-in_progress {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+  }
+
+  &.status-completed {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: #059669;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+  }
+
+  &.status-cancelled {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+}
+
+.priority-badge {
+  padding: v.$space-2 v.$space-3;
+  border-radius: v.$border-radius-full;
+  font-size: v.$font-size-xs;
+  font-weight: v.$font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  &.priority-low {
+    background-color: rgba(107, 114, 128, 0.1);
+    color: #374151;
+    border: 1px solid rgba(107, 114, 128, 0.2);
+  }
+
+  &.priority-medium {
+    background-color: rgba(251, 191, 36, 0.1);
+    color: #d97706;
+    border: 1px solid rgba(251, 191, 36, 0.2);
+  }
+
+  &.priority-high {
+    background-color: rgba(249, 115, 22, 0.1);
+    color: #ea580c;
+    border: 1px solid rgba(249, 115, 22, 0.2);
+  }
+
+  &.priority-urgent {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+}
+
+// Enhanced card actions
+mat-card-actions {
+  padding: v.$space-4 v.$space-6 v.$space-6 v.$space-6;
+  background-color: rgba(248, 250, 252, 0.5);
+  border-top: 1px solid v.$border-color-light;
+  @include m.flex-center-y;
+  justify-content: flex-end;
+  gap: v.$space-3;
+
+  .kanban-btn {
+    @include m.button-solid(v.$primary-color);
+    height: 40px;
+    padding: 0 v.$space-5;
+    font-weight: v.$font-weight-semibold;
+    border-radius: v.$border-radius-lg;
+
+    mat-icon {
+      margin-right: v.$space-2;
+      font-size: 1.125rem;
+    }
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.25);
+    }
+  }
+
+  .edit-btn {
+    @include m.button-stroked(v.$border-color-light);
+    height: 40px;
+    padding: 0 v.$space-4;
+    color: v.$text-color-medium;
+    border-radius: v.$border-radius-lg;
+
+    mat-icon {
+      margin-right: v.$space-2;
+      font-size: 1.125rem;
+    }
+
+    &:hover {
+      background-color: v.$background-color-light;
+      color: v.$text-color-dark;
+      border-color: v.$primary-color-light;
+    }
+  }
+}
+
+// Professional empty state
+.no-epics {
+  text-align: center;
+  padding: v.$space-10 v.$space-6;
+  color: v.$text-color-medium;
+  max-width: 480px;
+  margin: 0 auto;
+
+  .no-epics-icon {
+    font-size: 5rem;
+    margin-bottom: v.$space-6;
+    color: v.$border-color-medium;
+    opacity: 0.5;
+  }
+
+  h3 {
+    font-size: v.$font-size-2xl;
+    margin-bottom: v.$space-3;
+    color: v.$text-color-darkest;
+    font-weight: v.$font-weight-bold;
+    letter-spacing: -0.025em;
+  }
+
+  p {
+    margin-bottom: v.$space-8;
+    font-size: v.$font-size-lg;
+    line-height: 1.6;
+    color: v.$text-color-medium;
+  }
+
+  button {
+    @include m.button-solid(v.$primary-color);
+    height: 48px;
+    padding: 0 v.$space-8;
+    font-weight: v.$font-weight-semibold;
+    border-radius: v.$border-radius-lg;
+
+    mat-icon {
+      margin-right: v.$space-3;
+      font-size: 1.25rem;
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
+    }
+  }
 }

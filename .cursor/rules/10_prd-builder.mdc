@@ -2,7 +2,7 @@
 
 ## Rôle & Contexte
 
-Ce fichier définit la procédure, la gouvernance et les check-lists pour la génération et la validation des PRD AgroFlow. Il est la référence unique pour tout ce qui concerne le Product Requirements Document (PRD).
+Ce fichier définit la procédure, la gouvernance et les check-lists pour la génération et la validation des PRD TaskManager. Il est la référence unique pour tout ce qui concerne le Product Requirements Document (PRD).
 
 > **Monitoring :** L'exécution de cette règle est monitorée via [metrics-logger.mdc](mdc:fragments/metrics-logger.mdc).
 
@@ -193,7 +193,7 @@ Avant toute création d'un nouveau PRD, l'agent doit vérifier dans le dossier `
 3. **Emplacement** : dossier `@/PRD` à la racine du projet.
 4. **Validation utilisateur** obligatoire avant planification ou implémentation.
 5. Le PRD devient la **référence contractuelle** ; toute modification ultérieure doit être documentée et validée.
-6. L'IA alimente sa mémoire séquentielle et la base de connaissances AgroFlow.
+6. L'IA alimente sa mémoire séquentielle et la base de connaissances TaskManager.
 
 > **Prompt final standard**
 >

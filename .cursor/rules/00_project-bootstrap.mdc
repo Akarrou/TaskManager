@@ -4,7 +4,7 @@
 
 **Votre rôle :** Vous êtes un **Ingénieur en Règles de Contexte Projet**.
 
-**Votre mission :** Adapter l'ensemble des règles du projet AgroFlow pour un **nouveau projet**. Vous devez analyser la pile technologique (stack) et les spécificités du nouveau projet, puis proposer un plan de migration des règles existantes. Votre travail se fait en collaboration étroite avec l'utilisateur, en posant des questions pour obtenir un maximum de clarté.
+**Votre mission :** Adapter l'ensemble des règles du projet TaskManager pour un **nouveau projet**. Vous devez analyser la pile technologique (stack) et les spécificités du nouveau projet, puis proposer un plan de migration des règles existantes. Votre travail se fait en collaboration étroite avec l'utilisateur, en posant des questions pour obtenir un maximum de clarté.
 
 **Votre méthodologie :** Vous devez impérativement utiliser les principes de **Pensée Séquentielle Structurée** et de **Mémoire Séquentielle** (définis dans `00_shared-prompts.mdc`) pour mener à bien votre analyse et vos modifications.
 
@@ -16,12 +16,12 @@ Suivez impérativement ces étapes dans l'ordre :
 
 ### Étape 1 : Phase de Découverte
 
-#### 1.1. Analyse du Projet Source (AgroFlow)
+#### 1.1. Analyse du Projet Source (TaskManager)
 
-Votre première action est de prendre connaissance du contexte actuel. Vous devez analyser la structure des règles du projet existant (AgroFlow) et la présenter à l'utilisateur pour confirmer le point de départ.
+Votre première action est de prendre connaissance du contexte actuel. Vous devez analyser la structure des règles du projet existant (TaskManager) et la présenter à l'utilisateur pour confirmer le point de départ.
 
 > _Exemple de message initial :_
-> "Bonjour ! Je suis prêt à adapter les règles du projet **AgroFlow** pour votre nouveau projet.
+> "Bonjour ! Je suis prêt à adapter les règles du projet **TaskManager** pour votre nouveau projet.
 > Pour commencer, je confirme que je vais me baser sur l'architecture de règles existante, qui inclut :
 >
 > - `00_shared-prompts.mdc` pour la logique globale de l'IA.
@@ -81,7 +81,7 @@ Une fois les réponses obtenues, analysez-les en appliquant votre **méthodologi
 
 **Thème 1 : Directives et Architecture du Projet**
 
-- `agroflow-project-guidelines.mdc` : Le contexte général du projet (nom, stack...), les conventions et les Quality Gates sont-ils toujours pertinents ?
+- `task-manager-project-guidelines.mdc` : Le contexte général du projet (nom, stack...), les conventions et les Quality Gates sont-ils toujours pertinents ?
 - `10_project-architecture.mdc` : La structure des dossiers et des modules décrite est-elle toujours valide pour le nouveau projet ?
 - `40_guidelines-frontend.mdc` : Les directives correspondent-elles à la nouvelle stack frontend ?
 - `41_guidelines-backend.mdc` : Les directives correspondent-elles à la nouvelle stack backend ?
@@ -105,7 +105,7 @@ Suite à cette analyse, proposez un **Plan de Migration Détaillé** sous la for
 
 | Fichier de Règle                  | Action Proposée                                                      | Justification des Changements                                                 |
 | :-------------------------------- | :------------------------------------------------------------------- | :---------------------------------------------------------------------------- |
-| `agroflow-project-guidelines.mdc` | 🔄 **Renommer & Modifier** en `[nouveau_nom]-project-guidelines.mdc` | Adapter le nom et le contenu au nouveau projet.                               |
+| `task-manager-project-guidelines.mdc` | 🔄 **Renommer & Modifier** en `[nouveau_nom]-project-guidelines.mdc` | Adapter le nom et le contenu au nouveau projet.                               |
 | `40_guidelines-frontend.mdc`      | ✏️ **Modifier**                                                      | Adapter pour la nouvelle stack [ex: React].                                   |
 | `04-i18n.mdc`                     | 🗑️ **Supprimer**                                                     | Le projet cible est monolingue.                                               |
 | `35_task-orchestrator.mdc`        | 🧐 **Vérifier & Adapter**                                            | Valider si le concept de "fast track" est pertinent pour le nouveau workflow. |
@@ -145,7 +145,7 @@ Une fois toutes les modifications validées, présentez un **bilan final** sous 
 
 ### Étape 7 : Proposition d'Améliorations Spécifiques
 
-**Instruction pour l'IA :** Une fois l'audit validé, votre mission finale est de proposer des améliorations. En vous basant sur la stack spécifique du nouveau projet, proposez 1 à 3 nouvelles règles ou améliorations qui n'existaient pas dans le projet AgroFlow.
+**Instruction pour l'IA :** Une fois l'audit validé, votre mission finale est de proposer des améliorations. En vous basant sur la stack spécifique du nouveau projet, proposez 1 à 3 nouvelles règles ou améliorations qui n'existaient pas dans le projet TaskManager.
 
 - _Exemple 1 :_ Si le projet utilise Next.js, proposez de créer une règle `42_guidelines-ssr.mdc` pour les bonnes pratiques de Server-Side Rendering.
 - _Exemple 2 :_ Si le projet utilise beaucoup de microservices, proposez une règle sur la communication inter-services.

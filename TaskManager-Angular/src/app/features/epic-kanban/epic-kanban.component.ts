@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
+import { MatButtonModule } from '@angular/material/button';
 
 import { Store } from '@ngrx/store';
 import { takeUntil, Subject } from 'rxjs';
@@ -41,6 +42,7 @@ import { GenericKanbanComponent } from '../../shared/components/generic-kanban/g
     MatCardModule,
     MatDialogModule,
     MatSnackBarModule,
+    MatButtonModule,
     GenericKanbanComponent,
     ItemHeaderComponent,
     EpicMetricsComponent,
@@ -110,6 +112,10 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   }
 
   onNavigateBack(): void {
+    this.router.navigate(['/dashboard']);
+  }
+
+  onNavigateToDashboard(): void {
     this.router.navigate(['/dashboard']);
   }
 

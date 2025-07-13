@@ -2,7 +2,7 @@
 
 ## 🎯 Rôle & Contexte
 
-Cette règle définit la méthode officielle pour transformer un PRD (Product Requirements Document) en tickets de travail structurés (epics, features, tasks, sub-tasks) dans AgroFlow, en garantissant :
+Cette règle définit la méthode officielle pour transformer un PRD (Product Requirements Document) en tickets de travail structurés (epics, features, tasks, sub-tasks) dans TaskManager, en garantissant :
 
 - la traçabilité contractuelle,
 - la cohérence des slugs,
@@ -137,7 +137,7 @@ Pour pré-qualifier une tâche et permettre à l'orchestrateur (`35_task-orchest
 ## 6. 🗄️ Enregistrement dans Supabase (MCP Supabase)
 
 - **Obligation** :  
-  Chaque ticket généré (epic, feature, task, sub-task) doit être enregistré dans la base Supabase via le MCP Supabase, qui est la source de vérité pour la gestion des tâches AgroFlow.
+  Chaque ticket généré (epic, feature, task, sub-task) doit être enregistré dans la base Supabase via le MCP Supabase, qui est la source de vérité pour la gestion des tâches TaskManager.
 - **Vérification anti-doublon** :  
   **Validation Anti-Doublon :** Appliquer la procédure [validation-common.mdc](mdc:fragments/validation-common.mdc) - Section Anti-Doublon
 - **Structure** :  

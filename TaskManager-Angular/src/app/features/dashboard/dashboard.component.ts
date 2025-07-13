@@ -2,8 +2,11 @@ import { Component, OnInit, inject, signal, computed, effect } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { Store } from '@ngrx/store';
 import { SupabaseService } from '../../core/services/supabase';
 import { TaskService, Task } from '../../core/services/task';
 import { SearchFilters } from '../../shared/components/task-search/task-search.component';
@@ -11,13 +14,13 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
 import { UserService } from '../../core/services/user.service';
 import { TaskSearchComponent } from '../../shared/components/task-search/task-search.component';
 import { TaskTreeComponent } from '../tasks/task-tree/task-tree.component';
-import { MinimalDndComponent } from '../tasks/minimal-dnd.component';
+import * as ProjectSelectors from '../projects/store/project.selectors';
 
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatDialogModule, TaskSearchComponent, TaskTreeComponent, MinimalDndComponent],
+  imports: [CommonModule, MatIconModule, MatDialogModule, MatButtonModule, MatCardModule, TaskSearchComponent, TaskTreeComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -27,6 +30,7 @@ export class DashboardComponent implements OnInit {
   private router = inject(Router);
   private dialog = inject(MatDialog);
   private userService = inject(UserService);
+  private store = inject(Store);
 
   supabaseStatus = signal<'connecting' | 'connected' | 'error'>('connecting');
   statusMessage = signal('Connexion en cours...');
@@ -34,6 +38,27 @@ export class DashboardComponent implements OnInit {
   tasks = this.taskService.tasks;
   loading = this.taskService.loading;
   taskError = this.taskService.error;
+
+  // Project store selectors
+  selectedProjectId$ = this.store.select(ProjectSelectors.selectSelectedProjectId);
+  selectedProject$ = this.store.select(ProjectSelectors.selectSelectedProject);
+
+  // Current selected project ID signal
+  selectedProjectId = signal<string | null>(null);
+
+  // Epics for selected project
+  epicsForSelectedProject = computed(() => {
+    const allTasks = this.tasks();
+    const selectedProjectId = this.selectedProjectId();
+    
+    // Filter epics that belong to the selected project
+    if (!selectedProjectId) return [];
+    
+    return allTasks.filter(task => 
+      task.type === 'epic' && 
+      task.project_id === selectedProjectId
+    );
+  });
 
   users = signal<{ id: string; email: string }[]>([]);
 
@@ -68,6 +93,11 @@ export class DashboardComponent implements OnInit {
 
   async ngOnInit() {
     await this.loadUsers();
+
+    // Subscribe to selected project ID changes
+    this.selectedProjectId$.subscribe(projectId => {
+      this.selectedProjectId.set(projectId);
+    });
 
     // Lecture des filtres depuis localStorage au démarrage
     const savedFilters = localStorage.getItem('dashboardFilters');
@@ -140,6 +170,12 @@ export class DashboardComponent implements OnInit {
   navigateToEditTaskForm(task: Task) {
     if (task.id) {
       this.router.navigate(['/tasks', task.id, 'edit']);
+    }
+  }
+
+  navigateToEpicKanban(epic: Task) {
+    if (epic.id) {
+      this.router.navigate(['/epic', epic.id, 'kanban']);
     }
   }
 
@@ -314,5 +350,10 @@ export class DashboardComponent implements OnInit {
 
   getFilteredTreeTasks(): Task[] {
     return this.filteredTasks();
+  }
+
+  // TrackBy function for epic cards performance optimization
+  trackEpic(index: number, epic: Task): string {
+    return epic.id || index.toString();
   }
 }
