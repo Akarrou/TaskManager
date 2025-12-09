@@ -11,6 +11,8 @@ import { MatDividerModule } from '@angular/material/divider';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 import { Router } from '@angular/router';
 
+import { ItemDetailPopupComponent } from '../item-detail-popup/item-detail-popup.component';
+
 import { ISubtask } from '../../../features/tasks/subtask.model';
 import { Task } from '../../../core/services/task';
 import { KanbanItem } from '../../../features/epic-kanban/models/kanban-item.model';
@@ -30,6 +32,7 @@ type TaskStatus = Task['status'];
     MatProgressBarModule,
     MatTooltipModule,
     MatDividerModule,
+    ItemDetailPopupComponent,
   ],
   templateUrl: './kanban-card.component.html',
   styleUrls: ['./kanban-card.component.scss'],
@@ -75,6 +78,8 @@ export class KanbanCardComponent {
   @Output() taskEdit = new EventEmitter<Task | ISubtask>();
   @Output() taskDelete = new EventEmitter<string>();
   @Output() itemToggleExpanded = new EventEmitter<KanbanItem>();
+
+  showDetailPopup = false;
 
   get itemProgress(): { completed: number; total: number; percentage: number } {
     const total = this.tasks.length;
@@ -324,5 +329,21 @@ export class KanbanCardComponent {
 
   onDelete(taskId: string): void {
     this.itemDelete.emit(this.item);
+  }
+
+  onCardDoubleClick(): void {
+    this.showDetailPopup = true;
+  }
+
+  onCloseDetailPopup(): void {
+    this.showDetailPopup = false;
+  }
+
+  onEditFromPopup(item: KanbanItem): void {
+    this.itemEdit.emit(item);
+  }
+
+  onAddTaskFromPopup(item: KanbanItem): void {
+    this.addTaskToItem.emit(item);
   }
 }

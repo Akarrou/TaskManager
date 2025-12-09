@@ -21,13 +21,13 @@ import { EpicKanbanActions } from './store/epic-kanban.actions';
 import * as EpicKanbanSelectors from './store/epic-kanban.selectors';
 
 import { ItemHeaderComponent } from '../../shared/components/item-header/item-header.component';
-import { KanbanColumnComponent } from '../../shared/components/kanban-column/kanban-column.component';
-import { EpicMetricsComponent } from './components/epic-metrics/epic-metrics.component';
+
+import { ItemMetricsComponent } from '../../shared/components/item-metrics/item-metrics.component';
 import { SearchFiltersComponent } from './components/search-filters/search-filters.component';
 
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 
-import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
+import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { ISubtask } from '../tasks/subtask.model';
 import { KanbanItem } from './models/kanban-item.model';
 import { GenericKanbanComponent } from '../../shared/components/generic-kanban/generic-kanban.component';
@@ -45,7 +45,7 @@ import { GenericKanbanComponent } from '../../shared/components/generic-kanban/g
     MatButtonModule,
     GenericKanbanComponent,
     ItemHeaderComponent,
-    EpicMetricsComponent,
+    ItemMetricsComponent,
     SearchFiltersComponent,
   ],
   templateUrl: './epic-kanban.component.html',
@@ -63,7 +63,7 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
   currentEpicItem = this.store.selectSignal(EpicKanbanSelectors.selectCurrentEpicAsKanbanItem);
   columns$ = this.store.select(EpicKanbanSelectors.selectColumns);
   features$ = this.store.select(EpicKanbanSelectors.selectAllFeatures);
-  featuresAsKanbanItems$ = this.store.select(EpicKanbanSelectors.selectFeaturesAsKanbanItems);
+  featuresAsKanbanItems$ = this.store.select(EpicKanbanSelectors.selectFilteredFeaturesAsKanbanItems);
   tasks$ = this.store.select(EpicKanbanSelectors.selectAllTasks);
   metrics$ = this.store.select(EpicKanbanSelectors.selectMetrics);
   loading$ = this.store.select(EpicKanbanSelectors.selectLoading);

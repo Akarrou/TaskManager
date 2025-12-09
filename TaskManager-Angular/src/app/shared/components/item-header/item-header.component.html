@@ -22,57 +22,6 @@
   </mat-expansion-panel-header>
 
   <div class="epic-header">
-    <div class="header-actions">
-      <div class="left-actions">
-        <button mat-icon-button
-          (click)="onNavigateBack()"
-          class="action-button"
-          matTooltip="Retour au Dashboard">
-          <mat-icon>arrow_back</mat-icon>
-        </button>
-      </div>
-      <div class="right-actions">
-        <button mat-icon-button
-          (click)="onRefreshBoard()"
-          class="action-button"
-          matTooltip="Actualiser le tableau">
-          <mat-icon>refresh</mat-icon>
-        </button>
-        <button mat-icon-button
-          [matMenuTriggerFor]="actionsMenu"
-          class="action-button"
-          matTooltip="Actions">
-          <mat-icon>more_vert</mat-icon>
-        </button>
-        <mat-menu #actionsMenu="matMenu">
-          <button mat-menu-item
-            (click)="onEditItem()"
-            *ngIf="canEdit">
-            <mat-icon>edit</mat-icon>
-            <span>Modifier l'item</span>
-          </button>
-          <mat-divider></mat-divider>
-          <button mat-menu-item
-            (click)="onExportBoard()">
-            <mat-icon>download</mat-icon>
-            <span>Exporter le tableau</span>
-          </button>
-          <button mat-menu-item
-            (click)="onShareBoard()">
-            <mat-icon>share</mat-icon>
-            <span>Partager</span>
-          </button>
-          <mat-divider *ngIf="canEdit"></mat-divider>
-          <button mat-menu-item
-            (click)="onDeleteItem()"
-            class="delete-action"
-            *ngIf="canEdit">
-            <mat-icon>delete</mat-icon>
-            <span>Supprimer l'item</span>
-          </button>
-        </mat-menu>
-      </div>
-    </div>
 
     <mat-card class="epic-info-card">
       <mat-card-header>

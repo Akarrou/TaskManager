@@ -9,13 +9,14 @@ import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 
 import { EpicKanbanActions } from '../../store/epic-kanban.actions';
-// import {
-//   selectEpicKanbanFilters,
-//   selectUniqueAssignees,
-//   selectUniqueEnvironments,
-//   selectUniqueTags,
-//   selectFilteredFeaturesCount
-// } from '../../store/epic-kanban.selectors';
+import {
+  selectFilters,
+  selectUniqueAssignees,
+  selectUniqueEnvironments,
+  selectUniqueTags,
+  selectFilteredFeaturesCount,
+  selectFilteredTasksCount
+} from '../../store/epic-kanban.selectors';
 import { UserService } from '../../../../core/services/user.service';
 
 export interface KanbanSearchFilters {
@@ -198,14 +199,14 @@ export class SearchFiltersComponent implements OnInit, OnDestroy {
     await this.loadUsers();
 
     // Écouter les changements du store
-    // this.subscribeToStore();
+    this.subscribeToStore();
 
     // Écouter le compteur de features filtrées
-    // this.store.select(selectFilteredFeaturesCount).pipe(
-    //   takeUntil(this.destroy$)
-    // ).subscribe(count => {
-    //   this.filteredFeaturesCount.set(count);
-    // });
+    this.store.select(selectFilteredFeaturesCount).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(count => {
+      this.filteredFeaturesCount.set(count);
+    });
   }
 
   ngOnDestroy() {
@@ -229,39 +230,37 @@ export class SearchFiltersComponent implements OnInit, OnDestroy {
 
   private subscribeToStore() {
     // Écouter les changements de filtres depuis le store
-    // this.store.select(selectEpicKanbanFilters).pipe(
-    //   takeUntil(this.destroy$)
-    // ).subscribe((filters: KanbanSearchFilters | null) => {
-    //   if (filters) {
-    //     this.searchText.set(filters.searchText || '');
-    //     this.priorityFilter.set(filters.priority || '');
-    //     this.assigneeFilter.set(filters.assignee || '');
-    //     this.statusFilter.set(filters.status || '');
-    //     this.environmentFilter.set(filters.environment || '');
-    //     this.tagsFilter.set(filters.tags || []);
-    //   }
-    // });
+    this.store.select(selectFilters).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe((filters: KanbanSearchFilters) => {
+      this.searchText.set(filters.searchText || '');
+      this.priorityFilter.set(filters.priority || '');
+      this.assigneeFilter.set(filters.assignee || '');
+      this.statusFilter.set(filters.status || '');
+      this.environmentFilter.set(filters.environment || '');
+      this.tagsFilter.set(filters.tags || []);
+    });
 
     // T020 - Écouter les assignés uniques
-    // this.store.select(selectUniqueAssignees).pipe(
-    //   takeUntil(this.destroy$)
-    // ).subscribe((assignees: string[]) => {
-    //   this.uniqueAssignees.set(assignees);
-    // });
+    this.store.select(selectUniqueAssignees).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe((assignees: string[]) => {
+      this.uniqueAssignees.set(assignees);
+    });
 
     // T020 - Écouter les environnements uniques
-    // this.store.select(selectUniqueEnvironments).pipe(
-    //   takeUntil(this.destroy$)
-    // ).subscribe((environments: string[]) => {
-    //   this.uniqueEnvironments.set(environments);
-    // });
+    this.store.select(selectUniqueEnvironments).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe((environments: string[]) => {
+      this.uniqueEnvironments.set(environments);
+    });
 
     // T020 - Écouter les tags uniques
-    // this.store.select(selectUniqueTags).pipe(
-    //   takeUntil(this.destroy$)
-    // ).subscribe((tags: string[]) => {
-    //   this.uniqueTags.set(tags);
-    // });
+    this.store.select(selectUniqueTags).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe((tags: string[]) => {
+      this.uniqueTags.set(tags);
+    });
   }
 
   // Méthodes pour gérer les changements de filtres
@@ -337,12 +336,12 @@ export class SearchFiltersComponent implements OnInit, OnDestroy {
   // Méthode pour mettre à jour les filtres dans le store
   private updateFilters(filterUpdate: Partial<KanbanSearchFilters>) {
     this.store.dispatch(EpicKanbanActions.updateFilters({
-      searchText: filterUpdate.searchText ?? this.searchText(),
-      priority: filterUpdate.priority ?? this.priorityFilter(),
-      assignee: filterUpdate.assignee ?? this.assigneeFilter(),
-      status: filterUpdate.status ?? this.statusFilter(),
-      environment: filterUpdate.environment ?? this.environmentFilter(),
-      tags: filterUpdate.tags ?? this.tagsFilter()
+      searchText: filterUpdate.searchText !== undefined ? filterUpdate.searchText : this.searchText(),
+      priority: filterUpdate.priority !== undefined ? filterUpdate.priority : this.priorityFilter(),
+      assignee: filterUpdate.assignee !== undefined ? filterUpdate.assignee : this.assigneeFilter(),
+      status: filterUpdate.status !== undefined ? filterUpdate.status : this.statusFilter(),
+      environment: filterUpdate.environment !== undefined ? filterUpdate.environment : this.environmentFilter(),
+      tags: filterUpdate.tags !== undefined ? filterUpdate.tags : this.tagsFilter()
     }));
   }
 

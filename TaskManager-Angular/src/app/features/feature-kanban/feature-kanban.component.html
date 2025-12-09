@@ -1,33 +1,92 @@
-<div class="feature-kanban-container p-4">
-  <app-item-header [item]="(feature$ | async)!"
-    (navigateBack)="onNavigateBack()">
-  </app-item-header>
+<div class="feature-kanban-container">
 
-  <!-- Navigation Buttons -->
-  <div class="navigation-buttons mb-4 flex gap-2">
-    <button mat-raised-button 
-            color="primary"
-            (click)="onNavigateToDashboard()"
-            class="nav-button">
-      <mat-icon>dashboard</mat-icon>
-      Retour au Dashboard
-    </button>
-    
-    <button mat-raised-button 
-            color="accent"
-            (click)="onNavigateToEpicKanban()"
-            class="nav-button">
-      <mat-icon>view_kanban</mat-icon>
-      Retour au Kanban Epics
+  <!-- Professional Navigation Header -->
+  <div class="kanban-header">
+    <div class="kanban-header-actions">
+      <button mat-raised-button
+        (click)="onNavigateToDashboard()"
+        class="dashboard-btn">
+        <mat-icon>dashboard</mat-icon>
+        Retour au Dashboard
+      </button>
+
+      <div class="header-actions-right">
+        <button mat-stroked-button
+          (click)="onNavigateToEpicKanban()"
+          class="epic-kanban-btn">
+          <mat-icon>view_kanban</mat-icon>
+          Retour au Kanban Epics
+        </button>
+        
+        <button mat-stroked-button
+          (click)="onRefreshBoard()"
+          class="refresh-btn">
+          <mat-icon>refresh</mat-icon>
+          Actualiser
+        </button>
+      </div>
+    </div>
+  </div>
+
+  @if (currentFeatureItem(); as feature) {
+  <app-item-header [item]="feature"
+    [metrics]="(metrics$ | async)!"
+    [canEdit]="true"
+    (navigateBack)="onNavigateBack()"
+    (refreshBoard)="onRefreshBoard()"
+    (editItem)="onEditItem($event)"
+    (saveItem)="onSaveItem($event)"
+    (deleteItem)="onDeleteItem($event)"
+    (exportBoard)="onExportBoard()"
+    (shareBoard)="onShareBoard()">
+  </app-item-header>
+  }
+
+  <!-- Section des filtres -->
+  <app-search-filters></app-search-filters>
+
+  <!-- Métriques en haut -->
+  <app-item-metrics *ngIf="(currentFeature$ | async) && (metrics$ | async)"
+    [item]="(currentFeature$ | async)!"
+    [children]="[]"
+    [tasks]="(tasks$ | async) || []"
+    [metrics]="(metrics$ | async)!"
+    [itemType]="'feature'">
+  </app-item-metrics>
+
+  <!-- État de chargement -->
+  <div *ngIf="loading$ | async"
+    class="loading-state">
+    <div class="loading-content">
+      <mat-icon class="loading-spinner">hourglass_empty</mat-icon>
+      <span>Chargement du tableau Kanban...</span>
+    </div>
+  </div>
+
+  <!-- État d'erreur -->
+  <div *ngIf="error$ | async"
+    class="error-state">
+    <mat-icon class="error-icon">error_outline</mat-icon>
+    <h3>Erreur de chargement</h3>
+    <p>{{ error$ | async }}</p>
+    <button mat-raised-button
+      color="primary"
+      (click)="retryLoad()">
+      <mat-icon>refresh</mat-icon>
+      Réessayer
     </button>
   </div>
 
-  <app-generic-kanban [items]="(tasks$ | async)!"
-    [columns]="columns"
-    [loading]="(loading$ | async)!"
+  <!-- Tableau Kanban -->
+  @if (!(loading$ | async) && !(error$ | async) && (columns$ | async); as columns) {
+  <app-generic-kanban [columns]="columns"
+    [items]="(tasksAsKanbanItems$ | async) || []"
+    [loading]="(loading$ | async) || false"
     [error]="(error$ | async)"
-    (itemDropped)="onItemDropped($event)"
-    (itemEdited)="onItemEdited($event)"
-    (itemDeleted)="onItemDeleted($event)">
-  </app-generic-kanban>
+    (itemDropped)="onTaskMove($event)"
+    (itemEdited)="onTaskEdit($event)"
+    (itemDeleted)="onTaskDelete($event)"
+    (retryLoad)="onRefreshBoard()"></app-generic-kanban>
+  }
+
 </div>

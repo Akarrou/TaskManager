@@ -2,6 +2,7 @@ import { createReducer, on } from '@ngrx/store';
 import { EpicKanbanActions } from './epic-kanban.actions';
 import { Task } from '../../../core/services/task';
 import { EpicMetrics } from '../models/epic-board.model';
+import { KanbanSearchFilters } from '../components/search-filters/search-filters.component';
 
 export const epicKanbanFeatureKey = 'epicKanban';
 
@@ -17,6 +18,7 @@ export interface EpicKanbanState {
   saving: boolean;
   error: string | null;
   expandedFeatures: Set<string>;
+  filters: KanbanSearchFilters;
 }
 
 export const initialState: EpicKanbanState = {
@@ -31,6 +33,14 @@ export const initialState: EpicKanbanState = {
   saving: false,
   error: null,
   expandedFeatures: new Set<string>(),
+  filters: {
+    searchText: '',
+    priority: null,
+    assignee: null,
+    status: null,
+    environment: null,
+    tags: []
+  }
 };
 
 export const epicKanbanReducer = createReducer(
@@ -115,5 +125,30 @@ export const epicKanbanReducer = createReducer(
       newSet.add(featureId);
     }
     return { ...state, expandedFeatures: newSet };
-  })
+  }),
+
+  // Filter actions
+  on(EpicKanbanActions.updateFilters, (state, filters) => ({
+    ...state,
+    filters: {
+      searchText: filters.searchText ?? state.filters.searchText,
+      priority: filters.priority ?? state.filters.priority,
+      assignee: filters.assignee ?? state.filters.assignee,
+      status: filters.status ?? state.filters.status,
+      environment: filters.environment ?? state.filters.environment,
+      tags: filters.tags ?? state.filters.tags
+    }
+  })),
+
+  on(EpicKanbanActions.clearFilters, (state) => ({
+    ...state,
+    filters: {
+      searchText: '',
+      priority: null,
+      assignee: null,
+      status: null,
+      environment: null,
+      tags: []
+    }
+  }))
 );

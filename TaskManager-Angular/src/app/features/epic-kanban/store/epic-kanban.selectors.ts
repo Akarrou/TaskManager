@@ -17,6 +17,7 @@ export const selectError = createSelector(selectEpicKanbanState, (state) => stat
 export const selectExpandedFeatures = createSelector(selectEpicKanbanState, state => state.expandedFeatures);
 export const selectMetrics = createSelector(selectEpicKanbanState, state => state.metrics);
 export const selectCurrentEpic = createSelector(selectEpicKanbanState, state => state.epic);
+export const selectFilters = createSelector(selectEpicKanbanState, state => state.filters);
 
 export const selectColumns = createSelector(
   selectEpicKanbanState,
@@ -62,11 +63,6 @@ export const selectFeatureTasks = createSelector(
   (state) => state.featureTasks
 );
 
-export const selectTasksForCurrentFeatureAsKanbanItems = createSelector(
-  selectFeatureTasks,
-  (tasks): KanbanItem[] => tasks.map(t => taskToKanbanItem(t as unknown as Task))
-);
-
 export const selectFeatureTasksLoading = createSelector(
   selectEpicKanbanState,
   (state) => state.loadingTasks
@@ -75,6 +71,197 @@ export const selectFeatureTasksLoading = createSelector(
 export const selectFeatureTasksError = createSelector(
   selectEpicKanbanState,
   (state) => state.error
+);
+
+// Filtered selectors
+export const selectFilteredFeatures = createSelector(
+  selectAllFeatures,
+  selectFilters,
+  (features, filters) => {
+    return features.filter(feature => {
+      // Search text filter
+      if (filters.searchText) {
+        const searchLower = filters.searchText.toLowerCase();
+        const titleMatch = feature.title?.toLowerCase().includes(searchLower);
+        const descMatch = feature.description?.toLowerCase().includes(searchLower);
+        const taskNumberMatch = feature.task_number?.toString().toLowerCase().includes(searchLower);
+        if (!titleMatch && !descMatch && !taskNumberMatch) {
+          return false;
+        }
+      }
+      
+      // Priority filter
+      if (filters.priority && feature.priority !== filters.priority) {
+        return false;
+      }
+      
+      // Status filter
+      if (filters.status && feature.status !== filters.status) {
+        return false;
+      }
+      
+      // Assignee filter
+      if (filters.assignee) {
+        if (filters.assignee === 'unassigned' && feature.assigned_to) {
+          return false;
+        }
+        if (filters.assignee !== 'unassigned' && feature.assigned_to !== filters.assignee) {
+          return false;
+        }
+      }
+      
+      // Environment filter - handle environment as string or array
+      if (filters.environment) {
+        const featureEnv = Array.isArray(feature.environment) ? feature.environment[0] : feature.environment;
+        if (featureEnv !== filters.environment) {
+          return false;
+        }
+      }
+      
+      // Tags filter
+      if (filters.tags && filters.tags.length > 0) {
+        const featureTags = feature.tags || [];
+        const hasAllTags = filters.tags.every(tag => featureTags.includes(tag));
+        if (!hasAllTags) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  }
+);
+
+export const selectFilteredFeaturesAsKanbanItems = createSelector(
+  selectFilteredFeatures,
+  (features): KanbanItem[] => features.map(f => taskToKanbanItem(f as unknown as Task))
+);
+
+export const selectFilteredTasks = createSelector(
+  selectFeatureTasks,
+  selectFilters,
+  (tasks, filters) => {
+    return tasks.filter(task => {
+      // Search text filter
+      if (filters.searchText) {
+        const searchLower = filters.searchText.toLowerCase();
+        const titleMatch = task.title?.toLowerCase().includes(searchLower);
+        const descMatch = task.description?.toLowerCase().includes(searchLower);
+        const taskNumberMatch = task.task_number?.toString().toLowerCase().includes(searchLower);
+        if (!titleMatch && !descMatch && !taskNumberMatch) {
+          return false;
+        }
+      }
+      
+      // Priority filter
+      if (filters.priority && task.priority !== filters.priority) {
+        return false;
+      }
+      
+      // Status filter
+      if (filters.status && task.status !== filters.status) {
+        return false;
+      }
+      
+      // Assignee filter
+      if (filters.assignee) {
+        if (filters.assignee === 'unassigned' && task.assigned_to) {
+          return false;
+        }
+        if (filters.assignee !== 'unassigned' && task.assigned_to !== filters.assignee) {
+          return false;
+        }
+      }
+      
+      // Environment filter - handle environment as string or array
+      if (filters.environment) {
+        const taskEnv = Array.isArray(task.environment) ? task.environment[0] : task.environment;
+        if (taskEnv !== filters.environment) {
+          return false;
+        }
+      }
+      
+      // Tags filter
+      if (filters.tags && filters.tags.length > 0) {
+        const taskTags = task.tags || [];
+        const hasAllTags = filters.tags.every(tag => taskTags.includes(tag));
+        if (!hasAllTags) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  }
+);
+
+export const selectFilteredTasksAsKanbanItems = createSelector(
+  selectFilteredTasks,
+  (tasks): KanbanItem[] => tasks.map(t => taskToKanbanItem(t as unknown as Task))
+);
+
+export const selectTasksForCurrentFeatureAsKanbanItems = createSelector(
+  selectFilteredTasks,
+  (tasks): KanbanItem[] => tasks.map(t => taskToKanbanItem(t as unknown as Task))
+);
+
+// Unique values selectors for filter options
+export const selectUniqueAssignees = createSelector(
+  selectAllFeatures,
+  selectFeatureTasks,
+  (features, tasks) => {
+    const allItems = [...features, ...tasks];
+    const assignees = new Set<string>();
+    allItems.forEach(item => {
+      if (item.assigned_to) {
+        assignees.add(item.assigned_to);
+      }
+    });
+    return Array.from(assignees);
+  }
+);
+
+export const selectUniqueEnvironments = createSelector(
+  selectAllFeatures,
+  selectFeatureTasks,
+  (features, tasks) => {
+    const allItems = [...features, ...tasks];
+    const environments = new Set<string>();
+    allItems.forEach(item => {
+      if (item.environment) {
+        const env = Array.isArray(item.environment) ? item.environment[0] : item.environment;
+        if (typeof env === 'string') {
+          environments.add(env);
+        }
+      }
+    });
+    return Array.from(environments);
+  }
+);
+
+export const selectUniqueTags = createSelector(
+  selectAllFeatures,
+  selectFeatureTasks,
+  (features, tasks) => {
+    const allItems = [...features, ...tasks];
+    const tags = new Set<string>();
+    allItems.forEach(item => {
+      if (item.tags) {
+        item.tags.forEach(tag => tags.add(tag));
+      }
+    });
+    return Array.from(tags);
+  }
+);
+
+export const selectFilteredFeaturesCount = createSelector(
+  selectFilteredFeatures,
+  (features) => features.length
+);
+
+export const selectFilteredTasksCount = createSelector(
+  selectFilteredTasks,
+  (tasks) => tasks.length
 );
 
 // Helper function

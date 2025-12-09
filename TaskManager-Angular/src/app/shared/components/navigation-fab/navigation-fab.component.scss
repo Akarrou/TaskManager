@@ -1,0 +1,302 @@
+@use "../../../styles/variables" as v;
+
+.navigation-fab-container {
+  position: fixed;
+  z-index: 1000;
+  
+  // Positions
+  &.fab-position-bottom-right {
+    bottom: 24px;
+    right: 24px;
+  }
+  
+  &.fab-position-bottom-left {
+    bottom: 24px;
+    left: 24px;
+  }
+  
+  &.fab-position-top-right {
+    top: 24px;
+    right: 24px;
+  }
+  
+  &.fab-position-top-left {
+    top: 24px;
+    left: 24px;
+  }
+  
+  // Tailles
+  &.fab-size-small {
+    .fab-main-button {
+      width: 48px !important;
+      height: 48px !important;
+      
+      .fab-main-icon {
+        font-size: 20px;
+      }
+    }
+    
+    .fab-action-button {
+      width: 40px !important;
+      height: 40px !important;
+      
+      mat-icon {
+        font-size: 18px;
+      }
+    }
+  }
+  
+  &.fab-size-large {
+    .fab-main-button {
+      width: 72px !important;
+      height: 72px !important;
+      
+      .fab-main-icon {
+        font-size: 32px;
+      }
+    }
+    
+    .fab-action-button {
+      width: 56px !important;
+      height: 56px !important;
+      
+      mat-icon {
+        font-size: 24px;
+      }
+    }
+  }
+}
+
+.fab-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  z-index: -1;
+}
+
+.fab-main-button {
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  
+  &:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(-2px);
+  }
+  
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  &.fab-opened {
+    transform: scale(1.1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25) !important;
+  }
+  
+  &.fab-has-changes {
+    animation: fabPulse 2s infinite;
+  }
+}
+
+.fab-icon-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.fab-main-icon {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  &.fab-icon-rotated {
+    transform: rotate(45deg);
+  }
+}
+
+.fab-changes-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 12px;
+  height: 12px;
+  background: #ff4444;
+  border-radius: 50%;
+  border: 2px solid white;
+  animation: indicatorPulse 1.5s infinite;
+}
+
+.fab-actions {
+  position: absolute;
+  bottom: 80px;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  
+  .fab-position-bottom-left & {
+    left: 0;
+    right: auto;
+  }
+  
+  .fab-position-top-right & {
+    top: 80px;
+    bottom: auto;
+  }
+  
+  .fab-position-top-left & {
+    top: 80px;
+    bottom: auto;
+    left: 0;
+    right: auto;
+  }
+}
+
+.fab-action-button {
+  opacity: 0;
+  transform: translateY(20px) scale(0.8);
+  animation: fabActionSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(-1px) scale(1.05);
+  }
+  
+  &.fab-action-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    
+    &:hover {
+      transform: none;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15) !important;
+    }
+  }
+  
+  // Animation en cascade pour chaque bouton
+  @for $i from 1 through 6 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{($i - 1) * 0.05s};
+    }
+  }
+}
+
+// Animations
+@keyframes fabPulse {
+  0% {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 0 rgba(33, 150, 243, 0.7);
+  }
+  70% {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 10px rgba(33, 150, 243, 0);
+  }
+  100% {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 0 rgba(33, 150, 243, 0);
+  }
+}
+
+@keyframes indicatorPulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fabActionSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .navigation-fab-container {
+    &.fab-position-bottom-right,
+    &.fab-position-bottom-left {
+      bottom: 20px;
+    }
+    
+    &.fab-position-bottom-right,
+    &.fab-position-top-right {
+      right: 20px;
+    }
+    
+    &.fab-position-bottom-left,
+    &.fab-position-top-left {
+      left: 20px;
+    }
+    
+    &.fab-position-top-right,
+    &.fab-position-top-left {
+      top: 20px;
+    }
+  }
+  
+  .fab-main-button {
+    width: 56px !important;
+    height: 56px !important;
+    
+    .fab-main-icon {
+      font-size: 24px;
+    }
+  }
+  
+  .fab-action-button {
+    width: 44px !important;
+    height: 44px !important;
+    
+    mat-icon {
+      font-size: 18px;
+    }
+  }
+  
+  .fab-changes-indicator {
+    width: 10px;
+    height: 10px;
+    top: 3px;
+    right: 3px;
+  }
+}
+
+@media (max-width: 480px) {
+  .navigation-fab-container {
+    &.fab-position-bottom-right,
+    &.fab-position-bottom-left {
+      bottom: 16px;
+    }
+    
+    &.fab-position-bottom-right,
+    &.fab-position-top-right {
+      right: 16px;
+    }
+    
+    &.fab-position-bottom-left,
+    &.fab-position-top-left {
+      left: 16px;
+    }
+    
+    &.fab-position-top-right,
+    &.fab-position-top-left {
+      top: 16px;
+    }
+  }
+}

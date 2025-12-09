@@ -1,5 +1,26 @@
 <div class="epic-kanban-container">
 
+  <!-- Professional Navigation Header -->
+  <div class="kanban-header">
+    <div class="kanban-header-actions">
+      <button mat-raised-button
+        (click)="onNavigateToDashboard()"
+        class="dashboard-btn">
+        <mat-icon>dashboard</mat-icon>
+        Retour au Dashboard
+      </button>
+
+      <div class="header-actions-right">
+        <button mat-stroked-button
+          (click)="onRefreshBoard()"
+          class="refresh-btn">
+          <mat-icon>refresh</mat-icon>
+          Actualiser
+        </button>
+      </div>
+    </div>
+  </div>
+
   @if (currentEpicItem(); as epic) {
   <app-item-header [item]="epic"
     [metrics]="(metrics$ | async)!"
@@ -14,27 +35,17 @@
   </app-item-header>
   }
 
-  <!-- Navigation Button -->
-  <div class="navigation-buttons mb-4 flex gap-2">
-    <button mat-raised-button 
-            color="primary"
-            (click)="onNavigateToDashboard()"
-            class="nav-button">
-      <mat-icon>dashboard</mat-icon>
-      Retour au Dashboard
-    </button>
-  </div>
-
   <!-- Section des filtres -->
   <app-search-filters></app-search-filters>
 
   <!-- Métriques en haut -->
-  <app-epic-metrics *ngIf="(currentEpic$ | async) && (metrics$ | async)"
-    [epic]="(currentEpic$ | async)!"
-    [features]="(features$ | async) || []"
+  <app-item-metrics *ngIf="(currentEpic$ | async) && (metrics$ | async)"
+    [item]="(currentEpic$ | async)!"
+    [children]="(features$ | async) || []"
     [tasks]="(tasks$ | async) || []"
-    [metrics]="(metrics$ | async)!">
-  </app-epic-metrics>
+    [metrics]="(metrics$ | async)!"
+    [itemType]="'epic'">
+  </app-item-metrics>
 
   <!-- État de chargement -->
   <div *ngIf="loading$ | async"

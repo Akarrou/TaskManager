@@ -1,13 +1,13 @@
-<!-- T012 - Epic Metrics Dashboard Analytics - Accordion Layout -->
-<div class="epic-metrics">
+<!-- T012 - Item Metrics Dashboard Analytics - Accordion Layout -->
+<div class="item-metrics">
 
-  <!-- ANALYTICS EPIC - Vue unique avec toggle interne -->
+  <!-- ANALYTICS ITEM - Vue unique avec toggle interne -->
   <mat-expansion-panel class="analytics-panel"
     [expanded]="false">
     <mat-expansion-panel-header>
       <mat-panel-title>
         <mat-icon>analytics</mat-icon>
-        Analytics Epic
+        Analytics {{ itemTypeLabel }}
       </mat-panel-title>
       <mat-panel-description>
         <span class="current-view">{{ viewMode === 'overview' ? 'Vue d\'ensemble' : 'Analyse détaillée' }}</span>
@@ -69,13 +69,13 @@
                     [options]="progressChartOptions">
                   </canvas>
                   <div class="chart-center-value">
-                    <span class="percentage">{{ taskMetrics().percentage }}%</span>
+                    <span class="percentage">{{ taskMetrics.percentage }}%</span>
                   </div>
                 </div>
                 <div class="kpi-details">
                   <h3>Progression</h3>
                   <div class="kpi-breakdown">
-                    <span class="completed">{{ taskMetrics().completed }} terminés</span> | <span class="remaining">{{ taskMetrics().remaining }} restants</span>
+                    <span class="completed">{{ taskMetrics.completed }} terminés</span> | <span class="remaining">{{ taskMetrics.remaining }} restants</span>
                   </div>
                 </div>
               </div>
@@ -86,7 +86,7 @@
                 <mat-icon class="kpi-icon">group</mat-icon>
                 <div class="kpi-details">
                   <h3>Équipe</h3>
-                  <div class="kpi-value">{{ teamMetrics().activeMembers }}/{{ teamMetrics().totalMembers }}</div>
+                  <div class="kpi-value">{{ teamMetrics.activeMembers }}/{{ teamMetrics.totalMembers }}</div>
                   <div class="kpi-label">membres actifs</div>
                 </div>
               </div>
@@ -97,7 +97,7 @@
                 <mat-icon class="kpi-icon">trending_up</mat-icon>
                 <div class="kpi-details">
                   <h3>Vélocité</h3>
-                  <div class="kpi-value">{{ velocityStats().tasksPerDay }}</div>
+                  <div class="kpi-value">{{ velocityStats.tasksPerDay }}</div>
                   <div class="kpi-label">tâches/jour</div>
                 </div>
               </div>
@@ -106,14 +106,14 @@
             <mat-card class="kpi-card time-kpi">
               <div class="kpi-content">
                 <mat-icon class="kpi-icon"
-                  [class.is-over-budget]="timeMetrics().isOverBudget"
-                  [class.is-on-track]="!timeMetrics().isOverBudget">schedule</mat-icon>
+                  [class.is-over-budget]="timeMetrics.isOverBudget"
+                  [class.is-on-track]="!timeMetrics.isOverBudget">schedule</mat-icon>
                 <div class="kpi-details">
                   <h3>Budget temps</h3>
                   <div class="kpi-value"
-                    [class.is-over-budget]="timeMetrics().isOverBudget"
-                    [class.is-on-track]="!timeMetrics().isOverBudget">
-                    {{ (timeMetrics().efficiency * 100).toFixed(0) }}%
+                    [class.is-over-budget]="timeMetrics.isOverBudget"
+                    [class.is-on-track]="!timeMetrics.isOverBudget">
+                    {{ (timeMetrics.efficiency * 100).toFixed(0) }}%
                   </div>
                   <div class="kpi-label">utilisé</div>
                 </div>
@@ -150,64 +150,64 @@
                 <h3><mat-icon class="card-icon icon-progress">donut_small</mat-icon> Progression détaillée</h3>
                 <div class="card-subtitle">Répartition par statut</div>
               </div>
-              <div class="card-percentage text-progress">{{ taskMetrics().percentage }}%</div>
+              <div class="card-percentage text-progress">{{ taskMetrics.percentage }}%</div>
             </div>
             <mat-card-content>
               <mat-progress-bar class="main-progress"
-                [value]="taskMetrics().percentage"
+                [value]="taskMetrics.percentage"
                 color="primary">
               </mat-progress-bar>
 
               <div class="progress-breakdown">
                 <div class="breakdown-item completed">
-                  <span class="count">{{ taskMetrics().completed }}</span>
+                  <span class="count">{{ taskMetrics.completed }}</span>
                   <span class="label">Terminé</span>
                 </div>
                 <div class="breakdown-item in-progress">
-                  <span class="count">{{ taskMetrics().inProgress }}</span>
+                  <span class="count">{{ taskMetrics.inProgress }}</span>
                   <span class="label">En cours</span>
                 </div>
                 <div class="breakdown-item review">
-                  <span class="count">{{ taskMetrics().review }}</span>
+                  <span class="count">{{ taskMetrics.review }}</span>
                   <span class="label">Révision</span>
                 </div>
                 <div class="breakdown-item pending">
-                  <span class="count">{{ taskMetrics().pending }}</span>
+                  <span class="count">{{ taskMetrics.pending }}</span>
                   <span class="label">En attente</span>
                 </div>
               </div>
 
               <!-- Alertes tâches -->
               <div class="progress-alerts"
-                *ngIf="taskMetrics().overdue > 0">
+                *ngIf="taskMetrics.overdue > 0">
                 <mat-chip color="warn"
                   selected>
-                  {{ taskMetrics().overdue }} en retard
+                  {{ taskMetrics.overdue }} en retard
                 </mat-chip>
               </div>
             </mat-card-content>
           </mat-card>
 
-          <!-- CARD 2: FEATURES AVANCÉES -->
+          <!-- CARD 2: ÉLÉMENTS ENFANTS AVANCÉS -->
           <mat-card class="metric-card feature-card">
             <div class="card-header">
               <div class="card-title">
-                <h3><mat-icon class="card-icon icon-features">view_module</mat-icon> Features Analytics</h3>
+                <h3><mat-icon class="card-icon icon-features">view_module</mat-icon> {{ childrenLabel }} Analytics</h3>
                 <div class="card-subtitle">Métriques avancées</div>
               </div>
             </div>
             <mat-card-content>
               <div class="feature-stats">
                 <div class="stat-item">
-                  <div class="stat-value">{{ featureMetrics().total }}</div>
+                  <div class="stat-value">{{ featureMetrics.total }}</div>
                   <div class="stat-label">Total</div>
                 </div>
                 <div class="stat-item">
-                  <div class="stat-value completed">{{ featureMetrics().completed }}</div>
+                  <div class="stat-value completed">{{ featureMetrics.completed }}</div>
                   <div class="stat-label">Terminées</div>
                 </div>
                 <div class="stat-item">
-                  <div class="stat-value in-progress">{{ featureMetrics().inProgress }}</div>
+                  <div class="stat-value in-progress">{{ featureMetrics.inProgress }}</div>
                   <div class="stat-label">En cours</div>
                 </div>
               </div>
@@ -216,13 +216,13 @@
 
               <div class="feature-metrics">
                 <div class="metric-row">
-                  <span class="metric-label">Moyenne tâches/feature</span>
-                  <span class="metric-value">{{ featureMetrics().avgTasksPerFeature }}</span>
+                  <span class="metric-label">Moyenne tâches/{{ childrenSingularLabel }}</span>
+                  <span class="metric-value">{{ featureMetrics.avgTasksPerFeature }}</span>
                 </div>
                 <div class="metric-row"
-                  *ngIf="featureMetrics().blockedFeatures > 0">
-                  <span class="metric-label">Features bloquées</span>
-                  <span class="metric-value text-red-600">{{ featureMetrics().blockedFeatures }}</span>
+                  *ngIf="featureMetrics.blockedFeatures > 0">
+                  <span class="metric-label">{{ childrenLabel }} bloqué(e)s</span>
+                  <span class="metric-value text-red-600">{{ featureMetrics.blockedFeatures }}</span>
                 </div>
               </div>
             </mat-card-content>
@@ -240,18 +240,18 @@
               <div class="time-metrics">
                 <div class="metric-row">
                   <span class="metric-label">Heures estimées</span>
-                  <span class="metric-value">{{ timeMetrics().estimatedHours }}h</span>
+                  <span class="metric-value">{{ timeMetrics.estimatedHours }}h</span>
                 </div>
                 <div class="metric-row">
                   <span class="metric-label">Heures réelles</span>
-                  <span class="metric-value">{{ timeMetrics().actualHours }}h</span>
+                  <span class="metric-value">{{ timeMetrics.actualHours }}h</span>
                 </div>
                 <div class="metric-row">
                   <span class="metric-label">Efficacité</span>
                   <span class="metric-value"
-                    [class.text-green-600]="timeMetrics().efficiency <= 1"
-                    [class.text-red-600]="timeMetrics().efficiency > 1">
-                    {{ (timeMetrics().efficiency * 100).toFixed(0) }}%
+                    [class.text-green-600]="timeMetrics.efficiency <= 1"
+                    [class.text-red-600]="timeMetrics.efficiency > 1">
+                    {{ (timeMetrics.efficiency * 100).toFixed(0) }}%
                   </span>
                 </div>
               </div>
@@ -269,16 +269,16 @@
             <mat-card-content>
               <div class="team-stats">
                 <div class="stat-item">
-                  <div class="stat-value">{{ teamMetrics().totalMembers }}</div>
+                  <div class="stat-value">{{ teamMetrics.totalMembers }}</div>
                   <div class="stat-label">Membres</div>
                 </div>
                 <div class="stat-item">
-                  <div class="stat-value">{{ teamMetrics().activeMembers }}</div>
+                  <div class="stat-value">{{ teamMetrics.activeMembers }}</div>
                   <div class="stat-label">Actifs</div>
                 </div>
                 <div class="stat-item"
-                  *ngIf="teamMetrics().topPerformer">
-                  <div class="stat-value">{{ teamMetrics().topPerformer }}</div>
+                  *ngIf="teamMetrics.topPerformer">
+                  <div class="stat-value">{{ teamMetrics.topPerformer }}</div>
                   <div class="stat-label">Top Performer</div>
                 </div>
               </div>
@@ -301,20 +301,20 @@
           <mat-card-content>
             <div class="summary-stats">
               <div class="summary-item">
-                <div class="summary-value">{{ taskMetrics().remaining }}</div>
+                <div class="summary-value">{{ taskMetrics.remaining }}</div>
                 <div class="summary-label">tâches restantes à terminer</div>
               </div>
               <div class="summary-item">
-                <div class="summary-value">{{ velocityStats().daysRemaining }}</div>
+                <div class="summary-value">{{ velocityStats.daysRemaining }}</div>
                 <div class="summary-label">jours estimés pour terminer</div>
               </div>
               <div class="summary-item"
-                *ngIf="velocityStats().projectedCompletion">
-                <div class="summary-value">{{ velocityStats().projectedCompletion | date:'dd/MM' }}</div>
+                *ngIf="velocityStats.projectedCompletion">
+                <div class="summary-value">{{ velocityStats.projectedCompletion | date:'dd/MM' }}</div>
                 <div class="summary-label">fin projetée</div>
               </div>
               <div class="summary-item">
-                <div class="summary-value">{{ velocityStats().sprintVelocity }}</div>
+                <div class="summary-value">{{ velocityStats.sprintVelocity }}</div>
                 <div class="summary-label">pts vélocité sprint</div>
               </div>
             </div>
@@ -327,7 +327,7 @@
 
   <!-- ALERTES SYSTÈME -->
   <mat-expansion-panel class="alerts-panel"
-    *ngIf="alerts().length > 0">
+    *ngIf="alerts.length > 0">
     <mat-expansion-panel-header>
       <mat-panel-title>
         <mat-icon class="alert-icon"
@@ -337,7 +337,7 @@
           warning
         </mat-icon>
         Alertes Système
-        <mat-chip class="alert-count">{{ alerts().length }}</mat-chip>
+        <mat-chip class="alert-count">{{ alerts.length }}</mat-chip>
       </mat-panel-title>
       <mat-panel-description>
         Notifications et alertes importantes
@@ -346,7 +346,7 @@
 
     <div class="alerts-list">
       <mat-card class="alert-card"
-        *ngFor="let alert of alerts(); trackBy: trackAlert"
+        *ngFor="let alert of alerts; trackBy: trackAlert"
         [class]="'alert-' + alert.type">
         <mat-card-content>
           <div class="alert-content">

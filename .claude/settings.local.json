@@ -6,7 +6,15 @@
       "Bash(claude mcp:*)",
       "mcp__supabase__list_projects",
       "mcp__supabase__execute_sql",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(npm run build:*)",
+      "Bash(mkdir:*)",
+      "Bash(rm:*)",
+      "Bash(nvm:*)",
+      "Bash(node:*)",
+      "Bash(source:*)",
+      "Bash(. ~/.nvm/nvm.sh)",
+      "Bash(sed:*)"
     ]
   },
   "enableAllProjectMcpServers": false

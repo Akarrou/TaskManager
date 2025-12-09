@@ -3,6 +3,7 @@
   [class.is-expanded]="isExpanded"
   [class.is-overdue]="isOverdue"
   (click)="onCardClick()"
+  (dblclick)="onCardDoubleClick()"
   role="button"
   tabindex="0">
   <!-- Priority Indicator -->
@@ -60,6 +61,18 @@
       </mat-chip-listbox>
     </div>
 
+    <!-- Kanban Button for Features -->
+    <div *ngIf="item.type === 'feature'" class="kanban-action">
+      <button mat-raised-button 
+        color="primary"
+        class="kanban-button"
+        (click)="onNavigateToTasksKanban($event)"
+        matTooltip="Voir le Kanban des tâches">
+        <mat-icon>view_kanban</mat-icon>
+        <span>Voir le Kanban</span>
+      </button>
+    </div>
+
     <!-- Footer: Metrics and Assignee -->
     <div class="card-footer">
       <div class="metrics">
@@ -112,12 +125,6 @@
     <mat-icon>add_task</mat-icon>
     <span>Ajouter une tâche</span>
   </button>
-  <button mat-menu-item
-    *ngIf="item.type === 'feature'"
-    (click)="onNavigateToTasksKanban($event)">
-    <mat-icon>view_kanban</mat-icon>
-    <span>Voir le Kanban</span>
-  </button>
   <mat-divider></mat-divider>
   <button mat-menu-item
     color="warn"
@@ -126,3 +133,14 @@
     <span>Supprimer</span>
   </button>
 </mat-menu>
+
+<!-- Detail Popup -->
+<app-item-detail-popup
+  *ngIf="showDetailPopup"
+  [item]="item"
+  [tasks]="tasks"
+  [showProgress]="showProgress"
+  (close)="onCloseDetailPopup()"
+  (edit)="onEditFromPopup($event)"
+  (addTask)="onAddTaskFromPopup($event)">
+</app-item-detail-popup>

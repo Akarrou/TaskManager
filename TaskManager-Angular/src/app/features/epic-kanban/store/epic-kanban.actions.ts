@@ -48,10 +48,10 @@ export const EpicKanbanActions = createActionGroup({
     // T020 - Filtres enrichis
     'Update Filters': props<{
       searchText?: string;
-      priority?: string;
-      assignee?: string;
-      status?: string;
-      environment?: string;
+      priority?: string | null;
+      assignee?: string | null;
+      status?: string | null;
+      environment?: string | null;
       tags?: string[];
     }>(),
     'Clear Filters': emptyProps(),

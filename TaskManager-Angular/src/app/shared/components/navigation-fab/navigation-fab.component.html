@@ -1,0 +1,58 @@
+<div class="navigation-fab-container" 
+     [class]="'fab-position-' + position"
+     [class.fab-size-small]="size === 'small'"
+     [class.fab-size-medium]="size === 'medium'"
+     [class.fab-size-large]="size === 'large'">
+
+  <!-- Actions secondaires (visibles quand le FAB est ouvert) -->
+  <div class="fab-actions" *ngIf="isOpen() && visibleActions().length > 0">
+    <button *ngFor="let action of visibleActions(); trackBy: trackAction"
+            mat-fab
+            [color]="action.color || 'accent'"
+            class="fab-action-button"
+            [class.fab-action-disabled]="action.disabled"
+            [matTooltip]="action.tooltip"
+            matTooltipPosition="left"
+            [disabled]="action.disabled"
+            (click)="executeAction(action)"
+            [attr.aria-label]="action.label">
+      <mat-icon>{{ action.icon }}</mat-icon>
+    </button>
+  </div>
+
+  <!-- Bouton principal FAB -->
+  <button mat-fab
+          [color]="mainColor()"
+          class="fab-main-button"
+          [class.fab-opened]="isOpen()"
+          [class.fab-has-changes]="context.isDirty || context.hasUnsavedChanges"
+          [matTooltip]="isOpen() ? 'Fermer' : 'Actions de navigation'"
+          matTooltipPosition="left"
+          (click)="toggleFab()"
+          aria-label="Navigation principale">
+    
+    <!-- Icône principale avec animation -->
+    <div class="fab-icon-container">
+      <mat-icon class="fab-main-icon" 
+                [class.fab-icon-rotated]="isOpen()">
+        {{ isOpen() ? 'close' : mainIcon() }}
+      </mat-icon>
+      
+      <!-- Indicateur de changements non sauvés -->
+      <div class="fab-changes-indicator" 
+           *ngIf="(context.isDirty || context.hasUnsavedChanges) && !isOpen()">
+      </div>
+    </div>
+  </button>
+
+  <!-- Overlay pour fermer le FAB en cliquant ailleurs -->
+  <div class="fab-overlay" 
+       *ngIf="isOpen()"
+       (click)="closeFab()">
+  </div>
+</div>
+
+<!-- Fonction de tracking pour ngFor -->
+<ng-container>
+  {{ trackAction(0, null) }}
+</ng-container>

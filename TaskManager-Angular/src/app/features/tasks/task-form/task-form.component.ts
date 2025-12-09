@@ -22,6 +22,7 @@ import { Store } from '@ngrx/store';
 import { AppState } from '../../../app.state';
 import { selectSelectedProjectId } from '../../projects/store/project.selectors';
 import { firstValueFrom } from 'rxjs';
+import { NavigationFabComponent, NavigationContext, NavigationAction } from '../../../shared/components/navigation-fab/navigation-fab.component';
 
 @Component({
   selector: 'app-task-form',
@@ -37,7 +38,8 @@ import { firstValueFrom } from 'rxjs';
     MatChipsModule,
     MatFormFieldModule,
     MatInputModule,
-    MatStepperModule
+    MatStepperModule,
+    NavigationFabComponent
   ],
   templateUrl: './task-form.component.html',
   styleUrls: ['./task-form.component.scss']
@@ -638,6 +640,119 @@ export class TaskFormComponent implements OnInit {
 
   isTypeFieldLocked(): boolean {
     return this.isTypeLocked;
+  }
+
+  // === NAVIGATION FAB METHODS ===
+
+  // Contexte de navigation pour le FAB
+  navigationContext = computed((): NavigationContext => {
+    return {
+      isDirty: this.isFormOrSubtasksDirty(),
+      hasUnsavedChanges: this.isFormOrSubtasksDirty(),
+      canNavigateAway: true,
+      currentPage: this.isEditMode() ? 'task-edit' : 'task-create',
+      showSaveAction: this.isFormOrSubtasksDirty()
+    };
+  });
+
+  // Actions personnalisées pour le FAB
+  customNavActions = computed((): NavigationAction[] => {
+    const actions: NavigationAction[] = [];
+
+    // Action pour voir la liste des tâches
+    actions.push({
+      id: 'task-list',
+      icon: 'list',
+      label: 'Liste des tâches',
+      tooltip: 'Voir toutes les tâches',
+      action: () => this.router.navigate(['/tasks']),
+      color: 'accent'
+    });
+
+    // Action pour créer une nouvelle tâche
+    if (this.isEditMode()) {
+      actions.push({
+        id: 'new-task',
+        icon: 'add',
+        label: 'Nouvelle tâche',
+        tooltip: 'Créer une nouvelle tâche',
+        action: () => this.router.navigate(['/tasks/new']),
+        color: 'primary'
+      });
+    }
+
+    // Action pour voir le kanban si c'est une feature
+    const taskType = this.mainInfoForm?.get('type')?.value;
+    if (taskType === 'feature' && this.isEditMode()) {
+      actions.push({
+        id: 'feature-kanban',
+        icon: 'view_kanban',
+        label: 'Kanban Feature',
+        tooltip: 'Voir le kanban de cette feature',
+        action: () => {
+          const taskId = this.currentTaskId();
+          if (taskId) {
+            this.router.navigate(['/features', taskId, 'tasks-kanban']);
+          }
+        },
+        color: 'accent'
+      });
+    }
+
+    return actions;
+  });
+
+  // Gestionnaire des actions du FAB
+  onNavigationAction(actionId: string) {
+    console.log('Navigation action clicked:', actionId);
+    
+    switch (actionId) {
+      case 'dashboard':
+        // Gestion spéciale pour le dashboard
+        if (this.isFormOrSubtasksDirty()) {
+          // Si des changements existent, ouvrir le FAB pour les options
+          return;
+        }
+        this.router.navigate(['/dashboard']);
+        break;
+      
+      case 'save':
+        this.onSaveAndBack();
+        break;
+        
+      case 'navigate-without-save':
+        this.onBackWithoutSave();
+        break;
+        
+      default:
+        // Les autres actions sont gérées par leurs propres méthodes
+        break;
+    }
+  }
+
+  // Gestionnaire des demandes de navigation
+  onNavigateRequested(route: string) {
+    if (route === 'navigate-without-save') {
+      // Montrer une confirmation si nécessaire
+      if (this.isFormOrSubtasksDirty()) {
+        const confirmLeave = confirm('Vous avez des modifications non sauvegardées. Voulez-vous vraiment quitter sans sauvegarder ?');
+        if (confirmLeave) {
+          this.router.navigate(['/dashboard']);
+        }
+      } else {
+        this.router.navigate(['/dashboard']);
+      }
+    } else {
+      // Navigation normale
+      if (this.isFormOrSubtasksDirty()) {
+        const confirmLeave = confirm('Vous avez des modifications non sauvegardées. Voulez-vous vraiment naviguer vers une autre page ?');
+        if (confirmLeave) {
+          this.router.navigate([route]);
+        }
+      } else {
+        this.router.navigate([route]);
+      }
+    }
   }
 }
 

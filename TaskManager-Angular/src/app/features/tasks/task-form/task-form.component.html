@@ -278,47 +278,13 @@
     </div>
   </div>
 
-  <!-- Floating Action Button Retour Dashboard -->
-  <div #fabGroup class="fixed bottom-6 right-6 flex flex-col items-end z-50">
-    <ng-container *ngIf="speedDialOpen()">
-      <button
-        type="button"
-        class="save-and-back-btn"
-        aria-label="Enregistrer et retourner au Dashboard"
-        matTooltip="Enregistrer et retourner au Dashboard"
-        (click)="onSaveAndBack()"
-        tabindex="0"
-      >
-        <span class="material-icons">save</span>
-      </button>
-      <button
-        type="button"
-        class="back-btn"
-        aria-label="Retourner sans enregistrer"
-        matTooltip="Retourner sans enregistrer"
-        (click)="onBackWithoutSave()"
-        tabindex="0"
-      >
-        <span class="material-icons">logout</span>
-      </button>
-    </ng-container>
-    <button
-      type="button"
-      class="return-dashboard-btn"
-      [ngClass]="{'return-dashboard-btn-active': isFormOrSubtasksDirty()}"
-      aria-label="Retour au Dashboard"
-      matTooltip="Actions Dashboard"
-      (click)="toggleSpeedDial()"
-      tabindex="0"
-    >
-    @if (isFormOrSubtasksDirty()) {
-      <span class="material-icons text-2xl">
-        add_task
-        </span>
-    } @else {
-      <span class="material-icons text-2xl">dashboard</span>
-    }
-    </button>
-  </div>
+  <!-- Navigation FAB -->
+  <app-navigation-fab
+    [context]="navigationContext()"
+    [customActions]="customNavActions()"
+    (actionClicked)="onNavigationAction($event)"
+    (saveRequested)="onSaveAndBack()"
+    (navigateRequested)="onNavigateRequested($event)">
+  </app-navigation-fab>
 
 </div> 
