@@ -304,6 +304,7 @@ export class TaskService {
 
     // Log du payload nettoyé
     console.log('Payload nettoyé envoyé à Supabase:', cleanedPayload);
+    console.log('Project ID envoyé:', cleanedPayload['project_id']);
 
     try {
       const { data, error } = await this.supabaseService.tasks

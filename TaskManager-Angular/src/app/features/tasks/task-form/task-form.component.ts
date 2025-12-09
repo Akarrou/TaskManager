@@ -381,12 +381,15 @@ export class TaskFormComponent implements OnInit {
 
     const formValues = this.stepperForm.value;
 
+    const { tagsInput, ...assignValues } = formValues.assign;
+    const { guideline_refsInput, ...advancedValues } = formValues.advanced;
+
     const taskData = {
       ...formValues.mainInfo,
-      ...formValues.assign,
-      ...formValues.advanced,
-      tags: formValues.assign.tagsInput.split(',').map((t: string) => t.trim()).filter((t: string) => t),
-      guideline_refs: formValues.advanced.guideline_refsInput.split(',').map((g: string) => g.trim()).filter((g: string) => g),
+      ...assignValues,
+      ...advancedValues,
+      tags: tagsInput ? tagsInput.split(',').map((t: string) => t.trim()).filter((t: string) => t) : [],
+      guideline_refs: guideline_refsInput ? guideline_refsInput.split(',').map((g: string) => g.trim()).filter((g: string) => g) : [],
       subtasks: formValues.subtasks.subtasks.map((sub: ISubtask) => {
         // Exclure l'ID si c'est une nouvelle sous-tâche
         const { id, ...rest } = sub;

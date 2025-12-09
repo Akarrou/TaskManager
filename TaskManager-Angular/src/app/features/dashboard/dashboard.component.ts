@@ -4,17 +4,16 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card'; // Kept from HEAD just in case, though unused in incoming template
+import { MatCardModule } from '@angular/material/card';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { SupabaseService } from '../../core/services/supabase';
 import { TaskService, Task } from '../../core/services/task';
-import { SearchFilters } from '../../shared/components/task-search/task-search.component';
+import { SearchFilters, TaskSearchComponent } from '../../shared/components/task-search/task-search.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { UserService } from '../../core/services/user.service';
 import * as ProjectSelectors from '../projects/store/project.selectors';
-import { TaskSearchComponent } from '../../shared/components/task-search/task-search.component';
 import { ViewToggleComponent, ViewMode } from '../../shared/components/view-toggle/view-toggle.component';
 import { KanbanBoardComponent, KanbanGroupBy } from '../../shared/components/kanban-board/kanban-board.component';
 import { CalendarViewComponent } from '../../shared/components/calendar-view/calendar-view.component';
@@ -94,21 +93,57 @@ export class DashboardComponent implements OnInit {
   filteredTasks = computed(() => {
     const allTasks = this.tasks();
     const filters = this.currentSearchFilters();
-    return allTasks
-      .filter(task => {
-        const searchTextMatch = filters.searchText
-          ? task.title.toLowerCase().includes(filters.searchText.toLowerCase()) ||
-            (task.description && task.description.toLowerCase().includes(filters.searchText.toLowerCase()))
-          : true;
-        const statusMatch = filters.status ? task.status === filters.status : true;
-        const priorityMatch = filters.priority ? task.priority === filters.priority : true;
-        const envMatch = filters.environment ? (Array.isArray(task.environment) && task.environment.includes(filters.environment)) : true;
-        
-        // Also apply type filter if present (missing in incoming but present in HEAD logic)
-        const typeMatch = filters.type ? task.type === filters.type : true;
+    let filtered = allTasks;
 
-        return searchTextMatch && statusMatch && priorityMatch && envMatch && typeMatch;
-      });
+    if (filters.searchText) {
+      const search = filters.searchText.toLowerCase();
+      filtered = filtered.filter(task =>
+        task.title.toLowerCase().includes(search) ||
+        (task.description && task.description.toLowerCase().includes(search)) ||
+        (task.slug && task.slug.toLowerCase().includes(search)) ||
+        (task.prd_slug && task.prd_slug.toLowerCase().includes(search)) ||
+        (task.task_number && task.task_number.toString().includes(search))
+      );
+    }
+
+    if (filters.status) {
+      filtered = filtered.filter(task => task.status === filters.status);
+    }
+    if (filters.priority) {
+      filtered = filtered.filter(task => task.priority === filters.priority);
+    }
+    if (filters.environment) {
+      filtered = filtered.filter(task => task.environment && task.environment.includes(filters.environment));
+    }
+    if (filters.type) {
+      filtered = filtered.filter(task => task.type === filters.type);
+    }
+    if (filters.prd_slug && typeof filters.prd_slug === 'string' && filters.prd_slug.trim()) {
+      filtered = filtered.filter(task => task.prd_slug && task.prd_slug.toLowerCase().includes(filters.prd_slug!.toLowerCase()));
+    }
+    if (filters.tag && typeof filters.tag === 'string' && filters.tag.trim()) {
+      filtered = filtered.filter(task => task.tags && task.tags.some(tag => tag.toLowerCase().includes(filters.tag!.toLowerCase())));
+    }
+
+    // Handle hierarchy for epics/features
+    if (filters.type === 'epic' || filters.type === 'feature') {
+      const descendants = new Set<string>();
+      const collectDescendants = (task: Task) => {
+        descendants.add(task.id!);
+        for (const child of allTasks) {
+          if (child.parent_task_id === task.id) {
+            collectDescendants(child);
+          }
+        }
+      };
+      
+      for (const root of filtered) {
+        collectDescendants(root);
+      }
+      return allTasks.filter(t => descendants.has(t.id!));
+    }
+
+    return filtered;
   });
 
   stats = computed(() => {
@@ -217,6 +252,7 @@ export class DashboardComponent implements OnInit {
   async deleteTask(id: string): Promise<void> {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '400px',
+      data: {
         message: 'Êtes-vous sûr de vouloir supprimer cette tâche ?\nCette action est irréversible.'
       }
     });
@@ -239,63 +275,7 @@ export class DashboardComponent implements OnInit {
   onSearchFiltersChange(filters: SearchFilters) {
     this.currentSearchFilters.set(filters);
     localStorage.setItem('dashboardFilters', JSON.stringify(filters));
-    this.applyFilters(this.tasks(), filters);
-  }
-
-  private applyFilters(tasks: Task[], filters: SearchFilters) {
-    let filtered = tasks;
-
-    if (filters.searchText) {
-      const search = filters.searchText.toLowerCase();
-      filtered = filtered.filter(task =>
-        task.title.toLowerCase().includes(search) ||
-        (task.slug && task.slug.toLowerCase().includes(search)) ||
-        (task.prd_slug && task.prd_slug.toLowerCase().includes(search)) ||
-        (task.task_number && task.task_number.toString().includes(search))
-      );
-    }
-
-    if (filters.status) {
-      filtered = filtered.filter(task => task.status === filters.status);
-    }
-
-    if (filters.priority) {
-      filtered = filtered.filter(task => task.priority === filters.priority);
-    }
-
-    if (filters.environment) {
-      filtered = filtered.filter(task => task.environment && task.environment.includes(filters.environment));
-    }
-
-    if (filters.type) {
-      filtered = filtered.filter(task => task.type === filters.type);
-    }
-
-    if (filters.prd_slug && typeof filters.prd_slug === 'string' && filters.prd_slug.trim()) {
-      filtered = filtered.filter(task => task.prd_slug && task.prd_slug.toLowerCase().includes(filters.prd_slug!.toLowerCase()));
-    }
-
-    if (filters.tag && typeof filters.tag === 'string' && filters.tag.trim()) {
-      filtered = filtered.filter(task => task.tags && task.tags.some(tag => tag.toLowerCase().includes(filters.tag!.toLowerCase())));
-    }
-
-    if (filters.type === 'epic' || filters.type === 'feature') {
-      const descendants = new Set<string>();
-      function collectDescendants(task: Task) {
-        descendants.add(task.id!);
-        for (const child of tasks) {
-          if (child.parent_task_id === task.id) {
-            collectDescendants(child);
-          }
-        }
-      }
-      for (const root of filtered) {
-        collectDescendants(root);
-      }
-      filtered = tasks.filter(t => descendants.has(t.id!));
-    }
-
-    this.filteredTasks.set(filtered);
+    // Filtering is now handled automatically by the computed 'filteredTasks'
   }
 
   onViewChange(view: ViewMode) {
