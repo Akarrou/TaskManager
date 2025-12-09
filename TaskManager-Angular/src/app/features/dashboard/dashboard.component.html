@@ -27,7 +27,7 @@
 
       <!-- Toolbar: Search + View Toggle -->
       <!-- Toolbar: Search -->
-      <div class="c-toolbar">
+      <div>
         <app-task-search class="c-toolbar__search" (filtersChange)="onSearchFiltersChange($event)"></app-task-search>
 
         <!-- Kanban Group By selector (only visible in Kanban view) -->
@@ -158,7 +158,10 @@
   </footer>
 
   <!-- Bouton flottant pour créer une nouvelle tâche -->
-  <button class="fab-create-task" (click)="navigateToNewTaskForm()" aria-label="Créer une tâche">
-    <mat-icon>add</mat-icon>
-  </button>
+  <!-- Navigation FAB -->
+  <app-navigation-fab
+    [context]="fabContext()"
+    [customActions]="fabActions"
+    position="bottom-right">
+  </app-navigation-fab>
 </div>

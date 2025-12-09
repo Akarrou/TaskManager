@@ -32,6 +32,22 @@ export class NavigationFabService {
             tooltip: 'Créer une nouvelle tâche',
             action: () => this.router.navigate(['/tasks/new']),
             color: 'accent'
+          },
+          {
+            id: 'new-document',
+            icon: 'post_add', // or description
+            label: 'Nouveau document',
+            tooltip: 'Créer un nouveau document',
+            action: () => this.router.navigate(['/documents/new']),
+            color: 'primary'
+          },
+          {
+            id: 'document-list',
+            icon: 'description', // Icon representing a list of docs
+            label: 'Mes documents',
+            tooltip: 'Voir la liste des documents',
+            action: () => this.router.navigate(['/documents']),
+            color: 'accent' 
           }
         );
         break;
@@ -87,6 +103,48 @@ export class NavigationFabService {
             tooltip: 'Ajouter une tâche à cette feature',
             action: () => this.router.navigate(['/tasks/new']),
             color: 'primary'
+          }
+        );
+        break;
+
+      case 'document-list':
+        actions.push(
+          {
+            id: 'new-document',
+            icon: 'post_add',
+            label: 'Nouveau document',
+            tooltip: 'Créer un nouveau document',
+            action: () => this.router.navigate(['/documents/new']),
+            color: 'primary'
+          },
+          {
+            id: 'dashboard',
+            icon: 'dashboard',
+            label: 'Dashboard',
+            tooltip: 'Retour au tableau de bord',
+            action: () => this.router.navigate(['/dashboard']),
+            color: 'accent'
+          }
+        );
+        break;
+
+      case 'document-editor':
+        actions.push(
+          {
+            id: 'document-list',
+            icon: 'description',
+            label: 'Mes documents',
+            tooltip: 'Voir la liste des documents',
+            action: () => this.router.navigate(['/documents']),
+            color: 'secondary'
+          },
+          {
+            id: 'dashboard',
+            icon: 'dashboard',
+            label: 'Dashboard',
+            tooltip: 'Retour au tableau de bord',
+            action: () => this.router.navigate(['/dashboard']),
+            color: 'accent'
           }
         );
         break;

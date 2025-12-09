@@ -18,6 +18,8 @@ import { ViewToggleComponent, ViewMode } from '../../shared/components/view-togg
 import { KanbanBoardComponent, KanbanGroupBy } from '../../shared/components/kanban-board/kanban-board.component';
 import { CalendarViewComponent } from '../../shared/components/calendar-view/calendar-view.component';
 import { TimelineViewComponent } from '../../shared/components/timeline-view/timeline-view.component';
+import { NavigationFabComponent } from '../../shared/components/navigation-fab/navigation-fab.component';
+import { NavigationFabService } from '../../shared/components/navigation-fab/navigation-fab.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -33,7 +35,8 @@ import { TimelineViewComponent } from '../../shared/components/timeline-view/tim
     ViewToggleComponent,
     KanbanBoardComponent,
     CalendarViewComponent,
-    TimelineViewComponent
+    TimelineViewComponent,
+    NavigationFabComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
@@ -45,9 +48,14 @@ export class DashboardComponent implements OnInit {
   private dialog = inject(MatDialog);
   private userService = inject(UserService);
   private store = inject(Store);
+  private navigationFabService = inject(NavigationFabService);
 
   supabaseStatus = signal<'connecting' | 'connected' | 'error'>('connecting');
   statusMessage = signal('Connexion en cours...');
+
+  // Navigation FAB configuration
+  fabContext = computed(() => this.navigationFabService.createContext({ currentPage: 'dashboard' }));
+  fabActions = this.navigationFabService.getCommonActions('dashboard');
 
   tasks = this.taskService.tasks;
   loading = this.taskService.loading;

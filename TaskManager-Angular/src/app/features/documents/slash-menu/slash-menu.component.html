@@ -1,0 +1,18 @@
+<div class="slash-menu-container">
+  <div class="slash-menu-items">
+    <button
+      *ngFor="let item of items; let i = index"
+      (click)="selectItem(i)"
+      class="slash-menu-item"
+      [class.selected]="i === selectedIndex"
+      [attr.aria-label]="item.label"
+    >
+      <div class="item-icon">
+        <span class="material-icons-outlined">{{ item.icon }}</span>
+      </div>
+      <div class="item-content">
+        <span class="item-label">{{ item.label }}</span>
+      </div>
+    </button>
+  </div>
+</div>

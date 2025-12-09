@@ -1,0 +1,45 @@
+<div class="c-document-list">
+  <header class="c-document-list__header">
+    <h1 class="c-document-list__title">Mes Documents</h1>
+    <p class="c-document-list__subtitle">Gérez vos notes et documents.</p>
+  </header>
+
+  <div class="c-document-list__grid" *ngIf="!loading(); else loadingTemplate">
+    <div *ngIf="documents().length === 0" class="c-document-list__empty">
+      <mat-icon class="c-empty-icon">note_add</mat-icon>
+      <p>Aucun document pour le moment.</p>
+      <button mat-raised-button color="primary" (click)="createNewDocument()">
+        Créer mon premier document
+      </button>
+    </div>
+
+    <mat-card 
+      *ngFor="let doc of documents()" 
+      class="c-document-card"
+      (click)="openDocument(doc.id)">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>description</mat-icon>
+        <mat-card-title>{{ doc.title || 'Sans titre' }}</mat-card-title>
+        <mat-card-subtitle>Modifié le {{ doc.updated_at | date:'dd/MM/yyyy HH:mm' }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-actions align="end">
+        <button mat-icon-button (click)="deleteDocument($event, doc.id)" title="Supprimer">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+
+  <ng-template #loadingTemplate>
+    <div class="c-document-list__loading">
+      <p>Chargement des documents...</p>
+    </div>
+  </ng-template>
+
+  <!-- Navigation FAB -->
+  <app-navigation-fab
+    [context]="fabContext()"
+    [customActions]="fabActions"
+    position="bottom-right">
+  </app-navigation-fab>
+</div>

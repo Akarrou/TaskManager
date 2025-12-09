@@ -55,6 +55,12 @@ export const routes: Routes = [
     title: 'Mes Projets - AgroFlow Task Manager'
   },
   {
+    path: 'documents',
+    canActivate: [authGuard],
+    loadChildren: () => import('./features/documents/documents.routes').then(m => m.DOCUMENT_ROUTES),
+    title: 'Documents - AgroFlow Task Manager'
+  },
+  {
     path: 'projects/new',
     canActivate: [authGuard],
     loadComponent: () => import('./features/projects/components/project-form/project-form.component').then(m => m.ProjectFormComponent),

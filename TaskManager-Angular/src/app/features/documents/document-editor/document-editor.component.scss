@@ -1,0 +1,30 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+/* Custom styles to force the "Page" look */
+::ng-deep .ProseMirror {
+  min-height: 800px; /* Hauteur minimale d'une page A4 approximative */
+  height: 100%;
+  padding: 2rem 4rem; /* Padding interne forcé (Haut/Bas Gauche/Droite) */
+  margin: 0 auto; /* Centrage */
+  outline: none;
+  font-size: 1.125rem; /* text-lg */
+  line-height: 1.8;
+  color: #374151; /* text-gray-700 */
+}
+
+/* Dark mode overrides if needed, assuming usage of dark class on body/html */
+:host-context(.dark) ::ng-deep .ProseMirror {
+  color: #e5e7eb; /* text-gray-200 */
+}
+
+::ng-deep .ProseMirror p.is-editor-empty:first-child::before {
+  color: #9ca3af;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+

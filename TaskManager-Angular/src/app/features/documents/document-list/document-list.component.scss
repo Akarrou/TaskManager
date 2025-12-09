@@ -1,0 +1,64 @@
+@use "../../../styles/variables" as v;
+@use "../../../styles/mixins" as m;
+
+.c-document-list {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  &__header {
+    margin-bottom: 2rem;
+  }
+
+  &__title {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+
+  &__subtitle {
+    color: #6b7280; // approximate text-gray-500
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+  }
+  
+  &__empty {
+     text-align: center;
+     padding: 4rem 0;
+     .c-empty-icon {
+        font-size: 4rem;
+        width: 4rem;
+        height: 4rem;
+        margin-bottom: 1rem;
+        color: #9ca3af;
+     }
+  }
+
+  &__loading {
+      display: flex;
+      justify-content: center;
+      padding: 3rem;
+      color: #6b7280;
+  }
+}
+
+.c-document-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  
+  // Mat-card override/enhancement
+  mat-card-header {
+    margin-bottom: 1rem;
+  }
+
+  mat-card-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+  }
+}

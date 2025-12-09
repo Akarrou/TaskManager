@@ -1,0 +1,145 @@
+:host {
+  display: block;
+  font-family: 'Inter', sans-serif;
+  z-index: 9999; /* Ensure high z-index */
+  position: fixed; /* Fix to viewport */
+}
+
+.slash-menu-container {
+  background: transparent;
+  box-shadow: none;
+  width: auto;
+  min-width: unset;
+  max-width: unset;
+  padding: 0;
+  margin: 0;
+  animation: popIn 0.1s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: visible;
+}
+
+.slash-menu-header {
+  padding: 4px 8px;
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.slash-menu-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+  gap: 12px;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+}
+
+.slash-menu-item {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  flex-shrink: 0;
+  padding: 0; /* Strict reset */
+  margin: 0;  /* Strict reset */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%; /* Bubble shape */
+  transition: all 0.1s ease;
+  color: #374151;
+  position: relative; /* For tooltip */
+  box-sizing: border-box; /* Proper sizing */
+
+  @media (prefers-color-scheme: dark) {
+    color: #e5e7eb;
+  }
+
+  &:hover, &.selected {
+    background-color: #f3f4f6;
+    transform: scale(1.1);
+    
+    @media (prefers-color-scheme: dark) {
+      background-color: #374151;
+    }
+  }
+
+  &.selected {
+    background-color: #e0e7ff; /* indigo-100 */
+    color: #4f46e5; /* indigo-600 */
+    
+    @media (prefers-color-scheme: dark) {
+      background-color: #312e81; /* indigo-900 */
+      color: #818cf8; /* indigo-400 */
+    }
+  }
+
+  /* Tooltip on hover */
+  &:hover::after {
+    content: attr(aria-label);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    white-space: nowrap;
+    margin-bottom: 4px;
+    pointer-events: none;
+    opacity: 0;
+    animation: fadeIn 0.2s forwards;
+    z-index: 100;
+  }
+}
+
+.item-content {
+  display: none; /* Hide labels for compact mode, typically icons only */
+}
+
+.item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: white;
+  box-shadow: 
+    0 2px 4px -1px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(0,0,0,0.05);
+  transition: all 0.2s;
+  
+  @media (prefers-color-scheme: dark) {
+    background-color: #374151; /* gray-700 */
+    box-shadow: 
+      0 2px 4px -1px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(255,255,255,0.1);
+  }
+  
+  .material-icons-outlined {
+    font-size: 18px;
+  }
+}
+
+.item-shortcut {
+  display: none;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
