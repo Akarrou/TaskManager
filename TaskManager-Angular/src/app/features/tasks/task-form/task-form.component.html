@@ -26,8 +26,12 @@
           </div>
         </div>
         <div class="form-group">
-          <label for="description">Description</label>
-          <textarea id="description" formControlName="description" placeholder="Décrivez la tâche en détail..." rows="4"></textarea>
+          <label>Description</label>
+          <app-rich-text-editor
+            [placeholder]="'Décrivez la tâche en détail... (Supporte le Markdown)'"
+            [minHeight]="'150px'"
+            [formControl]="$any(mainInfoForm.get('description'))">
+          </app-rich-text-editor>
         </div>
         <div class="form-row">
         <div class="form-group">
@@ -215,9 +219,60 @@
           <button type="button"
           class="btn-secondary" matStepperPrevious>Précédent</button>
           <button type="button"
-          class="btn-primary" (click)="onSubmit()" [disabled]="subtaskForm.invalid">Valider</button>
+          class="btn-primary" matStepperNext>Suivant</button>
         </div>
       </form>
+    </mat-step>
+
+    <!-- Étape 5 : Extras (Notion-like features) -->
+    <mat-step label="Extras">
+      <div class="extras-section">
+        <!-- Pièces jointes -->
+        <div class="extras-group">
+          <h3 class="extras-group-title">
+            <span class="material-icons">attach_file</span>
+            Pièces jointes
+          </h3>
+          <app-file-upload
+            [existingFiles]="taskAttachments()"
+            (filesUploaded)="onFilesUploaded($event)"
+            (fileRemoved)="onFileRemoved($event)">
+          </app-file-upload>
+        </div>
+
+        <!-- Relations entre tâches -->
+        <div class="extras-group">
+          <h3 class="extras-group-title">
+            <span class="material-icons">link</span>
+            Relations entre tâches
+          </h3>
+          <app-task-relations
+            [currentTaskId]="currentTaskId()"
+            [availableTasks]="tasks()"
+            [relations]="taskRelations()"
+            (relationsChange)="onRelationsChange($event)">
+          </app-task-relations>
+        </div>
+
+        <!-- Propriétés personnalisées -->
+        <div class="extras-group">
+          <h3 class="extras-group-title">
+            <span class="material-icons">tune</span>
+            Propriétés personnalisées
+          </h3>
+          <app-custom-properties
+            [formControl]="$any(customPropertiesControl)"
+            (propertiesChange)="onCustomPropertiesChange($event)">
+          </app-custom-properties>
+        </div>
+      </div>
+
+      <div class="step-actions">
+        <button type="button"
+        class="btn-secondary" matStepperPrevious>Précédent</button>
+        <button type="button"
+        class="btn-primary" (click)="onSubmit()">Valider</button>
+      </div>
     </mat-step>
   </mat-horizontal-stepper>
 

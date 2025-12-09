@@ -19,6 +19,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatStepperModule } from '@angular/material/stepper';
 
+// Nouveaux composants Notion-like
+import { RichTextEditorComponent } from '../../../shared/components/rich-text-editor/rich-text-editor.component';
+import { FileUploadComponent, FileAttachment } from '../../../shared/components/file-upload/file-upload.component';
+import { TaskRelationsComponent, TaskRelation } from '../../../shared/components/task-relations/task-relations.component';
+import { CustomPropertiesComponent, CustomProperty } from '../../../shared/components/custom-properties/custom-properties.component';
+
 @Component({
   selector: 'app-task-form',
   standalone: true,
@@ -33,7 +39,12 @@ import { MatStepperModule } from '@angular/material/stepper';
     MatChipsModule,
     MatFormFieldModule,
     MatInputModule,
-    MatStepperModule
+    MatStepperModule,
+    // Nouveaux composants Notion-like
+    RichTextEditorComponent,
+    FileUploadComponent,
+    TaskRelationsComponent,
+    CustomPropertiesComponent
   ],
   templateUrl: './task-form.component.html',
   styleUrls: ['./task-form.component.scss']
@@ -77,6 +88,14 @@ export class TaskFormComponent implements OnInit {
   @ViewChild('fabGroup', { static: false }) fabGroupRef?: ElementRef;
 
   tasks = signal<Task[]>([]);
+
+  // Signaux pour les fonctionnalités Notion-like
+  taskAttachments = signal<FileAttachment[]>([]);
+  taskRelations = signal<TaskRelation[]>([]);
+  customProperties = signal<CustomProperty[]>([]);
+
+  // FormControl pour les propriétés personnalisées
+  customPropertiesControl = new FormControl<CustomProperty[]>([]);
 
   constructor() {
     this.loadUsers();
@@ -545,6 +564,36 @@ export class TaskFormComponent implements OnInit {
   async loadAllTasks() {
     await this.taskService.loadTasks();
     this.tasks.set(this.taskService.tasks());
+  }
+
+  // Méthodes pour les fonctionnalités Notion-like
+  onDescriptionChange(content: string) {
+    this.mainInfoForm.patchValue({ description: content });
+    this.mainInfoForm.markAsDirty();
+  }
+
+  onFilesUploaded(files: FileAttachment[]) {
+    this.taskAttachments.set(files);
+    this.stepperForm.markAsDirty();
+  }
+
+  onFileDeleted(fileId: string) {
+    console.log('Fichier supprimé:', fileId);
+  }
+
+  onFileRemoved(file: FileAttachment) {
+    this.taskAttachments.update(files => files.filter(f => f.file_url !== file.file_url));
+    this.stepperForm.markAsDirty();
+  }
+
+  onRelationsChange(relations: TaskRelation[]) {
+    this.taskRelations.set(relations);
+    this.stepperForm.markAsDirty();
+  }
+
+  onCustomPropertiesChange(properties: CustomProperty[]) {
+    this.customProperties.set(properties);
+    this.stepperForm.markAsDirty();
   }
 }
 
