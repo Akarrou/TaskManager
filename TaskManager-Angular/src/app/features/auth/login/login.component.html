@@ -1,51 +1,86 @@
-<div class="relative flex size-full min-h-screen flex-col bg-slate-50 group/design-root overflow-x-hidden">
-  <div class="layout-container flex h-full grow flex-col items-center justify-center">
-    <main class="flex flex-col items-center justify-center w-full px-6 py-8 lg:py-0">
-      <div class="w-full bg-white rounded-xl shadow-xl md:mt-0 sm:max-w-md xl:p-0">
+<div
+  class="relative flex size-full min-h-screen flex-col bg-slate-50 group/design-root overflow-x-hidden"
+>
+  <div
+    class="layout-container flex h-full grow flex-col items-center justify-center"
+  >
+    <main
+      class="flex flex-col items-center justify-center w-full px-6 py-8 lg:py-0"
+    >
+      <div
+        class="w-full bg-white rounded-xl shadow-xl md:mt-0 sm:max-w-md xl:p-0"
+      >
         <div class="p-6 space-y-4 md:space-y-6 sm:p-8">
           <div class="flex items-center justify-center mb-8 logo-container">
             <app-logo [size]="100"></app-logo>
           </div>
-          <form (ngSubmit)="handleLogin()" #loginForm="ngForm" class="space-y-4 md:space-y-6">
+          <form
+            (ngSubmit)="handleLogin()"
+            #loginForm="ngForm"
+            class="space-y-4 md:space-y-6"
+          >
             <div class="form-group mb-6">
-              <label class="block mb-2 text-sm font-medium text-gray-900" for="email">Email Address</label>
-              <input 
-                class="form-input h-12 p-3 placeholder-gray-400" 
-                id="email" 
+              <label
+                class="block mb-2 text-sm font-medium text-gray-900"
+                for="email"
+                >Email Address</label
+              >
+              <input
+                class="form-input h-12 p-3 placeholder-gray-400"
+                id="email"
                 name="email"
                 type="email"
                 [ngModel]="email()"
                 (ngModelChange)="email.set($event)"
-                placeholder="Enter your email" 
-                required="" 
-                [disabled]="loading()"/>
+                placeholder="Enter your email"
+                required=""
+                [disabled]="loading()"
+              />
             </div>
             <div class="form-group mb-6">
-              <label class="block mb-2 text-sm font-medium text-gray-900" for="password">Password</label>
-              <input 
-                class="form-input h-12 p-3 placeholder-gray-400" 
-                id="password" 
-                name="password" 
-                placeholder="••••••••" 
-                required="" 
+              <label
+                class="block mb-2 text-sm font-medium text-gray-900"
+                for="password"
+                >Password</label
+              >
+              <input
+                class="form-input h-12 p-3 placeholder-gray-400"
+                id="password"
+                name="password"
+                placeholder="••••••••"
+                required=""
                 type="password"
                 [ngModel]="password()"
                 (ngModelChange)="password.set($event)"
-                [disabled]="loading()"/>
+                [disabled]="loading()"
+              />
             </div>
 
             <div class="error-container" *ngIf="error()">
-                <p>{{ error() }}</p>
+              <p>{{ error() }}</p>
             </div>
 
-            <div class="mt-6">
-              <button class="btn-primary" type="submit" [disabled]="loading() || !loginForm.valid">
+            <div class="mt-6 flex gap-4">
+              <button
+                class="btn-primary flex-1"
+                type="submit"
+                [disabled]="loading() || !loginForm.valid"
+              >
                 @if (loading()) {
-                  <span class="spinner"></span>
-                  <span>Connexion...</span>
+                <span class="spinner"></span>
+                <span>Connexion...</span>
                 } @else {
-                  <span>Login</span>
+                <span>Login</span>
                 }
+              </button>
+
+              <button
+                class="btn-secondary flex-1"
+                type="button"
+                (click)="handleSignup()"
+                [disabled]="loading() || !loginForm.valid"
+              >
+                Sign Up
               </button>
             </div>
           </form>
@@ -53,4 +88,4 @@
       </div>
     </main>
   </div>
-</div> 
+</div>

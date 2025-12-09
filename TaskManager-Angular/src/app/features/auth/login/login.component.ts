@@ -36,11 +36,40 @@ export class LoginComponent {
         this.error.set('Échec de la connexion. Vérifiez vos identifiants.');
         console.error('Login error:', error);
       } else {
-        // Redirection vers le tableau de bord ou la page précédente
         this.router.navigate(['/dashboard']);
       }
     } catch (err: any) {
       this.error.set(err.message || 'Une erreur inattendue est survenue.');
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  async handleSignup(): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
+    if (!this.email() || !this.password()) {
+      this.error.set('Veuillez renseigner l\'e-mail et le mot de passe.');
+      this.loading.set(false);
+      return;
+    }
+
+    try {
+      const { error, user } = await this.authService.signUp(this.email(), this.password());
+      if (error) {
+        this.error.set(error.message);
+      } else if (user && user.identities?.length === 0) {
+        this.error.set('Ce compte existe déjà. Connectez-vous.');
+      } else {
+        // Success but check for email confirmation requirement
+        if (!user?.email_confirmed_at) {
+          this.error.set('Compte créé ! Veuillez vérifier vos emails pour confirmer.');
+        } else {
+           this.router.navigate(['/dashboard']);
+        }
+      }
+    } catch (err: any) {
+      this.error.set(err.message || 'Erreur lors de l\'inscription.');
     } finally {
       this.loading.set(false);
     }

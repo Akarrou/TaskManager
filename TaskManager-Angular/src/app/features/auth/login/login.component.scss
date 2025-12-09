@@ -100,6 +100,42 @@ input.form-input {
     background-color: v.$secondary-color-light;
     cursor: not-allowed;
   }
+    cursor: not-allowed;
+  }
+}
+
+.btn-secondary {
+  width: 100%;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid v.$border-color-medium;
+  border-radius: v.$border-radius-md;
+  box-shadow: v.$shadow-sm;
+  font-size: v.$font-size-sm;
+  font-weight: 600;
+  color: v.$text-color-dark;
+  background-color: #fff;
+  transition: all 0.2s;
+  cursor: pointer;
+
+  &:hover {
+    background-color: v.$background-color-hover;
+    border-color: v.$border-color-dark;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(v.$text-color-medium, 0.1);
+  }
+  
+  &:disabled {
+    background-color: v.$background-color-disabled;
+    color: v.$text-color-light;
+    cursor: not-allowed;
+  }
 }
 
 .spinner {

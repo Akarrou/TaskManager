@@ -12,15 +12,14 @@ import { TaskService, Task } from '../../core/services/task';
 import { SearchFilters } from '../../shared/components/task-search/task-search.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { UserService } from '../../core/services/user.service';
-import { TaskSearchComponent } from '../../shared/components/task-search/task-search.component';
-import { TaskTreeComponent } from '../tasks/task-tree/task-tree.component';
+
 import * as ProjectSelectors from '../projects/store/project.selectors';
 
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatDialogModule, MatButtonModule, MatCardModule, TaskSearchComponent, TaskTreeComponent],
+  imports: [CommonModule, MatIconModule, MatDialogModule, MatButtonModule, MatCardModule],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
