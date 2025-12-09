@@ -6,6 +6,11 @@
           <h1 class="c-main-content__title">Tableau de bord des tâches</h1>
           <p class="c-main-content__subtitle">Aperçu de toutes les tâches et de leurs états actuels.</p>
         </div>
+        
+        <app-view-toggle
+          [initialView]="'table'"
+          (viewChange)="onViewChange($event)">
+        </app-view-toggle>
       </div>
 
       <section class="c-stats-grid">
@@ -21,29 +26,24 @@
       </section>
 
       <!-- Toolbar: Search + View Toggle -->
+      <!-- Toolbar: Search -->
       <div class="c-toolbar">
         <app-task-search class="c-toolbar__search" (filtersChange)="onSearchFiltersChange($event)"></app-task-search>
 
-        <div class="c-toolbar__actions">
-          <!-- Kanban Group By selector (only visible in Kanban view) -->
-          @if (currentView() === 'kanban') {
-            <div class="c-toolbar__group-by">
-              <label class="c-toolbar__label">Grouper par:</label>
-              <select
-                class="c-toolbar__select"
-                [value]="kanbanGroupBy()"
-                (change)="onKanbanGroupByChange($any($event.target).value)">
-                <option value="status">Statut</option>
-                <option value="priority">Priorité</option>
-              </select>
-            </div>
-          }
-
-          <app-view-toggle
-            [initialView]="'table'"
-            (viewChange)="onViewChange($event)">
-          </app-view-toggle>
-        </div>
+        <!-- Kanban Group By selector (only visible in Kanban view) -->
+        @if (currentView() === 'kanban') {
+          <div class="c-toolbar__group-by">
+            <label class="c-toolbar__label" for="groupby-select">Grouper par:</label>
+            <select
+              id="groupby-select"
+              class="c-toolbar__select"
+              [value]="kanbanGroupBy()"
+              (change)="onKanbanGroupByChange($any($event.target).value)">
+              <option value="status">Statut</option>
+              <option value="priority">Priorité</option>
+            </select>
+          </div>
+        }
       </div>
 
       <!-- Views Container -->

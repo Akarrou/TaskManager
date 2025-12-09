@@ -36,13 +36,11 @@ export interface ViewOption {
   styles: [`
     .view-toggle {
       display: inline-flex;
-      background: rgba(255, 255, 255, 0.4);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.6);
+      background: #f1f5f9; /* Solid light gray background */
       border-radius: 0.75rem;
       padding: 0.25rem;
       gap: 0.25rem;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); 
+      border: 1px solid #e2e8f0; /* Subtle border */
     }
 
     .toggle-btn {
@@ -50,11 +48,11 @@ export interface ViewOption {
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
-      padding: 0.5rem 0.75rem;
+      padding: 0.5rem 1rem;
       background: transparent;
       border: 1px solid transparent;
       border-radius: 0.5rem;
-      color: #6b7280;
+      color: #64748b; /* Slate 500 */
       font-size: 0.875rem;
       font-weight: 500;
       cursor: pointer;
@@ -63,8 +61,8 @@ export interface ViewOption {
     }
 
     .toggle-btn:hover {
-      color: #3b82f6;
-      background: rgba(255, 255, 255, 0.5);
+      color: #0f172a; /* Slate 900 */
+      background: rgba(0, 0, 0, 0.03);
     }
 
     .toggle-btn:focus {
@@ -74,10 +72,11 @@ export interface ViewOption {
 
     .toggle-btn.active {
       background: white;
-      color: #3b82f6;
-      border-color: #e5e7eb;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
-      transform: translateY(-1px);
+      color: #3b82f6; /* Primary blue */
+      border-color: rgba(0,0,0,0.04);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+      font-weight: 600;
+      transform: none; /* Removed transform to keep layout stable */
     }
 
     .icon {
