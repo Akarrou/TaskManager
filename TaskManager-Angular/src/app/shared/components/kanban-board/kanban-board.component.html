@@ -1,0 +1,118 @@
+<div class="kanban-board" cdkDropListGroup>
+  @for (column of columns(); track column.id) {
+    <div class="kanban-column">
+      <div class="kanban-column__header" [style.border-color]="column.color">
+        <div class="kanban-column__title-wrapper">
+          <span class="kanban-column__dot" [style.background-color]="column.color"></span>
+          <h3 class="kanban-column__title">{{ column.title }}</h3>
+          <span class="kanban-column__count">{{ column.tasks.length }}</span>
+        </div>
+      </div>
+
+      <div
+        cdkDropList
+        [cdkDropListData]="column.tasks"
+        [id]="column.id"
+        class="kanban-column__content"
+        [style.background-color]="column.bgColor + '33'"
+        (cdkDropListDropped)="drop($event, column.id)">
+
+        @for (task of column.tasks; track task.id) {
+          <div class="kanban-card" cdkDrag [cdkDragData]="task">
+            <!-- Drag preview -->
+            <div class="kanban-card__drag-preview" *cdkDragPreview>
+              <span class="kanban-card__title">{{ task.title }}</span>
+            </div>
+
+            <!-- Placeholder -->
+            <div class="kanban-card__placeholder" *cdkDragPlaceholder></div>
+
+            <!-- Card header with badges -->
+            <div class="kanban-card__header">
+              <div class="kanban-card__badges">
+                @if (task.task_number) {
+                  <span class="kanban-card__number">#{{ task.task_number }}</span>
+                }
+                @if (getEnvironmentBadge(task.environment)) {
+                  <span class="env-badge {{ getEnvironmentClass(task.environment) }}">
+                    {{ getEnvironmentBadge(task.environment) }}
+                  </span>
+                }
+              </div>
+              <button
+                class="kanban-card__menu-btn"
+                [matMenuTriggerFor]="cardMenu"
+                (click)="$event.stopPropagation()">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #cardMenu="matMenu">
+                <button mat-menu-item (click)="onEditTask(task)">
+                  <mat-icon>edit</mat-icon>
+                  <span>Modifier</span>
+                </button>
+                <button mat-menu-item class="danger" (click)="onDeleteTask(task.id!)">
+                  <mat-icon>delete</mat-icon>
+                  <span>Supprimer</span>
+                </button>
+              </mat-menu>
+            </div>
+
+            <!-- Card title -->
+            <h4 class="kanban-card__title" (dblclick)="onEditTask(task)">
+              {{ task.title }}
+            </h4>
+
+            <!-- Card description preview -->
+            @if (task.description) {
+              <p class="kanban-card__description">
+                {{ task.description | slice:0:80 }}{{ task.description.length > 80 ? '...' : '' }}
+              </p>
+            }
+
+            <!-- Card footer with metadata -->
+            <div class="kanban-card__footer">
+              <div class="kanban-card__meta">
+                @if (groupBy() === 'status') {
+                  <span class="kanban-card__priority {{ getPriorityClass(task.priority) }}"
+                        [matTooltip]="'Priorité: ' + task.priority">
+                    <mat-icon>{{ getPriorityIcon(task.priority) }}</mat-icon>
+                  </span>
+                }
+                @if (task.due_date) {
+                  <span class="kanban-card__due-date" [class.overdue]="isOverdue(task.due_date)"
+                        [matTooltip]="'Échéance: ' + task.due_date">
+                    <mat-icon>event</mat-icon>
+                    {{ formatDate(task.due_date) }}
+                  </span>
+                }
+              </div>
+              @if (task.subtasks && task.subtasks.length > 0) {
+                <span class="kanban-card__subtasks" matTooltip="Sous-tâches">
+                  <mat-icon>checklist</mat-icon>
+                  {{ task.subtasks.length }}
+                </span>
+              }
+            </div>
+
+            <!-- Tags -->
+            @if (task.tags && task.tags.length > 0) {
+              <div class="kanban-card__tags">
+                @for (tag of task.tags | slice:0:3; track tag) {
+                  <span class="kanban-card__tag">{{ tag }}</span>
+                }
+                @if (task.tags.length > 3) {
+                  <span class="kanban-card__tag kanban-card__tag--more">+{{ task.tags.length - 3 }}</span>
+                }
+              </div>
+            }
+          </div>
+        } @empty {
+          <div class="kanban-column__empty">
+            <mat-icon>inbox</mat-icon>
+            <p>Aucune tâche</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

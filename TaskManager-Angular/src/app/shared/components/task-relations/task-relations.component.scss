@@ -1,0 +1,325 @@
+@use '../../../styles/variables' as v;
+
+.task-relations {
+  background: v.$background-color-form;
+  border: 1px solid v.$border-color-light;
+  border-radius: v.$border-radius-lg;
+  overflow: hidden;
+}
+
+// ==========================================================================
+// Header
+// ==========================================================================
+.relations-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: v.$space-4;
+  background: v.$background-color-light;
+  border-bottom: 1px solid v.$border-color-light;
+}
+
+.relations-title {
+  display: flex;
+  align-items: center;
+  gap: v.$space-2;
+  margin: 0;
+  font-size: v.$font-size-base;
+  font-weight: v.$font-weight-medium;
+  color: v.$text-color-dark;
+
+  mat-icon {
+    color: v.$text-color-light;
+    font-size: 20px;
+  }
+}
+
+.add-relation-btn {
+  font-size: v.$font-size-sm;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+// ==========================================================================
+// Add Relation Form
+// ==========================================================================
+.add-relation-form {
+  padding: v.$space-4;
+  background: rgba(v.$primary-color, 0.03);
+  border-bottom: 1px solid v.$border-color-light;
+}
+
+.form-row {
+  display: flex;
+  gap: v.$space-3;
+  align-items: flex-start;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+  }
+}
+
+.relation-type-field {
+  width: 200px;
+  flex-shrink: 0;
+
+  @media (max-width: 640px) {
+    width: 100%;
+  }
+
+  mat-icon {
+    margin-right: v.$space-2;
+    font-size: 18px;
+    vertical-align: middle;
+  }
+}
+
+.task-search-field {
+  flex: 1;
+}
+
+// Task autocomplete option
+.task-option {
+  display: flex;
+  align-items: center;
+  gap: v.$space-2;
+  width: 100%;
+
+  &__number {
+    font-size: v.$font-size-xs;
+    color: v.$text-color-light;
+    font-weight: v.$font-weight-medium;
+    min-width: 40px;
+  }
+
+  &__title {
+    flex: 1;
+    font-size: v.$font-size-sm;
+    color: v.$text-color-dark;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__status {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: v.$border-radius-full;
+    font-weight: v.$font-weight-medium;
+    text-transform: uppercase;
+
+    &.status-pending {
+      background: #fef9c3;
+      color: #92400e;
+    }
+
+    &.status-in_progress {
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+
+    &.status-completed {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    &.status-cancelled {
+      background: #f3f4f6;
+      color: #374151;
+    }
+  }
+}
+
+.no-results {
+  color: v.$text-color-light;
+  font-style: italic;
+}
+
+// ==========================================================================
+// Relations Groups
+// ==========================================================================
+.relations-groups {
+  padding: v.$space-3;
+}
+
+.relation-group {
+  margin-bottom: v.$space-4;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: v.$space-2;
+  padding: v.$space-2 0;
+  margin-bottom: v.$space-2;
+  border-bottom: 1px solid v.$border-color-light;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: v.$primary-color;
+  }
+}
+
+.group-label {
+  font-size: v.$font-size-sm;
+  font-weight: v.$font-weight-medium;
+  color: v.$text-color-dark;
+}
+
+.group-count {
+  font-size: v.$font-size-xs;
+  padding: 2px 8px;
+  background: v.$background-color-light;
+  color: v.$text-color-light;
+  border-radius: v.$border-radius-full;
+}
+
+.group-items {
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-2;
+}
+
+// ==========================================================================
+// Relation Item
+// ==========================================================================
+.relation-item {
+  display: flex;
+  align-items: center;
+  gap: v.$space-3;
+  padding: v.$space-3;
+  background: v.$background-color-light;
+  border-radius: v.$border-radius-md;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: v.$background-color-page;
+
+    .relation-item__remove {
+      opacity: 1;
+    }
+  }
+
+  &__info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    min-width: 0;
+  }
+
+  &__number {
+    font-size: v.$font-size-xs;
+    color: v.$text-color-light;
+    font-weight: v.$font-weight-medium;
+  }
+
+  &__title {
+    font-size: v.$font-size-sm;
+    color: v.$text-color-dark;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__status {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: v.$border-radius-full;
+    font-weight: v.$font-weight-medium;
+    text-transform: uppercase;
+    flex-shrink: 0;
+
+    &.status-pending {
+      background: #fef9c3;
+      color: #92400e;
+    }
+
+    &.status-in_progress {
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+
+    &.status-completed {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    &.status-cancelled {
+      background: #f3f4f6;
+      color: #374151;
+    }
+  }
+
+  &__remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    border-radius: v.$border-radius-sm;
+    color: v.$text-color-light;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.15s ease;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      background: v.$error-color;
+      color: white;
+    }
+  }
+}
+
+// ==========================================================================
+// Empty State
+// ==========================================================================
+.relations-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: v.$space-8;
+  color: v.$text-color-light;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: v.$space-2 0 v.$space-4;
+    font-size: v.$font-size-sm;
+  }
+
+  button {
+    font-size: v.$font-size-sm;
+  }
+}
+
+// Material overrides
+::ng-deep {
+  .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+  }
+}

@@ -1,0 +1,396 @@
+@use '../../../styles/variables' as v;
+
+.timeline-view {
+  background: v.$background-color-form;
+  border-radius: v.$border-radius-lg;
+  box-shadow: v.$shadow-md;
+  border: 1px solid v.$border-color-light;
+  overflow: hidden;
+}
+
+// ==========================================================================
+// Header
+// ==========================================================================
+.timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: v.$space-4;
+  padding: v.$space-4 v.$space-6;
+  border-bottom: 1px solid v.$border-color-light;
+  background: v.$background-color-light;
+
+  &__nav {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+  }
+
+  &__title {
+    font-size: v.$font-size-lg;
+    font-weight: v.$font-weight-bold;
+    color: v.$text-color-dark;
+    margin: 0;
+    min-width: 200px;
+    text-align: center;
+    text-transform: capitalize;
+  }
+
+  &__controls {
+    display: flex;
+    align-items: center;
+    gap: v.$space-4;
+  }
+
+  &__today-btn {
+    font-size: v.$font-size-sm;
+  }
+
+  &__zoom {
+    display: flex;
+    background: v.$background-color-page;
+    border-radius: v.$border-radius-md;
+    padding: 2px;
+
+    button {
+      font-size: v.$font-size-xs;
+      padding: v.$space-1 v.$space-3;
+      min-width: auto;
+      border-radius: v.$border-radius-sm;
+
+      &.active {
+        background: v.$primary-color;
+        color: white;
+      }
+    }
+  }
+}
+
+// ==========================================================================
+// Content
+// ==========================================================================
+.timeline-content {
+  overflow-x: auto;
+  padding: v.$space-4;
+}
+
+.timeline-grid {
+  min-width: 800px;
+  position: relative;
+
+  &__header {
+    display: flex;
+    border-bottom: 2px solid v.$border-color-light;
+    padding-bottom: v.$space-2;
+    margin-bottom: v.$space-2;
+  }
+
+  &__task-column {
+    width: 200px;
+    min-width: 200px;
+    flex-shrink: 0;
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-bold;
+    color: v.$text-color-light;
+    text-transform: uppercase;
+    padding: v.$space-2;
+  }
+
+  &__dates {
+    flex: 1;
+    display: flex;
+  }
+
+  &__date-header {
+    text-align: center;
+    font-size: v.$font-size-xs;
+    font-weight: v.$font-weight-medium;
+    color: v.$text-color-light;
+    padding: v.$space-2;
+    border-left: 1px solid v.$border-color-light;
+
+    &:first-child {
+      border-left: none;
+    }
+  }
+
+  &__background {
+    position: absolute;
+    top: 50px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  &__task-column-bg {
+    width: 200px;
+    min-width: 200px;
+    flex-shrink: 0;
+  }
+
+  &__days-bg {
+    flex: 1;
+    display: flex;
+  }
+
+  &__day-column {
+    flex: 1;
+    border-left: 1px solid v.$border-color-light;
+
+    &--today {
+      background: rgba(59, 130, 246, 0.1);
+      border-left: 2px solid v.$primary-color;
+    }
+
+    &--weekend {
+      background: v.$background-color-light;
+    }
+  }
+
+  &__tasks {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+// ==========================================================================
+// Timeline Row
+// ==========================================================================
+.timeline-row {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  border-bottom: 1px solid v.$border-color-light;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.02);
+  }
+
+  &__info {
+    width: 200px;
+    min-width: 200px;
+    flex-shrink: 0;
+    padding: v.$space-2;
+    overflow: hidden;
+  }
+
+  &__task-title {
+    font-size: v.$font-size-sm;
+    color: v.$text-color-dark;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__task-number {
+    color: v.$text-color-light;
+    font-weight: v.$font-weight-medium;
+    margin-right: v.$space-1;
+  }
+
+  &__bar-container {
+    flex: 1;
+    position: relative;
+    height: 100%;
+    display: flex;
+    align-items: center;
+  }
+}
+
+// ==========================================================================
+// Timeline Bar (Gantt bar)
+// ==========================================================================
+.timeline-bar {
+  position: absolute;
+  height: 28px;
+  border-radius: v.$border-radius-sm;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0 v.$space-2;
+  transition: all 0.2s ease;
+  overflow: hidden;
+
+  &:hover {
+    transform: scaleY(1.1);
+    box-shadow: v.$shadow-md;
+  }
+
+  &__label {
+    font-size: 11px;
+    font-weight: v.$font-weight-medium;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // Status colors
+  &.status-pending {
+    background: linear-gradient(135deg, #fef9c3, #fde68a);
+    border: 1px solid #f59e0b;
+    color: #92400e;
+  }
+
+  &.status-in_progress {
+    background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+    border: 1px solid #0ea5e9;
+    color: #0369a1;
+  }
+
+  &.status-completed {
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+    border: 1px solid #22c55e;
+    color: #166534;
+  }
+
+  &.status-cancelled {
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+    border: 1px solid #6b7280;
+    color: #374151;
+    text-decoration: line-through;
+  }
+
+  // Priority indicators
+  &.priority-urgent {
+    border-width: 2px;
+    animation: pulse 2s infinite;
+  }
+
+  &.priority-high {
+    border-width: 2px;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+// ==========================================================================
+// Empty State
+// ==========================================================================
+.timeline-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: v.$space-10;
+  color: v.$text-color-light;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    opacity: 0.5;
+  }
+
+  p {
+    margin-top: v.$space-2;
+    font-size: v.$font-size-sm;
+  }
+}
+
+// ==========================================================================
+// Legend
+// ==========================================================================
+.timeline-legend {
+  display: flex;
+  align-items: center;
+  gap: v.$space-4;
+  flex-wrap: wrap;
+  padding: v.$space-3 v.$space-6;
+  border-top: 1px solid v.$border-color-light;
+  background: v.$background-color-light;
+
+  &__title {
+    font-size: v.$font-size-xs;
+    font-weight: v.$font-weight-medium;
+    color: v.$text-color-light;
+  }
+
+  &__items {
+    display: flex;
+    gap: v.$space-4;
+    flex-wrap: wrap;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: v.$space-1;
+    font-size: v.$font-size-xs;
+    color: v.$text-color-medium;
+  }
+
+  &__color {
+    width: 16px;
+    height: 12px;
+    border-radius: v.$border-radius-sm;
+
+    &.status-pending {
+      background: linear-gradient(135deg, #fef9c3, #fde68a);
+      border: 1px solid #f59e0b;
+    }
+
+    &.status-in_progress {
+      background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+      border: 1px solid #0ea5e9;
+    }
+
+    &.status-completed {
+      background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+      border: 1px solid #22c55e;
+    }
+  }
+
+  &__marker {
+    width: 16px;
+    height: 12px;
+
+    &--today {
+      background: rgba(59, 130, 246, 0.2);
+      border-left: 2px solid v.$primary-color;
+    }
+  }
+}
+
+// Menu item danger style
+::ng-deep .mat-mdc-menu-item.danger {
+  color: v.$error-color;
+
+  .mat-icon {
+    color: v.$error-color;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .timeline-header {
+    flex-direction: column;
+    align-items: stretch;
+
+    &__controls {
+      justify-content: space-between;
+    }
+  }
+
+  .timeline-grid {
+    &__task-column,
+    .timeline-row__info {
+      width: 120px;
+      min-width: 120px;
+    }
+  }
+
+  .timeline-bar__label {
+    display: none;
+  }
+}

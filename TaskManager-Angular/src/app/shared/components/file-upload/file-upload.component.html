@@ -1,0 +1,143 @@
+<div class="file-upload">
+  <!-- Drop zone -->
+  <div
+    class="drop-zone"
+    [class.dragging]="isDragging()"
+    [class.has-files]="uploadedFiles().length > 0"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)"
+    (drop)="onDrop($event)">
+
+    <input
+      type="file"
+      #fileInput
+      class="file-input"
+      [accept]="acceptedTypes()"
+      multiple
+      (change)="onFileSelect($event)" />
+
+    <div class="drop-zone__content">
+      <mat-icon class="drop-zone__icon">cloud_upload</mat-icon>
+      <p class="drop-zone__text">
+        Glissez-déposez vos fichiers ici ou
+        <button type="button" class="drop-zone__browse" (click)="fileInput.click()">
+          parcourir
+        </button>
+      </p>
+      <p class="drop-zone__hint">
+        Max {{ maxFiles() }} fichiers • {{ formatFileSize(maxFileSize()) }} par fichier
+      </p>
+    </div>
+  </div>
+
+  <!-- Upload queue -->
+  @if (uploadQueue().length > 0) {
+    <div class="upload-queue">
+      <h4 class="upload-queue__title">Téléchargement en cours</h4>
+      @for (item of uploadQueue(); track item.file.name) {
+        <div class="upload-item" [class.error]="item.status === 'error'">
+          <div class="upload-item__info">
+            <mat-icon class="upload-item__icon">{{ getFileIcon(item.file.type) }}</mat-icon>
+            <div class="upload-item__details">
+              <span class="upload-item__name">{{ item.file.name }}</span>
+              <span class="upload-item__size">{{ formatFileSize(item.file.size) }}</span>
+            </div>
+          </div>
+
+          @if (item.status === 'uploading' || item.status === 'pending') {
+            <mat-progress-bar
+              class="upload-item__progress"
+              mode="determinate"
+              [value]="item.progress">
+            </mat-progress-bar>
+          }
+
+          @if (item.status === 'completed') {
+            <mat-icon class="upload-item__status success">check_circle</mat-icon>
+          }
+
+          @if (item.status === 'error') {
+            <div class="upload-item__error">
+              <mat-icon>error</mat-icon>
+              <span>{{ item.error }}</span>
+            </div>
+            <button
+              type="button"
+              class="upload-item__cancel"
+              (click)="cancelUpload(item)"
+              matTooltip="Fermer">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+
+          @if (item.status === 'uploading' || item.status === 'pending') {
+            <button
+              type="button"
+              class="upload-item__cancel"
+              (click)="cancelUpload(item)"
+              matTooltip="Annuler">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Uploaded files list -->
+  @if (uploadedFiles().length > 0) {
+    <div class="uploaded-files">
+      <h4 class="uploaded-files__title">
+        <mat-icon>attach_file</mat-icon>
+        Pièces jointes ({{ getTotalUploaded() }})
+      </h4>
+
+      <div class="files-grid">
+        @for (file of uploadedFiles(); track file.file_url) {
+          <div class="file-card">
+            <!-- Preview for images -->
+            @if (isImage(file.file_type)) {
+              <div class="file-card__preview">
+                <img [src]="file.file_url" [alt]="file.file_name" />
+              </div>
+            } @else {
+              <div class="file-card__icon-wrapper">
+                <mat-icon class="file-card__type-icon">{{ getFileIcon(file.file_type) }}</mat-icon>
+              </div>
+            }
+
+            <div class="file-card__info">
+              <a
+                class="file-card__name"
+                [href]="file.file_url"
+                target="_blank"
+                rel="noopener"
+                [matTooltip]="file.file_name">
+                {{ file.file_name }}
+              </a>
+              <span class="file-card__size">{{ formatFileSize(file.file_size) }}</span>
+            </div>
+
+            <div class="file-card__actions">
+              <a
+                class="file-card__btn"
+                [href]="file.file_url"
+                target="_blank"
+                rel="noopener"
+                matTooltip="Télécharger">
+                <mat-icon>download</mat-icon>
+              </a>
+              <button
+                type="button"
+                class="file-card__btn file-card__btn--danger"
+                (click)="removeFile(file)"
+                matTooltip="Supprimer">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

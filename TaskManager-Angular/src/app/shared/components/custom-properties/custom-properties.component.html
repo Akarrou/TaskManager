@@ -1,0 +1,224 @@
+<div class="custom-properties">
+  <!-- Header -->
+  <div class="properties-header">
+    <h4 class="properties-title">
+      <mat-icon>tune</mat-icon>
+      Propriétés personnalisées ({{ properties().length }})
+    </h4>
+    @if (allowAddProperty()) {
+      <button
+        type="button"
+        mat-stroked-button
+        (click)="toggleAddProperty()"
+        class="add-property-btn">
+        <mat-icon>{{ isAddingProperty() ? 'close' : 'add' }}</mat-icon>
+        {{ isAddingProperty() ? 'Annuler' : 'Ajouter' }}
+      </button>
+    }
+  </div>
+
+  <!-- Add property form -->
+  @if (isAddingProperty()) {
+    <div class="add-property-form">
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="property-name-field">
+          <mat-label>Nom de la propriété</mat-label>
+          <input
+            matInput
+            type="text"
+            [value]="newPropertyName()"
+            (input)="onNewPropertyNameChange($any($event.target).value)"
+            placeholder="Ex: Coût estimé" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="property-type-field">
+          <mat-label>Type</mat-label>
+          <mat-select
+            [value]="newPropertyType()"
+            (selectionChange)="onNewPropertyTypeChange($event.value)">
+            @for (type of propertyTypes; track type.value) {
+              <mat-option [value]="type.value">
+                <mat-icon>{{ type.icon }}</mat-icon>
+                {{ type.label }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      @if (isSelectType()) {
+        <mat-form-field appearance="outline" class="property-options-field">
+          <mat-label>Options (séparées par des virgules)</mat-label>
+          <input
+            matInput
+            type="text"
+            [value]="newPropertyOptions()"
+            (input)="onNewPropertyOptionsChange($any($event.target).value)"
+            placeholder="Option 1, Option 2, Option 3" />
+          <mat-hint>Entrez les options possibles séparées par des virgules</mat-hint>
+        </mat-form-field>
+      }
+
+      <div class="form-actions">
+        <button
+          type="button"
+          mat-flat-button
+          color="primary"
+          [disabled]="!newPropertyName()"
+          (click)="addProperty()">
+          <mat-icon>add</mat-icon>
+          Créer la propriété
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Properties list -->
+  @if (properties().length > 0) {
+    <div class="properties-list">
+      @for (property of properties(); track trackByProperty($index, property)) {
+        <div class="property-item">
+          <div class="property-item__header">
+            <mat-icon class="property-item__type-icon">{{ getPropertyIcon(property.type) }}</mat-icon>
+            <span class="property-item__name">{{ property.name }}</span>
+            @if (allowRemoveProperty()) {
+              <button
+                type="button"
+                class="property-item__remove"
+                (click)="removeProperty(property)"
+                matTooltip="Supprimer">
+                <mat-icon>close</mat-icon>
+              </button>
+            }
+          </div>
+
+          <div class="property-item__value">
+            @switch (property.type) {
+              @case ('text') {
+                <input
+                  type="text"
+                  class="property-input"
+                  [value]="property.value"
+                  (input)="updatePropertyValue(property, $any($event.target).value)"
+                  [placeholder]="property.placeholder || 'Entrez une valeur'" />
+              }
+
+              @case ('number') {
+                <input
+                  type="number"
+                  class="property-input"
+                  [value]="property.value"
+                  (input)="updatePropertyValue(property, $any($event.target).valueAsNumber)"
+                  [placeholder]="property.placeholder || '0'" />
+              }
+
+              @case ('date') {
+                <input
+                  type="date"
+                  class="property-input"
+                  [value]="property.value"
+                  (input)="updatePropertyValue(property, $any($event.target).value)" />
+              }
+
+              @case ('checkbox') {
+                <mat-checkbox
+                  [checked]="property.value"
+                  (change)="updatePropertyValue(property, $event.checked)">
+                </mat-checkbox>
+              }
+
+              @case ('select') {
+                <select
+                  class="property-select"
+                  [value]="property.value"
+                  (change)="updatePropertyValue(property, $any($event.target).value)">
+                  <option value="">Sélectionner...</option>
+                  @for (option of property.options; track option) {
+                    <option [value]="option">{{ option }}</option>
+                  }
+                </select>
+              }
+
+              @case ('multiselect') {
+                <div class="multiselect-container">
+                  @for (option of property.options; track option) {
+                    <label class="multiselect-option">
+                      <input
+                        type="checkbox"
+                        [checked]="property.value?.includes(option)"
+                        (change)="updatePropertyValue(property,
+                          $any($event.target).checked
+                            ? [...(property.value || []), option]
+                            : (property.value || []).filter((v: string) => v !== option)
+                        )" />
+                      {{ option }}
+                    </label>
+                  }
+                </div>
+              }
+
+              @case ('url') {
+                <div class="url-input-container">
+                  <input
+                    type="url"
+                    class="property-input"
+                    [value]="property.value"
+                    (input)="updatePropertyValue(property, $any($event.target).value)"
+                    placeholder="https://..." />
+                  @if (property.value) {
+                    <a
+                      class="url-link"
+                      [href]="property.value"
+                      target="_blank"
+                      rel="noopener"
+                      matTooltip="Ouvrir le lien">
+                      <mat-icon>open_in_new</mat-icon>
+                    </a>
+                  }
+                </div>
+              }
+
+              @case ('email') {
+                <div class="email-input-container">
+                  <input
+                    type="email"
+                    class="property-input"
+                    [value]="property.value"
+                    (input)="updatePropertyValue(property, $any($event.target).value)"
+                    placeholder="email@example.com" />
+                  @if (property.value) {
+                    <a
+                      class="email-link"
+                      [href]="'mailto:' + property.value"
+                      matTooltip="Envoyer un email">
+                      <mat-icon>send</mat-icon>
+                    </a>
+                  }
+                </div>
+              }
+
+              @default {
+                <input
+                  type="text"
+                  class="property-input"
+                  [value]="property.value"
+                  (input)="updatePropertyValue(property, $any($event.target).value)" />
+              }
+            }
+          </div>
+        </div>
+      }
+    </div>
+  } @else if (!isAddingProperty()) {
+    <div class="properties-empty">
+      <mat-icon>tune</mat-icon>
+      <p>Aucune propriété personnalisée</p>
+      @if (allowAddProperty()) {
+        <button type="button" mat-stroked-button (click)="toggleAddProperty()">
+          <mat-icon>add</mat-icon>
+          Ajouter une propriété
+        </button>
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,366 @@
+@use '../../../styles/variables' as v;
+
+.rich-text-editor {
+  border: 1px solid v.$border-color-medium;
+  border-radius: v.$border-radius-md;
+  background: v.$background-color-form;
+  overflow: hidden;
+}
+
+// ==========================================================================
+// Toolbar
+// ==========================================================================
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: v.$space-1;
+  padding: v.$space-2;
+  background: v.$background-color-light;
+  border-bottom: 1px solid v.$border-color-light;
+  flex-wrap: wrap;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: v.$border-radius-sm;
+  color: v.$text-color-medium;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .dropdown-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    margin-left: -4px;
+  }
+
+  &:hover {
+    background: rgba(v.$primary-color, 0.1);
+    color: v.$primary-color;
+  }
+
+  &:active {
+    background: rgba(v.$primary-color, 0.2);
+  }
+
+  &.active {
+    background: v.$primary-color;
+    color: white;
+  }
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: v.$border-color-light;
+  margin: 0 v.$space-1;
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+.view-toggle {
+  background: v.$background-color-form;
+  border-radius: v.$border-radius-sm;
+  padding: 2px;
+
+  .toolbar-btn {
+    width: 28px;
+    height: 28px;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+// ==========================================================================
+// Editor Content
+// ==========================================================================
+.editor-content {
+  display: flex;
+
+  &.split-mode {
+    .editor-write,
+    .editor-preview {
+      width: 50%;
+    }
+
+    .editor-write {
+      border-right: 1px solid v.$border-color-light;
+    }
+  }
+}
+
+.editor-write {
+  flex: 1;
+}
+
+.editor-textarea {
+  width: 100%;
+  padding: v.$space-4;
+  border: none;
+  resize: vertical;
+  font-family: 'Fira Code', 'Monaco', 'Menlo', monospace;
+  font-size: v.$font-size-sm;
+  line-height: 1.6;
+  color: v.$text-color-dark;
+  background: v.$background-color-form;
+  overflow-y: auto;
+
+  &::placeholder {
+    color: v.$text-color-light;
+  }
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.editor-preview {
+  flex: 1;
+  padding: v.$space-4;
+  overflow-y: auto;
+  background: v.$background-color-form;
+}
+
+.preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 150px;
+  color: v.$text-color-light;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    opacity: 0.5;
+  }
+
+  p {
+    margin-top: v.$space-2;
+    font-size: v.$font-size-sm;
+  }
+}
+
+// ==========================================================================
+// Markdown Preview Styles
+// ==========================================================================
+.markdown-body {
+  font-size: v.$font-size-sm;
+  line-height: 1.7;
+  color: v.$text-color-dark;
+
+  h1 {
+    font-size: v.$font-size-2xl;
+    font-weight: v.$font-weight-bold;
+    margin: v.$space-6 0 v.$space-4;
+    padding-bottom: v.$space-2;
+    border-bottom: 2px solid v.$border-color-light;
+  }
+
+  h2 {
+    font-size: v.$font-size-xl;
+    font-weight: v.$font-weight-bold;
+    margin: v.$space-5 0 v.$space-3;
+    padding-bottom: v.$space-1;
+    border-bottom: 1px solid v.$border-color-light;
+  }
+
+  h3 {
+    font-size: v.$font-size-lg;
+    font-weight: v.$font-weight-bold;
+    margin: v.$space-4 0 v.$space-2;
+  }
+
+  p {
+    margin: v.$space-3 0;
+  }
+
+  strong {
+    font-weight: v.$font-weight-bold;
+  }
+
+  em {
+    font-style: italic;
+  }
+
+  del {
+    text-decoration: line-through;
+    color: v.$text-color-light;
+  }
+
+  a {
+    color: v.$primary-color;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  code {
+    font-family: 'Fira Code', 'Monaco', 'Menlo', monospace;
+    font-size: 0.9em;
+    padding: 2px 6px;
+    background: rgba(v.$primary-color, 0.1);
+    border-radius: v.$border-radius-sm;
+    color: v.$primary-color-dark;
+  }
+
+  pre {
+    margin: v.$space-4 0;
+    padding: v.$space-4;
+    background: #1e1e1e;
+    border-radius: v.$border-radius-md;
+    overflow-x: auto;
+
+    code {
+      display: block;
+      padding: 0;
+      background: transparent;
+      color: #d4d4d4;
+      font-size: v.$font-size-sm;
+    }
+  }
+
+  blockquote {
+    margin: v.$space-4 0;
+    padding: v.$space-3 v.$space-4;
+    border-left: 4px solid v.$primary-color;
+    background: rgba(v.$primary-color, 0.05);
+    color: v.$text-color-medium;
+    font-style: italic;
+  }
+
+  ul, ol {
+    margin: v.$space-3 0;
+    padding-left: v.$space-6;
+
+    li {
+      margin: v.$space-1 0;
+    }
+  }
+
+  hr {
+    margin: v.$space-6 0;
+    border: none;
+    border-top: 2px solid v.$border-color-light;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: v.$border-radius-md;
+    margin: v.$space-4 0;
+  }
+
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    margin: v.$space-1 0;
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: v.$primary-color;
+    }
+
+    &.completed {
+      text-decoration: line-through;
+      color: v.$text-color-light;
+    }
+  }
+}
+
+// ==========================================================================
+// Footer
+// ==========================================================================
+.editor-footer {
+  padding: v.$space-2 v.$space-3;
+  background: v.$background-color-light;
+  border-top: 1px solid v.$border-color-light;
+}
+
+.help-text {
+  display: flex;
+  align-items: center;
+  gap: v.$space-1;
+  font-size: v.$font-size-xs;
+  color: v.$text-color-light;
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+}
+
+// Heading options in menu
+.heading-option {
+  &.h1 {
+    font-size: v.$font-size-lg;
+    font-weight: v.$font-weight-bold;
+  }
+
+  &.h2 {
+    font-size: v.$font-size-base;
+    font-weight: v.$font-weight-bold;
+  }
+
+  &.h3 {
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-bold;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .editor-content.split-mode {
+    flex-direction: column;
+
+    .editor-write,
+    .editor-preview {
+      width: 100%;
+    }
+
+    .editor-write {
+      border-right: none;
+      border-bottom: 1px solid v.$border-color-light;
+    }
+  }
+
+  .toolbar-group {
+    flex-wrap: wrap;
+  }
+
+  .toolbar-divider {
+    display: none;
+  }
+}

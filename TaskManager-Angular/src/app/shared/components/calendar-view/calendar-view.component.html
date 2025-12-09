@@ -1,0 +1,91 @@
+<div class="calendar-view">
+  <!-- Calendar Header -->
+  <div class="calendar-header">
+    <div class="calendar-header__nav">
+      <button mat-icon-button (click)="previousMonth()" matTooltip="Mois précédent">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <h2 class="calendar-header__title">{{ currentMonthYear() }}</h2>
+      <button mat-icon-button (click)="nextMonth()" matTooltip="Mois suivant">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    </div>
+    <button mat-stroked-button (click)="goToToday()" class="calendar-header__today-btn">
+      Aujourd'hui
+    </button>
+  </div>
+
+  <!-- Calendar Grid -->
+  <div class="calendar-grid">
+    <!-- Week days header -->
+    <div class="calendar-weekdays">
+      @for (day of weekDays; track day) {
+        <div class="calendar-weekday">{{ day }}</div>
+      }
+    </div>
+
+    <!-- Calendar days -->
+    <div class="calendar-days">
+      @for (day of calendarDays(); track trackByDate($index, day)) {
+        <div
+          class="calendar-day"
+          [class.calendar-day--other-month]="!day.isCurrentMonth"
+          [class.calendar-day--today]="day.isToday"
+          [class.calendar-day--has-tasks]="day.tasks.length > 0">
+
+          <div class="calendar-day__header">
+            <span class="calendar-day__number">{{ day.dayNumber }}</span>
+            @if (day.tasks.length > 0) {
+              <span class="calendar-day__task-count">{{ day.tasks.length }}</span>
+            }
+          </div>
+
+          <div class="calendar-day__tasks">
+            @for (task of day.tasks | slice:0:3; track trackByTask($index, task)) {
+              <div
+                class="calendar-task {{ getStatusClass(task.status) }} {{ getPriorityClass(task.priority) }}"
+                [matMenuTriggerFor]="taskMenu"
+                [matTooltip]="task.title">
+                <span class="calendar-task__title">{{ task.title }}</span>
+              </div>
+              <mat-menu #taskMenu="matMenu">
+                <button mat-menu-item (click)="onEditTask(task)">
+                  <mat-icon>edit</mat-icon>
+                  <span>Modifier</span>
+                </button>
+                <button mat-menu-item class="danger" (click)="onDeleteTask(task.id!)">
+                  <mat-icon>delete</mat-icon>
+                  <span>Supprimer</span>
+                </button>
+              </mat-menu>
+            }
+            @if (day.tasks.length > 3) {
+              <div class="calendar-day__more">
+                +{{ day.tasks.length - 3 }} autre(s)
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="calendar-legend">
+    <div class="calendar-legend__title">Légende :</div>
+    <div class="calendar-legend__items">
+      <div class="calendar-legend__item">
+        <span class="calendar-legend__color status-pending"></span>
+        <span>À faire</span>
+      </div>
+      <div class="calendar-legend__item">
+        <span class="calendar-legend__color status-in_progress"></span>
+        <span>En cours</span>
+      </div>
+      <div class="calendar-legend__item">
+        <span class="calendar-legend__color status-completed"></span>
+        <span>Terminée</span>
+      </div>
+    </div>
+  </div>
+</div>

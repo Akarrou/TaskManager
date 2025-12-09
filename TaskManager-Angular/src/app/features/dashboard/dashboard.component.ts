@@ -2,6 +2,8 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { SupabaseService } from '../../core/services/supabase';
@@ -10,11 +12,26 @@ import { SearchFilters } from '../../shared/components/task-search/task-search.c
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { UserService } from '../../core/services/user.service';
 import { TaskSearchComponent } from '../../shared/components/task-search/task-search.component';
+import { ViewToggleComponent, ViewMode } from '../../shared/components/view-toggle/view-toggle.component';
+import { KanbanBoardComponent, KanbanGroupBy } from '../../shared/components/kanban-board/kanban-board.component';
+import { CalendarViewComponent } from '../../shared/components/calendar-view/calendar-view.component';
+import { TimelineViewComponent } from '../../shared/components/timeline-view/timeline-view.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatDialogModule,TaskSearchComponent],
+  imports: [
+    CommonModule,
+    MatIconModule,
+    MatDialogModule,
+    MatSelectModule,
+    MatButtonModule,
+    TaskSearchComponent,
+    ViewToggleComponent,
+    KanbanBoardComponent,
+    CalendarViewComponent,
+    TimelineViewComponent
+  ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -24,7 +41,7 @@ export class DashboardComponent implements OnInit {
   private router = inject(Router);
   private dialog = inject(MatDialog);
   private userService = inject(UserService);
-  
+
   supabaseStatus = signal<'connecting' | 'connected' | 'error'>('connecting');
   statusMessage = signal('Connexion en cours...');
 
@@ -33,6 +50,10 @@ export class DashboardComponent implements OnInit {
   taskError = this.taskService.error;
 
   users = signal<{ id: string; email: string }[]>([]);
+
+  // View mode state
+  currentView = signal<ViewMode>('table');
+  kanbanGroupBy = signal<KanbanGroupBy>('status');
 
   currentSearchFilters = signal<SearchFilters>({
     searchText: '',
@@ -46,8 +67,8 @@ export class DashboardComponent implements OnInit {
     const filters = this.currentSearchFilters();
     return allTasks
       .filter(task => {
-        const searchTextMatch = filters.searchText 
-          ? task.title.toLowerCase().includes(filters.searchText.toLowerCase()) || 
+        const searchTextMatch = filters.searchText
+          ? task.title.toLowerCase().includes(filters.searchText.toLowerCase()) ||
             (task.description && task.description.toLowerCase().includes(filters.searchText.toLowerCase()))
           : true;
         const statusMatch = filters.status ? task.status === filters.status : true;
@@ -160,9 +181,9 @@ export class DashboardComponent implements OnInit {
   async deleteTask(id: string): Promise<void> {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '400px',
-      data: { 
-        title: 'Confirmation de suppression de tâches', 
-        message: 'Êtes-vous sûr de vouloir supprimer cette tâche ?\\nCette action est irréversible.'
+      data: {
+        title: 'Confirmation de suppression de tâches',
+        message: 'Êtes-vous sûr de vouloir supprimer cette tâche ?\nCette action est irréversible.'
       }
     });
 
@@ -183,6 +204,42 @@ export class DashboardComponent implements OnInit {
 
   onSearchFiltersChange(filters: SearchFilters) {
     this.currentSearchFilters.set(filters);
+  }
+
+  onViewChange(view: ViewMode) {
+    this.currentView.set(view);
+  }
+
+  onKanbanGroupByChange(groupBy: KanbanGroupBy) {
+    this.kanbanGroupBy.set(groupBy);
+  }
+
+  async onTaskMoved(event: { task: Task; newStatus?: string; newPriority?: string }) {
+    const { task, newStatus, newPriority } = event;
+    if (!task.id) return;
+
+    const updates: Partial<Task> = {};
+    if (newStatus) {
+      updates.status = newStatus as Task['status'];
+    }
+    if (newPriority) {
+      updates.priority = newPriority as Task['priority'];
+    }
+
+    const success = await this.taskService.updateTask(task.id, updates);
+    if (!success) {
+      console.error('Erreur lors de la mise à jour de la tâche');
+      // Reload tasks to revert the optimistic update
+      await this.taskService.loadTasks();
+    }
+  }
+
+  onTaskEdit(task: Task) {
+    this.navigateToEditTaskForm(task);
+  }
+
+  onTaskDelete(taskId: string) {
+    this.deleteTask(taskId);
   }
 
   getStatusLabel(status: string): string {
