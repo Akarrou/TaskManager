@@ -1,0 +1,145 @@
+<div class="timeline-view">
+  <!-- Timeline Header -->
+  <div class="timeline-header">
+    <div class="timeline-header__nav">
+      <button mat-icon-button (click)="previousPeriod()" matTooltip="Période précédente">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <h2 class="timeline-header__title">{{ periodLabel() }}</h2>
+      <button mat-icon-button (click)="nextPeriod()" matTooltip="Période suivante">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    </div>
+
+    <div class="timeline-header__controls">
+      <button mat-stroked-button (click)="goToToday()" class="timeline-header__today-btn">
+        Aujourd'hui
+      </button>
+
+      <div class="timeline-header__zoom">
+        <button
+          mat-button
+          [class.active]="zoomLevel() === 'week'"
+          (click)="setZoom('week')"
+          matTooltip="Vue semaine">
+          Semaine
+        </button>
+        <button
+          mat-button
+          [class.active]="zoomLevel() === 'month'"
+          (click)="setZoom('month')"
+          matTooltip="Vue mois">
+          Mois
+        </button>
+        <button
+          mat-button
+          [class.active]="zoomLevel() === 'quarter'"
+          (click)="setZoom('quarter')"
+          matTooltip="Vue trimestre">
+          Trimestre
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timeline Content -->
+  <div class="timeline-content">
+    <!-- Timeline Grid -->
+    <div class="timeline-grid">
+      <!-- Header row with dates/weeks/months -->
+      <div class="timeline-grid__header">
+        <div class="timeline-grid__task-column">Tâches</div>
+        <div class="timeline-grid__dates">
+          @for (header of timelineHeaders(); track header.label) {
+            <div
+              class="timeline-grid__date-header"
+              [style.flex]="header.span">
+              {{ header.label }}
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Day columns background -->
+      <div class="timeline-grid__background">
+        <div class="timeline-grid__task-column-bg"></div>
+        <div class="timeline-grid__days-bg">
+          @for (day of timelineDays(); track trackByDate($index, day)) {
+            <div
+              class="timeline-grid__day-column"
+              [class.timeline-grid__day-column--today]="isToday(day)"
+              [class.timeline-grid__day-column--weekend]="isWeekend(day)">
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Tasks rows -->
+      <div class="timeline-grid__tasks">
+        @for (task of timelineTasks(); track trackByTask($index, task)) {
+          <div class="timeline-row">
+            <!-- Task info -->
+            <div class="timeline-row__info">
+              <div class="timeline-row__task-title" [matTooltip]="task.title">
+                @if (task.task_number) {
+                  <span class="timeline-row__task-number">#{{ task.task_number }}</span>
+                }
+                {{ task.title }}
+              </div>
+            </div>
+
+            <!-- Task bar -->
+            <div class="timeline-row__bar-container">
+              <div
+                class="timeline-bar {{ getStatusClass(task.status) }} {{ getPriorityClass(task.priority) }}"
+                [style.left.%]="task.offset"
+                [style.width.%]="task.width"
+                [matMenuTriggerFor]="taskMenu"
+                [matTooltip]="task.title + ' (' + task.duration + ' jour(s))'">
+                <span class="timeline-bar__label">{{ task.title }}</span>
+              </div>
+              <mat-menu #taskMenu="matMenu">
+                <button mat-menu-item (click)="onEditTask(task)">
+                  <mat-icon>edit</mat-icon>
+                  <span>Modifier</span>
+                </button>
+                <button mat-menu-item class="danger" (click)="onDeleteTask(task.id!)">
+                  <mat-icon>delete</mat-icon>
+                  <span>Supprimer</span>
+                </button>
+              </mat-menu>
+            </div>
+          </div>
+        } @empty {
+          <div class="timeline-empty">
+            <mat-icon>event_busy</mat-icon>
+            <p>Aucune tâche pour cette période</p>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="timeline-legend">
+    <div class="timeline-legend__title">Légende :</div>
+    <div class="timeline-legend__items">
+      <div class="timeline-legend__item">
+        <span class="timeline-legend__color status-pending"></span>
+        <span>À faire</span>
+      </div>
+      <div class="timeline-legend__item">
+        <span class="timeline-legend__color status-in_progress"></span>
+        <span>En cours</span>
+      </div>
+      <div class="timeline-legend__item">
+        <span class="timeline-legend__color status-completed"></span>
+        <span>Terminée</span>
+      </div>
+      <div class="timeline-legend__item">
+        <span class="timeline-legend__marker timeline-legend__marker--today"></span>
+        <span>Aujourd'hui</span>
+      </div>
+    </div>
+  </div>
+</div>

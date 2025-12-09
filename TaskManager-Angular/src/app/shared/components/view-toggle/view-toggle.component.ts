@@ -1,39 +1,36 @@
-import { Component, signal, output } from '@angular/core';
+import { Component, signal, output, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
-export type ViewMode = 'grid' | 'list';
+export type ViewMode = 'table' | 'kanban' | 'calendar' | 'timeline';
+
+export interface ViewOption {
+  value: ViewMode;
+  label: string;
+  icon: string;
+  tooltip: string;
+}
 
 @Component({
   selector: 'app-view-toggle',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatIconModule, MatTooltipModule],
   template: `
     <div class="view-toggle" role="group" aria-label="Mode d'affichage">
-      <button 
-        type="button"
-        class="toggle-btn"
-        [class.active]="currentView() === 'grid'"
-        (click)="setView('grid')"
-        aria-label="Vue en grille"
-        title="Affichage en grille">
-        <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M3,11H11V3H3M3,21H11V13H3M13,21H21V13H13M13,3V11H21V3"/>
-        </svg>
-        <span class="btn-text">Grille</span>
-      </button>
-      
-      <button 
-        type="button"
-        class="toggle-btn"
-        [class.active]="currentView() === 'list'"
-        (click)="setView('list')"
-        aria-label="Vue en liste"
-        title="Affichage en liste">
-        <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M3,5H21V7H3V5M3,11H21V13H3V11M3,17H21V19H3V17Z"/>
-        </svg>
-        <span class="btn-text">Liste</span>
-      </button>
+      @for (option of viewOptions; track option.value) {
+        <button
+          type="button"
+          class="toggle-btn"
+          [class.active]="currentView() === option.value"
+          (click)="setView(option.value)"
+          [attr.aria-label]="option.tooltip"
+          [matTooltip]="option.tooltip"
+          matTooltipPosition="above">
+          <mat-icon class="icon">{{ option.icon }}</mat-icon>
+          <span class="btn-text">{{ option.label }}</span>
+        </button>
+      }
     </div>
   `,
   styles: [`
@@ -78,8 +75,9 @@ export type ViewMode = 'grid' | 'list';
     }
 
     .icon {
-      width: 16px;
-      height: 16px;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
       flex-shrink: 0;
     }
 
@@ -88,11 +86,11 @@ export type ViewMode = 'grid' | 'list';
     }
 
     /* Responsive - masquer le texte sur mobile */
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
       .btn-text {
         display: none;
       }
-      
+
       .toggle-btn {
         padding: 0.5rem;
       }
@@ -100,8 +98,20 @@ export type ViewMode = 'grid' | 'list';
   `]
 })
 export class ViewToggleComponent {
-  currentView = signal<ViewMode>('grid');
+  initialView = input<ViewMode>('table');
+  currentView = signal<ViewMode>('table');
   viewChange = output<ViewMode>();
+
+  viewOptions: ViewOption[] = [
+    { value: 'table', label: 'Table', icon: 'table_rows', tooltip: 'Vue tableau' },
+    { value: 'kanban', label: 'Kanban', icon: 'view_kanban', tooltip: 'Vue Kanban' },
+    { value: 'calendar', label: 'Calendrier', icon: 'calendar_month', tooltip: 'Vue calendrier' },
+    { value: 'timeline', label: 'Timeline', icon: 'timeline', tooltip: 'Vue timeline / Gantt' }
+  ];
+
+  ngOnInit() {
+    this.currentView.set(this.initialView());
+  }
 
   setView(view: ViewMode) {
     this.currentView.set(view);

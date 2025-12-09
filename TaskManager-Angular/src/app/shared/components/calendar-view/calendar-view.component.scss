@@ -1,0 +1,301 @@
+@use '../../../styles/variables' as v;
+
+.calendar-view {
+  background: v.$background-color-form;
+  border-radius: v.$border-radius-lg;
+  box-shadow: v.$shadow-md;
+  border: 1px solid v.$border-color-light;
+  overflow: hidden;
+}
+
+// ==========================================================================
+// Header
+// ==========================================================================
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: v.$space-4 v.$space-6;
+  border-bottom: 1px solid v.$border-color-light;
+  background: v.$background-color-light;
+
+  &__nav {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+  }
+
+  &__title {
+    font-size: v.$font-size-lg;
+    font-weight: v.$font-weight-bold;
+    color: v.$text-color-dark;
+    margin: 0;
+    min-width: 180px;
+    text-align: center;
+    text-transform: capitalize;
+  }
+
+  &__today-btn {
+    font-size: v.$font-size-sm;
+  }
+}
+
+// ==========================================================================
+// Grid
+// ==========================================================================
+.calendar-grid {
+  padding: v.$space-4;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  margin-bottom: v.$space-2;
+}
+
+.calendar-weekday {
+  padding: v.$space-2;
+  text-align: center;
+  font-size: v.$font-size-xs;
+  font-weight: v.$font-weight-bold;
+  color: v.$text-color-light;
+  text-transform: uppercase;
+}
+
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: v.$border-color-light;
+  border: 1px solid v.$border-color-light;
+  border-radius: v.$border-radius-md;
+  overflow: hidden;
+}
+
+// ==========================================================================
+// Day Cell
+// ==========================================================================
+.calendar-day {
+  min-height: 100px;
+  background: v.$background-color-form;
+  padding: v.$space-2;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background: v.$background-color-light;
+  }
+
+  &--other-month {
+    background: v.$background-color-light;
+    opacity: 0.6;
+
+    .calendar-day__number {
+      color: v.$text-color-disabled;
+    }
+  }
+
+  &--today {
+    background: rgba(59, 130, 246, 0.05);
+
+    .calendar-day__number {
+      background: v.$primary-color;
+      color: white;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  &--has-tasks {
+    .calendar-day__header {
+      margin-bottom: v.$space-2;
+    }
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__number {
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-medium;
+    color: v.$text-color-dark;
+  }
+
+  &__task-count {
+    font-size: 10px;
+    font-weight: v.$font-weight-bold;
+    color: v.$primary-color;
+    background: rgba(59, 130, 246, 0.1);
+    padding: 2px 6px;
+    border-radius: v.$border-radius-full;
+  }
+
+  &__tasks {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__more {
+    font-size: 10px;
+    color: v.$text-color-light;
+    padding: 2px 4px;
+    text-align: center;
+    cursor: pointer;
+
+    &:hover {
+      color: v.$primary-color;
+    }
+  }
+}
+
+// ==========================================================================
+// Task Item
+// ==========================================================================
+.calendar-task {
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: v.$border-radius-sm;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: all 0.2s ease;
+  border-left: 3px solid;
+
+  &:hover {
+    transform: scale(1.02);
+  }
+
+  &__title {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // Status colors
+  &.status-pending {
+    background: #fef9c3;
+    border-left-color: #f59e0b;
+    color: #92400e;
+  }
+
+  &.status-in_progress {
+    background: #e0f2fe;
+    border-left-color: #0ea5e9;
+    color: #0369a1;
+  }
+
+  &.status-completed {
+    background: #dcfce7;
+    border-left-color: #22c55e;
+    color: #166534;
+  }
+
+  &.status-cancelled {
+    background: #f3f4f6;
+    border-left-color: #6b7280;
+    color: #374151;
+    text-decoration: line-through;
+  }
+
+  // Priority borders (optional stronger indication)
+  &.priority-urgent {
+    border-left-width: 4px;
+    font-weight: v.$font-weight-medium;
+  }
+
+  &.priority-high {
+    border-left-width: 4px;
+  }
+}
+
+// ==========================================================================
+// Legend
+// ==========================================================================
+.calendar-legend {
+  display: flex;
+  align-items: center;
+  gap: v.$space-4;
+  padding: v.$space-3 v.$space-6;
+  border-top: 1px solid v.$border-color-light;
+  background: v.$background-color-light;
+
+  &__title {
+    font-size: v.$font-size-xs;
+    font-weight: v.$font-weight-medium;
+    color: v.$text-color-light;
+  }
+
+  &__items {
+    display: flex;
+    gap: v.$space-4;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: v.$space-1;
+    font-size: v.$font-size-xs;
+    color: v.$text-color-medium;
+  }
+
+  &__color {
+    width: 12px;
+    height: 12px;
+    border-radius: v.$border-radius-sm;
+    border-left: 3px solid;
+
+    &.status-pending {
+      background: #fef9c3;
+      border-left-color: #f59e0b;
+    }
+
+    &.status-in_progress {
+      background: #e0f2fe;
+      border-left-color: #0ea5e9;
+    }
+
+    &.status-completed {
+      background: #dcfce7;
+      border-left-color: #22c55e;
+    }
+  }
+}
+
+// Menu item danger style
+::ng-deep .mat-mdc-menu-item.danger {
+  color: v.$error-color;
+
+  .mat-icon {
+    color: v.$error-color;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .calendar-day {
+    min-height: 60px;
+    padding: v.$space-1;
+
+    &__number {
+      font-size: v.$font-size-xs;
+    }
+  }
+
+  .calendar-task {
+    font-size: 10px;
+    padding: 2px 4px;
+  }
+
+  .calendar-legend {
+    flex-wrap: wrap;
+  }
+}

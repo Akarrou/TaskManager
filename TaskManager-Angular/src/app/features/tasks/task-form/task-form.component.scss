@@ -410,3 +410,60 @@ input[readonly] {
     }
   }
 }
+
+// ==========================================================================
+// Extras Section (Notion-like features)
+// ==========================================================================
+.extras-section {
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-6;
+  padding: v.$space-4 0;
+}
+
+.extras-group {
+  background: v.$background-color-light;
+  border: 1px solid v.$border-color-light;
+  border-radius: v.$border-radius-lg;
+  overflow: hidden;
+}
+
+.extras-group-title {
+  display: flex;
+  align-items: center;
+  gap: v.$space-2;
+  margin: 0;
+  padding: v.$space-4;
+  font-size: v.$font-size-base;
+  font-weight: v.$font-weight-medium;
+  color: v.$text-color-dark;
+  background: v.$background-color-page;
+  border-bottom: 1px solid v.$border-color-light;
+
+  .material-icons {
+    font-size: 20px;
+    color: v.$primary-color;
+  }
+}
+
+.extras-group > app-file-upload,
+.extras-group > app-task-relations,
+.extras-group > app-custom-properties {
+  display: block;
+}
+
+// Ajustements pour les composants imbriqués
+.extras-group ::ng-deep {
+  .file-upload,
+  .task-relations,
+  .custom-properties {
+    border: none;
+    border-radius: 0;
+  }
+
+  .file-upload-header,
+  .relations-header,
+  .properties-header {
+    display: none;
+  }
+}

@@ -1,0 +1,143 @@
+<div class="rich-text-editor">
+  <!-- Toolbar -->
+  <div class="editor-toolbar">
+    <!-- Formatting buttons -->
+    <div class="toolbar-group">
+      @for (button of toolbarButtons; track button.action) {
+        <button
+          type="button"
+          class="toolbar-btn"
+          (click)="applyFormat(button)"
+          [matTooltip]="button.tooltip">
+          <mat-icon>{{ button.icon }}</mat-icon>
+        </button>
+      }
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Headings menu -->
+    <div class="toolbar-group">
+      <button
+        type="button"
+        class="toolbar-btn"
+        [matMenuTriggerFor]="headingsMenu"
+        matTooltip="Titres">
+        <mat-icon>title</mat-icon>
+        <mat-icon class="dropdown-icon">arrow_drop_down</mat-icon>
+      </button>
+      <mat-menu #headingsMenu="matMenu">
+        @for (button of headingButtons; track button.action) {
+          <button mat-menu-item (click)="applyFormat(button)">
+            <span class="heading-option {{ button.action }}">{{ button.label }}</span>
+          </button>
+        }
+      </mat-menu>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Lists -->
+    <div class="toolbar-group">
+      @for (button of listButtons; track button.action) {
+        <button
+          type="button"
+          class="toolbar-btn"
+          (click)="applyFormat(button)"
+          [matTooltip]="button.tooltip">
+          <mat-icon>{{ button.icon }}</mat-icon>
+        </button>
+      }
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Block elements -->
+    <div class="toolbar-group">
+      @for (button of blockButtons; track button.action) {
+        <button
+          type="button"
+          class="toolbar-btn"
+          (click)="applyFormat(button)"
+          [matTooltip]="button.tooltip">
+          <mat-icon>{{ button.icon }}</mat-icon>
+        </button>
+      }
+    </div>
+
+    <!-- Spacer -->
+    <div class="toolbar-spacer"></div>
+
+    <!-- View mode toggle -->
+    <div class="toolbar-group view-toggle">
+      <button
+        type="button"
+        class="toolbar-btn"
+        [class.active]="mode() === 'write'"
+        (click)="setMode('write')"
+        matTooltip="Écrire">
+        <mat-icon>edit</mat-icon>
+      </button>
+      <button
+        type="button"
+        class="toolbar-btn"
+        [class.active]="mode() === 'split'"
+        (click)="setMode('split')"
+        matTooltip="Divisé">
+        <mat-icon>vertical_split</mat-icon>
+      </button>
+      <button
+        type="button"
+        class="toolbar-btn"
+        [class.active]="mode() === 'preview'"
+        (click)="setMode('preview')"
+        matTooltip="Prévisualiser">
+        <mat-icon>visibility</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Editor content -->
+  <div class="editor-content" [class.split-mode]="mode() === 'split'">
+    <!-- Write panel -->
+    @if (mode() === 'write' || mode() === 'split') {
+      <div class="editor-write">
+        <textarea
+          #textareaRef
+          class="editor-textarea"
+          [placeholder]="placeholder()"
+          [value]="content()"
+          (input)="onContentChange($any($event.target).value)"
+          (keydown)="onKeyDown($event)"
+          [style.min-height]="minHeight()"
+          [style.max-height]="maxHeight()">
+        </textarea>
+      </div>
+    }
+
+    <!-- Preview panel -->
+    @if (mode() === 'preview' || mode() === 'split') {
+      <div
+        class="editor-preview"
+        [style.min-height]="minHeight()"
+        [style.max-height]="maxHeight()">
+        @if (renderedHtml()) {
+          <div class="preview-content markdown-body" [innerHTML]="renderedHtml()"></div>
+        } @else {
+          <div class="preview-empty">
+            <mat-icon>article</mat-icon>
+            <p>Rien à prévisualiser</p>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Help text -->
+  <div class="editor-footer">
+    <span class="help-text">
+      <mat-icon>info</mat-icon>
+      Supporte le Markdown. Utilisez **gras**, _italique_, `code`, [liens](url), et plus encore.
+    </span>
+  </div>
+</div>

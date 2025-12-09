@@ -24,6 +24,12 @@ import { selectSelectedProjectId } from '../../projects/store/project.selectors'
 import { firstValueFrom } from 'rxjs';
 import { NavigationFabComponent, NavigationContext, NavigationAction } from '../../../shared/components/navigation-fab/navigation-fab.component';
 
+// Nouveaux composants Notion-like
+import { RichTextEditorComponent } from '../../../shared/components/rich-text-editor/rich-text-editor.component';
+import { FileUploadComponent, FileAttachment } from '../../../shared/components/file-upload/file-upload.component';
+import { TaskRelationsComponent, TaskRelation } from '../../../shared/components/task-relations/task-relations.component';
+import { CustomPropertiesComponent, CustomProperty } from '../../../shared/components/custom-properties/custom-properties.component';
+
 @Component({
   selector: 'app-task-form',
   standalone: true,
@@ -39,7 +45,12 @@ import { NavigationFabComponent, NavigationContext, NavigationAction } from '../
     MatFormFieldModule,
     MatInputModule,
     MatStepperModule,
-    NavigationFabComponent
+    NavigationFabComponent,
+    // Nouveaux composants Notion-like
+    RichTextEditorComponent,
+    FileUploadComponent,
+    TaskRelationsComponent,
+    CustomPropertiesComponent
   ],
   templateUrl: './task-form.component.html',
   styleUrls: ['./task-form.component.scss']
@@ -89,6 +100,14 @@ export class TaskFormComponent implements OnInit {
   contextType: 'epic' | 'feature' | 'task' | null = null;
   contextParentId: string | null = null;
   isTypeLocked = false;
+
+  // Signaux pour les fonctionnalités Notion-like
+  taskAttachments = signal<FileAttachment[]>([]);
+  taskRelations = signal<TaskRelation[]>([]);
+  customProperties = signal<CustomProperty[]>([]);
+
+  // FormControl pour les propriétés personnalisées
+  customPropertiesControl = new FormControl<CustomProperty[]>([]);
 
   constructor() {
     this.loadUsers();
@@ -753,6 +772,36 @@ export class TaskFormComponent implements OnInit {
         this.router.navigate([route]);
       }
     }
+  }
+
+  // Méthodes pour les fonctionnalités Notion-like
+  onDescriptionChange(content: string) {
+    this.mainInfoForm.patchValue({ description: content });
+    this.mainInfoForm.markAsDirty();
+  }
+
+  onFilesUploaded(files: FileAttachment[]) {
+    this.taskAttachments.set(files);
+    this.stepperForm.markAsDirty();
+  }
+
+  onFileDeleted(fileId: string) {
+    console.log('Fichier supprimé:', fileId);
+  }
+
+  onFileRemoved(file: FileAttachment) {
+    this.taskAttachments.update(files => files.filter(f => f.file_url !== file.file_url));
+    this.stepperForm.markAsDirty();
+  }
+
+  onRelationsChange(relations: TaskRelation[]) {
+    this.taskRelations.set(relations);
+    this.stepperForm.markAsDirty();
+  }
+
+  onCustomPropertiesChange(properties: CustomProperty[]) {
+    this.customProperties.set(properties);
+    this.stepperForm.markAsDirty();
   }
 }
 

@@ -14,7 +14,9 @@
       "Bash(node:*)",
       "Bash(source:*)",
       "Bash(. ~/.nvm/nvm.sh)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)"
     ]
   },
   "enableAllProjectMcpServers": false

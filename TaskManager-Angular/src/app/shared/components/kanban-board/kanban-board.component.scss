@@ -1,0 +1,382 @@
+@use '../../../styles/variables' as v;
+
+.kanban-board {
+  display: flex;
+  gap: v.$space-4;
+  overflow-x: auto;
+  padding: v.$space-4 0;
+  min-height: 500px;
+
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: v.$background-color-light;
+    border-radius: v.$border-radius-full;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: v.$border-color-medium;
+    border-radius: v.$border-radius-full;
+
+    &:hover {
+      background: v.$secondary-color;
+    }
+  }
+}
+
+// ==========================================================================
+// Column
+// ==========================================================================
+.kanban-column {
+  flex: 0 0 300px;
+  min-width: 300px;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  background: v.$background-color-form;
+  border-radius: v.$border-radius-lg;
+  box-shadow: v.$shadow-sm;
+  border: 1px solid v.$border-color-light;
+
+  &__header {
+    padding: v.$space-4;
+    border-top: 3px solid;
+    border-radius: v.$border-radius-lg v.$border-radius-lg 0 0;
+    background: v.$background-color-form;
+  }
+
+  &__title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+  }
+
+  &__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  &__title {
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-bold;
+    color: v.$text-color-dark;
+    margin: 0;
+    flex: 1;
+  }
+
+  &__count {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 v.$space-2;
+    font-size: v.$font-size-xs;
+    font-weight: v.$font-weight-bold;
+    color: v.$text-color-light;
+    background: v.$background-color-light;
+    border-radius: v.$border-radius-full;
+  }
+
+  &__content {
+    flex: 1;
+    padding: v.$space-3;
+    display: flex;
+    flex-direction: column;
+    gap: v.$space-3;
+    min-height: 100px;
+    transition: background-color 0.2s ease;
+
+    &.cdk-drop-list-dragging {
+      background-color: rgba(59, 130, 246, 0.1) !important;
+    }
+  }
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: v.$space-8;
+    color: v.$text-color-light;
+
+    mat-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+      opacity: 0.5;
+    }
+
+    p {
+      margin-top: v.$space-2;
+      font-size: v.$font-size-sm;
+    }
+  }
+}
+
+// ==========================================================================
+// Card
+// ==========================================================================
+.kanban-card {
+  background: v.$background-color-form;
+  border-radius: v.$border-radius-md;
+  padding: v.$space-3;
+  box-shadow: v.$shadow-sm;
+  border: 1px solid v.$border-color-light;
+  cursor: grab;
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: v.$shadow-md;
+    border-color: v.$primary-color-light;
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  // CDK Drag styles
+  &.cdk-drag-preview {
+    box-shadow: v.$shadow-lg;
+    border: 2px solid v.$primary-color;
+    opacity: 0.9;
+  }
+
+  &.cdk-drag-animating {
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  &__drag-preview {
+    background: v.$background-color-form;
+    border-radius: v.$border-radius-md;
+    padding: v.$space-3;
+    box-shadow: v.$shadow-lg;
+    border: 2px solid v.$primary-color;
+    max-width: 280px;
+  }
+
+  &__placeholder {
+    background: rgba(59, 130, 246, 0.1);
+    border: 2px dashed v.$primary-color;
+    border-radius: v.$border-radius-md;
+    min-height: 80px;
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: v.$space-2;
+  }
+
+  &__badges {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+  }
+
+  &__number {
+    font-size: v.$font-size-xs;
+    font-weight: v.$font-weight-medium;
+    color: v.$text-color-light;
+  }
+
+  &__menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    border-radius: v.$border-radius-sm;
+    color: v.$text-color-light;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s ease;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      background: v.$background-color-light;
+      color: v.$text-color-dark;
+    }
+  }
+
+  &:hover &__menu-btn {
+    opacity: 1;
+  }
+
+  &__title {
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-medium;
+    color: v.$text-color-dark;
+    margin: 0 0 v.$space-2 0;
+    line-height: 1.4;
+    cursor: pointer;
+
+    &:hover {
+      color: v.$primary-color;
+    }
+  }
+
+  &__description {
+    font-size: v.$font-size-xs;
+    color: v.$text-color-light;
+    margin: 0 0 v.$space-3 0;
+    line-height: 1.5;
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: v.$space-2;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: v.$space-3;
+  }
+
+  &__priority {
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    border-radius: v.$border-radius-sm;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    &.priority-urgent {
+      color: #dc2626;
+      background: #fee2e2;
+    }
+
+    &.priority-high {
+      color: #ef4444;
+      background: #fee2e2;
+    }
+
+    &.priority-medium {
+      color: #f97316;
+      background: #ffedd5;
+    }
+
+    &.priority-low {
+      color: #818cf8;
+      background: #e0e7ff;
+    }
+  }
+
+  &__due-date {
+    display: flex;
+    align-items: center;
+    gap: v.$space-1;
+    font-size: v.$font-size-xs;
+    color: v.$text-color-light;
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+
+    &.overdue {
+      color: v.$error-color;
+      font-weight: v.$font-weight-medium;
+    }
+  }
+
+  &__subtasks {
+    display: flex;
+    align-items: center;
+    gap: v.$space-1;
+    font-size: v.$font-size-xs;
+    color: v.$text-color-light;
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: v.$space-1;
+    margin-top: v.$space-3;
+    padding-top: v.$space-2;
+    border-top: 1px solid v.$border-color-light;
+  }
+
+  &__tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    background: v.$background-color-light;
+    color: v.$text-color-light;
+    border-radius: v.$border-radius-sm;
+    font-weight: v.$font-weight-medium;
+
+    &--more {
+      background: v.$primary-color-light;
+      color: white;
+    }
+  }
+}
+
+// Environment badges
+.env-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: v.$font-weight-bold;
+  border-radius: v.$border-radius-sm;
+  text-transform: uppercase;
+
+  &--fe {
+    background: #dbeafe;
+    color: #2563eb;
+  }
+
+  &--be {
+    background: #dcfce7;
+    color: #16a34a;
+  }
+
+  &--ops {
+    background: #fef3c7;
+    color: #d97706;
+  }
+
+  &--all {
+    background: #f3e8ff;
+    color: #9333ea;
+  }
+}
+
+// Menu item danger style
+::ng-deep .mat-mdc-menu-item.danger {
+  color: v.$error-color;
+
+  .mat-icon {
+    color: v.$error-color;
+  }
+}

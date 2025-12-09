@@ -1,0 +1,380 @@
+@use '../../../styles/variables' as v;
+
+.file-upload {
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-4;
+}
+
+// ==========================================================================
+// Drop Zone
+// ==========================================================================
+.drop-zone {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+  padding: v.$space-6;
+  border: 2px dashed v.$border-color-medium;
+  border-radius: v.$border-radius-lg;
+  background: v.$background-color-light;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: v.$primary-color;
+    background: rgba(v.$primary-color, 0.05);
+  }
+
+  &.dragging {
+    border-color: v.$primary-color;
+    border-style: solid;
+    background: rgba(v.$primary-color, 0.1);
+
+    .drop-zone__icon {
+      transform: scale(1.1);
+      color: v.$primary-color;
+    }
+  }
+
+  &.has-files {
+    min-height: 100px;
+    padding: v.$space-4;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  &__icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: v.$text-color-light;
+    transition: all 0.2s ease;
+  }
+
+  &__text {
+    margin-top: v.$space-3;
+    font-size: v.$font-size-sm;
+    color: v.$text-color-medium;
+  }
+
+  &__browse {
+    background: none;
+    border: none;
+    padding: 0;
+    color: v.$primary-color;
+    font-weight: v.$font-weight-medium;
+    cursor: pointer;
+    text-decoration: underline;
+
+    &:hover {
+      color: v.$primary-color-dark;
+    }
+  }
+
+  &__hint {
+    margin-top: v.$space-1;
+    font-size: v.$font-size-xs;
+    color: v.$text-color-light;
+  }
+}
+
+.file-input {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+// ==========================================================================
+// Upload Queue
+// ==========================================================================
+.upload-queue {
+  &__title {
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-medium;
+    color: v.$text-color-dark;
+    margin: 0 0 v.$space-3;
+  }
+}
+
+.upload-item {
+  display: flex;
+  align-items: center;
+  gap: v.$space-3;
+  padding: v.$space-3;
+  background: v.$background-color-form;
+  border: 1px solid v.$border-color-light;
+  border-radius: v.$border-radius-md;
+  margin-bottom: v.$space-2;
+
+  &.error {
+    border-color: v.$error-color;
+    background: rgba(v.$error-color, 0.05);
+  }
+
+  &__info {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__icon {
+    color: v.$text-color-light;
+    font-size: 24px;
+  }
+
+  &__details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__name {
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-medium;
+    color: v.$text-color-dark;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__size {
+    font-size: v.$font-size-xs;
+    color: v.$text-color-light;
+  }
+
+  &__progress {
+    flex: 1;
+    max-width: 200px;
+  }
+
+  &__status {
+    &.success {
+      color: v.$success-color;
+    }
+  }
+
+  &__error {
+    display: flex;
+    align-items: center;
+    gap: v.$space-1;
+    font-size: v.$font-size-xs;
+    color: v.$error-color;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  &__cancel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    border-radius: v.$border-radius-sm;
+    color: v.$text-color-light;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      background: v.$background-color-light;
+      color: v.$text-color-dark;
+    }
+  }
+}
+
+// ==========================================================================
+// Uploaded Files
+// ==========================================================================
+.uploaded-files {
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-medium;
+    color: v.$text-color-dark;
+    margin: 0 0 v.$space-3;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      color: v.$text-color-light;
+    }
+  }
+}
+
+.files-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: v.$space-3;
+}
+
+.file-card {
+  display: flex;
+  flex-direction: column;
+  background: v.$background-color-form;
+  border: 1px solid v.$border-color-light;
+  border-radius: v.$border-radius-md;
+  overflow: hidden;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: v.$primary-color-light;
+    box-shadow: v.$shadow-md;
+
+    .file-card__actions {
+      opacity: 1;
+    }
+  }
+
+  &__preview {
+    position: relative;
+    width: 100%;
+    height: 120px;
+    background: v.$background-color-light;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &__icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 80px;
+    background: v.$background-color-light;
+  }
+
+  &__type-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    color: v.$text-color-light;
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    padding: v.$space-3;
+    min-width: 0;
+  }
+
+  &__name {
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-medium;
+    color: v.$text-color-dark;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &:hover {
+      color: v.$primary-color;
+    }
+  }
+
+  &__size {
+    font-size: v.$font-size-xs;
+    color: v.$text-color-light;
+    margin-top: 2px;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: v.$space-1;
+    padding: 0 v.$space-2 v.$space-2;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  &__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    background: v.$background-color-light;
+    border-radius: v.$border-radius-sm;
+    color: v.$text-color-medium;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      background: v.$primary-color;
+      color: white;
+    }
+
+    &--danger:hover {
+      background: v.$error-color;
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 640px) {
+  .files-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .file-card {
+    flex-direction: row;
+    align-items: center;
+
+    &__preview,
+    &__icon-wrapper {
+      width: 60px;
+      height: 60px;
+      flex-shrink: 0;
+    }
+
+    &__info {
+      flex: 1;
+    }
+
+    &__actions {
+      opacity: 1;
+      padding: v.$space-2;
+    }
+  }
+}
