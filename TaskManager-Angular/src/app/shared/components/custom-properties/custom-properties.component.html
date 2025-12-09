@@ -146,11 +146,7 @@
                       <input
                         type="checkbox"
                         [checked]="property.value?.includes(option)"
-                        (change)="updatePropertyValue(property,
-                          $any($event.target).checked
-                            ? [...(property.value || []), option]
-                            : (property.value || []).filter((v: string) => v !== option)
-                        )" />
+                        (change)="onMultiselectChange(property, option, $any($event.target).checked)" />
                       {{ option }}
                     </label>
                   }

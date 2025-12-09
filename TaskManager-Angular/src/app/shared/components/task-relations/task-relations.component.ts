@@ -55,6 +55,7 @@ export class TaskRelationsComponent implements OnInit {
 
   currentTaskId = input<string>();
   relations = input<TaskRelation[]>([]);
+  availableTasks = input<Task[]>([]);
 
   relationsChange = output<TaskRelation[]>();
 
@@ -112,9 +113,14 @@ export class TaskRelationsComponent implements OnInit {
   });
 
   async ngOnInit() {
-    // Load all tasks for selection
-    await this.taskService.loadTasks();
-    this.allTasks.set(this.taskService.tasks());
+    // Use provided tasks or load from service
+    const providedTasks = this.availableTasks();
+    if (providedTasks.length > 0) {
+      this.allTasks.set(providedTasks);
+    } else {
+      await this.taskService.loadTasks();
+      this.allTasks.set(this.taskService.tasks());
+    }
 
     // Initialize local relations
     this.localRelations.set(this.relations());

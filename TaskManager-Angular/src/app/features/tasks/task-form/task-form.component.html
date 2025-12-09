@@ -247,7 +247,7 @@
             Relations entre tâches
           </h3>
           <app-task-relations
-            [currentTaskId]="currentTaskId()"
+            [currentTaskId]="currentTaskId() ?? undefined"
             [availableTasks]="tasks()"
             [relations]="taskRelations()"
             (relationsChange)="onRelationsChange($event)">

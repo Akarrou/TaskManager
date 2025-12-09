@@ -183,4 +183,12 @@ export class CustomPropertiesComponent implements ControlValueAccessor {
     const type = this.newPropertyType();
     return type === 'select' || type === 'multiselect';
   }
+
+  onMultiselectChange(property: CustomProperty, option: string, checked: boolean) {
+    const currentValue = property.value || [];
+    const newValue = checked
+      ? [...currentValue, option]
+      : currentValue.filter((v: string) => v !== option);
+    this.updatePropertyValue(property, newValue);
+  }
 }

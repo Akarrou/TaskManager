@@ -1,6 +1,6 @@
 import { Component, input, output, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CdkDragDrop, CdkDrag, CdkDropList, CdkDropListGroup, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
+import { CdkDragDrop, CdkDrag, CdkDropList, CdkDropListGroup, CdkDragPreview, CdkDragPlaceholder, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -24,6 +24,8 @@ export interface KanbanColumn {
     CdkDropListGroup,
     CdkDropList,
     CdkDrag,
+    CdkDragPreview,
+    CdkDragPlaceholder,
     MatIconModule,
     MatMenuModule,
     MatTooltipModule

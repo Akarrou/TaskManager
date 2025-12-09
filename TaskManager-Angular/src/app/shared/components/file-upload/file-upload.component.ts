@@ -47,6 +47,7 @@ export class FileUploadComponent {
 
   filesUploaded = output<FileAttachment[]>();
   fileDeleted = output<string>();
+  fileRemoved = output<FileAttachment>();
 
   isDragging = signal(false);
   uploadQueue = signal<UploadProgress[]>([]);
@@ -259,6 +260,7 @@ export class FileUploadComponent {
       files.filter(f => f !== attachment)
     );
     this.filesUploaded.emit(this.uploadedFiles());
+    this.fileRemoved.emit(attachment);
 
     if (attachment.id) {
       this.fileDeleted.emit(attachment.id);
