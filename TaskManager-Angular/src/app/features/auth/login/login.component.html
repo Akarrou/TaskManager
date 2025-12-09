@@ -1,91 +1,90 @@
-<div
-  class="relative flex size-full min-h-screen flex-col bg-slate-50 group/design-root overflow-x-hidden"
->
-  <div
-    class="layout-container flex h-full grow flex-col items-center justify-center"
-  >
-    <main
-      class="flex flex-col items-center justify-center w-full px-6 py-8 lg:py-0"
-    >
-      <div
-        class="w-full bg-white rounded-xl shadow-xl md:mt-0 sm:max-w-md xl:p-0"
-      >
-        <div class="p-6 space-y-4 md:space-y-6 sm:p-8">
-          <div class="flex items-center justify-center mb-8 logo-container">
-            <app-logo [size]="100"></app-logo>
-          </div>
-          <form
-            (ngSubmit)="handleLogin()"
-            #loginForm="ngForm"
-            class="space-y-4 md:space-y-6"
-          >
-            <div class="form-group mb-6">
-              <label
-                class="block mb-2 text-sm font-medium text-gray-900"
-                for="email"
-                >Email Address</label
-              >
+<div class="c-login-layout">
+  <div class="c-login-container">
+    <div class="c-login-card">
+      <div class="c-login-card__content">
+        <div class="c-login-header">
+          <app-logo [size]="80"></app-logo>
+          <h2 class="c-login-title">Bienvenue</h2>
+          <p class="c-login-subtitle">Connectez-vous pour accéder à votre espace</p>
+        </div>
+
+        <form (ngSubmit)="handleLogin()" #loginForm="ngForm" class="c-login-form">
+          <div class="c-form-group">
+            <label class="c-label" for="email">Adresse Email</label>
+            <div class="c-input-wrapper">
+              <span class="material-icons-outlined c-input-icon">email</span>
               <input
-                class="form-input h-12 p-3 placeholder-gray-400"
+                class="c-input"
                 id="email"
                 name="email"
                 type="email"
                 [ngModel]="email()"
                 (ngModelChange)="email.set($event)"
-                placeholder="Enter your email"
-                required=""
+                placeholder="votre@email.com"
+                required
                 [disabled]="loading()"
+                autocomplete="email"
               />
             </div>
-            <div class="form-group mb-6">
-              <label
-                class="block mb-2 text-sm font-medium text-gray-900"
-                for="password"
-                >Password</label
-              >
+          </div>
+
+          <div class="c-form-group">
+            <label class="c-label" for="password">Mot de passe</label>
+            <div class="c-input-wrapper">
+              <span class="material-icons-outlined c-input-icon">lock</span>
               <input
-                class="form-input h-12 p-3 placeholder-gray-400"
+                class="c-input"
                 id="password"
                 name="password"
-                placeholder="••••••••"
-                required=""
                 type="password"
                 [ngModel]="password()"
                 (ngModelChange)="password.set($event)"
+                placeholder="••••••••"
+                required
                 [disabled]="loading()"
+                autocomplete="current-password"
               />
             </div>
+          </div>
 
-            <div class="error-container" *ngIf="error()">
-              <p>{{ error() }}</p>
-            </div>
+          <div class="c-error-message" *ngIf="error()">
+            <span class="material-icons-outlined">error_outline</span>
+            <span>{{ error() }}</span>
+          </div>
 
-            <div class="mt-6 flex gap-4">
-              <button
-                class="btn-primary flex-1"
-                type="submit"
-                [disabled]="loading() || !loginForm.valid"
-              >
-                @if (loading()) {
-                <span class="spinner"></span>
+          <div class="c-form-actions">
+            <button
+              class="c-btn c-btn--primary"
+              type="submit"
+              [disabled]="loading() || !loginForm.valid"
+            >
+              @if (loading()) {
+                <span class="c-spinner"></span>
                 <span>Connexion...</span>
-                } @else {
-                <span>Login</span>
-                }
-              </button>
+              } @else {
+                <span>Se connecter</span>
+              }
+            </button>
 
-              <button
-                class="btn-secondary flex-1"
-                type="button"
-                (click)="handleSignup()"
-                [disabled]="loading() || !loginForm.valid"
-              >
-                Sign Up
-              </button>
+            <div class="c-divider">
+              <span>ou</span>
             </div>
-          </form>
-        </div>
+
+            <button
+              class="c-btn c-btn--secondary"
+              type="button"
+              (click)="handleSignup()"
+              [disabled]="loading()"
+            >
+              Créer un compte
+            </button>
+          </div>
+        </form>
       </div>
-    </main>
+    </div>
+    
+    <div class="c-login-footer">
+      <p>© 2024 AgroFlow Task Manager. Tous droits réservés.</p>
+    </div>
   </div>
 </div>

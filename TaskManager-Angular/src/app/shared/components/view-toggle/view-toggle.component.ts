@@ -36,42 +36,48 @@ export interface ViewOption {
   styles: [`
     .view-toggle {
       display: inline-flex;
-      background: #f1f5f9;
-      border-radius: 0.5rem;
+      background: rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: 0.75rem;
       padding: 0.25rem;
       gap: 0.25rem;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); 
     }
 
     .toggle-btn {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 0.5rem;
       padding: 0.5rem 0.75rem;
       background: transparent;
-      border: none;
-      border-radius: 0.375rem;
-      color: #64748b;
+      border: 1px solid transparent;
+      border-radius: 0.5rem;
+      color: #6b7280;
       font-size: 0.875rem;
       font-weight: 500;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
     }
 
     .toggle-btn:hover {
       color: #3b82f6;
-      background: rgba(59, 130, 246, 0.1);
+      background: rgba(255, 255, 255, 0.5);
     }
 
     .toggle-btn:focus {
-      outline: 2px solid #3b82f6;
-      outline-offset: 2px;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
     }
 
     .toggle-btn.active {
       background: white;
       color: #3b82f6;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      border-color: #e5e7eb;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+      transform: translateY(-1px);
     }
 
     .icon {

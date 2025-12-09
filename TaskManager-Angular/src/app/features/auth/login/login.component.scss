@@ -1,184 +1,271 @@
 @use '../../../styles/variables' as v;
 @use '../../../styles/mixins' as m;
-
-// These styles are adapted from the user's provided HTML
-// and integrated into the project's SCSS structure.
+@use "sass:color";
 
 :host {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  min-height: 100vh;
-  background-color: v.$background-color-page;
-  padding: 1rem;
-}
-
-.logo-container {
-  margin-bottom: 2.5rem;
-}
-
-.login-container {
-  width: 100%;
-  max-width: 450px;
-}
-
-.login-form-wrapper {
-  background-color: v.$background-color-form;
-  padding: 2.5rem;
-  border-radius: v.$border-radius-lg;
-  box-shadow: v.$shadow-md;
-  border: 1px solid v.$border-color-light;
-}
-
-.login-header {
-  text-align: center;
-  margin-bottom: 2rem;
-  
-  h2 {
-    font-size: 2rem;
-    font-weight: 600;
-    color: v.$text-color-dark;
-    margin: 0;
-  }
-
-  p {
-    margin-top: 0.5rem;
-    color: v.$text-color-medium;
-  }
-}
-
-// Re-using form styles from task-form
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-// Utilisation des styles d'input globaux définis dans task-form.component.scss
-// Pour une cohérence parfaite, ces styles devraient aussi être dans un fichier partagé.
-// En attendant, on les recrée ici avec les variables.
-input.form-input {
   display: block;
-  width: 100%;
-  border-radius: v.$border-radius-md;
-  border: 1px solid v.$border-color-medium;
-  box-shadow: v.$shadow-sm;
-  padding: 0.875rem 1rem;
-  font-size: v.$font-size-sm;
+}
 
-  &:focus {
-    @include m.focus-ring(v.$primary-color);
+// Layout
+.c-login-layout {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, v.$background-color-page 0%, #eef2ff 100%);
+  padding: v.$space-4;
+}
+
+.c-login-container {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-6;
+}
+
+// Card
+.c-login-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: v.$border-radius-xl;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+
+  &__content {
+    padding: v.$space-8;
+    
+    @media (max-width: v.$breakpoint-sm) {
+      padding: v.$space-6;
+    }
+  }
+
+  // Accent Line
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, v.$primary-color-light, v.$primary-color);
   }
 }
 
-.btn-primary {
-  width: 100%;
-  display: inline-flex;
-  justify-content: center;
+// Header
+.c-login-header {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1rem;
-  border: 1px solid transparent;
-  border-radius: v.$border-radius-md;
-  box-shadow: v.$shadow-sm;
-  font-size: v.$font-size-sm;
-  font-weight: 600;
-  color: v.$text-color-inverted;
-  background-color: v.$primary-color;
-  transition: background-color 0.2s;
-  cursor: pointer;
+  text-align: center;
+  margin-bottom: v.$space-8;
 
-  &:hover {
-    background-color: v.$primary-color-dark;
-  }
-
-  &:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(v.$primary-color, 0.3);
-  }
-  
-  &:disabled {
-    background-color: v.$secondary-color-light;
-    cursor: not-allowed;
-  }
-    cursor: not-allowed;
+  app-logo {
+    margin-bottom: v.$space-6;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
   }
 }
 
-.btn-secondary {
-  width: 100%;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1rem;
-  border: 1px solid v.$border-color-medium;
-  border-radius: v.$border-radius-md;
-  box-shadow: v.$shadow-sm;
+.c-login-title {
+  font-size: v.$font-size-2xl;
+  font-weight: 800;
+  color: v.$text-color-darkest;
+  margin: 0 0 v.$space-2 0;
+  letter-spacing: -0.025em;
+}
+
+.c-login-subtitle {
+  font-size: v.$font-size-sm;
+  color: v.$text-color-medium;
+  margin: 0;
+}
+
+// Form
+.c-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-5;
+}
+
+.c-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-2;
+}
+
+.c-label {
   font-size: v.$font-size-sm;
   font-weight: 600;
   color: v.$text-color-dark;
-  background-color: #fff;
-  transition: all 0.2s;
-  cursor: pointer;
+  margin-left: 2px;
+}
 
-  &:hover {
-    background-color: v.$background-color-hover;
-    border-color: v.$border-color-dark;
+// Inputs
+.c-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.c-input-icon {
+  position: absolute;
+  left: v.$space-4;
+  color: v.$text-color-light;
+  font-size: 20px;
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.c-input {
+  width: 100%;
+  padding: v.$space-3 v.$space-4 v.$space-3 44px; // Left padding for icon
+  background: white;
+  border: 1px solid v.$border-color-medium;
+  border-radius: v.$border-radius-lg;
+  font-size: v.$font-size-sm;
+  color: v.$text-color-dark;
+  transition: all 0.2s ease;
+
+  &::placeholder {
+    color: v.$text-color-light;
   }
 
   &:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(v.$text-color-medium, 0.1);
-  }
-  
-  &:disabled {
-    background-color: v.$background-color-disabled;
-    color: v.$text-color-light;
-    cursor: not-allowed;
-  }
-}
+    border-color: v.$primary-color;
+    box-shadow: 0 0 0 4px rgba(v.$primary-color, 0.1);
 
-.spinner {
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-left-color: #fff;
-  border-radius: 50%;
-  width: 1.2rem;
-  height: 1.2rem;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-// Basic error message styling
-.error-message {
-  background-color: v.$danger-bg;
-  border: 1px solid v.$danger-border;
-  color: v.$danger-text;
-  padding: 0.75rem 1rem;
-  border-radius: v.$border-radius-md;
-  position: relative;
-  text-align: center;
-  margin-bottom: 1.5rem;
-}
-
-.form-actions {
-  margin-top: 1.5rem;
-}
-
-.login-footer {
-  text-align: center;
-  margin-top: 2rem;
-  color: v.$text-color-medium;
-  
-  a {
-    color: v.$primary-color;
-    font-weight: 500;
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
+    & + .c-input-icon {
+      color: v.$primary-color;
     }
   }
-} 
+
+  &:disabled {
+    background-color: v.$background-color-page;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+}
+
+// Buttons
+.c-form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-4;
+  margin-top: v.$space-2;
+}
+
+.c-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 48px;
+  border-radius: v.$border-radius-lg;
+  font-weight: 600;
+  font-size: v.$font-size-sm;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: v.$space-2;
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: v.$primary-color;
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(v.$primary-color, 0.2);
+
+    &:hover:not(:disabled) {
+      background: v.$primary-color-dark;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 8px -1px rgba(v.$primary-color, 0.3);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+  }
+
+  &--secondary {
+    background: white;
+    border-color: v.$border-color-medium;
+    color: v.$text-color-dark;
+
+    &:hover:not(:disabled) {
+      background: v.$background-color-hover;
+      border-color: v.$border-color-medium;
+    }
+  }
+}
+
+// Divider
+.c-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: v.$text-color-light;
+  font-size: v.$font-size-xs;
+  margin: v.$space-1 0;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid v.$border-color-light;
+  }
+
+  span {
+    padding: 0 v.$space-3;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+}
+
+// Error Message
+.c-error-message {
+  display: flex;
+  align-items: center;
+  gap: v.$space-3;
+  padding: v.$space-3;
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: v.$border-radius-lg;
+  color: #ef4444;
+  font-size: v.$font-size-sm;
+
+  .material-icons-outlined {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+}
+
+// Footer
+.c-login-footer {
+  text-align: center;
+  
+  p {
+    font-size: v.$font-size-xs;
+    color: v.$text-color-light;
+    margin: 0;
+  }
+}
+
+// Spinner
+.c-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spinner 0.8s linear infinite;
+}
+
+@keyframes spinner {
+  to { transform: rotate(360deg); }
+}

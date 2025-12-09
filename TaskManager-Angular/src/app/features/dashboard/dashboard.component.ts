@@ -122,7 +122,7 @@ export class DashboardComponent implements OnInit {
       filtered = filtered.filter(task => task.prd_slug && task.prd_slug.toLowerCase().includes(filters.prd_slug!.toLowerCase()));
     }
     if (filters.tag && typeof filters.tag === 'string' && filters.tag.trim()) {
-      filtered = filtered.filter(task => task.tags && task.tags.some(tag => tag.toLowerCase().includes(filters.tag!.toLowerCase())));
+      filtered = filtered.filter(task => task.tags && task.tags.some((tag: string) => tag.toLowerCase().includes(filters.tag!.toLowerCase())));
     }
 
     // Handle hierarchy for epics/features
@@ -140,7 +140,7 @@ export class DashboardComponent implements OnInit {
       for (const root of filtered) {
         collectDescendants(root);
       }
-      return allTasks.filter(t => descendants.has(t.id!));
+      return allTasks.filter((t: Task) => descendants.has(t.id!));
     }
 
     return filtered;

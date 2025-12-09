@@ -140,70 +140,67 @@ export interface SearchFilters {
   `,
   styles: [`
     .c-filters {
-      background: white;
-      border-radius: 0.75rem;
-      border: 2px solid #e5e7eb;
-      padding: 1rem 1.5rem 1.5rem 1.5rem;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      border-radius: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
       width: 100%;
       box-sizing: border-box;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .c-filters:hover {
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     }
     .search-mat-field {
       width: 100%;
       margin-bottom: 0.5rem;
     }
     .search-mat-field .mat-form-field-flex {
-      min-height: 38px;
-      padding: 0 8px;
-      background: #f9fafb;
-      border-radius: 8px;
-    }
-    .mat-form-field-appearance-fill .mat-form-field-flex {
-      background: #f9fafb;
-    }
-    .mat-input-element {
-      font-size: 1rem;
-      padding: 0.5rem 0;
-    }
-    .mat-form-field-outline {
-      border-radius: 8px;
-    }
-    .mat-form-field-appearance-fill .mat-form-field-outline {
-      border-radius: 8px;
+      background: white;
+      border-radius: 0.75rem;
+      border: 1px solid #e5e7eb;
     }
     .filters-quick {
       display: flex;
       gap: 1rem;
       align-items: flex-end;
       width: 100%;
+      flex-wrap: wrap; 
     }
     .filter-group {
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: 0.375rem;
     }
     .filter-label {
-      font-size: 0.875rem;
+      font-size: 0.75rem;
       font-weight: 600;
-      color: #374151;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
     .filter-select {
-      padding: 0.35rem 0.75rem;
-      border: 1.5px solid #e5e7eb;
-      border-radius: 0.375rem;
-      background: white;
-      color: #374151;
-      font-size: 0.95rem;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      background: rgba(255, 255, 255, 0.9);
+      color: #1f2937;
+      font-size: 0.875rem;
       cursor: pointer;
-      transition: border-color 0.2s;
-      min-width: 120px;
-      min-height: 32px;
+      transition: all 0.2s;
+      min-width: 140px;
+      height: 40px;
+    }
+    .filter-select:hover {
+      border-color: #3b82f6;
     }
     .filter-select:focus {
       outline: none;
       border-color: #3b82f6;
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.08);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
     }
     .priority-select option {
       padding-left: 1.5em;
@@ -211,41 +208,43 @@ export interface SearchFilters {
     .reset-filters {
       padding: 0.5rem 1rem;
       background: #fee2e2;
-      color: #dc2626;
-      border: 2px solid #fecaca;
-      border-radius: 0.375rem;
-      font-size: 0.95rem;
+      color: #b91c1c;
+      border: 1px solid #fca5a5;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
-      height: fit-content;
+      height: 40px;
       display: flex;
       align-items: center;
-      gap: 0.25rem;
+      gap: 0.375rem;
     }
     .reset-filters:hover {
       background: #fecaca;
-      border-color: #fca5a5;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);
     }
     .search-results {
-      margin-top: 1rem;
-      padding: 0.75rem;
+      margin-top: 1.5rem;
+      padding: 0.75rem 1rem;
       background: #f0f9ff;
       border: 1px solid #bae6fd;
-      border-radius: 0.375rem;
+      border-radius: 0.5rem;
+      color: #0369a1;
     }
     .results-text {
       font-size: 0.875rem;
-      color: #0369a1;
     }
     .active-filter {
       font-weight: 600;
       margin-right: 0.5rem;
-      padding: 0.125rem 0.375rem;
+      padding: 0.125rem 0.5rem;
       background: #dbeafe;
       border-radius: 0.25rem;
+      color: #1e40af;
     }
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
       .c-filters {
         padding: 1rem;
       }
@@ -254,6 +253,9 @@ export interface SearchFilters {
         align-items: stretch;
       }
       .filter-group {
+        width: 100%;
+      }
+      .filter-select {
         width: 100%;
       }
     }
