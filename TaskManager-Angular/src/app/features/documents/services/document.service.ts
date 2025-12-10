@@ -4,6 +4,7 @@ import { from, Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { JSONContent } from '@tiptap/core';
 import { DocumentTaskRelation, TaskMentionData, TaskSearchResult } from '../models/document-task-relation.model';
+import { Task } from '../../../core/services/task';
 
 export interface Document {
   id: string;
@@ -230,6 +231,80 @@ export class DocumentService {
         if (response.error) throw response.error;
         return response.data as TaskMentionData;
       })
+    );
+  }
+
+  /**
+   * Get full task objects for all tasks linked to a document
+   * Returns complete Task objects needed for table/kanban/calendar/timeline views
+   */
+  getFullTasksForDocument(documentId: string): Observable<Task[]> {
+    return from(
+      this.client
+        .from('document_task_relations')
+        .select(`
+          task_id,
+          tasks!inner(
+            id,
+            title,
+            description,
+            status,
+            priority,
+            assigned_to,
+            created_by,
+            due_date,
+            created_at,
+            updated_at,
+            completed_at,
+            tags,
+            slug,
+            prd_slug,
+            estimated_hours,
+            actual_hours,
+            task_number,
+            environment,
+            guideline_refs,
+            type,
+            parent_task_id,
+            project_id,
+            epic_id,
+            feature_id
+          )
+        `)
+        .eq('document_id', documentId)
+        .order('position_in_document', { ascending: true })
+    ).pipe(
+      map(response => {
+        if (response.error) {
+          console.error('Error fetching tasks for document:', response.error);
+          throw response.error;
+        }
+        console.log('Document tasks raw response:', response.data);
+        const tasks = (response.data || [])
+          .filter((rel: any) => rel.tasks) // Filter out any null tasks
+          .map((rel: any) => rel.tasks as Task);
+        console.log(`Found ${tasks.length} tasks for document ${documentId}`);
+        return tasks;
+      })
+    );
+  }
+
+  /**
+   * Update task position in document
+   */
+  updateTaskPosition(documentId: string, taskId: string, position: number): Observable<boolean> {
+    return from(
+      this.client
+        .from('document_task_relations')
+        .update({ position_in_document: position })
+        .eq('document_id', documentId)
+        .eq('task_id', taskId)
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return true;
+      }),
+      catchError(() => of(false))
     );
   }
 }

@@ -459,3 +459,50 @@ tiptap-editor:focus-within {
 // TASK MENTION STYLES
 // ----------------------------------------------------------------------------
 @import '../extensions/task-mention.styles.scss';
+
+// ----------------------------------------------------------------------------
+// TASK SECTION BLOCK STYLES
+// ----------------------------------------------------------------------------
+
+.task-section-block {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  border: 2px dashed rgba(55, 53, 47, 0.16);
+  background: rgba(242, 241, 238, 0.3);
+  min-height: 100px;
+  position: relative;
+  transition: all 0.15s;
+  cursor: move;
+
+  &:hover {
+    border-color: rgba(55, 53, 47, 0.3);
+    background: rgba(242, 241, 238, 0.5);
+  }
+
+  &.ProseMirror-selectednode {
+    border-color: #3B82F6;
+    border-style: solid;
+    background: rgba(59, 130, 246, 0.05);
+  }
+
+  // Placeholder when no component rendered yet
+  &:empty::before {
+    content: 'Section de tâches (chargement...)';
+    color: #91959c;
+    font-size: 0.875rem;
+  }
+}
+
+.task-section-rendered {
+  border-style: solid !important;
+  border-color: rgba(55, 53, 47, 0.09) !important;
+  background: white !important;
+  cursor: default !important;
+  padding: 0 !important;
+
+  &:hover {
+    border-color: rgba(55, 53, 47, 0.16) !important;
+  }
+}
+

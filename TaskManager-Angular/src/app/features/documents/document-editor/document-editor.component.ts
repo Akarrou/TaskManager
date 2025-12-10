@@ -39,13 +39,16 @@ import { MatDialog } from '@angular/material/dialog';
 import { TaskSearchModalComponent } from '../components/task-search-modal/task-search-modal.component';
 import { TaskMention, TaskMentionAttributes } from '../extensions/task-mention.extension';
 import { TaskSearchResult, TaskMentionData } from '../models/document-task-relation.model';
+import { DocumentTasksSectionComponent } from '../components/document-tasks-section/document-tasks-section';
+import { TaskSectionExtension } from '../extensions/task-section.extension';
+import { TaskSectionRendererDirective } from '../directives/task-section-renderer.directive';
 
 const lowlight = createLowlight(all);
 
 @Component({
   selector: 'app-document-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, NavigationFabComponent],
+  imports: [CommonModule, FormsModule, RouterLink, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, NavigationFabComponent, TaskSectionRendererDirective],
   templateUrl: './document-editor.component.html',
   styleUrl: './document-editor.component.scss',
   encapsulation: ViewEncapsulation.None
@@ -134,6 +137,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     { id: 'newDocument', label: 'Nouvelle page', icon: 'note_add', action: () => this.createLinkedDocument() },
 
     // Tâches
+    { id: 'taskSection', label: 'Section de tâches', icon: 'task_alt', action: () => this.insertTaskSection() },
     { id: 'linkTask', label: 'Lier une tâche', icon: 'link', action: () => this.openTaskSearchModal() },
     { id: 'createTask', label: 'Créer une tâche', icon: 'add_task', action: () => this.createNewTaskFromDocument() },
 
@@ -192,6 +196,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         TaskMention.configure({
           onTaskClick: (taskId: string) => this.navigateToTask(taskId),
         }),
+        TaskSectionExtension,
       ],
       editorProps: {
         attributes: {
@@ -347,12 +352,12 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
             this.editor.commands.setContent(doc.content);
           }
 
-          // Check if we need to insert a newly created task
+          // Check if we need to insert task section after creating a task
           const pendingTaskId = sessionStorage.getItem('pendingTaskMentionInsert');
           if (pendingTaskId) {
             sessionStorage.removeItem('pendingTaskMentionInsert');
-            // Insert the task mention for the newly created task
-            this.insertTaskMentionById(pendingTaskId);
+            // Insert task section block if it doesn't exist
+            this.ensureTaskSectionExists();
           }
 
           // Load and refresh task mentions (for existing ones)
@@ -629,6 +634,12 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
   // Task integration methods
   openTaskSearchModal() {
+    const currentDocId = this.documentState().id;
+    if (!currentDocId) {
+      alert('Sauvegardez le document d\'abord');
+      return;
+    }
+
     const dialogRef = this.dialog.open(TaskSearchModalComponent, {
       width: '600px',
       maxHeight: '80vh',
@@ -636,7 +647,18 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((selectedTask: TaskSearchResult | null) => {
       if (selectedTask) {
-        this.insertTaskMention(selectedTask.id);
+        // Link task to document
+        this.documentService.linkTaskToDocument(currentDocId, selectedTask.id, 'linked').subscribe({
+          next: () => {
+            // Insert task section block if it doesn't exist yet
+            this.ensureTaskSectionExists();
+            this.showSlashMenu.set(false);
+          },
+          error: (err: unknown) => {
+            console.error('Error linking task to document:', err);
+            alert('Impossible de lier la tâche au document');
+          }
+        });
       }
     });
   }
@@ -697,6 +719,37 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         console.error('Error fetching task for mention:', err);
       }
     });
+  }
+
+  insertTaskSection() {
+    const currentDocId = this.documentState().id;
+    if (!currentDocId) {
+      alert('Sauvegardez le document d\'abord');
+      return;
+    }
+
+    // Insert task section block
+    this.editor.chain().focus().insertTaskSection().run();
+    this.showSlashMenu.set(false);
+  }
+
+  private ensureTaskSectionExists() {
+    // Check if a task section already exists in the document
+    const doc = this.editor.state.doc;
+    let taskSectionExists = false;
+
+    doc.descendants((node) => {
+      if (node.type.name === 'taskSection') {
+        taskSectionExists = true;
+        return false; // Stop iteration
+      }
+      return true; // Continue iteration
+    });
+
+    // If no task section exists, insert one at the current cursor position
+    if (!taskSectionExists) {
+      this.editor.chain().focus().insertTaskSection().run();
+    }
   }
 
   createNewTaskFromDocument() {

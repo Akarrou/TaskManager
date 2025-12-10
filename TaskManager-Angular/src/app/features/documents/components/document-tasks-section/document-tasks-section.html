@@ -1,0 +1,171 @@
+<div class="document-tasks-section">
+  <!-- Section Header -->
+  <div class="section-header">
+    <div class="header-left">
+      <mat-icon class="section-icon">task_alt</mat-icon>
+      <h2 class="section-title">Tâches liées</h2>
+      <span class="task-count">{{ tasks().length }}</span>
+    </div>
+
+    <div class="header-right">
+      <!-- View Toggle -->
+      <app-view-toggle
+        [initialView]="currentView()"
+        (viewChange)="onViewChange($event)">
+      </app-view-toggle>
+
+      <!-- Create Task Button -->
+      <button
+        mat-raised-button
+        color="primary"
+        class="create-task-btn"
+        (click)="onTaskCreate()"
+        matTooltip="Créer une nouvelle tâche">
+        <mat-icon>add</mat-icon>
+        Nouvelle tâche
+      </button>
+    </div>
+  </div>
+
+  <!-- Kanban Group By Selector (only visible in kanban view) -->
+  @if (currentView() === 'kanban') {
+    <div class="kanban-toolbar">
+      <label for="kanban-group-by">Grouper par:</label>
+      <select
+        id="kanban-group-by"
+        [value]="kanbanGroupBy()"
+        (change)="onKanbanGroupByChange($any($event.target).value)"
+        class="group-by-select">
+        <option value="status">Statut</option>
+        <option value="priority">Priorité</option>
+      </select>
+    </div>
+  }
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-state">
+      <mat-icon class="loading-icon">hourglass_empty</mat-icon>
+      <p>Chargement des tâches...</p>
+    </div>
+  }
+
+  <!-- Empty State -->
+  @else if (tasks().length === 0) {
+    <div class="empty-state">
+      <mat-icon class="empty-icon">inbox</mat-icon>
+      <h3>Aucune tâche liée</h3>
+      <p>Créez ou liez des tâches à ce document pour les voir apparaître ici.</p>
+      <button mat-raised-button color="primary" (click)="onTaskCreate()">
+        <mat-icon>add</mat-icon>
+        Créer une tâche
+      </button>
+    </div>
+  }
+
+  <!-- Views Container -->
+  @else {
+    <div class="views-container">
+      <!-- Table View -->
+      @if (currentView() === 'table') {
+        <div class="table-view">
+          <div class="tasks-table">
+            <!-- Header -->
+            <div class="table-header">
+              <div class="col-drag"></div>
+              <div class="col-number">N°</div>
+              <div class="col-env">Env.</div>
+              <div class="col-title">Titre</div>
+              <div class="col-status">Statut</div>
+              <div class="col-priority">Priorité</div>
+              <div class="col-assignee">Assigné à</div>
+              <div class="col-due-date">Date limite</div>
+              <div class="col-actions">Actions</div>
+            </div>
+
+            <!-- Body with Drag & Drop -->
+            <div class="table-body" cdkDropList (cdkDropListDropped)="onTaskDrop($event)">
+              @for (task of filteredTasks(); track task.id) {
+                <div class="task-row" cdkDrag (dblclick)="onTaskEdit(task)">
+                  <div class="col-drag">
+                    <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
+                  </div>
+                  <div class="col-number">#{{ task.task_number }}</div>
+                  <div class="col-env">
+                    <div class="env-badges">
+                      @for (env of task.environment; track env) {
+                        <span class="env-badge env-{{ env.toLowerCase() }}">{{ env }}</span>
+                      }
+                    </div>
+                  </div>
+                  <div class="col-title">{{ task.title }}</div>
+                  <div class="col-status">
+                    <span class="status-badge status-{{ task.status }}">
+                      {{ task.status === 'pending' ? 'En attente' :
+                         task.status === 'in_progress' ? 'En cours' :
+                         task.status === 'review' ? 'En revue' :
+                         task.status === 'completed' ? 'Terminée' : 'Annulée' }}
+                    </span>
+                  </div>
+                  <div class="col-priority">
+                    <span class="priority-badge priority-{{ task.priority }}">
+                      {{ task.priority === 'urgent' ? 'Urgente' :
+                         task.priority === 'high' ? 'Haute' :
+                         task.priority === 'medium' ? 'Moyenne' : 'Basse' }}
+                    </span>
+                  </div>
+                  <div class="col-assignee">{{ task.assigned_to || '-' }}</div>
+                  <div class="col-due-date">
+                    {{ task.due_date ? (task.due_date | date:'dd/MM/yyyy') : '-' }}
+                  </div>
+                  <div class="col-actions">
+                    <button
+                      mat-icon-button
+                      (click)="onTaskEdit(task); $event.stopPropagation()"
+                      matTooltip="Modifier">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
+                      (click)="onTaskDeleteFromTable(task); $event.stopPropagation()"
+                      matTooltip="Supprimer">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Kanban View -->
+      @if (currentView() === 'kanban') {
+        <app-kanban-board
+          [tasks]="filteredTasks()"
+          [groupBy]="kanbanGroupBy()"
+          (taskEdit)="onTaskEdit($event)"
+          (taskDelete)="onTaskDelete($event)">
+        </app-kanban-board>
+      }
+
+      <!-- Calendar View -->
+      @if (currentView() === 'calendar') {
+        <app-calendar-view
+          [tasks]="filteredTasks()"
+          (taskEdit)="onTaskEdit($event)"
+          (taskDelete)="onTaskDelete($event)">
+        </app-calendar-view>
+      }
+
+      <!-- Timeline View -->
+      @if (currentView() === 'timeline') {
+        <app-timeline-view
+          [tasks]="filteredTasks()"
+          (taskEdit)="onTaskEdit($event)"
+          (taskDelete)="onTaskDelete($event)">
+        </app-timeline-view>
+      }
+    </div>
+  }
+</div>

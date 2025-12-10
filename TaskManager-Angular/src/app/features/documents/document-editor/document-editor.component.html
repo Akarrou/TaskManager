@@ -48,7 +48,9 @@
   <!-- Editor Content -->
   <div
     class="editor-wrapper"
-    (click)="focusEditor($event)">
+    (click)="focusEditor($event)"
+    appTaskSectionRenderer
+    [documentId]="documentState().id || ''">
     <tiptap-editor
       [editor]="editor"
       class="editor-content">

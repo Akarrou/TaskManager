@@ -1,0 +1,546 @@
+.document-tasks-section {
+  margin-top: 4rem;
+  padding: 0;
+  max-width: 100%;
+}
+
+// Section Header - Style Notion (taille réduite)
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.375rem;
+  padding-bottom: 0.375rem;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.section-icon {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+  color: #91959c;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #37352f;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.task-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.25rem;
+  background: transparent;
+  color: #91959c;
+  font-weight: 500;
+  font-size: 0.6875rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.create-task-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 500;
+  font-size: 0.75rem;
+  text-transform: none;
+  box-shadow: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: #37352f;
+  border: 1px solid rgba(55, 53, 47, 0.16);
+
+  &:hover {
+    background: rgba(55, 53, 47, 0.06);
+  }
+
+  mat-icon {
+    font-size: 0.875rem;
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+}
+
+// Kanban Toolbar - Style Notion
+.kanban-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(242, 241, 238, 0.6);
+  border-radius: 0.25rem;
+
+  label {
+    font-weight: 500;
+    color: #787774;
+    font-size: 0.8125rem;
+  }
+
+  .group-by-select {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid rgba(55, 53, 47, 0.16);
+    border-radius: 0.25rem;
+    background: white;
+    font-size: 0.8125rem;
+    color: #37352f;
+    cursor: pointer;
+    transition: all 0.1s;
+
+    &:hover {
+      background: rgba(55, 53, 47, 0.06);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #2383e2;
+      box-shadow: 0 0 0 1px #2383e2;
+    }
+  }
+}
+
+// Loading State
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+
+  .loading-icon {
+    font-size: 2rem;
+    width: 2rem;
+    height: 2rem;
+    color: #d3d3d3;
+    margin-bottom: 0.75rem;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #91959c;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+// Empty State - Style Notion
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+  background: transparent;
+
+  .empty-icon {
+    font-size: 2.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: #d3d3d3;
+    margin-bottom: 1rem;
+  }
+
+  h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #37352f;
+  }
+
+  p {
+    margin: 0 0 1.5rem;
+    font-size: 0.875rem;
+    color: #787774;
+    max-width: 400px;
+  }
+
+  button {
+    mat-icon {
+      margin-right: 0.375rem;
+    }
+  }
+}
+
+// Views Container
+.views-container {
+  margin-top: 0.5rem;
+}
+
+// Table View - Style Notion
+.table-view {
+  overflow-x: auto;
+  border-radius: 0.25rem;
+  border: 1px solid rgba(55, 53, 47, 0.09);
+  background: white;
+}
+
+.tasks-table {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .table-header,
+  .task-row {
+    display: grid;
+    grid-template-columns: 40px 70px 100px 1fr 120px 120px 160px 110px 120px;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .table-header {
+    background: transparent;
+    border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+    padding: 0.5rem 0.75rem;
+    font-weight: 500;
+    font-size: 0.8125rem;
+    color: #91959c;
+
+    > div {
+      white-space: nowrap;
+    }
+  }
+
+  .table-body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .task-row {
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid rgba(55, 53, 47, 0.06);
+    transition: background 0.08s;
+    font-size: 0.875rem;
+    color: #37352f;
+    cursor: pointer;
+
+    &:hover {
+      background: rgba(242, 241, 238, 0.3);
+    }
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    > div {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .col-drag {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .drag-handle {
+      font-size: 1.125rem;
+      width: 1.125rem;
+      height: 1.125rem;
+      color: #d1d5db;
+      cursor: grab;
+      transition: color 0.08s;
+
+      &:hover {
+        color: #91959c;
+      }
+
+      &:active {
+        cursor: grabbing;
+      }
+    }
+  }
+
+  .col-number {
+    font-weight: 500;
+    color: #91959c;
+    font-size: 0.8125rem;
+  }
+
+  .col-title {
+    font-weight: 400;
+  }
+
+  .col-assignee,
+  .col-due-date {
+    color: #91959c;
+    font-size: 0.8125rem;
+  }
+
+  .col-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.25rem;
+
+    button {
+      opacity: 0;
+      transition: opacity 0.08s;
+    }
+  }
+
+  .task-row:hover .col-actions button {
+    opacity: 1;
+  }
+}
+
+// Environment Badges - Style Notion
+.env-badges {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.env-badge {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+
+  &.env-fe {
+    background: rgba(46, 170, 220, 0.2);
+    color: #2980b9;
+  }
+
+  &.env-be {
+    background: rgba(46, 204, 113, 0.2);
+    color: #27ae60;
+  }
+
+  &.env-ops {
+    background: rgba(241, 196, 15, 0.2);
+    color: #f39c12;
+  }
+}
+
+// Status Badges - Style Notion
+.status-badge {
+  display: inline-block;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  white-space: nowrap;
+
+  &.status-pending {
+    background: rgba(206, 205, 202, 0.5);
+    color: #787774;
+  }
+
+  &.status-in_progress {
+    background: rgba(46, 170, 220, 0.2);
+    color: #2980b9;
+  }
+
+  &.status-review {
+    background: rgba(241, 196, 15, 0.2);
+    color: #d68910;
+  }
+
+  &.status-completed {
+    background: rgba(46, 204, 113, 0.2);
+    color: #0f7b6c;
+  }
+
+  &.status-cancelled {
+    background: rgba(235, 87, 87, 0.2);
+    color: #e03e3e;
+  }
+}
+
+// Priority Badges - Style Notion
+.priority-badge {
+  display: inline-block;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  white-space: nowrap;
+
+  &.priority-urgent {
+    background: rgba(235, 87, 87, 0.2);
+    color: #e03e3e;
+  }
+
+  &.priority-high {
+    background: rgba(250, 175, 135, 0.3);
+    color: #d9730d;
+  }
+
+  &.priority-medium {
+    background: rgba(253, 230, 138, 0.3);
+    color: #dfab01;
+  }
+
+  &.priority-low {
+    background: rgba(139, 146, 246, 0.2);
+    color: #6366f1;
+  }
+}
+
+// Dark Mode Support
+@media (prefers-color-scheme: dark) {
+  .section-title {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .section-icon {
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .task-count {
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .create-task-btn {
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.135);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.055);
+    }
+  }
+
+  .kanban-toolbar {
+    background: rgba(255, 255, 255, 0.055);
+
+    label {
+      color: rgba(255, 255, 255, 0.443);
+    }
+
+    .group-by-select {
+      background: rgba(255, 255, 255, 0.055);
+      border-color: rgba(255, 255, 255, 0.135);
+      color: rgba(255, 255, 255, 0.9);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+    }
+  }
+
+  .empty-state {
+    h3 {
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    p {
+      color: rgba(255, 255, 255, 0.443);
+    }
+  }
+
+  .table-view {
+    border-color: rgba(255, 255, 255, 0.094);
+    background: transparent;
+  }
+
+  .tasks-table {
+    .table-header {
+      border-bottom-color: rgba(255, 255, 255, 0.094);
+      color: rgba(255, 255, 255, 0.443);
+    }
+
+    .task-row {
+      border-bottom-color: rgba(255, 255, 255, 0.071);
+      color: rgba(255, 255, 255, 0.9);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.055);
+      }
+    }
+
+    .col-number,
+    .col-assignee,
+    .col-due-date {
+      color: rgba(255, 255, 255, 0.443);
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .document-tasks-section {
+    margin-top: 3rem;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .header-right {
+    width: 100%;
+    flex-direction: column-reverse;
+
+    app-view-toggle {
+      width: 100%;
+    }
+  }
+
+  .create-task-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .table-view {
+    overflow-x: scroll;
+  }
+
+  .tasks-table {
+    min-width: 800px;
+  }
+}
+
+
+// CDK Drag & Drop styles
+.cdk-drag-preview {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+  opacity: 0.9;
+  background: white;
+  border-radius: 4px;
+
+  .task-row {
+    background: white !important;
+    border: 1px solid rgba(55, 53, 47, 0.16);
+  }
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.4;
+  background: rgba(242, 241, 238, 0.5);
+}
+
+.cdk-drag-animating {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.tasks-table .table-body.cdk-drop-list-dragging .task-row:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
