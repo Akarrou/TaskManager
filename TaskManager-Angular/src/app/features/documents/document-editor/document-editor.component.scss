@@ -188,7 +188,7 @@
 // ----------------------------------------------------------------------------
 
 .editor-wrapper {
-  max-width: 56rem;
+  width: 100%;
   min-height: 600px;
   cursor: text;
   outline: none !important;
@@ -201,6 +201,7 @@
     border: none !important;
     box-shadow: none !important;
     display: block;
+    width: 100%;
   }
 }
 
@@ -503,6 +504,13 @@ tiptap-editor:focus-within {
 
   &:hover {
     border-color: rgba(55, 53, 47, 0.16) !important;
+  }
+
+  // Remove blue border on selection when rendered
+  &.ProseMirror-selectednode {
+    border-color: rgba(55, 53, 47, 0.16) !important;
+    border-style: solid !important;
+    background: white !important;
   }
 }
 

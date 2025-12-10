@@ -460,37 +460,63 @@ tiptap-editor,
 // Global Drag Handle Extension Styles
 .drag-handle {
   position: absolute;
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  opacity: 0.3;
+  transition: opacity 0.2s ease;
   cursor: grab;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #9ca3af;
-  width: 1.5rem;
-  height: 1.5rem;
-  left: -2rem;
-  top: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-left: -1.75rem !important;
+  margin-top: -0.25rem !important;
   user-select: none;
+  padding: 0.5rem;
 
   &::before {
     content: "⋮⋮";
-    font-size: 1rem;
+    font-size: 1.25rem;
     line-height: 1;
+    font-weight: 600;
   }
 
   &:hover {
     opacity: 1 !important;
-    color: #6b7280;
+    color: #4b5563;
+    background: rgba(156, 163, 175, 0.1);
+    border-radius: 0.25rem;
   }
 
   &:active {
     cursor: grabbing;
+    background: rgba(156, 163, 175, 0.2);
   }
 }
 
 .drag-handle.show {
   opacity: 1;
+}
+
+// Show drag handle when hovering over any ProseMirror content
+.ProseMirror > *:hover > .drag-handle,
+.ProseMirror h1:hover ~ .drag-handle,
+.ProseMirror h2:hover ~ .drag-handle,
+.ProseMirror h3:hover ~ .drag-handle,
+.ProseMirror p:hover ~ .drag-handle,
+.ProseMirror ul:hover ~ .drag-handle,
+.ProseMirror ol:hover ~ .drag-handle,
+.ProseMirror blockquote:hover ~ .drag-handle,
+.ProseMirror pre:hover ~ .drag-handle,
+.ProseMirror table:hover ~ .drag-handle,
+.ProseMirror .tiptap-columns:hover ~ .drag-handle,
+.ProseMirror .task-section-block:hover ~ .drag-handle {
+  opacity: 1 !important;
+}
+
+// Show drag handle when node is selected
+.ProseMirror-selectednode .drag-handle {
+  opacity: 1 !important;
 }
 
 // Visual feedback when a block is being dragged
@@ -517,6 +543,13 @@ body.dragging .bubble-menu-wrapper {
   border-radius: 0.25rem;
   background-color: rgba(59, 130, 246, 0.05);
   transition: all 0.15s ease;
+}
+
+// Exception: task-section-rendered should not show blue selection
+.task-section-rendered.ProseMirror-selectednode {
+  outline: none !important;
+  outline-offset: 0 !important;
+  background-color: transparent !important;
 }
 
 // Dark mode
