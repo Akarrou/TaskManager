@@ -27,6 +27,7 @@ import { NavigationFabComponent, NavigationContext } from '../../../shared/compo
 import { NavigationFabService } from '../../../shared/components/navigation-fab/navigation-fab.service';
 import { debounceTime, Subject, takeUntil } from 'rxjs';
 import { DocumentState, DocumentSnapshot, createSnapshot, hasChanges } from '../models/document-content.types';
+import { Columns, Column } from '../extensions/columns.extension';
 
 const lowlight = createLowlight(all);
 
@@ -113,6 +114,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     // Éléments structurels
     { id: 'table', label: 'Tableau', icon: 'table_chart', action: () => this.addTable() },
     { id: 'image', label: 'Image', icon: 'image', action: () => this.addImage() },
+    { id: 'columns2', label: '2 Colonnes', icon: 'view_column', action: () => this.editor.chain().focus().setColumns(2).run() },
+    { id: 'columns3', label: '3 Colonnes', icon: 'view_week', action: () => this.editor.chain().focus().setColumns(3).run() },
 
     // Utilitaires
     { id: 'break', label: 'Saut de ligne', icon: 'keyboard_return', action: () => this.editor.chain().focus().setHardBreak().run() },
@@ -150,6 +153,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         TableHeader,
         TableCell,
         CodeBlockLowlight.configure({ lowlight }),
+        Columns,
+        Column,
       ],
       editorProps: {
         attributes: {
