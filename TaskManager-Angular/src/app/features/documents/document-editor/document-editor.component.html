@@ -1,52 +1,58 @@
-<div class="min-h-screen bg-gray-50 dark:bg-gray-950 py-8 px-4 sm:px-6 lg:px-8 flex justify-center items-start font-sans transition-colors duration-300">
-  <div class="w-full max-w-5xl bg-white dark:bg-gray-900 shadow-xl rounded-2xl min-h-[calc(100vh-6rem)] relative flex flex-col transition-all duration-300 ring-1 ring-black/5 hover:shadow-2xl">
-    
-    <!-- Title Header -->
-    <div class="px-12 pt-16 pb-6 max-w-4xl mx-auto w-full">
-       <input 
-          type="text" 
-          [(ngModel)]="documentTitle" 
-          (ngModelChange)="saveDocument()" 
-          placeholder="Titre du document..." 
-          class="text-4xl md:text-5xl font-extrabold w-full border-none focus:ring-0 bg-transparent p-0 placeholder-gray-300 dark:text-gray-100 dark:placeholder-gray-700 transition-colors tracking-tight text-gray-900 leading-tight" 
-       />
-       <div class="mt-4 flex items-center h-6 select-none opacity-80 hover:opacity-100 transition-opacity">
-         <span *ngIf="isSaving()" class="text-sm text-amber-500 animate-pulse flex items-center gap-2 font-medium tracking-wide">
-            <span class="w-2 h-2 rounded-full bg-amber-400 shadow-sm"></span>
-            Sauvegarde...
-         </span>
-         <span *ngIf="!isSaving() && lastSaved()" class="text-sm text-gray-400 flex items-center gap-2 font-medium tracking-wide">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-sm"></span>
-            Sauvegardé à {{ lastSaved() | date:'HH:mm' }}
-         </span>
-       </div>
-    </div>
-
-    <!-- Editor Content -->
-    <div class="flex-1 px-12 py-4 pb-24 w-full">
-      <div 
-        tiptap 
-        [editor]="editor" 
-        class="editor-content min-h-[500px] max-w-3xl mx-auto prose prose-lg prose-slate dark:prose-invert focus:outline-none transition-all duration-200 ease-in-out selection:bg-blue-100 dark:selection:bg-blue-900/40">
-      </div>
-    </div>
-
-    <!-- Slash Menu -->
-    <app-slash-menu
-      *ngIf="showSlashMenu()"
-      [items]="menuItems"
-      [selectedIndex]="slashMenuIndex()"
-      (commandSelected)="executeCommand($event)"
-      [style.top.px]="slashMenuPosition().top"
-      [style.left.px]="slashMenuPosition().left"
-      class="fixed z-50 transform transition-all duration-100"
-    ></app-slash-menu>
-
-    <!-- Navigation FAB -->
-    <app-navigation-fab
-      [context]="fabContext()"
-      [customActions]="fabActions"
-      position="bottom-right">
-    </app-navigation-fab>
+<div class="document-container">
+  <!-- Title Header -->
+  <div class="title-container">
+    <input
+      type="text"
+      [ngModel]="documentState().title"
+      (ngModelChange)="onTitleChange($event)"
+      placeholder="Nouvelle page"
+      class="title-input"
+    />
   </div>
+
+  <!-- Save Status Indicator -->
+  <div class="save-status">
+    <span *ngIf="documentState().isSaving">
+      <span class="save-indicator"></span>
+      Sauvegarde...
+    </span>
+    <span *ngIf="!documentState().isSaving && documentState().lastSaved">
+      Dernière modification : {{ documentState().lastSaved | date:'HH:mm' }}
+    </span>
+    <span *ngIf="isDirty()" class="text-orange-500 text-xs ml-2">
+      • Non sauvegardé
+    </span>
+  </div>
+
+  <!-- Editor Content -->
+  <div
+    class="editor-wrapper"
+    (click)="focusEditor($event)"
+    (keydown)="focusEditor($event)"
+    role="textbox"
+    tabindex="0">
+    <div
+      tiptap
+      [editor]="editor"
+      class="editor-content">
+    </div>
+  </div>
+
+  <!-- Slash Menu -->
+  <app-slash-menu
+    *ngIf="showSlashMenu()"
+    [items]="menuItems"
+    [selectedIndex]="slashMenuIndex()"
+    (commandSelected)="executeCommand($event)"
+    [style.top.px]="slashMenuPosition().top"
+    [style.left.px]="slashMenuPosition().left"
+    class="slash-menu">
+  </app-slash-menu>
+
+  <!-- Navigation FAB -->
+  <app-navigation-fab
+    [context]="fabContext()"
+    [customActions]="fabActions"
+    position="bottom-right">
+  </app-navigation-fab>
 </div>

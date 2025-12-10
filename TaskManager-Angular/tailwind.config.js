@@ -53,6 +53,6 @@ module.exports = {
     },
   },
   plugins: [
-    require('@tailwindcss/typography'),
+    // Removed @tailwindcss/typography - conflicts with custom TipTap styles
   ],
 } 

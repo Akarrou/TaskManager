@@ -2,11 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../../../core/services/supabase';
 import { from, Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
+import { JSONContent } from '@tiptap/core';
 
 export interface Document {
   id: string;
   title: string;
-  content: any; // JSONB from Supabase comes as any/object
+  content: JSONContent; // TipTap's JSON content (ProseMirror schema)
   created_at?: string;
   updated_at?: string;
   user_id?: string;
