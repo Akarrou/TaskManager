@@ -275,7 +275,7 @@ export class TaskService {
   }
 
   // ÉTAPE 4: CRUD complet des tâches
-  async createTask(task: Omit<Task, 'id' | 'created_at' | 'updated_at'>): Promise<boolean> {
+  async createTask(task: Omit<Task, 'id' | 'created_at' | 'updated_at'>): Promise<string | null> {
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
     console.log('task', task);
@@ -295,7 +295,7 @@ export class TaskService {
     if (!cleanedPayload['type']) {
       this.errorSignal.set('Le champ "type" est obligatoire et doit être défini (epic, feature ou task)');
       this.loadingSignal.set(false);
-      return false;
+      return null;
     }
     // Vérification obligatoire pour parent_task_id (doit exister, même si null)
     if (!('parent_task_id' in cleanedPayload)) {
@@ -315,15 +315,15 @@ export class TaskService {
       if (error) {
         const errorMessage = this.supabaseService.handleError(error);
         this.errorSignal.set(errorMessage);
-        return false;
+        return null;
       } else {
         await this.loadTasks();
-        return true;
+        return data.id;
       }
     } catch (error) {
       const errorMessage = 'Erreur inattendue lors de la création';
       this.errorSignal.set(errorMessage);
-      return false;
+      return null;
     } finally {
       this.loadingSignal.set(false);
     }

@@ -35,6 +35,10 @@ import { Color } from '@tiptap/extension-color';
 import { Highlight } from '@tiptap/extension-highlight';
 import { TextAlign } from '@tiptap/extension-text-align';
 import { Link } from '@tiptap/extension-link';
+import { MatDialog } from '@angular/material/dialog';
+import { TaskSearchModalComponent } from '../components/task-search-modal/task-search-modal.component';
+import { TaskMention, TaskMentionAttributes } from '../extensions/task-mention.extension';
+import { TaskSearchResult, TaskMentionData } from '../models/document-task-relation.model';
 
 const lowlight = createLowlight(all);
 
@@ -51,6 +55,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private documentService = inject(DocumentService);
   private navigationFabService = inject(NavigationFabService);
+  private dialog = inject(MatDialog);
 
   editor: Editor;
   showSlashMenu = signal(false);
@@ -128,6 +133,10 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     { id: 'columns3', label: '3 Colonnes', icon: 'view_week', action: () => this.editor.chain().focus().setColumns(3).run() },
     { id: 'newDocument', label: 'Nouvelle page', icon: 'note_add', action: () => this.createLinkedDocument() },
 
+    // Tâches
+    { id: 'linkTask', label: 'Lier une tâche', icon: 'link', action: () => this.openTaskSearchModal() },
+    { id: 'createTask', label: 'Créer une tâche', icon: 'add_task', action: () => this.createNewTaskFromDocument() },
+
     // Utilitaires
     { id: 'break', label: 'Saut de ligne', icon: 'keyboard_return', action: () => this.editor.chain().focus().setHardBreak().run() },
     { id: 'clear', label: 'Effacer format', icon: 'format_clear', action: () => this.editor.chain().focus().clearNodes().unsetAllMarks().run() },
@@ -179,6 +188,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
           HTMLAttributes: {
             class: 'document-link',
           },
+        }),
+        TaskMention.configure({
+          onTaskClick: (taskId: string) => this.navigateToTask(taskId),
         }),
       ],
       editorProps: {
@@ -334,6 +346,17 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
           if (doc.content && Object.keys(doc.content).length > 0) {
             this.editor.commands.setContent(doc.content);
           }
+
+          // Check if we need to insert a newly created task
+          const pendingTaskId = sessionStorage.getItem('pendingTaskMentionInsert');
+          if (pendingTaskId) {
+            sessionStorage.removeItem('pendingTaskMentionInsert');
+            // Insert the task mention for the newly created task
+            this.insertTaskMentionById(pendingTaskId);
+          }
+
+          // Load and refresh task mentions (for existing ones)
+          this.loadAndRefreshTaskMentions(id);
         }
       },
       error: (err) => console.error('Error loading doc', err)
@@ -602,6 +625,121 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     }
     // Navigate back to documents list
     this.router.navigate(['/documents']);
+  }
+
+  // Task integration methods
+  openTaskSearchModal() {
+    const dialogRef = this.dialog.open(TaskSearchModalComponent, {
+      width: '600px',
+      maxHeight: '80vh',
+    });
+
+    dialogRef.afterClosed().subscribe((selectedTask: TaskSearchResult | null) => {
+      if (selectedTask) {
+        this.insertTaskMention(selectedTask.id);
+      }
+    });
+  }
+
+  private insertTaskMention(taskId: string) {
+    const currentDocId = this.documentState().id;
+    if (!currentDocId) {
+      alert('Sauvegardez le document d\'abord');
+      return;
+    }
+
+    this.documentService.getTaskForMention(taskId).subscribe({
+      next: (taskData: TaskMentionData) => {
+        this.documentService.linkTaskToDocument(currentDocId, taskId, 'linked').subscribe({
+          next: () => {
+            const attrs: TaskMentionAttributes = {
+              taskId: taskData.id,
+              taskTitle: taskData.title,
+              taskStatus: taskData.status,
+              taskPriority: taskData.priority,
+              taskType: taskData.type,
+              taskNumber: taskData.task_number,
+            };
+            this.editor.chain().focus().insertTaskMention(attrs).run();
+          },
+          error: (err: unknown) => {
+            console.error('Error linking task to document:', err);
+            alert('Impossible de lier la tâche au document');
+          }
+        });
+      },
+      error: (err: unknown) => {
+        console.error('Error fetching task:', err);
+        alert('Impossible de récupérer les informations de la tâche');
+      }
+    });
+  }
+
+  private insertTaskMentionById(taskId: string) {
+    // This method inserts a task mention for a task that was just created
+    // The relation already exists in DB, we just need to insert the node
+    this.documentService.getTaskForMention(taskId).subscribe({
+      next: (taskData: TaskMentionData) => {
+        const attrs: TaskMentionAttributes = {
+          taskId: taskData.id,
+          taskTitle: taskData.title,
+          taskStatus: taskData.status,
+          taskPriority: taskData.priority,
+          taskType: taskData.type,
+          taskNumber: taskData.task_number,
+        };
+        // Insert at the end of the document
+        this.editor.chain().focus('end').insertTaskMention(attrs).run();
+        // Save the document to persist the change
+        setTimeout(() => this.saveDocument(), 500);
+      },
+      error: (err: unknown) => {
+        console.error('Error fetching task for mention:', err);
+      }
+    });
+  }
+
+  createNewTaskFromDocument() {
+    const currentDocId = this.documentState().id;
+    if (!currentDocId) {
+      alert('Sauvegardez le document d\'abord');
+      return;
+    }
+
+    // Save document if dirty
+    if (this.isDirty()) {
+      this.saveDocument();
+    }
+
+    // Navigate to task form with query params
+    this.router.navigate(['/tasks/new'], {
+      queryParams: {
+        returnTo: `/documents/${currentDocId}`,
+        createFromDocument: currentDocId,
+      },
+    });
+  }
+
+  private navigateToTask(taskId: string) {
+    this.router.navigate(['/tasks', taskId]);
+  }
+
+  private loadAndRefreshTaskMentions(documentId: string) {
+    this.documentService.getTasksForDocument(documentId).subscribe({
+      next: (tasks: TaskMentionData[]) => {
+        tasks.forEach((task: TaskMentionData) => {
+          this.editor.commands.updateTaskMention(task.id, {
+            taskId: task.id,
+            taskTitle: task.title,
+            taskStatus: task.status,
+            taskPriority: task.priority,
+            taskType: task.type,
+            taskNumber: task.task_number,
+          });
+        });
+      },
+      error: (err: unknown) => console.error('Error refreshing task mentions:', err)
+    });
   }
 
   ngOnDestroy(): void {

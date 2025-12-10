@@ -61,6 +61,12 @@ export class SlashMenuComponent {
         )
       },
       {
+        title: 'Tâches',
+        commands: allItems.filter(item =>
+          ['linkTask', 'createTask'].includes(item.id)
+        )
+      },
+      {
         title: 'Utilitaires',
         commands: allItems.filter(item =>
           ['break', 'clear'].includes(item.id)

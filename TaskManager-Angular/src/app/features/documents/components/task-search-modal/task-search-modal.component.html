@@ -1,0 +1,76 @@
+<div class="task-search-modal">
+  <div class="modal-header">
+    <h2>Lier une tâche existante</h2>
+    <button mat-icon-button (click)="cancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="modal-content">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Rechercher une tâche</mat-label>
+      <input
+        matInput
+        [value]="searchQuery()"
+        (input)="onSearchInput($event)"
+        autofocus
+        placeholder="Tapez au moins 2 caractères..."
+      />
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+
+    <div class="search-results">
+      @if (isSearching()) {
+        <div class="loading-state">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Recherche en cours...</p>
+        </div>
+      } @else if (searchQuery().trim().length < 2) {
+        <div class="empty-state">
+          <mat-icon>info_outline</mat-icon>
+          <p>Tapez au moins 2 caractères pour rechercher une tâche</p>
+        </div>
+      } @else if (!searchResults().length) {
+        <div class="empty-state">
+          <mat-icon>search_off</mat-icon>
+          <p>Aucune tâche trouvée</p>
+        </div>
+      } @else {
+        <div class="results-list">
+          @for (task of searchResults(); track task.id) {
+            <div
+              class="task-result-item"
+              [class.selected]="selectedTask()?.id === task.id"
+              (click)="selectTask(task)"
+            >
+              <div class="task-info">
+                <span class="task-type-badge task-type-{{ task.type }}">
+                  {{ task.type.toUpperCase() }}
+                </span>
+                @if (task.task_number) {
+                  <span class="task-number">#{{ task.task_number }}</span>
+                }
+                <div class="task-title">{{ task.title }}</div>
+              </div>
+              @if (selectedTask()?.id === task.id) {
+                <mat-icon class="selected-icon">check_circle</mat-icon>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button mat-button (click)="cancel()">Annuler</button>
+    <button
+      mat-raised-button
+      color="primary"
+      [disabled]="!selectedTask()"
+      (click)="confirmSelection()"
+    >
+      Lier cette tâche
+    </button>
+  </div>
+</div>

@@ -3,6 +3,7 @@ import { SupabaseService } from '../../../core/services/supabase';
 import { from, Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { JSONContent } from '@tiptap/core';
+import { DocumentTaskRelation, TaskMentionData, TaskSearchResult } from '../models/document-task-relation.model';
 
 export interface Document {
   id: string;
@@ -145,5 +146,90 @@ export class DocumentService {
     }
 
     return breadcrumbs;
+  }
+
+  /**
+   * Link a task to a document
+   */
+  linkTaskToDocument(documentId: string, taskId: string, relationType: 'linked' | 'embedded' = 'linked'): Observable<DocumentTaskRelation> {
+    return from(
+      this.client
+        .from('document_task_relations')
+        .insert({ document_id: documentId, task_id: taskId, relation_type: relationType })
+        .select()
+        .single()
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return response.data as DocumentTaskRelation;
+      })
+    );
+  }
+
+  /**
+   * Get all tasks linked to a document
+   */
+  getTasksForDocument(documentId: string): Observable<TaskMentionData[]> {
+    return from(
+      this.client
+        .from('document_task_relations')
+        .select(`task_id, tasks(id, title, status, priority, type, task_number, project_id)`)
+        .eq('document_id', documentId)
+        .order('position_in_document', { ascending: true })
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return (response.data || []).map((rel: any) => ({
+          id: rel.tasks.id,
+          title: rel.tasks.title,
+          status: rel.tasks.status,
+          priority: rel.tasks.priority,
+          type: rel.tasks.type,
+          task_number: rel.tasks.task_number,
+          project_id: rel.tasks.project_id,
+        }));
+      })
+    );
+  }
+
+  /**
+   * Search tasks by title
+   */
+  searchTasks(query: string, projectId?: string, limit: number = 10): Observable<TaskSearchResult[]> {
+    let request = this.client
+      .from('tasks')
+      .select('id, title, task_number, type, status, priority, project_id')
+      .ilike('title', `%${query}%`)
+      .order('task_number', { ascending: false })
+      .limit(limit);
+
+    if (projectId) {
+      request = request.eq('project_id', projectId);
+    }
+
+    return from(request).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return response.data as TaskSearchResult[];
+      })
+    );
+  }
+
+  /**
+   * Get task data for mention node
+   */
+  getTaskForMention(taskId: string): Observable<TaskMentionData> {
+    return from(
+      this.client
+        .from('tasks')
+        .select('id, title, status, priority, type, task_number, project_id')
+        .eq('id', taskId)
+        .single()
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return response.data as TaskMentionData;
+      })
+    );
   }
 }

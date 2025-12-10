@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TaskService, Task, TaskComment } from '../../../core/services/task';
 import { AuthService } from '../../../core/services/auth';
 import { UserService } from '../../../core/services/user.service';
+import { SupabaseService } from '../../../core/services/supabase';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DatePipe } from '@angular/common';
 import { ISubtask } from '../subtask.model';
@@ -66,6 +67,7 @@ export class TaskFormComponent implements OnInit {
   private dialog = inject(MatDialog);
   private cdr = inject(ChangeDetectorRef);
   private store = inject(Store<AppState>);
+  private supabaseService = inject(SupabaseService);
 
   isSubmitting = signal(false);
   pageTitle = signal('Nouvelle tâche');
@@ -119,6 +121,9 @@ export class TaskFormComponent implements OnInit {
       console.log('queryParams', params); // debug
       const type = params['type'] as 'epic' | 'feature' | 'task' | undefined;
       const parentId = params['parent_task_id'] as string | undefined;
+      const returnTo = params['returnTo'] as string | undefined;
+      const createFromDocument = params['createFromDocument'] as string | undefined;
+
       if (type) {
         this.contextType = type;
         console.log('contextType', this.contextType);
@@ -126,6 +131,14 @@ export class TaskFormComponent implements OnInit {
       }
       if (parentId) {
         this.contextParentId = parentId;
+      }
+
+      // Handle document integration workflow
+      if (returnTo) {
+        sessionStorage.setItem('taskFormReturnUrl', returnTo);
+      }
+      if (createFromDocument) {
+        sessionStorage.setItem('taskCreatedFromDocument', createFromDocument);
       }
     });
 
@@ -423,8 +436,25 @@ export class TaskFormComponent implements OnInit {
           project_id: projectId
         };
         const newTaskId = await this.taskService.createTask(taskToCreate);
-        this.snackBar.open('Tâche créée avec succès!', 'Fermer', { duration: 3000, panelClass: 'green-snackbar' });
-        this.router.navigate(['/dashboard']);
+
+        // Handle document integration workflow
+        const documentId = sessionStorage.getItem('taskCreatedFromDocument');
+        if (documentId && newTaskId) {
+          await this.linkTaskToDocument(documentId, newTaskId);
+          sessionStorage.removeItem('taskCreatedFromDocument');
+          // Store the task ID to insert the mention when returning to document
+          sessionStorage.setItem('pendingTaskMentionInsert', newTaskId);
+        }
+
+        const returnUrl = sessionStorage.getItem('taskFormReturnUrl');
+        if (returnUrl) {
+          sessionStorage.removeItem('taskFormReturnUrl');
+          this.snackBar.open('Tâche créée avec succès!', 'Fermer', { duration: 3000, panelClass: 'green-snackbar' });
+          this.router.navigateByUrl(returnUrl);
+        } else {
+          this.snackBar.open('Tâche créée avec succès!', 'Fermer', { duration: 3000, panelClass: 'green-snackbar' });
+          this.router.navigate(['/dashboard']);
+        }
       }
     } catch (error) {
       console.error("Erreur lors de la soumission de la tâche", error);
@@ -805,6 +835,27 @@ export class TaskFormComponent implements OnInit {
   onCustomPropertiesChange(properties: CustomProperty[]) {
     this.customProperties.set(properties);
     this.stepperForm.markAsDirty();
+  }
+
+  /**
+   * Link a task to a document (for document integration workflow)
+   */
+  private async linkTaskToDocument(documentId: string, taskId: string): Promise<void> {
+    try {
+      const { error } = await this.supabaseService.client
+        .from('document_task_relations')
+        .insert({
+          document_id: documentId,
+          task_id: taskId,
+          relation_type: 'embedded'
+        });
+
+      if (error) {
+        console.error('Error linking task to document:', error);
+      }
+    } catch (err) {
+      console.error('Exception linking task to document:', err);
+    }
   }
 }
 

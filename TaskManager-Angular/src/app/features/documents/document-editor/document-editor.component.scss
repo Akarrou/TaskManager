@@ -454,3 +454,8 @@ tiptap-editor:focus-within {
     opacity: 0 !important;
   }
 }
+
+// ----------------------------------------------------------------------------
+// TASK MENTION STYLES
+// ----------------------------------------------------------------------------
+@import '../extensions/task-mention.styles.scss';
