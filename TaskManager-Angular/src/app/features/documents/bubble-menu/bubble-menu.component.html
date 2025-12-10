@@ -66,4 +66,83 @@
     title="Code">
     <span class="material-icons-outlined">code</span>
   </button>
+
+  <div class="separator"></div>
+
+  <!-- Font Family -->
+  <select (change)="setFontFamily($event)" class="menu-select">
+    <option value="">Police</option>
+    <option *ngFor="let font of fontFamilies" [value]="font.value">
+      {{ font.label }}
+    </option>
+  </select>
+
+  <!-- Font Size -->
+  <select (change)="setFontSize($event)" class="menu-select">
+    <option value="">Taille</option>
+    <option *ngFor="let size of fontSizes" [value]="size.value">
+      {{ size.label }}
+    </option>
+  </select>
+
+  <div class="separator"></div>
+
+  <!-- Text Color -->
+  <div class="color-picker-container">
+    <button
+      (click)="toggleTextColorPicker()"
+      class="menu-button color-button"
+      title="Couleur du texte"
+      [style.color]="getCurrentTextColor()">
+      <span class="material-icons-outlined">format_color_text</span>
+    </button>
+
+    <div *ngIf="showTextColorPicker()" class="color-palette">
+      <div class="color-grid">
+        <button
+          *ngFor="let color of textColors"
+          (click)="setTextColor(color)"
+          class="color-swatch"
+          [style.background-color]="color"
+          [title]="color">
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Background Color -->
+  <div class="color-picker-container">
+    <button
+      (click)="toggleBgColorPicker()"
+      class="menu-button color-button"
+      title="Couleur de fond"
+      [style.background-color]="getCurrentBgColor()">
+      <span class="material-icons-outlined">format_color_fill</span>
+    </button>
+
+    <div *ngIf="showBgColorPicker()" class="color-palette">
+      <div class="color-grid">
+        <button
+          *ngFor="let color of bgColors"
+          (click)="setBgColor(color)"
+          class="color-swatch"
+          [class.transparent]="color === 'transparent'"
+          [style.background-color]="color"
+          [title]="color">
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="separator"></div>
+
+  <!-- Text Alignment -->
+  <button
+    *ngFor="let align of textAlignments"
+    (click)="setTextAlign(align.value)"
+    class="menu-button"
+    [class.active]="isTextAlignActive(align.value)"
+    [title]="align.title">
+    <span class="material-icons-outlined">{{ align.icon }}</span>
+  </button>
 </div>

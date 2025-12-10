@@ -8,9 +8,15 @@ export interface Document {
   id: string;
   title: string;
   content: JSONContent; // TipTap's JSON content (ProseMirror schema)
+  parent_id?: string | null; // Parent document for hierarchical navigation
   created_at?: string;
   updated_at?: string;
   user_id?: string;
+}
+
+export interface DocumentBreadcrumb {
+  id: string;
+  title: string;
 }
 
 @Injectable({
@@ -53,12 +59,15 @@ export class DocumentService {
   }
 
   createDocument(doc: Partial<Document>): Observable<Document> {
-    const newDoc = {
+    const newDoc: Record<string, unknown> = {
       title: doc.title || 'Sans titre',
       content: doc.content || {},
-      // user_id will be handled by Supabase if strictly RLSecurity, 
-      // or we can inject it here if we have the current user in session
     };
+
+    // Include parent_id if provided (for hierarchical navigation)
+    if (doc.parent_id !== undefined) {
+      newDoc['parent_id'] = doc.parent_id;
+    }
 
     return from(
       this.client
@@ -106,5 +115,35 @@ export class DocumentService {
       }),
       catchError(() => of(false))
     );
+  }
+
+  /**
+   * Get the breadcrumb path (parent hierarchy) for a document
+   * Returns array from root to current document
+   */
+  async getDocumentBreadcrumb(documentId: string): Promise<DocumentBreadcrumb[]> {
+    const breadcrumbs: DocumentBreadcrumb[] = [];
+    let currentId: string | null = documentId;
+
+    // Traverse up the parent chain (max 10 levels to prevent infinite loops)
+    for (let i = 0; i < 10 && currentId; i++) {
+      const result = await this.client
+        .from('documents')
+        .select('id, title, parent_id')
+        .eq('id', currentId)
+        .single();
+
+      if (result.error || !result.data) break;
+
+      // Add to beginning of array (we're traversing backwards)
+      breadcrumbs.unshift({
+        id: result.data.id,
+        title: result.data.title
+      });
+
+      currentId = result.data.parent_id as string | null;
+    }
+
+    return breadcrumbs;
   }
 }

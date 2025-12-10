@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit, inject, signal, computed, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Editor, JSONContent } from '@tiptap/core';
 import { EditorView } from '@tiptap/pm/view';
 import { TextSelection } from '@tiptap/pm/state';
@@ -22,7 +22,7 @@ import { TiptapEditorDirective } from 'ngx-tiptap';
 import { all, createLowlight } from 'lowlight';
 import { SlashMenuComponent, SlashCommand } from '../slash-menu/slash-menu.component';
 import { BubbleMenuComponent } from '../bubble-menu/bubble-menu.component';
-import { DocumentService, Document } from '../services/document.service';
+import { DocumentService, Document, DocumentBreadcrumb } from '../services/document.service';
 import { NavigationFabComponent, NavigationContext } from '../../../shared/components/navigation-fab/navigation-fab.component';
 import { NavigationFabService } from '../../../shared/components/navigation-fab/navigation-fab.service';
 import { debounceTime, Subject, takeUntil } from 'rxjs';
@@ -34,14 +34,14 @@ import { FontFamily } from '@tiptap/extension-font-family';
 import { Color } from '@tiptap/extension-color';
 import { Highlight } from '@tiptap/extension-highlight';
 import { TextAlign } from '@tiptap/extension-text-align';
-import { FormatToolbarComponent } from '../format-toolbar/format-toolbar.component';
+import { Link } from '@tiptap/extension-link';
 
 const lowlight = createLowlight(all);
 
 @Component({
   selector: 'app-document-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, NavigationFabComponent, FormatToolbarComponent],
+  imports: [CommonModule, FormsModule, RouterLink, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, NavigationFabComponent],
   templateUrl: './document-editor.component.html',
   styleUrl: './document-editor.component.scss',
   encapsulation: ViewEncapsulation.None
@@ -72,6 +72,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     isSaving: false,
     lastSaved: null
   });
+
+  // Breadcrumb hierarchy
+  breadcrumbs = signal<DocumentBreadcrumb[]>([]);
 
   // Snapshot for dirty tracking
   private originalSnapshot = signal<DocumentSnapshot | null>(null);
@@ -123,6 +126,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     { id: 'image', label: 'Image', icon: 'image', action: () => this.addImage() },
     { id: 'columns2', label: '2 Colonnes', icon: 'view_column', action: () => this.editor.chain().focus().setColumns(2).run() },
     { id: 'columns3', label: '3 Colonnes', icon: 'view_week', action: () => this.editor.chain().focus().setColumns(3).run() },
+    { id: 'newDocument', label: 'Nouvelle page', icon: 'note_add', action: () => this.createLinkedDocument() },
 
     // Utilitaires
     { id: 'break', label: 'Saut de ligne', icon: 'keyboard_return', action: () => this.editor.chain().focus().setHardBreak().run() },
@@ -169,6 +173,12 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         Highlight.configure({ multicolor: true }),
         TextAlign.configure({
           types: ['heading', 'paragraph'],
+        }),
+        Link.configure({
+          openOnClick: true,
+          HTMLAttributes: {
+            class: 'document-link',
+          },
         }),
       ],
       editorProps: {
@@ -296,9 +306,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     ];
   }
 
-  loadDocument(id: string) {
+  async loadDocument(id: string) {
     this.documentService.getDocument(id).subscribe({
-      next: (doc) => {
+      next: async (doc: Document | null) => {
         if (doc) {
           // Update unified state
           this.documentState.set({
@@ -315,6 +325,10 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
             title: doc.title,
             content: doc.content
           });
+
+          // Load breadcrumb hierarchy
+          const breadcrumbPath = await this.documentService.getDocumentBreadcrumb(id);
+          this.breadcrumbs.set(breadcrumbPath);
 
           // Update editor content
           if (doc.content && Object.keys(doc.content).length > 0) {
@@ -442,6 +456,69 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     }
   }
 
+  createLinkedDocument() {
+    // Demander le titre de la nouvelle page
+    const title = window.prompt('Titre de la nouvelle page:', 'Nouvelle page');
+    if (!title) return;
+
+    const currentDocId = this.documentState().id;
+
+    // Créer le nouveau document avec parent_id
+    const newDoc: Omit<Document, 'id' | 'created_at' | 'updated_at'> = {
+      title,
+      content: {},
+      parent_id: currentDocId, // Link to current document as parent
+      user_id: '' // Will be set by the service
+    };
+
+    // Sauvegarder d'abord le document actuel si nécessaire
+    if (this.isDirty()) {
+      this.saveDocument();
+    }
+
+    // Créer le nouveau document
+    this.documentService.createDocument(newDoc).subscribe({
+      next: (createdDoc: Document) => {
+        // Insérer un lien vers le nouveau document dans l'éditeur actuel
+        const linkText = title;
+        const linkUrl = `/documents/${createdDoc.id}`;
+
+        this.editor
+          .chain()
+          .focus()
+          .insertContent([
+            {
+              type: 'paragraph',
+              content: [
+                {
+                  type: 'text',
+                  marks: [
+                    {
+                      type: 'link',
+                      attrs: {
+                        href: linkUrl,
+                        target: '_self',
+                        class: 'document-link'
+                      }
+                    }
+                  ],
+                  text: `📄 ${linkText}`
+                }
+              ]
+            }
+          ])
+          .run();
+
+        // Message de confirmation
+        console.log('Nouveau document créé avec lien:', createdDoc.id);
+      },
+      error: (err: Error) => {
+        console.error('Erreur lors de la création du document', err);
+        alert('Impossible de créer le nouveau document');
+      }
+    });
+  }
+
   updateBubbleMenu(editor: Editor) {
     // Don't show bubble menu if disabled or while dragging
     if (this.bubbleMenuDisabled() || this.isDragging()) {
@@ -480,6 +557,25 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     }
     // Focus the editor at the end only when clicking outside content
     this.editor.commands.focus('end');
+  }
+
+  navigateBack() {
+    // Check if there are unsaved changes
+    if (this.isDirty()) {
+      const confirmLeave = window.confirm(
+        'Vous avez des modifications non sauvegardées. Voulez-vous les sauvegarder avant de quitter ?'
+      );
+      if (confirmLeave) {
+        this.saveDocument();
+        // Wait a bit for save to complete before navigating
+        setTimeout(() => {
+          this.router.navigate(['/documents']);
+        }, 500);
+        return;
+      }
+    }
+    // Navigate back to documents list
+    this.router.navigate(['/documents']);
   }
 
   ngOnDestroy(): void {

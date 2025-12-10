@@ -1,4 +1,25 @@
 <div class="document-container">
+  <!-- Navigation Header -->
+  <div class="document-header">
+    <button class="back-button" (click)="navigateBack()" title="Retour">
+      <span class="material-icons-outlined">arrow_back</span>
+    </button>
+    <div class="breadcrumb">
+      <a routerLink="/documents" class="breadcrumb-item">Documents</a>
+      <span class="breadcrumb-separator">/</span>
+
+      <!-- Display parent hierarchy -->
+      @for (crumb of breadcrumbs(); track crumb.id; let isLast = $last) {
+        @if (!isLast) {
+          <a [routerLink]="['/documents', crumb.id]" class="breadcrumb-item">{{ crumb.title }}</a>
+          <span class="breadcrumb-separator">/</span>
+        } @else {
+          <span class="breadcrumb-current">{{ crumb.title }}</span>
+        }
+      }
+    </div>
+  </div>
+
   <!-- Title Header -->
   <div class="title-container">
     <input
@@ -23,9 +44,6 @@
       • Non sauvegardé
     </span>
   </div>
-
-  <!-- Format Toolbar -->
-  <app-format-toolbar [editor]="editor"></app-format-toolbar>
 
   <!-- Editor Content -->
   <div

@@ -40,7 +40,101 @@
 }
 
 // ----------------------------------------------------------------------------
-// SECTION 2: TITLE INPUT
+// SECTION 2: DOCUMENT HEADER (NAVIGATION)
+// ----------------------------------------------------------------------------
+
+.document-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+:host-context(.dark) .document-header {
+  border-bottom-color: #374151;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  background-color: #f3f4f6;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: #6b7280;
+
+  &:hover {
+    background-color: #e5e7eb;
+    color: #111827;
+  }
+
+  .material-icons-outlined {
+    font-size: 1.25rem;
+  }
+}
+
+:host-context(.dark) .back-button {
+  background-color: #374151;
+  color: #9ca3af;
+
+  &:hover {
+    background-color: #4b5563;
+    color: #f3f4f6;
+  }
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.breadcrumb-item {
+  color: #3b82f6;
+  text-decoration: none;
+  transition: color 0.15s;
+
+  &:hover {
+    color: #2563eb;
+    text-decoration: underline;
+  }
+}
+
+.breadcrumb-separator {
+  color: #9ca3af;
+}
+
+.breadcrumb-current {
+  color: #111827;
+  font-weight: 500;
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:host-context(.dark) .breadcrumb-item {
+  color: #60a5fa;
+
+  &:hover {
+    color: #93c5fd;
+  }
+}
+
+:host-context(.dark) .breadcrumb-current {
+  color: #f3f4f6;
+}
+
+// ----------------------------------------------------------------------------
+// SECTION 3: TITLE INPUT
 // ----------------------------------------------------------------------------
 
 .title-input {
@@ -68,7 +162,7 @@
 }
 
 // ----------------------------------------------------------------------------
-// SECTION 3: SAVE STATUS
+// SECTION 4: SAVE STATUS
 // ----------------------------------------------------------------------------
 
 .save-status {
@@ -90,7 +184,7 @@
 }
 
 // ----------------------------------------------------------------------------
-// SECTION 4: EDITOR WRAPPER
+// SECTION 5: EDITOR WRAPPER
 // ----------------------------------------------------------------------------
 
 .editor-wrapper {
@@ -134,7 +228,7 @@ tiptap-editor:focus-within {
 }
 
 // ----------------------------------------------------------------------------
-// SECTION 5: PROSEMIRROR STYLES (Official TipTap Styles Only)
+// SECTION 6: PROSEMIRROR STYLES (Official TipTap Styles Only)
 // ----------------------------------------------------------------------------
 
 ::ng-deep {
@@ -332,7 +426,7 @@ tiptap-editor:focus-within {
 }
 
 // ----------------------------------------------------------------------------
-// SECTION 6: SLASH MENU POSITIONING
+// SECTION 7: SLASH MENU POSITIONING
 // ----------------------------------------------------------------------------
 
 .slash-menu {
@@ -341,7 +435,7 @@ tiptap-editor:focus-within {
 }
 
 // ----------------------------------------------------------------------------
-// SECTION 7: BUBBLE MENU POSITIONING
+// SECTION 8: BUBBLE MENU POSITIONING
 // ----------------------------------------------------------------------------
 
 .bubble-menu-wrapper {
