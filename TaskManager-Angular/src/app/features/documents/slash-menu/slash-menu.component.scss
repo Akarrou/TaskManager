@@ -1,8 +1,8 @@
 :host {
   display: block;
   font-family: 'Inter', sans-serif;
-  z-index: 9999; /* Ensure high z-index */
-  position: fixed; /* Fix to viewport */
+  z-index: 9999;
+  position: fixed;
 }
 
 .slash-menu-container {
@@ -10,11 +10,12 @@
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   border: 1px solid #e5e7eb;
   border-radius: 0.75rem;
-  padding: 0.5rem;
+  padding: 0.75rem;
   animation: popIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-  max-height: 400px;
+  max-height: 500px;
   overflow-y: auto;
-  width: auto;
+  min-width: 280px;
+  max-width: 320px;
 
   @media (prefers-color-scheme: dark) {
     background: #1f2937;
@@ -42,13 +43,14 @@
 }
 
 .slash-menu-header {
-  padding: 0 0 0.75rem 0;
+  padding: 0.5rem 0.75rem;
   margin-bottom: 0.75rem;
-  text-align: center;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 2px solid #e5e7eb;
   font-size: 0.875rem;
-  font-weight: 600;
-  color: #6b7280;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 
   @media (prefers-color-scheme: dark) {
     border-bottom-color: #374151;
@@ -56,33 +58,47 @@
   }
 }
 
-.slash-menu-items {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 3 colonnes fixes */
-  gap: 0.5rem;
-  padding: 0;
-  margin: 0;
+.slash-menu-section {
+  margin-bottom: 1rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.section-title {
+  padding: 0.375rem 0.75rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  @media (prefers-color-scheme: dark) {
+    color: #9ca3af;
+  }
+}
+
+.section-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .slash-menu-item {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  min-height: 36px;
-  flex-shrink: 0;
-  padding: 0;
-  margin: 0;
+  width: 100%;
+  padding: 0.625rem 0.75rem;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 0.75rem;
   border: none;
   background: transparent;
   cursor: pointer;
-  border-radius: 50%;
+  border-radius: 0.5rem;
   transition: all 0.15s ease;
   color: #374151;
-  position: relative;
-  box-sizing: border-box;
+  text-align: left;
 
   @media (prefers-color-scheme: dark) {
     color: #e5e7eb;
@@ -90,69 +106,72 @@
 
   &:hover {
     background-color: #f3f4f6;
-    transform: scale(1.08);
 
     @media (prefers-color-scheme: dark) {
       background-color: #374151;
     }
-  }
 
-  &.selected {
-    background-color: #dbeafe; /* blue-100 */
-    color: #1e40af; /* blue-800 */
-    transform: scale(1.08);
+    .item-icon {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      transform: scale(1.1);
 
-    @media (prefers-color-scheme: dark) {
-      background-color: #1e3a8a; /* blue-900 */
-      color: #93c5fd; /* blue-300 */
+      @media (prefers-color-scheme: dark) {
+        background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+      }
     }
   }
 
-  /* Tooltip on hover */
-  &:hover::after {
-    content: attr(aria-label);
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,0.9);
-    color: white;
-    padding: 0.375rem 0.625rem;
-    border-radius: 0.375rem;
-    font-size: 0.75rem;
-    white-space: nowrap;
-    pointer-events: none;
-    opacity: 0;
-    animation: fadeIn 0.2s 0.3s forwards;
-    z-index: 100;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  }
-}
+  &.selected {
+    background-color: #dbeafe;
 
-.item-content {
-  display: none; /* Hide labels for compact mode, typically icons only */
+    @media (prefers-color-scheme: dark) {
+      background-color: #1e3a8a;
+    }
+
+    .item-icon {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      box-shadow:
+        0 4px 12px -1px rgba(59, 130, 246, 0.5),
+        0 0 0 2px rgba(59, 130, 246, 0.3);
+
+      @media (prefers-color-scheme: dark) {
+        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+      }
+    }
+
+    .item-label {
+      color: #1e40af;
+      font-weight: 600;
+
+      @media (prefers-color-scheme: dark) {
+        color: #93c5fd;
+      }
+    }
+  }
 }
 
 .item-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); /* Gradient bleu clair */
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
   box-shadow:
     0 2px 8px -1px rgba(59, 130, 246, 0.2),
     0 0 0 1px rgba(59, 130, 246, 0.1);
   transition: all 0.2s;
-  color: #1e40af; /* blue-800 */
+  color: #1e40af;
 
   @media (prefers-color-scheme: dark) {
     background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
     box-shadow:
       0 2px 8px -1px rgba(59, 130, 246, 0.3),
       0 0 0 1px rgba(147, 197, 253, 0.2);
-    color: #93c5fd; /* blue-300 */
+    color: #93c5fd;
   }
 
   .material-icons-outlined {
@@ -161,47 +180,25 @@
   }
 }
 
-/* Hover state for icon */
-.slash-menu-item:hover .item-icon {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-  box-shadow:
-    0 4px 12px -1px rgba(59, 130, 246, 0.3),
-    0 0 0 1px rgba(59, 130, 246, 0.2);
-  transform: rotate(5deg);
+.item-label {
+  flex: 1;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  transition: all 0.15s ease;
 
   @media (prefers-color-scheme: dark) {
-    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+    color: #e5e7eb;
   }
-}
-
-/* Selected state for icon */
-.slash-menu-item.selected .item-icon {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-  box-shadow:
-    0 4px 12px -1px rgba(59, 130, 246, 0.5),
-    0 0 0 2px rgba(59, 130, 246, 0.3);
-
-  @media (prefers-color-scheme: dark) {
-    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
-  }
-}
-
-.item-shortcut {
-  display: none;
 }
 
 @keyframes popIn {
   from {
     opacity: 0;
-    transform: scale(0.9);
+    transform: scale(0.95) translateY(-10px);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1) translateY(0);
   }
-}
-
-@keyframes fadeIn {
-  to { opacity: 1; }
 }

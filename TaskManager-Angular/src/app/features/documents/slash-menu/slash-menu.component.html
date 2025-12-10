@@ -1,18 +1,26 @@
-<div class="slash-menu-container">
-  <div class="slash-menu-items">
-    <button
-      *ngFor="let item of items; let i = index"
-      (click)="selectItem(i)"
-      class="slash-menu-item"
-      [class.selected]="i === selectedIndex"
-      [attr.aria-label]="item.label"
-    >
-      <div class="item-icon">
-        <span class="material-icons-outlined">{{ item.icon }}</span>
-      </div>
-      <div class="item-content">
-        <span class="item-label">{{ item.label }}</span>
-      </div>
-    </button>
+<div class="slash-menu-container" #menuContainer>
+  <div class="slash-menu-header">
+    Commandes disponibles
   </div>
+
+  @for (section of sections(); track section.title) {
+    <div class="slash-menu-section">
+      <div class="section-title">{{ section.title }}</div>
+      <div class="section-items">
+        @for (command of section.commands; track command.id) {
+          <button
+            (click)="selectItem(getGlobalIndex(command))"
+            class="slash-menu-item"
+            [class.selected]="getGlobalIndex(command) === selectedIndex"
+            [attr.aria-label]="command.label"
+          >
+            <div class="item-icon">
+              <span class="material-icons-outlined">{{ command.icon }}</span>
+            </div>
+            <span class="item-label">{{ command.label }}</span>
+          </button>
+        }
+      </div>
+    </div>
+  }
 </div>

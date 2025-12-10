@@ -412,13 +412,39 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   checkForSlashCommand() {
-      const { from } = this.editor.state.selection;
-      const { left, top } = this.editor.view.coordsAtPos(from);
-      this.slashMenuPosition.set({ 
-          top: top - 5, 
-          left: left + 15
-      });this.showSlashMenu.set(true);
-      this.slashMenuIndex.set(0);
+    const { from } = this.editor.state.selection;
+    const { left, top } = this.editor.view.coordsAtPos(from);
+
+    // Menu dimensions (updated for new wider layout)
+    const menuWidth = 320;
+    const menuHeight = 500;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Calculate position with smart adjustment
+    let finalLeft = left + 15;
+    let finalTop = top + 25; // Position below cursor
+
+    // Adjust horizontal position if menu would go off-screen right
+    if (finalLeft + menuWidth > viewportWidth) {
+      finalLeft = left - menuWidth - 15; // Show on left side instead
+    }
+
+    // Adjust vertical position if menu would go off-screen bottom
+    if (finalTop + menuHeight > viewportHeight) {
+      finalTop = top - menuHeight - 10; // Show above cursor instead
+    }
+
+    // Ensure minimum margins
+    finalLeft = Math.max(20, Math.min(finalLeft, viewportWidth - menuWidth - 20));
+    finalTop = Math.max(20, Math.min(finalTop, viewportHeight - menuHeight - 20));
+
+    this.slashMenuPosition.set({
+      top: finalTop,
+      left: finalLeft
+    });
+    this.showSlashMenu.set(true);
+    this.slashMenuIndex.set(0);
   }
 
   executeCommand(item: SlashCommand) {
