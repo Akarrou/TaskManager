@@ -51,7 +51,7 @@ export class SlashMenuComponent {
       {
         title: 'Médias',
         commands: allItems.filter(item =>
-          ['image', 'table', 'codeBlock'].includes(item.id)
+          ['image', 'table', 'codeBlock', 'database'].includes(item.id)
         )
       },
       {
@@ -63,7 +63,7 @@ export class SlashMenuComponent {
       {
         title: 'Tâches',
         commands: allItems.filter(item =>
-          ['linkTask', 'createTask'].includes(item.id)
+          ['taskSection', 'linkTask', 'createTask'].includes(item.id)
         )
       },
       {

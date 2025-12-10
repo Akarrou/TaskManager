@@ -1,0 +1,162 @@
+.database-container {
+  margin: 2rem 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+// Loading State
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  gap: 1rem;
+
+  .loading-text {
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+}
+
+// Error State
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  gap: 1rem;
+
+  .error-icon {
+    font-size: 3rem;
+    width: 3rem;
+    height: 3rem;
+    color: #ef4444;
+  }
+
+  .error-text {
+    color: #dc2626;
+    font-size: 0.875rem;
+  }
+}
+
+// Database Header
+.database-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.database-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  .database-icon {
+    color: #3b82f6;
+    font-size: 1.5rem;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #111827;
+  }
+
+  .database-stats {
+    font-size: 0.75rem;
+    color: #6b7280;
+    padding: 0.25rem 0.75rem;
+    background: #e5e7eb;
+    border-radius: 12px;
+  }
+}
+
+.database-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.view-switcher {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+
+  button {
+    &.active {
+      background: #eff6ff;
+      color: #3b82f6;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Database Content
+.database-content {
+  padding: 1.5rem;
+  min-height: 200px;
+}
+
+// View Placeholders
+.table-view-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.view-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: #9ca3af;
+
+  .placeholder-icon {
+    font-size: 4rem;
+    width: 4rem;
+    height: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  p {
+    font-size: 1rem;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .database-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .database-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

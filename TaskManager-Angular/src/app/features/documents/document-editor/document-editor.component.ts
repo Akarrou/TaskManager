@@ -42,13 +42,15 @@ import { TaskSearchResult, TaskMentionData } from '../models/document-task-relat
 import { DocumentTasksSectionComponent } from '../components/document-tasks-section/document-tasks-section';
 import { TaskSectionExtension } from '../extensions/task-section.extension';
 import { TaskSectionRendererDirective } from '../directives/task-section-renderer.directive';
+import { DatabaseTableExtension } from '../extensions/database-table.extension';
+import { DatabaseTableRendererDirective } from '../directives/database-table-renderer.directive';
 
 const lowlight = createLowlight(all);
 
 @Component({
   selector: 'app-document-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, NavigationFabComponent, TaskSectionRendererDirective],
+  imports: [CommonModule, FormsModule, RouterLink, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, NavigationFabComponent, TaskSectionRendererDirective, DatabaseTableRendererDirective],
   templateUrl: './document-editor.component.html',
   styleUrl: './document-editor.component.scss',
   encapsulation: ViewEncapsulation.None
@@ -141,6 +143,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     { id: 'linkTask', label: 'Lier une tâche', icon: 'link', action: () => this.openTaskSearchModal() },
     { id: 'createTask', label: 'Créer une tâche', icon: 'add_task', action: () => this.createNewTaskFromDocument() },
 
+    // Base de données
+    { id: 'database', label: 'Base de données', icon: 'table_view', action: () => this.insertDatabase() },
+
     // Utilitaires
     { id: 'break', label: 'Saut de ligne', icon: 'keyboard_return', action: () => this.editor.chain().focus().setHardBreak().run() },
     { id: 'clear', label: 'Effacer format', icon: 'format_clear', action: () => this.editor.chain().focus().clearNodes().unsetAllMarks().run() },
@@ -197,6 +202,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
           onTaskClick: (taskId: string) => this.navigateToTask(taskId),
         }),
         TaskSectionExtension,
+        DatabaseTableExtension,
       ],
       editorProps: {
         attributes: {
@@ -793,6 +799,19 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       },
       error: (err: unknown) => console.error('Error refreshing task mentions:', err)
     });
+  }
+
+  // Database methods
+  insertDatabase() {
+    const currentDocId = this.documentState().id;
+    if (!currentDocId) {
+      alert('Sauvegardez le document d\'abord');
+      return;
+    }
+
+    // Insert database table block
+    this.editor.chain().focus().insertDatabaseTable().run();
+    this.showSlashMenu.set(false);
   }
 
   ngOnDestroy(): void {

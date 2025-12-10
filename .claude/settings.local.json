@@ -27,7 +27,8 @@
       "Bash(grep:*)",
       "Bash(cat:*)",
       "Bash(npx ng generate:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(curl:*)"
     ]
   },
   "enableAllProjectMcpServers": false

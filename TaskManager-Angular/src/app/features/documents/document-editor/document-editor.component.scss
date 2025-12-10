@@ -514,3 +514,85 @@ tiptap-editor:focus-within {
   }
 }
 
+// ----------------------------------------------------------------------------
+// DATABASE TABLE BLOCK STYLES
+// ----------------------------------------------------------------------------
+
+.database-table-block {
+  margin: 2rem 0;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fafafa;
+  min-height: 150px;
+  position: relative;
+  transition: all 0.15s;
+  cursor: move;
+  overflow: hidden;
+
+  &:hover {
+    border-color: #d1d5db;
+    background: #f5f5f5;
+  }
+
+  &.ProseMirror-selectednode {
+    border-color: #3b82f6;
+    border-width: 2px;
+    background: rgba(59, 130, 246, 0.03);
+  }
+
+  // Placeholder when no component rendered yet
+  &:empty::before {
+    content: 'Base de données (chargement...)';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #9ca3af;
+    font-size: 0.875rem;
+    pointer-events: none;
+  }
+}
+
+.database-table-rendered {
+  border-color: #e5e7eb !important;
+  background: white !important;
+  cursor: default !important;
+  padding: 0 !important;
+
+  &:hover {
+    border-color: #d1d5db !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  &.ProseMirror-selectednode {
+    border-color: #e5e7eb !important;
+    border-width: 1px !important;
+    background: white !important;
+  }
+}
+
+// Dark mode
+:host-context(.dark) .database-table-block {
+  border-color: #374151;
+  background: #1f2937;
+
+  &:hover {
+    border-color: #4b5563;
+    background: #111827;
+  }
+
+  &.ProseMirror-selectednode {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
+  }
+}
+
+:host-context(.dark) .database-table-rendered {
+  border-color: #374151 !important;
+  background: #1f2937 !important;
+
+  &:hover {
+    border-color: #4b5563 !important;
+  }
+}
+

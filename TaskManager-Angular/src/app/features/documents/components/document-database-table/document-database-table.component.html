@@ -1,0 +1,136 @@
+<div class="database-container">
+  <!-- Loading State -->
+  @if (isInitializing() || isCreatingDatabase()) {
+    <div class="loading-state">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p class="loading-text">
+        {{ isCreatingDatabase() ? 'Création de la base de données...' : 'Chargement...' }}
+      </p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @else if (error()) {
+    <div class="error-state">
+      <mat-icon class="error-icon">error_outline</mat-icon>
+      <p class="error-text">{{ error() }}</p>
+      <button mat-stroked-button (click)="initializeDatabase()">
+        <mat-icon>refresh</mat-icon>
+        Réessayer
+      </button>
+    </div>
+  }
+
+  <!-- Database Content -->
+  @else {
+    <!-- Header: Title and Actions -->
+    <div class="database-header">
+      <div class="database-title">
+        <mat-icon class="database-icon">table_view</mat-icon>
+        <h3>{{ databaseConfig().name }}</h3>
+        <span class="database-stats">
+          {{ rowCount() }} ligne(s) • {{ columnCount() }} colonne(s)
+        </span>
+      </div>
+
+      <div class="database-actions">
+        <!-- View Switcher -->
+        <div class="view-switcher">
+          <button
+            mat-icon-button
+            [class.active]="currentView() === 'table'"
+            (click)="onSwitchView('table')"
+            matTooltip="Vue tableau">
+            <mat-icon>table_chart</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            [class.active]="currentView() === 'kanban'"
+            (click)="onSwitchView('kanban')"
+            matTooltip="Vue kanban"
+            disabled>
+            <mat-icon>view_kanban</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            [class.active]="currentView() === 'calendar'"
+            (click)="onSwitchView('calendar')"
+            matTooltip="Vue calendrier"
+            disabled>
+            <mat-icon>calendar_month</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            [class.active]="currentView() === 'timeline'"
+            (click)="onSwitchView('timeline')"
+            matTooltip="Vue timeline"
+            disabled>
+            <mat-icon>timeline</mat-icon>
+          </button>
+        </div>
+
+        <!-- Add Row Button -->
+        <button mat-raised-button color="primary" (click)="onAddRow()">
+          <mat-icon>add</mat-icon>
+          Nouvelle ligne
+        </button>
+      </div>
+    </div>
+
+    <!-- View Content -->
+    <div class="database-content">
+      @switch (currentView()) {
+        @case ('table') {
+          <!-- Table View (placeholder for now) -->
+          <div class="table-view-placeholder">
+            <p class="text-gray-500">Vue tableau - En cours de développement</p>
+            <p class="text-sm text-gray-400 mt-2">
+              {{ rowCount() }} ligne(s) chargée(s)
+            </p>
+
+            <!-- Temporary: Show column names -->
+            @if (columnCount() > 0) {
+              <div class="mt-4">
+                <p class="text-xs text-gray-400 mb-2">Colonnes :</p>
+                <div class="flex flex-wrap gap-2">
+                  @for (column of databaseConfig().columns; track column.id) {
+                    <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                      {{ column.name }} ({{ column.type }})
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Add Column Button -->
+            <button
+              mat-stroked-button
+              class="mt-4"
+              (click)="onAddColumn()">
+              <mat-icon>add</mat-icon>
+              Ajouter une colonne
+            </button>
+          </div>
+        }
+        @case ('kanban') {
+          <div class="view-placeholder">
+            <mat-icon class="placeholder-icon">view_kanban</mat-icon>
+            <p>Vue kanban - Prochainement</p>
+          </div>
+        }
+        @case ('calendar') {
+          <div class="view-placeholder">
+            <mat-icon class="placeholder-icon">calendar_month</mat-icon>
+            <p>Vue calendrier - Prochainement</p>
+          </div>
+        }
+        @case ('timeline') {
+          <div class="view-placeholder">
+            <mat-icon class="placeholder-icon">timeline</mat-icon>
+            <p>Vue timeline - Prochainement</p>
+          </div>
+        }
+      }
+    </div>
+  }
+</div>
