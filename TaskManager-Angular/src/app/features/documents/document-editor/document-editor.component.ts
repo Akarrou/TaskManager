@@ -165,7 +165,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
           width: 3,
         }),
         GlobalDragHandle.configure({
-          dragHandleWidth: 20,
+          dragHandleWidth: 40,
         }),
         Image,
         TaskList,
