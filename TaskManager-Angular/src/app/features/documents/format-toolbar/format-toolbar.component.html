@@ -1,0 +1,84 @@
+<div class="format-toolbar">
+  <!-- Font Family -->
+  <div class="toolbar-group">
+    <label class="toolbar-label">Police</label>
+    <select (change)="setFontFamily($event)" class="toolbar-select">
+      <option *ngFor="let font of fontFamilies" [value]="font.value">
+        {{ font.label }}
+      </option>
+    </select>
+  </div>
+
+  <!-- Font Size -->
+  <div class="toolbar-group">
+    <label class="toolbar-label">Taille</label>
+    <select (change)="setFontSize($event)" class="toolbar-select">
+      <option *ngFor="let size of fontSizes" [value]="size.value">
+        {{ size.label }}
+      </option>
+    </select>
+  </div>
+
+  <div class="toolbar-separator"></div>
+
+  <!-- Text Color -->
+  <div class="toolbar-group color-picker-container">
+    <button
+      (click)="toggleTextColorPicker()"
+      class="toolbar-button color-button"
+      title="Couleur du texte"
+      [style.color]="getCurrentTextColor()">
+      <span class="material-icons-outlined">format_color_text</span>
+    </button>
+
+    <div *ngIf="showTextColorPicker()" class="color-palette">
+      <div class="color-grid">
+        <button
+          *ngFor="let color of textColors"
+          (click)="setTextColor(color)"
+          class="color-swatch"
+          [style.background-color]="color"
+          [title]="color">
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Background Color -->
+  <div class="toolbar-group color-picker-container">
+    <button
+      (click)="toggleBgColorPicker()"
+      class="toolbar-button color-button"
+      title="Couleur de fond"
+      [style.background-color]="getCurrentBgColor()">
+      <span class="material-icons-outlined">format_color_fill</span>
+    </button>
+
+    <div *ngIf="showBgColorPicker()" class="color-palette">
+      <div class="color-grid">
+        <button
+          *ngFor="let color of bgColors"
+          (click)="setBgColor(color)"
+          class="color-swatch"
+          [class.transparent]="color === 'transparent'"
+          [style.background-color]="color"
+          [title]="color">
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar-separator"></div>
+
+  <!-- Text Alignment -->
+  <div class="toolbar-group">
+    <button
+      *ngFor="let align of textAlignments"
+      (click)="setTextAlign(align.value)"
+      class="toolbar-button"
+      [class.active]="isTextAlignActive(align.value)"
+      [title]="align.title">
+      <span class="material-icons-outlined">{{ align.icon }}</span>
+    </button>
+  </div>
+</div>

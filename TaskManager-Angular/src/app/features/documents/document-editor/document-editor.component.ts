@@ -28,13 +28,20 @@ import { NavigationFabService } from '../../../shared/components/navigation-fab/
 import { debounceTime, Subject, takeUntil } from 'rxjs';
 import { DocumentState, DocumentSnapshot, createSnapshot, hasChanges } from '../models/document-content.types';
 import { Columns, Column } from '../extensions/columns.extension';
+import { FontSize } from '../extensions/font-size.extension';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { FontFamily } from '@tiptap/extension-font-family';
+import { Color } from '@tiptap/extension-color';
+import { Highlight } from '@tiptap/extension-highlight';
+import { TextAlign } from '@tiptap/extension-text-align';
+import { FormatToolbarComponent } from '../format-toolbar/format-toolbar.component';
 
 const lowlight = createLowlight(all);
 
 @Component({
   selector: 'app-document-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, NavigationFabComponent],
+  imports: [CommonModule, FormsModule, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, NavigationFabComponent, FormatToolbarComponent],
   templateUrl: './document-editor.component.html',
   styleUrl: './document-editor.component.scss',
   encapsulation: ViewEncapsulation.None
@@ -155,6 +162,14 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         CodeBlockLowlight.configure({ lowlight }),
         Columns,
         Column,
+        TextStyle,
+        FontFamily,
+        FontSize,
+        Color,
+        Highlight.configure({ multicolor: true }),
+        TextAlign.configure({
+          types: ['heading', 'paragraph'],
+        }),
       ],
       editorProps: {
         attributes: {

@@ -290,6 +290,35 @@ tiptap-editor,
 }
 
 // ============================================================================
+// TIPTAP - TEXT STYLING (Colors, Font, Size, Alignment)
+// ============================================================================
+
+// Text alignment support
+.ProseMirror p[style*="text-align"],
+.ProseMirror h1[style*="text-align"],
+.ProseMirror h2[style*="text-align"],
+.ProseMirror h3[style*="text-align"] {
+  &[style*="text-align: left"] {
+    text-align: left;
+  }
+  &[style*="text-align: center"] {
+    text-align: center;
+  }
+  &[style*="text-align: right"] {
+    text-align: right;
+  }
+  &[style*="text-align: justify"] {
+    text-align: justify;
+  }
+}
+
+// Highlight (background color) styling
+.ProseMirror mark {
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+// ============================================================================
 // TIPTAP - COLUMNS LAYOUT
 // ============================================================================
 
