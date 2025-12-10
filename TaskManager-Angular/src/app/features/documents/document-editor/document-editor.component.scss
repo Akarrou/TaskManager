@@ -350,3 +350,13 @@ tiptap-editor:focus-within {
   transform: translateZ(0);
   transition: all 150ms ease-out;
 }
+
+// Hide bubble menu during drag (when ProseMirror adds hideselection class)
+::ng-deep .ProseMirror-hideselection {
+  ~ * app-bubble-menu,
+  ~ * .bubble-menu-wrapper {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+}

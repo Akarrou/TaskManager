@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Editor, JSONContent } from '@tiptap/core';
 import { EditorView } from '@tiptap/pm/view';
+import { TextSelection } from '@tiptap/pm/state';
 import StarterKit from '@tiptap/starter-kit';
 import { Placeholder } from '@tiptap/extension-placeholder';
 import { Image } from '@tiptap/extension-image';
@@ -16,6 +17,7 @@ import { TableHeader } from '@tiptap/extension-table-header';
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
 import { Gapcursor } from '@tiptap/extension-gapcursor';
 import { Dropcursor } from '@tiptap/extension-dropcursor';
+import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
 import { TiptapEditorDirective } from 'ngx-tiptap';
 import { all, createLowlight } from 'lowlight';
 import { SlashMenuComponent, SlashCommand } from '../slash-menu/slash-menu.component';
@@ -50,6 +52,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   // Bubble menu (text selection)
   showBubbleMenu = signal(false);
   bubbleMenuPosition = signal({ top: 0, left: 0 });
+  isDragging = signal(false);
+  bubbleMenuDisabled = signal(false); // Temporarily disable bubble menu after drag
 
   // Unified document state (single source of truth)
   documentState = signal<DocumentState>({
@@ -133,6 +137,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
           color: '#3b82f6',
           width: 3,
         }),
+        GlobalDragHandle.configure({
+          dragHandleWidth: 20,
+        }),
         Image,
         TaskList,
         TaskItem.configure({
@@ -146,19 +153,78 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       ],
       editorProps: {
         attributes: {
-          class: 'focus:outline-none',
+          // Remove all attributes that could add borders/outlines
+          class: '',
+          style: 'outline: none; border: none;'
         },
         handleKeyDown: (view: EditorView, event: KeyboardEvent) => this.handleKeyDown(view, event),
         handleClick: (_view: EditorView, _pos: number, _event: MouseEvent) => {
-          // Allow default click behavior - don't prevent it
+          // Allow default click behavior for node selection and dragging
           return false;
+        },
+        // Enable native drag & drop for blocks
+        handleDOMEvents: {
+          mousedown: (view: EditorView, event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            if (target.classList.contains('drag-handle') || target.closest('.drag-handle')) {
+              this.isDragging.set(true);
+              this.showBubbleMenu.set(false);
+            }
+            return false;
+          },
+          dragstart: (view: EditorView, event: DragEvent) => {
+            this.isDragging.set(true);
+            this.bubbleMenuDisabled.set(true);
+            this.showBubbleMenu.set(false);
+            return false;
+          },
+          drag: () => {
+            if (!this.isDragging()) {
+              this.isDragging.set(true);
+            }
+            this.showBubbleMenu.set(false);
+            return false;
+          },
+          dragend: () => {
+            setTimeout(() => {
+              this.isDragging.set(false);
+            }, 150);
+            return false;
+          },
+          drop: (view: EditorView) => {
+            this.showBubbleMenu.set(false);
+            setTimeout(() => {
+              this.bubbleMenuDisabled.set(false);
+              this.isDragging.set(false);
+            }, 300);
+            return false;
+          },
+          mouseup: () => {
+            if (this.isDragging()) {
+              setTimeout(() => this.isDragging.set(false), 150);
+            }
+            return false;
+          }
         }
       },
       onUpdate: ({ editor }) => {
         this.handleContentChange(editor.getJSON());
       },
       onSelectionUpdate: ({ editor }) => {
-        this.updateBubbleMenu(editor);
+        // Check if ProseMirror is in drag mode (has hideselection class)
+        const isDraggingNow = editor.view.dom.classList.contains('ProseMirror-hideselection');
+
+        // If ProseMirror is hiding selection, we're dragging - block bubble menu
+        if (isDraggingNow) {
+          this.showBubbleMenu.set(false);
+          this.bubbleMenuDisabled.set(true);
+          return;
+        }
+
+        // Skip bubble menu updates during drag operations or when disabled
+        if (!this.isDragging() && !this.bubbleMenuDisabled()) {
+          this.updateBubbleMenu(editor);
+        }
       }
     });
 
@@ -357,6 +423,12 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   updateBubbleMenu(editor: Editor) {
+    // Don't show bubble menu if disabled or while dragging
+    if (this.bubbleMenuDisabled() || this.isDragging()) {
+      this.showBubbleMenu.set(false);
+      return;
+    }
+
     const { from, to } = editor.state.selection;
     const hasSelection = from !== to;
 

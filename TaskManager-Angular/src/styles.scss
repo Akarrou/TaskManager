@@ -44,6 +44,54 @@ body {
 }
 
 // ============================================================================
+// TIPTAP - REMOVE ALL FOCUS BORDERS GLOBALLY (Override Tailwind)
+// ============================================================================
+
+// Force remove all borders and outlines from TipTap editor
+// This overrides Tailwind's default focus styles
+.ProseMirror,
+.ProseMirror *,
+tiptap-editor,
+tiptap-editor *,
+.editor-wrapper,
+.editor-wrapper *,
+[contenteditable],
+[contenteditable="true"] {
+  outline: 0 !important;
+  outline-width: 0 !important;
+  outline-style: none !important;
+  outline-color: transparent !important;
+  border: 0 !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
+
+  &:focus,
+  &:focus-visible,
+  &:focus-within {
+    outline: 0 !important;
+    outline-width: 0 !important;
+    outline-style: none !important;
+    outline-color: transparent !important;
+    border: 0 !important;
+    border-width: 0 !important;
+    box-shadow: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+}
+
+// Additional nuclear option - override any Tailwind ring utilities
+.editor-wrapper,
+tiptap-editor,
+.ProseMirror {
+  --tw-ring-inset: 0 !important;
+  --tw-ring-offset-width: 0px !important;
+  --tw-ring-offset-color: transparent !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-offset-shadow: 0 0 transparent !important;
+  --tw-ring-shadow: 0 0 transparent !important;
+}
+
+// ============================================================================
 // TIPTAP TASK LISTS - GLOBAL FIX
 // ============================================================================
 
@@ -231,7 +279,7 @@ body {
 }
 
 // ============================================================================
-// DRAG & DROP - Node Selection & Movement
+// DRAG & DROP - Node Selection & Movement (GlobalDragHandle Extension)
 // ============================================================================
 
 // Gap cursor (cursor between blocks)
@@ -264,55 +312,78 @@ body {
   height: 0;
 }
 
-// Node selection (when clicking on a block) - DISABLED
-.ProseMirror-selectednode {
-  outline: none !important;
-  background-color: transparent;
-}
-
-// Drag handle appearance on hover
-.ProseMirror {
-  position: relative;
-}
-
-// Make blocks draggable - add visual cue on hover
-.ProseMirror > * {
-  position: relative;
-}
-
-.ProseMirror > *::before {
-  content: "⋮⋮";
+// Global Drag Handle Extension Styles
+.drag-handle {
   position: absolute;
-  left: -2rem;
-  top: 0.25rem;
-  width: 1.5rem;
-  height: 1.5rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  cursor: grab;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #9ca3af;
-  font-size: 1rem;
-  line-height: 1;
-  opacity: 0;
-  cursor: grab;
+  width: 1.5rem;
+  height: 1.5rem;
+  left: -2rem;
+  top: 0;
   user-select: none;
-  transition: opacity 0.15s ease;
+
+  &::before {
+    content: "⋮⋮";
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  &:hover {
+    opacity: 1 !important;
+    color: #6b7280;
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
 }
 
-.ProseMirror > *:hover::before {
+.drag-handle.show {
   opacity: 1;
 }
 
-.ProseMirror > *:active::before {
-  cursor: grabbing;
+// Visual feedback when a block is being dragged
+.ProseMirror .ProseMirror-hideselection *::selection {
+  background: transparent;
 }
 
-// Dark mode drag & drop
-:host-context(.dark) .ProseMirror > *::before {
+.ProseMirror .ProseMirror-hideselection *::-moz-selection {
+  background: transparent;
+}
+
+// Hide bubble menu during drag operation
+.ProseMirror-hideselection ~ * .bubble-menu-wrapper,
+body.dragging .bubble-menu-wrapper {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+// Style for selected node (shows when you click on a block to select it for dragging)
+.ProseMirror-selectednode {
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+  background-color: rgba(59, 130, 246, 0.05);
+  transition: all 0.15s ease;
+}
+
+// Dark mode
+:host-context(.dark) .drag-handle {
   color: #6b7280;
+
+  &:hover {
+    color: #9ca3af;
+  }
 }
 
 :host-context(.dark) .ProseMirror-selectednode {
-  outline: none !important;
-  background-color: transparent;
+  outline-color: #60a5fa !important;
+  background-color: rgba(96, 165, 250, 0.1);
 }

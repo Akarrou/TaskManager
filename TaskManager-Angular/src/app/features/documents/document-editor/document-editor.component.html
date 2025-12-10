@@ -47,7 +47,7 @@
 
   <!-- Bubble Menu (text selection) -->
   <app-bubble-menu
-    *ngIf="showBubbleMenu()"
+    *ngIf="showBubbleMenu() && !isDragging() && !bubbleMenuDisabled()"
     [editor]="editor"
     [style.top.px]="bubbleMenuPosition().top"
     [style.left.px]="bubbleMenuPosition().left"
