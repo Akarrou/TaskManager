@@ -1,0 +1,69 @@
+<div class="bubble-menu">
+  <!-- Text Style -->
+  <button
+    (click)="setParagraph()"
+    [class.active]="isParagraph()"
+    class="menu-button"
+    title="Paragraphe">
+    <span class="material-icons-outlined">text_fields</span>
+  </button>
+
+  <button
+    (click)="setHeading(1)"
+    [class.active]="isHeading(1)"
+    class="menu-button"
+    title="Titre 1">
+    <span class="material-icons-outlined">looks_one</span>
+  </button>
+
+  <button
+    (click)="setHeading(2)"
+    [class.active]="isHeading(2)"
+    class="menu-button"
+    title="Titre 2">
+    <span class="material-icons-outlined">looks_two</span>
+  </button>
+
+  <button
+    (click)="setHeading(3)"
+    [class.active]="isHeading(3)"
+    class="menu-button"
+    title="Titre 3">
+    <span class="material-icons-outlined">looks_3</span>
+  </button>
+
+  <div class="separator"></div>
+
+  <!-- Text Formatting -->
+  <button
+    (click)="toggleBold()"
+    [class.active]="isBold()"
+    class="menu-button"
+    title="Gras (Ctrl+B)">
+    <span class="material-icons-outlined">format_bold</span>
+  </button>
+
+  <button
+    (click)="toggleItalic()"
+    [class.active]="isItalic()"
+    class="menu-button"
+    title="Italique (Ctrl+I)">
+    <span class="material-icons-outlined">format_italic</span>
+  </button>
+
+  <button
+    (click)="toggleStrike()"
+    [class.active]="isStrike()"
+    class="menu-button"
+    title="Barré">
+    <span class="material-icons-outlined">strikethrough_s</span>
+  </button>
+
+  <button
+    (click)="toggleCode()"
+    [class.active]="isCode()"
+    class="menu-button"
+    title="Code">
+    <span class="material-icons-outlined">code</span>
+  </button>
+</div>

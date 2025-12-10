@@ -27,15 +27,11 @@
   <!-- Editor Content -->
   <div
     class="editor-wrapper"
-    (click)="focusEditor($event)"
-    (keydown)="focusEditor($event)"
-    role="textbox"
-    tabindex="0">
-    <div
-      tiptap
+    (click)="focusEditor($event)">
+    <tiptap-editor
       [editor]="editor"
       class="editor-content">
-    </div>
+    </tiptap-editor>
   </div>
 
   <!-- Slash Menu -->
@@ -48,6 +44,15 @@
     [style.left.px]="slashMenuPosition().left"
     class="slash-menu">
   </app-slash-menu>
+
+  <!-- Bubble Menu (text selection) -->
+  <app-bubble-menu
+    *ngIf="showBubbleMenu()"
+    [editor]="editor"
+    [style.top.px]="bubbleMenuPosition().top"
+    [style.left.px]="bubbleMenuPosition().left"
+    class="bubble-menu-wrapper">
+  </app-bubble-menu>
 
   <!-- Navigation FAB -->
   <app-navigation-fab

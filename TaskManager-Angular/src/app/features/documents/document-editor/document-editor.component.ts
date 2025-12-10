@@ -14,9 +14,12 @@ import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
+import { Gapcursor } from '@tiptap/extension-gapcursor';
+import { Dropcursor } from '@tiptap/extension-dropcursor';
 import { TiptapEditorDirective } from 'ngx-tiptap';
 import { all, createLowlight } from 'lowlight';
 import { SlashMenuComponent, SlashCommand } from '../slash-menu/slash-menu.component';
+import { BubbleMenuComponent } from '../bubble-menu/bubble-menu.component';
 import { DocumentService, Document } from '../services/document.service';
 import { NavigationFabComponent, NavigationContext } from '../../../shared/components/navigation-fab/navigation-fab.component';
 import { NavigationFabService } from '../../../shared/components/navigation-fab/navigation-fab.service';
@@ -28,7 +31,7 @@ const lowlight = createLowlight(all);
 @Component({
   selector: 'app-document-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, TiptapEditorDirective, SlashMenuComponent, NavigationFabComponent],
+  imports: [CommonModule, FormsModule, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, NavigationFabComponent],
   templateUrl: './document-editor.component.html',
   styleUrl: './document-editor.component.scss',
   encapsulation: ViewEncapsulation.None
@@ -43,6 +46,10 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   showSlashMenu = signal(false);
   slashMenuPosition = signal({ top: 0, left: 0 });
   slashMenuIndex = signal(0);
+
+  // Bubble menu (text selection)
+  showBubbleMenu = signal(false);
+  bubbleMenuPosition = signal({ top: 0, left: 0 });
 
   // Unified document state (single source of truth)
   documentState = signal<DocumentState>({
@@ -100,7 +107,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     { id: 'strike', label: 'Barré', icon: 'strikethrough_s', action: () => this.editor.chain().focus().toggleStrike().run() },
 
     // Éléments structurels
-    { id: 'table', label: 'Tableau', icon: 'table_chart', action: () => this.editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
+    { id: 'table', label: 'Tableau', icon: 'table_chart', action: () => this.addTable() },
     { id: 'image', label: 'Image', icon: 'image', action: () => this.addImage() },
 
     // Utilitaires
@@ -109,13 +116,22 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   ];
 
   constructor() {
+    // Initialize editor WITHOUT content or element (ngx-tiptap handles DOM)
     this.editor = new Editor({
-      // No element here - ngx-tiptap directive handles DOM binding
       extensions: [
-        StarterKit,
+        StarterKit.configure({
+          codeBlock: false, // Disable CodeBlock from StarterKit (using CodeBlockLowlight instead)
+          dropcursor: false, // Disable default dropcursor (using custom one)
+          gapcursor: false, // Disable default gapcursor (using custom one)
+        }),
         Placeholder.configure({
           placeholder: 'Tapez \'/\' pour afficher les commandes...',
           emptyEditorClass: 'is-editor-empty',
+        }),
+        Gapcursor,
+        Dropcursor.configure({
+          color: '#3b82f6',
+          width: 3,
         }),
         Image,
         TaskList,
@@ -140,6 +156,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       },
       onUpdate: ({ editor }) => {
         this.handleContentChange(editor.getJSON());
+      },
+      onSelectionUpdate: ({ editor }) => {
+        this.updateBubbleMenu(editor);
       }
     });
 
@@ -308,11 +327,54 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.showSlashMenu.set(false);
   }
 
+  addTable() {
+    const rows = window.prompt('Nombre de lignes:', '3');
+    if (!rows) return;
+
+    const cols = window.prompt('Nombre de colonnes:', '3');
+    if (!cols) return;
+
+    const rowsNum = parseInt(rows, 10);
+    const colsNum = parseInt(cols, 10);
+
+    if (isNaN(rowsNum) || isNaN(colsNum) || rowsNum < 1 || colsNum < 1) {
+      alert('Veuillez entrer des nombres valides (minimum 1)');
+      return;
+    }
+
+    this.editor.chain().focus().insertTable({
+      rows: rowsNum,
+      cols: colsNum,
+      withHeaderRow: true
+    }).run();
+  }
+
   addImage() {
     const url = window.prompt('URL');
     if (url) {
       this.editor.chain().focus().setImage({ src: url }).run();
     }
+  }
+
+  updateBubbleMenu(editor: Editor) {
+    const { from, to } = editor.state.selection;
+    const hasSelection = from !== to;
+
+    if (!hasSelection) {
+      this.showBubbleMenu.set(false);
+      return;
+    }
+
+    // Get coordinates of the selection
+    const coords = editor.view.coordsAtPos(from);
+
+    // Position bubble menu above selection
+    this.bubbleMenuPosition.set({
+      top: coords.top - 50, // 50px above selection
+      left: coords.left
+    });
+
+    this.showBubbleMenu.set(true);
   }
 
   focusEditor(event?: Event) {
