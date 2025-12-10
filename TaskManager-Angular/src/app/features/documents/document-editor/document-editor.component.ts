@@ -102,8 +102,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     // Formatage avancé
     { id: 'quote', label: 'Citation', icon: 'format_quote', action: () => this.editor.chain().focus().toggleBlockquote().run() },
     { id: 'divider', label: 'Séparateur', icon: 'horizontal_rule', action: () => this.editor.chain().focus().setHorizontalRule().run() },
-    { id: 'codeBlock', label: 'Bloc de code', icon: 'code', action: () => this.editor.chain().focus().toggleCodeBlock().run() },
-    { id: 'code', label: 'Code inline', icon: 'code_blocks', action: () => this.editor.chain().focus().toggleCode().run() },
+    { id: 'codeBlock', label: 'Bloc de code', icon: 'integration_instructions', action: () => this.editor.chain().focus().toggleCodeBlock().run() },
+    { id: 'code', label: 'Code inline', icon: 'code', action: () => this.editor.chain().focus().toggleCode().run() },
 
     // Formatage texte
     { id: 'bold', label: 'Gras', icon: 'format_bold', action: () => this.editor.chain().focus().toggleBold().run() },

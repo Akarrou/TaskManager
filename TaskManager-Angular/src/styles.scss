@@ -190,11 +190,22 @@ tiptap-editor,
 
 // Blockquotes
 .ProseMirror blockquote {
-  border-left: 3px solid #e5e7eb;
-  padding-left: 1rem;
-  margin: 1rem 0;
-  color: #6b7280;
+  border-left: 4px solid #3b82f6;
+  padding-left: 1.25rem;
+  padding-right: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  margin: 1.5rem 0;
+  background-color: rgba(59, 130, 246, 0.08);
+  border-radius: 0.25rem;
+  color: #374151;
   font-style: italic;
+}
+
+:host-context(.dark) .ProseMirror blockquote {
+  border-left-color: #60a5fa;
+  background-color: rgba(96, 165, 250, 0.15);
+  color: #e5e7eb;
 }
 
 // Horizontal rule
@@ -276,6 +287,67 @@ tiptap-editor,
 
 .ProseMirror li {
   margin: 0.25rem 0;
+}
+
+// ============================================================================
+// TIPTAP - COLUMNS LAYOUT
+// ============================================================================
+
+// Columns container
+.ProseMirror .tiptap-columns {
+  display: grid;
+  gap: 1.5rem;
+  margin: 1rem 0;
+  width: 100%;
+}
+
+// Automatically create equal-width columns based on number of children
+.ProseMirror .tiptap-columns:has(.tiptap-column:nth-child(2):last-child) {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.ProseMirror .tiptap-columns:has(.tiptap-column:nth-child(3):last-child) {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.ProseMirror .tiptap-columns:has(.tiptap-column:nth-child(4):last-child) {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+// Individual column
+.ProseMirror .tiptap-column {
+  min-height: 50px;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background-color: #fafafa;
+}
+
+// Column content spacing
+.ProseMirror .tiptap-column > * {
+  margin: 0.5rem 0;
+}
+
+.ProseMirror .tiptap-column > *:first-child {
+  margin-top: 0;
+}
+
+.ProseMirror .tiptap-column > *:last-child {
+  margin-bottom: 0;
+}
+
+// Dark mode
+:host-context(.dark) .ProseMirror .tiptap-column {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+// Responsive: stack columns on mobile
+@media (max-width: 768px) {
+  .ProseMirror .tiptap-columns {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+  }
 }
 
 // ============================================================================
