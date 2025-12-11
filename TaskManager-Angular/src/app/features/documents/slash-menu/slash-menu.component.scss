@@ -192,6 +192,17 @@
   }
 }
 
+.empty-state {
+  padding: 1rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.875rem;
+
+  @media (prefers-color-scheme: dark) {
+    color: #9ca3af;
+  }
+}
+
 @keyframes popIn {
   from {
     opacity: 0;

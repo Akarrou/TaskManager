@@ -73,10 +73,22 @@ export class CsvImportDialogComponent {
   importResult = signal<CsvImportResult | null>(null);
 
   // Computed
-  fileName = computed(() => this.selectedFile()?.name || '');
+  fileName = computed(() => {
+    const file = this.selectedFile();
+    return file?.name || '';
+  });
   fileSize = computed(() => {
-    const size = this.selectedFile()?.size || 0;
-    return (size / 1024 / 1024).toFixed(2); // MB
+    const file = this.selectedFile();
+    const size = file?.size || 0;
+
+    // Afficher en KB si < 1 MB, sinon en MB
+    if (size < 1024 * 1024) {
+      const sizeInKB = (size / 1024).toFixed(2);
+      return `${sizeInKB} KB`;
+    } else {
+      const sizeInMB = (size / 1024 / 1024).toFixed(2);
+      return `${sizeInMB} MB`;
+    }
   });
   columnDisplayNames = computed(() =>
     this.detectedColumns().map((_, i) => 'col' + i)

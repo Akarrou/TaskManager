@@ -22,7 +22,7 @@
             @if (selectedFile()) {
               <mat-icon class="upload-icon text-green-500">check_circle</mat-icon>
               <p class="text-lg font-medium">{{ fileName() }}</p>
-              <p class="text-sm text-gray-500">{{ fileSize() }} MB</p>
+              <p class="text-sm text-gray-500">{{ fileSize() }}</p>
             } @else {
               <mat-icon class="upload-icon">cloud_upload</mat-icon>
               <p class="text-lg font-medium">
@@ -56,15 +56,19 @@
             </ul>
           </div>
 
-          <div class="mt-6 flex justify-end">
-            <button mat-button mat-dialog-close>Annuler</button>
+          <div class="step-actions">
+            <button mat-button mat-dialog-close class="dialog-btn-secondary">
+              <mat-icon>close</mat-icon>
+              Annuler
+            </button>
             <button
               mat-raised-button
-              color="primary"
               matStepperNext
               (click)="parseAndDetectTypes()"
               [disabled]="!selectedFile()"
+              class="dialog-btn-primary"
             >
+              <mat-icon>arrow_forward</mat-icon>
               Suivant
             </button>
           </div>
@@ -108,9 +112,13 @@
             }
           </div>
 
-          <div class="mt-6 flex justify-between">
-            <button mat-button matStepperPrevious>Précédent</button>
-            <button mat-raised-button color="primary" matStepperNext>
+          <div class="step-actions">
+            <button mat-button matStepperPrevious class="dialog-btn-secondary">
+              <mat-icon>arrow_back</mat-icon>
+              Précédent
+            </button>
+            <button mat-raised-button matStepperNext class="dialog-btn-primary">
+              <mat-icon>arrow_forward</mat-icon>
               Suivant
             </button>
           </div>
@@ -190,14 +198,18 @@
           </div>
           }
 
-          <div class="mt-6 flex justify-between">
-            <button mat-button matStepperPrevious>Précédent</button>
+          <div class="step-actions">
+            <button mat-button matStepperPrevious class="dialog-btn-secondary">
+              <mat-icon>arrow_back</mat-icon>
+              Précédent
+            </button>
             <button
               mat-raised-button
-              color="primary"
               matStepperNext
               (click)="startImport()"
+              class="dialog-btn-primary"
             >
+              <mat-icon>play_arrow</mat-icon>
               Lancer l'import
             </button>
           </div>

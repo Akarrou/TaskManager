@@ -1,6 +1,10 @@
 <div class="slash-menu-container" #menuContainer>
   <div class="slash-menu-header">
-    Commandes disponibles
+    @if (filterTextSignal()) {
+      Résultats pour "{{ filterTextSignal() }}"
+    } @else {
+      Commandes disponibles
+    }
   </div>
 
   @for (section of sections(); track section.title) {
@@ -21,6 +25,12 @@
           </button>
         }
       </div>
+    </div>
+  }
+
+  @if (sections().length === 0) {
+    <div class="empty-state">
+      Aucune commande trouvée
     </div>
   }
 </div>

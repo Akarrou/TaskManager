@@ -69,6 +69,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   showSlashMenu = signal(false);
   slashMenuPosition = signal({ top: 0, left: 0 });
   slashMenuIndex = signal(0);
+  slashFilterText = signal<string>('');
 
   // Bubble menu (text selection)
   showBubbleMenu = signal(false);
@@ -505,26 +506,51 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
   handleKeyDown(view: EditorView, event: KeyboardEvent): boolean {
     if (this.showSlashMenu()) {
+      // Arrow Up
       if (event.key === 'ArrowUp') {
         this.slashMenuIndex.update((i: number) => Math.max(0, i - 1));
         return true;
       }
+
+      // Arrow Down - utiliser le nombre d'items filtrés
       if (event.key === 'ArrowDown') {
-        this.slashMenuIndex.update((i: number) => Math.min(this.menuItems.length - 1, i + 1));
+        const filteredCount = this.getFilteredItemsCount();
+        this.slashMenuIndex.update((i: number) => Math.min(filteredCount - 1, i + 1));
         return true;
       }
+
+      // Enter - exécuter sur les items filtrés
       if (event.key === 'Enter') {
-        this.executeCommand(this.menuItems[this.slashMenuIndex()]);
+        const filteredItems = this.getFilteredItems();
+        this.executeCommand(filteredItems[this.slashMenuIndex()]);
         return true;
       }
+
+      // Escape - fermer et réinitialiser le filtre
       if (event.key === 'Escape') {
         this.showSlashMenu.set(false);
+        this.slashFilterText.set('');
         return true;
       }
+
+      // Backspace - mettre à jour le filtre après que l'éditeur ait traité la touche
+      if (event.key === 'Backspace') {
+        setTimeout(() => this.updateFilterFromEditor(), 10);
+        return false; // Laisser l'éditeur gérer le backspace
+      }
+
+      // Caractère normal - mettre à jour le filtre
+      if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        setTimeout(() => this.updateFilterFromEditor(), 10);
+        return false; // Laisser l'éditeur gérer la saisie
+      }
     }
+
+    // Détecter le / pour ouvrir le menu
     if (event.key === '/') {
       setTimeout(() => this.checkForSlashCommand(), 50);
     }
+
     return false;
   }
 
@@ -562,6 +588,47 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     });
     this.showSlashMenu.set(true);
     this.slashMenuIndex.set(0);
+    this.slashFilterText.set(''); // Réinitialiser le filtre à l'ouverture
+  }
+
+  private updateFilterFromEditor() {
+    const { from } = this.editor.state.selection;
+    const textBefore = this.editor.state.doc.textBetween(
+      Math.max(0, from - 50),
+      from,
+      ' '
+    );
+
+    // Trouver le dernier '/'
+    const slashIndex = textBefore.lastIndexOf('/');
+
+    if (slashIndex !== -1) {
+      // Extraire tout après le slash
+      const filterText = textBefore.substring(slashIndex + 1).trim();
+      this.slashFilterText.set(filterText);
+
+      // Réinitialiser l'index de sélection quand le filtre change
+      this.slashMenuIndex.set(0);
+    } else {
+      // Le slash a été supprimé, fermer le menu
+      this.showSlashMenu.set(false);
+      this.slashFilterText.set('');
+    }
+  }
+
+  private getFilteredItems(): SlashCommand[] {
+    const filter = this.slashFilterText().toLowerCase();
+    if (!filter) {
+      return this.menuItems;
+    }
+
+    return this.menuItems.filter(item =>
+      item.label.toLowerCase().includes(filter)
+    );
+  }
+
+  private getFilteredItemsCount(): number {
+    return this.getFilteredItems().length;
   }
 
   executeCommand(item: SlashCommand) {

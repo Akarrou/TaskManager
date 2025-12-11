@@ -5,6 +5,15 @@
   min-height: 300px;
 }
 
+// Step actions (buttons)
+.step-actions {
+  @apply mt-6 flex justify-between items-center;
+
+  button {
+    min-width: 120px;
+  }
+}
+
 // Step 1: Upload
 .upload-zone {
   @apply border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer transition-colors;
@@ -59,9 +68,30 @@
         @apply flex flex-col gap-2 py-2;
 
         .type-select {
-          mat-form-field {
+          ::ng-deep mat-form-field {
             @apply text-sm;
-            margin-bottom: -1.25em;
+            width: 100%;
+
+            .mat-mdc-text-field-wrapper {
+              padding-bottom: 0;
+            }
+
+            .mat-mdc-form-field-subscript-wrapper {
+              display: none;
+            }
+
+            .mat-mdc-form-field-flex {
+              align-items: center;
+            }
+
+            .mat-mdc-text-field-wrapper.mdc-text-field--outlined .mat-mdc-form-field-infix {
+              padding-top: 8px;
+              padding-bottom: 8px;
+            }
+
+            .mat-mdc-select {
+              font-size: 0.875rem;
+            }
           }
         }
       }

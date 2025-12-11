@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, signal, computed } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal, computed, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface SlashCommand {
@@ -20,55 +20,78 @@ export interface SlashCommandSection {
   templateUrl: './slash-menu.component.html',
   styleUrl: './slash-menu.component.scss'
 })
-export class SlashMenuComponent {
+export class SlashMenuComponent implements OnChanges {
   @Input() items: SlashCommand[] = [];
   @Input() selectedIndex = 0;
+  @Input() filterText = '';
   @Output() commandSelected = new EventEmitter<SlashCommand>();
+
+  filterTextSignal = signal<string>('');
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['filterText']) {
+      this.filterTextSignal.set(this.filterText);
+    }
+  }
+
+  // Filtered items based on filter text
+  private filteredItems = computed<SlashCommand[]>(() => {
+    const allItems = this.items;
+    const filter = this.filterTextSignal().toLowerCase().trim();
+
+    if (!filter) {
+      return allItems;
+    }
+
+    return allItems.filter(item =>
+      item.label.toLowerCase().includes(filter)
+    );
+  });
 
   // Organize commands into sections
   sections = computed<SlashCommandSection[]>(() => {
-    const allItems = this.items;
+    const items = this.filteredItems();
 
     return [
       {
         title: 'Texte',
-        commands: allItems.filter(item =>
+        commands: items.filter(item =>
           ['text', 'h1', 'h2', 'h3'].includes(item.id)
         )
       },
       {
         title: 'Listes',
-        commands: allItems.filter(item =>
+        commands: items.filter(item =>
           ['bulletList', 'orderedList', 'taskList'].includes(item.id)
         )
       },
       {
         title: 'Format',
-        commands: allItems.filter(item =>
+        commands: items.filter(item =>
           ['bold', 'italic', 'strike', 'code', 'quote'].includes(item.id)
         )
       },
       {
         title: 'Médias',
-        commands: allItems.filter(item =>
+        commands: items.filter(item =>
           ['image', 'table', 'codeBlock', 'database'].includes(item.id)
         )
       },
       {
         title: 'Structure',
-        commands: allItems.filter(item =>
+        commands: items.filter(item =>
           ['columns2', 'columns3', 'divider', 'newDocument'].includes(item.id)
         )
       },
       {
         title: 'Tâches',
-        commands: allItems.filter(item =>
+        commands: items.filter(item =>
           ['taskSection', 'linkTask', 'createTask'].includes(item.id)
         )
       },
       {
         title: 'Utilitaires',
-        commands: allItems.filter(item =>
+        commands: items.filter(item =>
           ['break', 'clear'].includes(item.id)
         )
       }
@@ -76,13 +99,14 @@ export class SlashMenuComponent {
   });
 
   selectItem(index: number) {
-    if (index >= 0 && index < this.items.length) {
-      this.commandSelected.emit(this.items[index]);
+    const items = this.filteredItems();
+    if (index >= 0 && index < items.length) {
+      this.commandSelected.emit(items[index]);
     }
   }
 
   // Get global index for a command within a section
   getGlobalIndex(command: SlashCommand): number {
-    return this.items.findIndex(item => item.id === command.id);
+    return this.filteredItems().findIndex(item => item.id === command.id);
   }
 }

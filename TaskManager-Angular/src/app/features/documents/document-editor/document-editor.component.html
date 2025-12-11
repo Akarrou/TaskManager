@@ -64,6 +64,7 @@
     *ngIf="showSlashMenu()"
     [items]="menuItems"
     [selectedIndex]="slashMenuIndex()"
+    [filterText]="slashFilterText()"
     (commandSelected)="executeCommand($event)"
     [style.top.px]="slashMenuPosition().top"
     [style.left.px]="slashMenuPosition().left"
