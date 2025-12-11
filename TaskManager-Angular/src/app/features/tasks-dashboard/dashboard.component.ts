@@ -22,7 +22,7 @@ import { NavigationFabComponent } from '../../shared/components/navigation-fab/n
 import { NavigationFabService } from '../../shared/components/navigation-fab/navigation-fab.service';
 
 @Component({
-  selector: 'app-dashboard',
+  selector: 'app-tasks-dashboard',
   standalone: true,
   imports: [
     CommonModule,
@@ -41,7 +41,7 @@ import { NavigationFabService } from '../../shared/components/navigation-fab/nav
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
-export class DashboardComponent implements OnInit {
+export class TasksDashboardComponent implements OnInit {
   private supabaseService = inject(SupabaseService);
   private taskService = inject(TaskService);
   private router = inject(Router);

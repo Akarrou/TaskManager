@@ -1,0 +1,290 @@
+@use "sass:color";
+@use "../../styles/variables" as v;
+@use "../../styles/mixins" as m;
+
+// ==========================================================================
+// Main Dashboard Layout (copié depuis tasks-dashboard)
+// ==========================================================================
+.c-dashboard {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-family: v.$font-family-sans;
+  background: linear-gradient(135deg, v.$background-color-page 0%, #eef2ff 100%);
+  color: v.$text-color-dark;
+
+  &__main {
+    flex: 1;
+    padding: v.$space-8 v.$space-6;
+
+    @media (min-width: v.$breakpoint-lg) {
+      padding-left: v.$space-10;
+      padding-right: v.$space-10;
+    }
+  }
+
+  &__footer {
+    // Footer styles
+  }
+}
+
+// ==========================================================================
+// Main Content
+// ==========================================================================
+.c-main-content {
+  max-width: v.$breakpoint-xl;
+  margin: 0 auto;
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: v.$space-4;
+    margin-bottom: v.$space-8;
+
+    @media (min-width: v.$breakpoint-md) {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+
+  &__title {
+    font-size: v.$font-size-3xl;
+    font-weight: v.$font-weight-black;
+    letter-spacing: -0.025em;
+  }
+
+  &__subtitle {
+    margin-top: v.$space-1;
+    font-size: v.$font-size-sm;
+    color: v.$text-color-light;
+  }
+}
+
+// ==========================================================================
+// Stats Grid
+// ==========================================================================
+.c-stats-grid {
+  display: grid;
+  gap: v.$space-6;
+  margin-bottom: v.$space-8;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.c-stat-card {
+  position: relative;
+  padding: v.$space-6;
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: v.$border-radius-xl;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, v.$primary-color-light, v.$primary-color);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    background-color: #ffffff;
+
+    &::before {
+      opacity: 1;
+    }
+  }
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  &__title {
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-medium;
+    color: v.$text-color-light;
+  }
+
+  &__icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: v.$space-10;
+    height: v.$space-10;
+    border-radius: v.$border-radius-md;
+
+    .material-icons-outlined {
+      font-size: v.$font-size-2xl;
+    }
+
+    &--total {
+      background-color: color.adjust(v.$primary-color, $alpha: -0.8);
+      color: v.$primary-color;
+    }
+    &--in-progress {
+      background-color: color.adjust(#0ea5e9, $alpha: -0.8);
+      color: #0ea5e9;
+    }
+    &--completed {
+      background-color: color.adjust(v.$success-color, $alpha: -0.8);
+      color: v.$success-color;
+    }
+    &--todo {
+      background-color: color.adjust(v.$warning-color, $alpha: -0.8);
+      color: v.$warning-color;
+    }
+    &--documents {
+      background-color: color.adjust(#10b981, $alpha: -0.8);
+      color: #10b981;
+    }
+    &--recent {
+      background-color: color.adjust(#8b5cf6, $alpha: -0.8);
+      color: #8b5cf6;
+    }
+  }
+
+  &__value {
+    margin-top: v.$space-2;
+    font-size: v.$font-size-3xl;
+    font-weight: v.$font-weight-bold;
+  }
+}
+
+// ==========================================================================
+// Buttons
+// ==========================================================================
+.c-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: v.$space-2;
+  height: 40px;
+  padding: 0 v.$space-4;
+  font-size: v.$font-size-sm;
+  font-weight: v.$font-weight-medium;
+  border-radius: v.$border-radius-md;
+  border: v.$border-width-1 solid transparent;
+  cursor: pointer;
+  transition: all v.$transition-duration v.$transition-timing-function;
+
+  .material-icons-outlined {
+    font-size: v.$font-size-xl;
+  }
+
+  &--primary {
+    background-color: v.$primary-color;
+    color: v.$text-color-inverted;
+    box-shadow: v.$shadow-sm;
+
+    &:hover {
+      background-color: v.$primary-color-dark;
+      transform: translateY(-1px);
+    }
+  }
+
+  &--secondary {
+    background-color: v.$background-color-form;
+    color: v.$text-color-dark;
+    border-color: v.$border-color-medium;
+    box-shadow: v.$shadow-sm;
+
+    &:hover {
+      background-color: v.$background-color-page;
+    }
+  }
+}
+
+// ==========================================================================
+// Footer
+// ==========================================================================
+.c-footer {
+  &__content {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: v.$border-radius-lg;
+    text-align: center;
+  }
+
+  &__nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: v.$border-radius-lg v.$border-radius-lg;
+    margin-bottom: v.$border-radius-lg;
+  }
+
+  &__nav-link {
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-medium;
+    color: v.$text-color-light;
+    text-decoration: none;
+    transition: color v.$transition-duration v.$transition-timing-function;
+
+    &:hover {
+      color: v.$primary-color;
+    }
+  }
+
+  &__social {
+    display: flex;
+    justify-content: center;
+    gap: v.$border-radius-lg;
+    margin-bottom: v.$border-radius-lg;
+  }
+
+  &__social-link {
+    color: v.$text-color-disabled;
+    transition: color v.$transition-duration v.$transition-timing-function;
+
+    svg {
+      width: v.$border-radius-lg;
+      height: v.$border-radius-lg;
+    }
+
+    &:hover {
+      color: v.$primary-color;
+    }
+  }
+
+  &__copyright {
+    font-size: v.$font-size-sm;
+    color: v.$text-color-light;
+  }
+}
+
+// ==========================================================================
+// Additional styles for General Dashboard
+// ==========================================================================
+
+// Sections
+.quick-actions-section,
+.navigation-section {
+  margin-bottom: v.$space-8;
+}
+
+.section-title {
+  font-size: v.$font-size-xl;
+  font-weight: v.$font-weight-bold;
+  margin-bottom: v.$space-4;
+  color: v.$text-color-dark;
+}
+
+.quick-actions-grid,
+.navigation-grid {
+  display: grid;
+  gap: v.$space-4;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}

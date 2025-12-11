@@ -17,8 +17,18 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     canActivate: [authGuard],
-    loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
-    title: 'Dashboard - Kōdo'
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./features/general-dashboard/general-dashboard.component').then(m => m.GeneralDashboardComponent),
+        title: 'Tableau de bord - Kōdo'
+      },
+      {
+        path: 'tasks',
+        loadComponent: () => import('./features/tasks-dashboard/dashboard.component').then(m => m.TasksDashboardComponent),
+        title: 'Dashboard Tâches - Kōdo'
+      }
+    ]
   },
   {
     path: 'tasks/new',

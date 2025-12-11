@@ -330,4 +330,34 @@ export class DocumentService {
       catchError(() => of(false))
     );
   }
+
+  /**
+   * Get documents statistics for dashboard
+   */
+  getDocumentsStats(): Observable<{ total: number; recentCount: number; lastModified: Date | null }> {
+    return this.getDocuments().pipe(
+      map(documents => {
+        const total = documents.length;
+
+        // Calculate recent count (modified in last 7 days)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const recentCount = documents.filter(doc => {
+          if (!doc.updated_at) return false;
+          const updatedDate = new Date(doc.updated_at);
+          return updatedDate >= sevenDaysAgo;
+        }).length;
+
+        // Get last modified date
+        let lastModified: Date | null = null;
+        if (documents.length > 0 && documents[0].updated_at) {
+          lastModified = new Date(documents[0].updated_at);
+        }
+
+        return { total, recentCount, lastModified };
+      }),
+      catchError(() => of({ total: 0, recentCount: 0, lastModified: null }))
+    );
+  }
 }

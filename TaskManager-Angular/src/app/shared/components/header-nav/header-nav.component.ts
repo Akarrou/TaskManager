@@ -23,6 +23,21 @@ import { ProjectSelectorComponent } from '../../../features/projects/components/
         <!-- Navigation principale -->
         <nav class="nav-menu" role="navigation" aria-label="Navigation principale">
           <ul class="nav-list">
+            <li class="nav-item">
+              <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">
+                Dashboard
+              </a>
+            </li>
+            <li class="nav-item">
+              <a routerLink="/dashboard/tasks" routerLinkActive="active" class="nav-link">
+                Tâches
+              </a>
+            </li>
+            <li class="nav-item">
+              <a routerLink="/documents" routerLinkActive="active" class="nav-link">
+                Documents
+              </a>
+            </li>
           </ul>
         </nav>
 
