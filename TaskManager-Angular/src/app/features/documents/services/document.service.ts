@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../../../core/services/supabase';
 import { from, Observable, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, switchMap } from 'rxjs/operators';
 import { JSONContent } from '@tiptap/core';
 import { DocumentTaskRelation, TaskMentionData, TaskSearchResult } from '../models/document-task-relation.model';
 import { Task } from '../../../core/services/task';
@@ -11,6 +11,7 @@ export interface Document {
   title: string;
   content: JSONContent; // TipTap's JSON content (ProseMirror schema)
   parent_id?: string | null; // Parent document for hierarchical navigation
+  project_id?: string | null; // Project this document belongs to
   created_at?: string;
   updated_at?: string;
   user_id?: string;
@@ -69,6 +70,11 @@ export class DocumentService {
     // Include parent_id if provided (for hierarchical navigation)
     if (doc.parent_id !== undefined) {
       newDoc['parent_id'] = doc.parent_id;
+    }
+
+    // Include project_id if provided
+    if (doc.project_id !== undefined) {
+      newDoc['project_id'] = doc.project_id;
     }
 
     return from(
@@ -358,6 +364,43 @@ export class DocumentService {
         return { total, recentCount, lastModified };
       }),
       catchError(() => of({ total: 0, recentCount: 0, lastModified: null }))
+    );
+  }
+
+  /**
+   * Get documents for a specific project
+   */
+  getDocumentsByProject(projectId: string): Observable<Document[]> {
+    return from(
+      this.client
+        .from('documents')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('updated_at', { ascending: false })
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return response.data as Document[];
+      })
+    );
+  }
+
+  /**
+   * Search tasks for a document, filtered by the document's project
+   */
+  searchTasksForDocument(documentId: string, query: string, limit: number = 10): Observable<TaskSearchResult[]> {
+    // First get the document to find its project_id
+    return this.getDocument(documentId).pipe(
+      switchMap(doc => {
+        const projectId = doc?.project_id || null;
+        if (!projectId) {
+          // If document has no project, return empty array
+          return of([]);
+        }
+        // Then search tasks with that project_id filter
+        return this.searchTasks(query, projectId, limit);
+      }),
+      catchError(() => of([]))
     );
   }
 }

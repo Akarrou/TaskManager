@@ -1,3 +1,43 @@
-select {
-  min-width: 250px;
+@use "sass:color";
+@use "../../../../styles/variables" as v;
+@use "../../../../styles/mixins" as m;
+
+:host {
+  display: block;
+}
+
+.c-form-group {
+  margin-bottom: 0;
+  min-width: 280px;
+}
+
+.c-form-label {
+  display: block;
+  font-size: v.$font-size-sm;
+  font-weight: v.$font-weight-semibold;
+  color: v.$text-color-dark;
+  margin-bottom: v.$space-2;
+}
+
+.c-form-input {
+  width: 100%;
+  padding: v.$space-3 v.$space-4;
+  font-size: v.$font-size-base;
+  color: v.$text-color-dark;
+  background-color: v.$background-color-form;
+  border: 1px solid v.$border-color-medium;
+  border-radius: v.$border-radius-md;
+  transition: all 0.2s ease;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: v.$primary-color;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background-color: white;
+  }
+
+  &:hover {
+    border-color: v.$text-color-light;
+  }
 }

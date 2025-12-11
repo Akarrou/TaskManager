@@ -1,0 +1,92 @@
+<header class="header-nav">
+  <div class="nav-container">
+    <!-- Logo et titre -->
+    <app-logo></app-logo>
+
+    <!-- Sélecteur de projet -->
+    <div class="project-selector-container">
+      <app-project-selector></app-project-selector>
+    </div>
+
+    <!-- Navigation principale -->
+    <nav class="nav-menu" role="navigation" aria-label="Navigation principale">
+      <ul class="nav-list">
+        <li class="nav-item">
+          <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">
+            Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a routerLink="/dashboard/tasks" routerLinkActive="active" class="nav-link">
+            Tâches
+          </a>
+        </li>
+        <li class="nav-item">
+          <a routerLink="/projects" routerLinkActive="active" class="nav-link">
+            Projets
+          </a>
+        </li>
+        <li class="nav-item">
+          <a routerLink="/documents" routerLinkActive="active" class="nav-link">
+            Documents
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Actions utilisateur -->
+    <div class="nav-actions">
+      <button
+        class="profile-btn"
+        aria-label="Menu profil"
+        title="Menu profil"
+        (click)="toggleProfileMenu()">
+        <div class="avatar">JV</div>
+      </button>
+
+      <!-- Menu déroulant profil -->
+      <div class="profile-dropdown" *ngIf="showProfileMenu()">
+        <ng-container *ngIf="currentUser() as user; else notConnected">
+          <div class="dropdown-header">
+            <div class="user-info">
+              <div class="user-name">{{ user.email }}</div>
+              <div class="user-email">Connecté</div>
+            </div>
+          </div>
+          <div class="dropdown-divider"></div>
+          <ul class="dropdown-menu">
+            <li><a routerLink="/profile" class="dropdown-item">Mon profil</a></li>
+            <li><a routerLink="/settings" class="dropdown-item">Paramètres</a></li>
+            <li class="dropdown-divider"></li>
+            <li><button (click)="logout()" class="dropdown-item logout-btn">Déconnexion</button></li>
+          </ul>
+        </ng-container>
+        <ng-template #notConnected>
+          <ul class="dropdown-menu">
+            <li><a routerLink="/login" class="dropdown-item">Connexion</a></li>
+          </ul>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- Bouton menu mobile -->
+    <button
+      class="mobile-menu-btn"
+      aria-label="Menu mobile"
+      (click)="toggleMobileMenu()"
+      [attr.aria-expanded]="showMobileMenu()">
+      <svg class="menu-icon" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Menu mobile -->
+  <div class="mobile-nav" *ngIf="showMobileMenu()">
+    <nav class="mobile-menu" role="navigation" aria-label="Navigation mobile">
+      <ul class="mobile-nav-list">
+        <li><a href="/profile" class="mobile-nav-link" (click)="closeMobileMenu()">Profil</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>

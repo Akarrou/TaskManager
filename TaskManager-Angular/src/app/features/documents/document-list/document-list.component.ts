@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -6,13 +6,20 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
+import { Store } from '@ngrx/store';
+import { forkJoin, of, Observable } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { DocumentService, Document } from '../services/document.service';
 import { DatabaseService } from '../services/database.service';
 import { DeleteDocumentDialogComponent } from '../components/delete-document-dialog/delete-document-dialog.component';
 import { MarkdownImportDialogComponent } from '../components/markdown-import-dialog/markdown-import-dialog.component';
 import { FabStore } from '../../../core/stores/fab.store';
+import { AppState } from '../../../app.state';
+import { selectSelectedProject } from '../../projects/store/project.selectors';
+import { selectAllDocuments, selectDocumentsLoading } from '../store/document.selectors';
+import * as DocumentActions from '../store/document.actions';
+import { Project } from '../../projects/models/project.model';
 
 @Component({
   selector: 'app-document-list',
@@ -33,10 +40,38 @@ export class DocumentListComponent implements OnInit, OnDestroy {
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private fabStore = inject(FabStore);
+  private store = inject(Store<AppState>);
   private pageId = crypto.randomUUID();
 
-  documents = signal<Document[]>([]);
-  loading = signal(true);
+  // Signals from NgRx Store
+  private selectedProjectSignal = toSignal(this.store.select(selectSelectedProject));
+  private allDocumentsSignal = toSignal(this.store.select(selectAllDocuments), { initialValue: [] });
+  private loadingSignal = toSignal(this.store.select(selectDocumentsLoading), { initialValue: true });
+
+  // Computed: filter documents by selected project
+  documents = computed(() => {
+    const project = this.selectedProjectSignal();
+    const allDocs = this.allDocumentsSignal();
+
+    if (!project) {
+      return [];
+    }
+
+    return allDocs.filter(doc => doc.project_id === project.id);
+  });
+
+  loading = this.loadingSignal;
+  currentProject = this.selectedProjectSignal;
+
+  constructor() {
+    // Effect: load documents when selected project changes
+    effect(() => {
+      const project = this.selectedProjectSignal();
+      if (project) {
+        this.store.dispatch(DocumentActions.loadDocumentsByProject({ projectId: project.id }));
+      }
+    });
+  }
 
   ngOnInit() {
     // Enregistrer la configuration FAB avec custom actions
@@ -56,26 +91,10 @@ export class DocumentListComponent implements OnInit, OnDestroy {
       },
       this.pageId
     );
-
-    this.loadDocuments();
   }
 
   ngOnDestroy() {
     this.fabStore.unregisterPage(this.pageId);
-  }
-
-  loadDocuments() {
-    this.loading.set(true);
-    this.documentService.getDocuments().subscribe({
-      next: (docs: Document[]) => {
-        this.documents.set(docs);
-        this.loading.set(false);
-      },
-      error: (err: any) => {
-        console.error('Error loading documents:', err);
-        this.loading.set(false);
-      }
-    });
   }
 
   openDocument(id: string) {
@@ -83,13 +102,33 @@ export class DocumentListComponent implements OnInit, OnDestroy {
   }
 
   createNewDocument() {
-    this.router.navigate(['/documents/new']);
+    const currentProject = this.currentProject();
+    if (!currentProject) {
+      this.snackBar.open('Veuillez sélectionner un projet', 'OK', { duration: 3000 });
+      return;
+    }
+
+    // Create document with project_id
+    this.store.dispatch(DocumentActions.createDocument({
+      document: {
+        title: 'Nouveau document',
+        content: { type: 'doc', content: [] },
+        project_id: currentProject.id
+      }
+    }));
   }
 
   openMarkdownImportDialog(): void {
+    const currentProject = this.currentProject();
+    if (!currentProject) {
+      this.snackBar.open('Veuillez sélectionner un projet', 'OK', { duration: 3000 });
+      return;
+    }
+
     const dialogRef = this.dialog.open(MarkdownImportDialogComponent, {
       width: '600px',
       disableClose: true,
+      data: { projectId: currentProject.id }
     });
 
     dialogRef.afterClosed().subscribe((doc: Document | null) => {
@@ -97,9 +136,8 @@ export class DocumentListComponent implements OnInit, OnDestroy {
         this.snackBar.open('Document Markdown importé avec succès', 'OK', {
           duration: 3000
         });
-        this.loadDocuments();
-        // Optionally navigate to the new document
-        // this.router.navigate(['/documents', doc.id]);
+        // Reload documents for current project
+        this.store.dispatch(DocumentActions.loadDocumentsByProject({ projectId: currentProject.id }));
       }
     });
   }
@@ -148,34 +186,19 @@ export class DocumentListComponent implements OnInit, OnDestroy {
         )
       : of([]);
 
-    // 2. Après suppression des bases, supprimer le document
+    // 2. Après suppression des bases, supprimer le document via store
     deleteDatabases$.subscribe({
       next: (results) => {
-        const successCount = results.filter(r => r === true).length;
+        // Dispatch delete action to NgRx store
+        this.store.dispatch(DocumentActions.deleteDocument({ documentId }));
 
-        // Supprimer le document
-        this.documentService.deleteDocument(documentId).subscribe({
-          next: (success) => {
-            if (success) {
-              this.snackBar.open(
-                `Document supprimé${databaseIds.length > 0 ? ` avec ${databaseIds.length} base(s) de données` : ''}`,
-                'OK',
-                { duration: 5000 }
-              );
-              this.loadDocuments();
-            } else {
-              this.snackBar.open('Erreur lors de la suppression du document', 'OK', {
-                duration: 5000
-              });
-            }
-          },
-          error: (err) => {
-            console.error('[deleteDocument] Erreur suppression document:', err);
-            this.snackBar.open('Erreur lors de la suppression du document', 'OK', {
-              duration: 5000
-            });
-          }
-        });
+        if (databaseIds.length > 0) {
+          this.snackBar.open(
+            `Document supprimé avec ${databaseIds.length} base(s) de données`,
+            'OK',
+            { duration: 5000 }
+          );
+        }
       },
       error: (err) => {
         console.error('[deleteDocument] Erreur suppression bases:', err);
