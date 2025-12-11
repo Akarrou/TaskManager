@@ -64,24 +64,21 @@
             mat-icon-button
             [class.active]="currentView() === 'kanban'"
             (click)="onSwitchView('kanban')"
-            matTooltip="Vue kanban"
-            disabled>
+            matTooltip="Vue kanban">
             <mat-icon>view_kanban</mat-icon>
           </button>
           <button
             mat-icon-button
             [class.active]="currentView() === 'calendar'"
             (click)="onSwitchView('calendar')"
-            matTooltip="Vue calendrier"
-            disabled>
+            matTooltip="Vue calendrier">
             <mat-icon>calendar_month</mat-icon>
           </button>
           <button
             mat-icon-button
             [class.active]="currentView() === 'timeline'"
             (click)="onSwitchView('timeline')"
-            matTooltip="Vue timeline"
-            disabled>
+            matTooltip="Vue timeline">
             <mat-icon>timeline</mat-icon>
           </button>
         </div>
@@ -156,20 +153,34 @@
                         </button>
                       </th>
                       @for (column of databaseConfig().columns; track column.id) {
-                        <th class="column-header">
-                          <div class="column-header-content">
+                        @if (column.visible !== false) {
+                          <th class="column-header" (click)="onColumnHeaderClick(column.id)" (keydown.enter)="onColumnHeaderClick(column.id)" (keydown.space)="onColumnHeaderClick(column.id)" tabindex="0">
+                            <div class="column-header-content">
                             <span class="column-name">{{ column.name }}</span>
+
+                            <!-- Indicateur de tri -->
+                            @if (activeSort()?.columnId === column.id) {
+                              <mat-icon class="sort-indicator">
+                                {{ activeSort()?.order === 'asc' ? 'arrow_upward' : 'arrow_downward' }}
+                              </mat-icon>
+                            }
+
                             <span class="column-type">{{ column.type }}</span>
                             <button
                               mat-icon-button
                               class="column-menu-button"
-                              [matMenuTriggerFor]="columnMenu">
+                              [matMenuTriggerFor]="columnMenu"
+                              (click)="$event.stopPropagation()">
                               <mat-icon>more_vert</mat-icon>
                             </button>
                             <mat-menu #columnMenu="matMenu">
                               <button mat-menu-item (click)="onEditColumn(column.id)">
                                 <mat-icon>edit</mat-icon>
                                 <span>Modifier</span>
+                              </button>
+                              <button mat-menu-item (click)="onToggleColumnVisibility(column.id)">
+                                <mat-icon>visibility_off</mat-icon>
+                                <span>Masquer</span>
                               </button>
                               <button mat-menu-item (click)="onDeleteColumn(column.id)">
                                 <mat-icon>delete</mat-icon>
@@ -178,6 +189,7 @@
                             </mat-menu>
                           </div>
                         </th>
+                        }
                       }
                       <th class="add-column-header">
                         <button
@@ -205,7 +217,8 @@
                           </button>
                         </td>
                         @for (column of databaseConfig().columns; track column.id) {
-                          <td class="data-cell" (click)="onCellClick(row.id, column.id, $event)">
+                          @if (column.visible !== false) {
+                            <td class="data-cell" (click)="onCellClick(row.id, column.id, $event)">
                             @if (column.type === 'checkbox') {
                               <!-- Checkbox type -->
                               <mat-checkbox
@@ -295,6 +308,7 @@
                                 placeholder="-" />
                             }
                           </td>
+                          }
                         }
                         <td class="row-actions-cell">
                           <button
@@ -319,22 +333,37 @@
           </div>
         }
         @case ('kanban') {
-          <div class="view-placeholder">
-            <mat-icon class="placeholder-icon">view_kanban</mat-icon>
-            <p>Vue kanban - Prochainement</p>
-          </div>
+          <!-- Kanban View -->
+          <app-database-kanban-view
+            [rows]="rows()"
+            [columns]="databaseConfig().columns"
+            [groupByColumnId]="kanbanGroupByColumnId()"
+            (cellUpdate)="onKanbanCellUpdate($event)"
+            (addSelectColumn)="onKanbanAddSelectColumn()"
+            (configureGroupBy)="onKanbanConfigureGroupBy()">
+          </app-database-kanban-view>
         }
         @case ('calendar') {
-          <div class="view-placeholder">
-            <mat-icon class="placeholder-icon">calendar_month</mat-icon>
-            <p>Vue calendrier - Prochainement</p>
-          </div>
+          <!-- Calendar View -->
+          <app-database-calendar-view
+            [rows]="rows()"
+            [columns]="databaseConfig().columns"
+            [dateColumnId]="calendarDateColumnId()"
+            (rowClick)="onCalendarRowClick($event)"
+            (addDateColumn)="onCalendarAddDateColumn()"
+            (configureDateColumn)="onCalendarConfigureDateColumn()">
+          </app-database-calendar-view>
         }
         @case ('timeline') {
-          <div class="view-placeholder">
-            <mat-icon class="placeholder-icon">timeline</mat-icon>
-            <p>Vue timeline - Prochainement</p>
-          </div>
+          <app-database-timeline-view
+            [rows]="rows()"
+            [columns]="databaseConfig().columns"
+            [startDateColumnId]="timelineStartDateColumnId()"
+            [endDateColumnId]="timelineEndDateColumnId()"
+            (rowClick)="onTimelineRowClick($event)"
+            (addDateColumn)="onTimelineAddDateColumn()"
+            (configureDateColumns)="onTimelineConfigureDateColumns()">
+          </app-database-timeline-view>
         }
       }
     </div>

@@ -1,0 +1,94 @@
+<!-- Empty State: No date column exists -->
+@if (!hasDateColumn()) {
+  <div class="empty-state">
+    <mat-icon class="empty-icon">calendar_month</mat-icon>
+    <p class="empty-text">Ajoutez une colonne 'Date' pour utiliser la vue calendrier</p>
+    <button mat-raised-button color="primary" (click)="onAddDateColumn()">
+      <mat-icon>add</mat-icon>
+      Ajouter une colonne Date
+    </button>
+  </div>
+}
+
+<!-- Empty State: No date column configured -->
+@else if (!dateColumnId) {
+  <div class="empty-state">
+    <mat-icon class="empty-icon">calendar_month</mat-icon>
+    <p class="empty-text">Configurez la colonne date pour afficher le calendrier</p>
+    <button mat-raised-button color="primary" (click)="onConfigureDateColumn()">
+      <mat-icon>settings</mat-icon>
+      Configurer la colonne date
+    </button>
+  </div>
+}
+
+<!-- Calendar View -->
+@else {
+  <div class="calendar-view">
+    <!-- Header with Navigation -->
+    <div class="calendar-header">
+      <button
+        mat-icon-button
+        (click)="previousMonth()"
+        matTooltip="Mois précédent">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+
+      <h2 class="month-name">{{ monthName() }}</h2>
+
+      <button
+        mat-icon-button
+        (click)="nextMonth()"
+        matTooltip="Mois suivant">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+
+      <button mat-button (click)="today()">
+        Aujourd'hui
+      </button>
+    </div>
+
+    <!-- Weekdays Header -->
+    <div class="calendar-weekdays">
+      <div class="weekday">Lun</div>
+      <div class="weekday">Mar</div>
+      <div class="weekday">Mer</div>
+      <div class="weekday">Jeu</div>
+      <div class="weekday">Ven</div>
+      <div class="weekday">Sam</div>
+      <div class="weekday">Dim</div>
+    </div>
+
+    <!-- Calendar Grid -->
+    <div class="calendar-grid">
+      @for (day of calendarDays(); track day.date.getTime()) {
+        <div
+          class="calendar-day"
+          [class.other-month]="!day.isCurrentMonth"
+          [class.today]="day.isToday">
+
+          <div class="day-number">{{ day.date.getDate() }}</div>
+
+          <div class="day-events">
+            @for (row of day.rows; track row.id) {
+              <div
+                class="calendar-event"
+                [style.background-color]="getEventColor(row)"
+                (click)="onRowClick(row.id)"
+                [matTooltip]="getRowTitle(row)">
+                {{ getRowTitle(row) }}
+              </div>
+            }
+
+            <!-- Show "+X more" if more than 3 events -->
+            @if (day.rows.length > 3) {
+              <div class="more-events">
+                +{{ day.rows.length - 3 }} de plus
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}

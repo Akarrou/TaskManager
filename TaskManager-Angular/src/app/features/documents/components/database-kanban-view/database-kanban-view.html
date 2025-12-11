@@ -1,0 +1,84 @@
+<!-- Empty State: No select column exists -->
+@if (!hasSelectColumn()) {
+  <div class="empty-state">
+    <mat-icon class="empty-icon">view_kanban</mat-icon>
+    <p class="empty-text">Ajoutez une colonne 'Sélection' pour utiliser la vue kanban</p>
+    <button mat-raised-button color="primary" (click)="onAddSelectColumn()">
+      <mat-icon>add</mat-icon>
+      Ajouter une colonne Sélection
+    </button>
+  </div>
+}
+
+<!-- Empty State: No groupBy configured -->
+@else if (!groupByColumnId) {
+  <div class="empty-state">
+    <mat-icon class="empty-icon">view_kanban</mat-icon>
+    <p class="empty-text">Configurez le regroupement pour afficher la vue kanban</p>
+    <button mat-raised-button color="primary" (click)="onConfigureGroupBy()">
+      <mat-icon>settings</mat-icon>
+      Configurer le regroupement
+    </button>
+  </div>
+}
+
+<!-- Empty State: No kanban columns generated -->
+@else if (kanbanColumns().length === 0) {
+  <div class="empty-state">
+    <mat-icon class="empty-icon">view_kanban</mat-icon>
+    <p class="empty-text">La colonne sélectionnée n'a pas de choix disponibles</p>
+    <button mat-raised-button color="primary" (click)="onConfigureGroupBy()">
+      <mat-icon>settings</mat-icon>
+      Modifier la configuration
+    </button>
+  </div>
+}
+
+<!-- Kanban Board -->
+@else {
+  <div class="kanban-board" cdkDropListGroup>
+    @for (column of kanbanColumns(); track column.id) {
+      <div class="kanban-column">
+        <!-- Column Header -->
+        <div class="kanban-column-header" [style.background-color]="getChoiceColor(column.color)">
+          <div class="column-header-content">
+            <h3 class="column-title">{{ column.title }}</h3>
+            <span class="row-count">{{ column.rows.length }}</span>
+          </div>
+        </div>
+
+        <!-- Column Content -->
+        <div
+          class="kanban-column-content"
+          cdkDropList
+          [cdkDropListData]="column.rows"
+          (cdkDropListDropped)="onDrop($event, column.id)">
+
+          @for (row of column.rows; track row.id) {
+            <mat-card class="kanban-card" cdkDrag>
+              <mat-card-content>
+                <!-- Display visible fields (max 3) -->
+                @for (col of visibleColumns(); track col.id) {
+                  @if (shouldShowField(col.id)) {
+                    <div class="card-field">
+                      <span class="field-label">{{ col.name }}</span>
+                      <span class="field-value">{{ getCellDisplayValue(row, col) }}</span>
+                    </div>
+                  }
+                }
+              </mat-card-content>
+            </mat-card>
+          }
+
+          <!-- Empty column placeholder -->
+          @if (column.rows.length === 0) {
+            <div class="empty-column-placeholder">
+              <mat-icon>inbox</mat-icon>
+              <p>Aucune ligne</p>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}

@@ -29,6 +29,9 @@ import {
   ColumnEditorDialogResult,
 } from '../column-editor-dialog/column-editor-dialog.component';
 import { DatabaseFiltersComponent } from '../database-filters/database-filters.component';
+import { DatabaseKanbanView } from '../database-kanban-view/database-kanban-view';
+import { DatabaseCalendarView } from '../database-calendar-view/database-calendar-view';
+import { DatabaseTimelineView } from '../database-timeline-view/database-timeline-view';
 
 /**
  * DocumentDatabaseTableComponent
@@ -52,6 +55,9 @@ import { DatabaseFiltersComponent } from '../database-filters/database-filters.c
     MatMenuModule,
     MatCheckboxModule,
     DatabaseFiltersComponent,
+    DatabaseKanbanView,
+    DatabaseCalendarView,
+    DatabaseTimelineView,
   ],
   templateUrl: './document-database-table.component.html',
   styleUrl: './document-database-table.component.scss',
@@ -81,6 +87,16 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   // Filtering and sorting state
   activeFilters = signal<Filter[]>([]);
   activeSort = signal<{ columnId: string; order: SortOrder } | null>(null);
+
+  // Kanban view state
+  kanbanGroupByColumnId = signal<string | undefined>(undefined);
+
+  // Calendar view state
+  calendarDateColumnId = signal<string | undefined>(undefined);
+
+  // Timeline view state
+  timelineStartDateColumnId = signal<string | undefined>(undefined);
+  timelineEndDateColumnId = signal<string | undefined>(undefined);
 
   // Computed
   columnCount = computed(() => this.databaseConfig().columns.length);
@@ -872,6 +888,24 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
         });
       }
     }
+    if (currentView?.config?.groupBy) {
+      this.kanbanGroupByColumnId.set(currentView.config.groupBy);
+    }
+    // Load calendar dateColumn from view config
+    // Note: dateColumn is stored in groupBy for calendar views (reusing the field)
+    if (this.currentView() === 'calendar' && currentView?.config?.groupBy) {
+      this.calendarDateColumnId.set(currentView.config.groupBy);
+    }
+    // Load timeline date columns from view config
+    // Note: We use groupBy for startDate and sortBy for endDate (reusing fields)
+    if (this.currentView() === 'timeline') {
+      if (currentView?.config?.groupBy) {
+        this.timelineStartDateColumnId.set(currentView.config.groupBy);
+      }
+      if (currentView?.config?.sortBy) {
+        this.timelineEndDateColumnId.set(currentView.config.sortBy);
+      }
+    }
   }
 
   /**
@@ -893,6 +927,53 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Handle column header click for sorting
+   */
+  onColumnHeaderClick(columnId: string): void {
+    const currentSort = this.activeSort();
+
+    // Cycle: none → asc → desc → none
+    if (!currentSort || currentSort.columnId !== columnId) {
+      // Nouveau tri ascendant
+      this.activeSort.set({ columnId, order: 'asc' });
+    } else if (currentSort.order === 'asc') {
+      // Passer en descendant
+      this.activeSort.set({ columnId, order: 'desc' });
+    } else {
+      // Supprimer le tri
+      this.activeSort.set(null);
+    }
+
+    this.loadRowsWithFilters();
+    this.saveCurrentViewConfig();
+  }
+
+  /**
+   * Toggle column visibility
+   */
+  onToggleColumnVisibility(columnId: string): void {
+    this.databaseConfig.update(config => ({
+      ...config,
+      columns: config.columns.map(col =>
+        col.id === columnId ? { ...col, visible: !col.visible } : col
+      ),
+    }));
+
+    // Sauvegarder dans Supabase
+    this.databaseService
+      .updateDatabaseConfig(this.databaseId, this.databaseConfig())
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.syncToTipTap();
+        },
+        error: (err) => {
+          console.error('Failed to update column visibility:', err);
+        },
+      });
+  }
+
+  /**
    * Save current view configuration (filters, sort) to Supabase
    */
   private saveCurrentViewConfig(): void {
@@ -910,8 +991,193 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
       delete currentView.config.sortOrder;
     }
 
+    // Save kanban groupBy
+    if (this.currentView() === 'kanban') {
+      currentView.config.groupBy = this.kanbanGroupByColumnId();
+    }
+
+    // Save calendar dateColumn (reuse groupBy field)
+    if (this.currentView() === 'calendar') {
+      currentView.config.groupBy = this.calendarDateColumnId();
+    }
+
+    // Save timeline date columns (reuse groupBy for startDate, sortBy for endDate)
+    if (this.currentView() === 'timeline') {
+      currentView.config.groupBy = this.timelineStartDateColumnId();
+      currentView.config.sortBy = this.timelineEndDateColumnId();
+    }
+
     // Persist to Supabase (debounced via changeSubject)
     this.changeSubject.next();
+  }
+
+  // =====================================================================
+  // Kanban View Methods
+  // =====================================================================
+
+  /**
+   * Handle cell update from Kanban drag & drop
+   */
+  onKanbanCellUpdate(event: { rowId: string; columnId: string; value: CellValue }): void {
+    this.onUpdateCell(event.rowId, event.columnId, event.value);
+  }
+
+  /**
+   * Handle "Add select column" from Kanban empty state
+   */
+  onKanbanAddSelectColumn(): void {
+    // Find first select column or create one
+    const selectColumn = this.databaseConfig().columns.find(
+      (col) => col.type === 'select' || col.type === 'multi-select'
+    );
+
+    if (selectColumn) {
+      // Use existing select column
+      this.kanbanGroupByColumnId.set(selectColumn.id);
+      this.saveCurrentViewConfig();
+    } else {
+      // Create a new select column
+      this.onAddColumn();
+    }
+  }
+
+  /**
+   * Handle "Configure groupBy" from Kanban
+   */
+  onKanbanConfigureGroupBy(): void {
+    // Find all select columns
+    const selectColumns = this.databaseConfig().columns.filter(
+      (col) => col.type === 'select' || col.type === 'multi-select'
+    );
+
+    if (selectColumns.length === 0) {
+      this.onAddColumn();
+      return;
+    }
+
+    // For now, cycle through available select columns
+    // TODO: Show a dialog to let user choose
+    const currentGroupBy = this.kanbanGroupByColumnId();
+    const currentIndex = selectColumns.findIndex((col) => col.id === currentGroupBy);
+    const nextIndex = (currentIndex + 1) % selectColumns.length;
+    this.kanbanGroupByColumnId.set(selectColumns[nextIndex].id);
+    this.saveCurrentViewConfig();
+  }
+
+  // =====================================================================
+  // Calendar View Methods
+  // =====================================================================
+
+  /**
+   * Handle row click from Calendar
+   */
+  onCalendarRowClick(rowId: string): void {
+    // TODO: Open row detail dialog or scroll to row in table view
+    console.log('Calendar row clicked:', rowId);
+  }
+
+  /**
+   * Handle "Add date column" from Calendar empty state
+   */
+  onCalendarAddDateColumn(): void {
+    // Find first date column or create one
+    const dateColumn = this.databaseConfig().columns.find(
+      (col) => col.type === 'date'
+    );
+
+    if (dateColumn) {
+      // Use existing date column
+      this.calendarDateColumnId.set(dateColumn.id);
+      this.saveCurrentViewConfig();
+    } else {
+      // Create a new date column
+      this.onAddColumn();
+    }
+  }
+
+  /**
+   * Handle "Configure date column" from Calendar
+   */
+  onCalendarConfigureDateColumn(): void {
+    // Find all date columns
+    const dateColumns = this.databaseConfig().columns.filter(
+      (col) => col.type === 'date'
+    );
+
+    if (dateColumns.length === 0) {
+      this.onAddColumn();
+      return;
+    }
+
+    // For now, cycle through available date columns
+    // TODO: Show a dialog to let user choose
+    const currentDateColumn = this.calendarDateColumnId();
+    const currentIndex = dateColumns.findIndex((col) => col.id === currentDateColumn);
+    const nextIndex = (currentIndex + 1) % dateColumns.length;
+    this.calendarDateColumnId.set(dateColumns[nextIndex].id);
+    this.saveCurrentViewConfig();
+  }
+
+  // =====================================================================
+  // Timeline View Methods
+  // =====================================================================
+
+  /**
+   * Handle row click from Timeline
+   */
+  onTimelineRowClick(rowId: string): void {
+    // TODO: Implement row editing or modal
+    console.log('Timeline row clicked:', rowId);
+  }
+
+  /**
+   * Handle "Add date column" from Timeline
+   */
+  onTimelineAddDateColumn(): void {
+    // Find first existing date column or create one
+    const dateColumn = this.databaseConfig().columns.find(
+      (col) => col.type === 'date'
+    );
+
+    if (dateColumn) {
+      this.timelineStartDateColumnId.set(dateColumn.id);
+      this.saveCurrentViewConfig();
+    } else {
+      // Create a new date column
+      this.onAddColumn();
+    }
+  }
+
+  /**
+   * Handle "Configure date columns" from Timeline
+   */
+  onTimelineConfigureDateColumns(): void {
+    // Find all date columns
+    const dateColumns = this.databaseConfig().columns.filter(
+      (col) => col.type === 'date'
+    );
+
+    if (dateColumns.length === 0) {
+      this.onAddColumn();
+      return;
+    }
+
+    // For now, cycle through available date columns for start date
+    // TODO: Show a dialog to let user choose both start and end date columns
+    const currentStartDateColumn = this.timelineStartDateColumnId();
+    const currentIndex = dateColumns.findIndex(
+      (col) => col.id === currentStartDateColumn
+    );
+    const nextIndex = (currentIndex + 1) % dateColumns.length;
+    this.timelineStartDateColumnId.set(dateColumns[nextIndex].id);
+
+    // Optionally set the next column as end date
+    if (dateColumns.length > 1) {
+      const endIndex = (nextIndex + 1) % dateColumns.length;
+      this.timelineEndDateColumnId.set(dateColumns[endIndex].id);
+    }
+
+    this.saveCurrentViewConfig();
   }
 
   ngOnDestroy() {

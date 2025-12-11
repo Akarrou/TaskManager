@@ -262,6 +262,18 @@
     color: #1f2937;
     min-width: 150px;
     background: #e5e7eb;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s;
+
+    &:hover {
+      background: #d1d5db;
+    }
+
+    &:focus {
+      outline: 2px solid #3b82f6;
+      outline-offset: -2px;
+    }
 
     .column-header-content {
       display: flex;
@@ -270,6 +282,16 @@
 
       .column-name {
         flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .sort-indicator {
+        font-size: 1rem;
+        width: 1rem;
+        height: 1rem;
+        color: #3b82f6;
       }
 
       .column-type {

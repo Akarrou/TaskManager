@@ -1,0 +1,254 @@
+// =====================================================================
+// Empty States
+// =====================================================================
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 4rem;
+    width: 4rem;
+    height: 4rem;
+    color: #9ca3af;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  .empty-text {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+  }
+}
+
+// =====================================================================
+// Kanban Board Layout
+// =====================================================================
+
+.kanban-board {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  overflow-x: auto;
+  min-height: 500px;
+  background: #f9fafb;
+}
+
+.kanban-column {
+  flex: 0 0 300px;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+// =====================================================================
+// Column Header
+// =====================================================================
+
+.kanban-column-header {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background: #f3f4f6;
+
+  .column-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .column-title {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #111827;
+    flex: 1;
+  }
+
+  .row-count {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #6b7280;
+    padding: 0.25rem 0.5rem;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 12px;
+  }
+}
+
+// =====================================================================
+// Column Content
+// =====================================================================
+
+.kanban-column-content {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  min-height: 200px;
+
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f3f4f6;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+
+    &:hover {
+      background: #9ca3af;
+    }
+  }
+}
+
+// =====================================================================
+// Kanban Cards
+// =====================================================================
+
+.kanban-card {
+  margin-bottom: 0.75rem;
+  cursor: move;
+  transition: all 0.2s;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+
+  &:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-color: #3b82f6;
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  // CDK Drag styles
+  &.cdk-drag-preview {
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+    opacity: 0.8;
+  }
+
+  &.cdk-drag-animating {
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  ::ng-deep .mat-mdc-card-content {
+    padding: 0.75rem;
+
+    &:last-child {
+      padding-bottom: 0.75rem;
+    }
+  }
+}
+
+// Placeholder when dragging
+.kanban-column-content.cdk-drop-list-dragging .kanban-card:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.cdk-drag-placeholder {
+  opacity: 0;
+}
+
+// =====================================================================
+// Card Fields
+// =====================================================================
+
+.card-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .field-label {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  .field-value {
+    font-size: 0.875rem;
+    color: #111827;
+    word-break: break-word;
+
+    // Empty value
+    &:empty::before {
+      content: '-';
+      color: #9ca3af;
+    }
+  }
+}
+
+// =====================================================================
+// Empty Column Placeholder
+// =====================================================================
+
+.empty-column-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  color: #9ca3af;
+  text-align: center;
+
+  mat-icon {
+    font-size: 2rem;
+    width: 2rem;
+    height: 2rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.5;
+  }
+
+  p {
+    font-size: 0.75rem;
+    margin: 0;
+  }
+}
+
+// =====================================================================
+// Drag & Drop Animations
+// =====================================================================
+
+.cdk-drop-list-receiving {
+  .cdk-drag {
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+// =====================================================================
+// Responsive
+// =====================================================================
+
+@media (max-width: 768px) {
+  .kanban-board {
+    flex-direction: column;
+    padding: 0.5rem;
+  }
+
+  .kanban-column {
+    flex: 1 0 auto;
+    min-width: 100%;
+  }
+
+  .kanban-column-content {
+    max-height: 400px;
+  }
+}

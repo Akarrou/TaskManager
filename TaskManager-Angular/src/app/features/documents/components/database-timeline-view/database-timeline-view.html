@@ -1,0 +1,129 @@
+<!-- Empty State: No date column exists -->
+@if (!hasDateColumn()) {
+  <div class="empty-state">
+    <mat-icon class="empty-icon">timeline</mat-icon>
+    <p class="empty-text">Ajoutez une colonne 'Date' pour utiliser la vue timeline</p>
+    <button mat-raised-button color="primary" (click)="onAddDateColumn()">
+      <mat-icon>add</mat-icon>
+      Ajouter une colonne Date
+    </button>
+  </div>
+}
+
+<!-- Empty State: No date column configured -->
+@else if (!startDateColumnId) {
+  <div class="empty-state">
+    <mat-icon class="empty-icon">timeline</mat-icon>
+    <p class="empty-text">Configurez la colonne date pour afficher la timeline</p>
+    <button mat-raised-button color="primary" (click)="onConfigureDateColumns()">
+      <mat-icon>settings</mat-icon>
+      Configurer les colonnes date
+    </button>
+  </div>
+}
+
+<!-- Empty State: No data with dates -->
+@else if (timelineItems().length === 0) {
+  <div class="empty-state">
+    <mat-icon class="empty-icon">timeline</mat-icon>
+    <p class="empty-text">Aucune ligne avec une date à afficher</p>
+  </div>
+}
+
+<!-- Timeline View -->
+@else {
+  <div class="timeline-view">
+    <!-- Header with Controls -->
+    <div class="timeline-header">
+      <h3 class="timeline-header__title">Vue Timeline</h3>
+      <div class="timeline-header__controls">
+        <button
+          mat-stroked-button
+          (click)="onConfigureDateColumns()"
+          matTooltip="Configurer les colonnes">
+          <mat-icon>settings</mat-icon>
+          Configurer
+        </button>
+      </div>
+    </div>
+
+    <!-- Timeline Content -->
+    <div class="timeline-content">
+      <div class="timeline-grid">
+        <!-- Header row with time markers -->
+        <div class="timeline-grid__header">
+          <div class="timeline-grid__task-column">Lignes</div>
+          <div class="timeline-grid__dates">
+            @for (marker of timeMarkers(); track marker.x) {
+              <div class="timeline-grid__date-header" [style.left.px]="marker.x">
+                {{ marker.label }}
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Background grid with vertical lines -->
+        <div class="timeline-grid__background">
+          <div class="timeline-grid__task-column-bg"></div>
+          <div class="timeline-grid__days-bg">
+            @for (marker of timeMarkers(); track marker.x) {
+              <div class="timeline-grid__day-column" [style.left.px]="marker.x"></div>
+            }
+          </div>
+        </div>
+
+        <!-- Timeline rows with data -->
+        <div class="timeline-grid__tasks">
+          @for (item of timelineItems(); track item.id) {
+            <div class="timeline-row">
+              <!-- Task info (fixed left column) -->
+              <div class="timeline-row__info">
+                <div class="timeline-row__task-title" [matTooltip]="item.title">
+                  {{ item.title }}
+                </div>
+              </div>
+
+              <!-- Bar container -->
+              <div class="timeline-row__bar-container">
+                @if (item.endDate && item.width > 10) {
+                  <!-- Duration bar -->
+                  <div
+                    class="timeline-bar"
+                    role="button"
+                    tabindex="0"
+                    [style.left.px]="item.x"
+                    [style.width.px]="item.width"
+                    [style.background-color]="item.color"
+                    (click)="onItemClick(item.id)"
+                    (keydown.enter)="onItemClick(item.id)"
+                    (keydown.space)="onItemClick(item.id)"
+                    [matTooltip]="item.title">
+                    <span class="timeline-bar__label">{{ item.title }}</span>
+                  </div>
+                } @else {
+                  <!-- Single point -->
+                  <div
+                    class="timeline-point"
+                    role="button"
+                    tabindex="0"
+                    [style.left.px]="item.x"
+                    [style.background-color]="item.color"
+                    (click)="onItemClick(item.id)"
+                    (keydown.enter)="onItemClick(item.id)"
+                    (keydown.space)="onItemClick(item.id)"
+                    [matTooltip]="item.title">
+                  </div>
+                }
+              </div>
+            </div>
+          } @empty {
+            <div class="timeline-empty">
+              <mat-icon>event_busy</mat-icon>
+              <p>Aucune ligne avec une date à afficher</p>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}
