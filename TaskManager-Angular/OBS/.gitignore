@@ -1,0 +1,45 @@
+# ===================================================================
+# TaskManager OBS - Git Ignore
+# ===================================================================
+# Prevent sensitive files from being committed to version control
+# ===================================================================
+
+# Environment files (contain secrets!)
+.env.local
+.env.production
+.env
+
+# Backups (may contain sensitive data)
+backups/
+*.sql
+*.tar.gz
+*.backup
+
+# Docker volumes
+volumes/
+supabase-self-hosted/volumes/db/data/
+supabase-self-hosted/volumes/storage/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*
+
+# Old backups
+*.old.md
+*.bak
