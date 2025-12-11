@@ -34,6 +34,11 @@ import { ProjectSelectorComponent } from '../../../features/projects/components/
               </a>
             </li>
             <li class="nav-item">
+              <a routerLink="/projects" routerLinkActive="active" class="nav-link">
+                Projets
+              </a>
+            </li>
+            <li class="nav-item">
               <a routerLink="/documents" routerLinkActive="active" class="nav-link">
                 Documents
               </a>

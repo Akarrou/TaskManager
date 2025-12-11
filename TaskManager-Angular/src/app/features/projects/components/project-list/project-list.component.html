@@ -1,24 +1,102 @@
-<div class="container mx-auto p-4 md:p-6">
-    <header class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">Mes Projets</h1>
-        <a routerLink="/projects/new"
-            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-300">
-            &#43; Créer un projet
-        </a>
-    </header>
-
-    <div *ngIf="isLoading$ | async; else projectList"
-        class="flex justify-center items-center py-10">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+<div class="c-main-content">
+  <!-- Header -->
+  <div class="c-main-content__header">
+    <div>
+      <h1 class="c-main-content__title">Mes Projets</h1>
+      <p class="c-main-content__subtitle">Gérez vos projets et organisez votre travail</p>
     </div>
+    <a routerLink="/projects/new"
+       class="c-button c-button--primary">
+      <span class="material-icons-outlined">add</span>
+      Créer un projet
+    </a>
+  </div>
 
-    <ng-template #projectList>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div *ngFor="let project of projects$ | async"
-                class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow duration-300">
-                <h2 class="text-xl font-semibold text-gray-900 mb-2">{{ project.name }}</h2>
-                <p class="text-gray-600">{{ project.description || 'Pas de description' }}</p>
-            </div>
+  <!-- Stats Grid -->
+  <section class="c-stats-grid">
+    <div class="c-stat-card" *ngFor="let stat of stats()">
+      <div class="c-stat-card__header">
+        <h3 class="c-stat-card__title">{{ stat.title }}</h3>
+        <div class="c-stat-card__icon-wrapper {{ stat.iconClass }}">
+          <span class="material-icons-outlined">{{ stat.icon }}</span>
         </div>
-    </ng-template>
+      </div>
+      <p class="c-stat-card__value">{{ stat.value }}</p>
+    </div>
+  </section>
+
+  <!-- Toggle Archived Button -->
+  <div class="c-toolbar" *ngIf="(archivedCount$ | async)! > 0">
+    <button
+      (click)="toggleShowArchived()"
+      class="c-button c-button--secondary">
+      <span class="material-icons-outlined">{{ (showArchived$ | async) ? 'visibility_off' : 'visibility' }}</span>
+      {{ (showArchived$ | async) ? 'Masquer archivés' : 'Voir archivés (' + (archivedCount$ | async) + ')' }}
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading$ | async; else projectList" class="c-loading">
+    <div class="c-loading__spinner"></div>
+    <p class="c-loading__text">Chargement des projets...</p>
+  </div>
+
+  <!-- Projects Grid -->
+  <ng-template #projectList>
+    <div class="c-projects-grid">
+      <div *ngFor="let project of projects$ | async"
+           class="c-project-card"
+           [class.c-project-card--archived]="project.archived">
+
+        <!-- Archived Badge -->
+        <div *ngIf="project.archived" class="c-project-card__badge">
+          Archivé
+        </div>
+
+        <!-- Project Header -->
+        <div class="c-project-card__header">
+          <div class="c-project-card__icon">
+            <span class="material-icons-outlined">{{ project.archived ? 'archive' : 'folder' }}</span>
+          </div>
+
+          <!-- Action Menu -->
+          <button mat-icon-button [matMenuTriggerFor]="menu" class="c-project-card__menu-button">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item [routerLink]="['/projects', project.id, 'edit']" *ngIf="!project.archived">
+              <mat-icon>edit</mat-icon>
+              <span>Modifier</span>
+            </button>
+            <button mat-menu-item (click)="onArchiveProject(project)" *ngIf="!project.archived">
+              <mat-icon>archive</mat-icon>
+              <span>Archiver</span>
+            </button>
+            <button mat-menu-item (click)="onRestoreProject(project)" *ngIf="project.archived">
+              <mat-icon>unarchive</mat-icon>
+              <span>Restaurer</span>
+            </button>
+            <button mat-menu-item (click)="onDeleteProject(project)" class="c-menu-item--danger">
+              <mat-icon class="c-menu-item--danger">delete</mat-icon>
+              <span>Supprimer</span>
+            </button>
+          </mat-menu>
+        </div>
+
+        <!-- Project Content -->
+        <div class="c-project-card__content">
+          <h2 class="c-project-card__title">{{ project.name }}</h2>
+          <p class="c-project-card__description">{{ project.description || 'Pas de description' }}</p>
+        </div>
+
+        <!-- Project Footer -->
+        <div class="c-project-card__footer">
+          <div class="c-project-card__meta">
+            <span class="material-icons-outlined c-project-card__meta-icon">schedule</span>
+            <span class="c-project-card__meta-text">{{ project.created_at | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-template>
 </div>

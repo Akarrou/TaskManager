@@ -34,4 +34,74 @@ export class ProjectService {
             })
         );
     }
+
+    updateProject(projectId: string, projectData: Partial<Project>) {
+        return from(
+            this.supabase.client
+                .from('projects')
+                .update(projectData)
+                .eq('id', projectId)
+                .select()
+                .single()
+        ).pipe(
+            map(response => {
+                if (response.error) {
+                    throw response.error;
+                }
+                return response.data as Project;
+            })
+        );
+    }
+
+    deleteProject(projectId: string) {
+        return from(
+            this.supabase.client
+                .from('projects')
+                .delete()
+                .eq('id', projectId)
+        ).pipe(
+            map(response => {
+                if (response.error) {
+                    throw response.error;
+                }
+                return true;
+            })
+        );
+    }
+
+    archiveProject(projectId: string) {
+        return from(
+            this.supabase.client
+                .from('projects')
+                .update({ archived: true })
+                .eq('id', projectId)
+                .select()
+                .single()
+        ).pipe(
+            map(response => {
+                if (response.error) {
+                    throw response.error;
+                }
+                return response.data as Project;
+            })
+        );
+    }
+
+    restoreProject(projectId: string) {
+        return from(
+            this.supabase.client
+                .from('projects')
+                .update({ archived: false })
+                .eq('id', projectId)
+                .select()
+                .single()
+        ).pipe(
+            map(response => {
+                if (response.error) {
+                    throw response.error;
+                }
+                return response.data as Project;
+            })
+        );
+    }
 }

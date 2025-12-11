@@ -28,3 +28,29 @@ export const selectProjectsLoading = createSelector(
     selectProjectsState,
     (state) => state.loading
 );
+
+export const selectShowArchived = createSelector(
+    selectProjectsState,
+    (state) => state.showArchived
+);
+
+export const selectActiveProjects = createSelector(
+    selectAllProjects,
+    selectShowArchived,
+    (projects, showArchived) => {
+        if (showArchived) {
+            return projects;
+        }
+        return projects.filter(p => !p.archived);
+    }
+);
+
+export const selectArchivedProjects = createSelector(
+    selectAllProjects,
+    (projects) => projects.filter(p => p.archived)
+);
+
+export const selectArchivedCount = createSelector(
+    selectArchivedProjects,
+    (projects) => projects.length
+);

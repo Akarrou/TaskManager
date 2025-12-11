@@ -77,6 +77,12 @@ export const routes: Routes = [
     title: 'Nouveau Projet - Kōdo'
   },
   {
+    path: 'projects/:id/edit',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/projects/components/project-form/project-form.component').then(m => m.ProjectFormComponent),
+    title: 'Modifier le Projet - Kōdo'
+  },
+  {
     path: '**',
     redirectTo: '/dashboard'
   }

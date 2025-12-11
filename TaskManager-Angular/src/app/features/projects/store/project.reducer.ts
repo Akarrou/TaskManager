@@ -7,6 +7,7 @@ export interface State extends EntityState<Project> {
     selectedProjectId: string | null;
     loading: boolean;
     error: any;
+    showArchived: boolean;
 }
 
 export const adapter: EntityAdapter<Project> = createEntityAdapter<Project>();
@@ -15,6 +16,7 @@ export const initialState: State = adapter.getInitialState({
     selectedProjectId: null,
     loading: false,
     error: null,
+    showArchived: false,
 });
 
 export const reducer = createReducer(
@@ -47,6 +49,58 @@ export const reducer = createReducer(
         ...state,
         loading: false,
         error,
+    })),
+    on(ProjectActions.updateProject, (state) => ({
+        ...state,
+        loading: true,
+    })),
+    on(ProjectActions.updateProjectSuccess, (state, { project }) => {
+        return adapter.updateOne({ id: project.id, changes: project }, { ...state, loading: false });
+    }),
+    on(ProjectActions.updateProjectFailure, (state, { error }) => ({
+        ...state,
+        loading: false,
+        error,
+    })),
+    on(ProjectActions.deleteProject, (state) => ({
+        ...state,
+        loading: true,
+    })),
+    on(ProjectActions.deleteProjectSuccess, (state, { projectId }) => {
+        return adapter.removeOne(projectId, { ...state, loading: false });
+    }),
+    on(ProjectActions.deleteProjectFailure, (state, { error }) => ({
+        ...state,
+        loading: false,
+        error,
+    })),
+    on(ProjectActions.archiveProject, (state) => ({
+        ...state,
+        loading: true,
+    })),
+    on(ProjectActions.archiveProjectSuccess, (state, { project }) => {
+        return adapter.updateOne({ id: project.id, changes: project }, { ...state, loading: false });
+    }),
+    on(ProjectActions.archiveProjectFailure, (state, { error }) => ({
+        ...state,
+        loading: false,
+        error,
+    })),
+    on(ProjectActions.restoreProject, (state) => ({
+        ...state,
+        loading: true,
+    })),
+    on(ProjectActions.restoreProjectSuccess, (state, { project }) => {
+        return adapter.updateOne({ id: project.id, changes: project }, { ...state, loading: false });
+    }),
+    on(ProjectActions.restoreProjectFailure, (state, { error }) => ({
+        ...state,
+        loading: false,
+        error,
+    })),
+    on(ProjectActions.toggleShowArchived, (state) => ({
+        ...state,
+        showArchived: !state.showArchived,
     }))
 );
 

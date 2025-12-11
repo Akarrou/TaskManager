@@ -58,6 +58,70 @@ export class ProjectEffects implements OnInitEffects {
         { dispatch: false }
     );
 
+    updateProject$ = createEffect(() =>
+        this.actions$.pipe(
+            ofType(ProjectActions.updateProject),
+            mergeMap(({ projectId, projectData }) =>
+                this.projectService.updateProject(projectId, projectData).pipe(
+                    map((project) => ProjectActions.updateProjectSuccess({ project })),
+                    catchError((error) =>
+                        of(ProjectActions.updateProjectFailure({ error }))
+                    )
+                )
+            )
+        )
+    );
+
+    updateProjectSuccess$ = createEffect(() =>
+        this.actions$.pipe(
+            ofType(ProjectActions.updateProjectSuccess),
+            tap(() => this.router.navigate(['/projects']))
+        ),
+        { dispatch: false }
+    );
+
+    deleteProject$ = createEffect(() =>
+        this.actions$.pipe(
+            ofType(ProjectActions.deleteProject),
+            mergeMap(({ projectId }) =>
+                this.projectService.deleteProject(projectId).pipe(
+                    map(() => ProjectActions.deleteProjectSuccess({ projectId })),
+                    catchError((error) =>
+                        of(ProjectActions.deleteProjectFailure({ error }))
+                    )
+                )
+            )
+        )
+    );
+
+    archiveProject$ = createEffect(() =>
+        this.actions$.pipe(
+            ofType(ProjectActions.archiveProject),
+            mergeMap(({ projectId }) =>
+                this.projectService.archiveProject(projectId).pipe(
+                    map((project) => ProjectActions.archiveProjectSuccess({ project })),
+                    catchError((error) =>
+                        of(ProjectActions.archiveProjectFailure({ error }))
+                    )
+                )
+            )
+        )
+    );
+
+    restoreProject$ = createEffect(() =>
+        this.actions$.pipe(
+            ofType(ProjectActions.restoreProject),
+            mergeMap(({ projectId }) =>
+                this.projectService.restoreProject(projectId).pipe(
+                    map((project) => ProjectActions.restoreProjectSuccess({ project })),
+                    catchError((error) =>
+                        of(ProjectActions.restoreProjectFailure({ error }))
+                    )
+                )
+            )
+        )
+    );
+
     ngrxOnInitEffects(): Action {
         return ProjectActions.init();
     }

@@ -3,4 +3,5 @@ export interface Project {
     name: string;
     description: string | null;
     created_at: string;
+    archived: boolean;
 }
