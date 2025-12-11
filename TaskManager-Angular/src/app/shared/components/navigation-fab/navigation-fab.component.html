@@ -20,30 +20,33 @@
     </button>
   </div>
 
-  <!-- Bouton principal FAB -->
-  <button mat-fab
-          [color]="mainColor()"
-          class="fab-main-button"
-          [class.fab-opened]="isOpen()"
-          [class.fab-has-changes]="context.isDirty || context.hasUnsavedChanges"
-          [matTooltip]="isOpen() ? 'Fermer' : 'Actions de navigation'"
-          matTooltipPosition="left"
-          (click)="toggleFab()"
-          aria-label="Navigation principale">
-    
-    <!-- Icône principale avec animation -->
-    <div class="fab-icon-container">
-      <mat-icon class="fab-main-icon" 
-                [class.fab-icon-rotated]="isOpen()">
-        {{ isOpen() ? 'close' : mainIcon() }}
-      </mat-icon>
-      
-      <!-- Indicateur de changements non sauvés -->
-      <div class="fab-changes-indicator" 
-           *ngIf="(context.isDirty || context.hasUnsavedChanges) && !isOpen()">
+  <!-- Wrapper pour le bouton et le badge -->
+  <div class="fab-button-wrapper">
+    <!-- Bouton principal FAB -->
+    <button mat-fab
+            [color]="mainColor()"
+            class="fab-main-button"
+            [class.fab-opened]="isOpen()"
+            [class.fab-has-changes]="context.isDirty || context.hasUnsavedChanges"
+            [matTooltip]="isOpen() ? 'Fermer' : 'Actions de navigation'"
+            matTooltipPosition="left"
+            (click)="toggleFab()"
+            aria-label="Navigation principale">
+
+      <!-- Icône principale avec animation -->
+      <div class="fab-icon-container">
+        <mat-icon class="fab-main-icon"
+                  [class.fab-icon-rotated]="isOpen()">
+          {{ isOpen() ? 'close' : mainIcon() }}
+        </mat-icon>
       </div>
+    </button>
+
+    <!-- Indicateur de changements non sauvés - en dehors du bouton -->
+    <div class="fab-changes-indicator"
+         *ngIf="(context.isDirty || context.hasUnsavedChanges) && !isOpen()">
     </div>
-  </button>
+  </div>
 
   <!-- Overlay pour fermer le FAB en cliquant ailleurs -->
   <div class="fab-overlay" 

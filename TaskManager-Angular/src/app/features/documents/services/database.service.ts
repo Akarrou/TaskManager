@@ -186,10 +186,14 @@ export class DatabaseService {
         const tableName = metadata.table_name;
 
         // Build query
+        // Convert column ID to PostgreSQL column name (col_<id> format)
+        const sortColumn = params.sortBy
+          ? `col_${params.sortBy}`
+          : 'row_order';
         let query = this.client
           .from(tableName)
           .select('*')
-          .order(params.sortBy || 'row_order', {
+          .order(sortColumn, {
             ascending: params.sortOrder !== 'desc',
           });
 

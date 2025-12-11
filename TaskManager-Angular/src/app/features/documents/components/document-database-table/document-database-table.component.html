@@ -105,6 +105,14 @@
       </div>
     </div>
 
+    <!-- Database Filters -->
+    <app-database-filters
+      [columns]="databaseConfig().columns"
+      [activeFilters]="activeFilters()"
+      (filterChange)="onFilterChange($event)"
+      (clearAll)="onClearAllFilters()">
+    </app-database-filters>
+
     <!-- View Content -->
     <div class="database-content">
       @switch (currentView()) {

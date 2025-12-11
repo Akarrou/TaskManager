@@ -77,29 +77,48 @@
   z-index: -1;
 }
 
-.fab-main-button {
+.fab-button-wrapper {
   position: relative;
+  display: inline-block;
+}
+
+.fab-main-button {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  
+
   &:hover {
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
     transform: translateY(-2px);
   }
-  
+
   &:active {
     transform: translateY(0);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
   }
-  
+
   &.fab-opened {
     transform: scale(1.1);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25) !important;
   }
-  
+
   &.fab-has-changes {
     animation: fabPulse 2s infinite;
   }
+}
+
+// Badge de changements - positionné sur le wrapper
+.fab-changes-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 12px;
+  height: 12px;
+  background: #ff4444;
+  border-radius: 50%;
+  border: 2px solid white;
+  animation: indicatorPulse 1.5s infinite;
+  z-index: 10;
+  pointer-events: none;
 }
 
 .fab-icon-container {
@@ -113,22 +132,10 @@
 
 .fab-main-icon {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  
+
   &.fab-icon-rotated {
     transform: rotate(45deg);
   }
-}
-
-.fab-changes-indicator {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 12px;
-  height: 12px;
-  background: #ff4444;
-  border-radius: 50%;
-  border: 2px solid white;
-  animation: indicatorPulse 1.5s infinite;
 }
 
 .fab-actions {

@@ -17,6 +17,10 @@ import {
   DatabaseColumn,
   ViewType,
   SelectChoice,
+  Filter,
+  SortOrder,
+  QueryRowsParams,
+  DatabaseView,
 } from '../../models/database.model';
 import { DatabaseService } from '../../services/database.service';
 import {
@@ -24,6 +28,7 @@ import {
   ColumnEditorDialogData,
   ColumnEditorDialogResult,
 } from '../column-editor-dialog/column-editor-dialog.component';
+import { DatabaseFiltersComponent } from '../database-filters/database-filters.component';
 
 /**
  * DocumentDatabaseTableComponent
@@ -46,6 +51,7 @@ import {
     MatTooltipModule,
     MatMenuModule,
     MatCheckboxModule,
+    DatabaseFiltersComponent,
   ],
   templateUrl: './document-database-table.component.html',
   styleUrl: './document-database-table.component.scss',
@@ -72,9 +78,14 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   currentView = signal<ViewType>('table');
   isCreatingDatabase = signal(false);
 
+  // Filtering and sorting state
+  activeFilters = signal<Filter[]>([]);
+  activeSort = signal<{ columnId: string; order: SortOrder } | null>(null);
+
   // Computed
   columnCount = computed(() => this.databaseConfig().columns.length);
   rowCount = computed(() => this.rows().length);
+  filteredRowCount = computed(() => this.rows().length);
 
   // Row selection state
   selectedRowIds = signal<Set<string>>(new Set());
@@ -137,6 +148,9 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
         // Load config from Supabase (source of truth)
         this.databaseConfig.set(metadata.config);
 
+        // Load filters and sort from current view (now that config is loaded)
+        this.loadViewConfig();
+
         // Sync config to TipTap node (update document with latest config)
         this.syncToTipTap();
 
@@ -173,17 +187,33 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
 
 
   /**
-   * Load rows from Supabase
+   * Load rows from Supabase with filters and sorting
    */
   private loadRows() {
+    this.loadRowsWithFilters();
+  }
+
+  /**
+   * Load rows with current filters and sort
+   */
+  loadRowsWithFilters() {
     this.isLoading.set(true);
 
+    const params: QueryRowsParams = {
+      databaseId: this.databaseId,
+      filters: this.activeFilters(),
+      limit: 100,
+      offset: 0,
+    };
+
+    const sort = this.activeSort();
+    if (sort) {
+      params.sortBy = sort.columnId;
+      params.sortOrder = sort.order;
+    }
+
     this.databaseService
-      .getRows({
-        databaseId: this.databaseId,
-        limit: 100,
-        offset: 0,
-      })
+      .getRows(params)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (rows) => {
@@ -811,6 +841,77 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     }
     // Stop propagation to prevent TipTap interference
     event.stopPropagation();
+  }
+
+  /**
+   * Get the current view configuration
+   */
+  private getCurrentView(): DatabaseView | undefined {
+    return this.databaseConfig().views.find(
+      (v) => v.type === this.currentView()
+    );
+  }
+
+  /**
+   * Load filters and sort from current view config
+   */
+  private loadViewConfig(): void {
+    const currentView = this.getCurrentView();
+    if (currentView?.config?.filters) {
+      this.activeFilters.set(currentView.config.filters);
+    }
+    if (currentView?.config?.sortBy) {
+      // Vérifier que la colonne existe avant d'appliquer le tri
+      const columnExists = this.databaseConfig().columns.some(
+        (col) => col.id === currentView.config.sortBy
+      );
+      if (columnExists) {
+        this.activeSort.set({
+          columnId: currentView.config.sortBy,
+          order: currentView.config.sortOrder || 'asc',
+        });
+      }
+    }
+  }
+
+  /**
+   * Handle filter changes from DatabaseFiltersComponent
+   */
+  onFilterChange(filters: Filter[]): void {
+    this.activeFilters.set(filters);
+    this.loadRowsWithFilters();
+    this.saveCurrentViewConfig();
+  }
+
+  /**
+   * Clear all active filters
+   */
+  onClearAllFilters(): void {
+    this.activeFilters.set([]);
+    this.loadRowsWithFilters();
+    this.saveCurrentViewConfig();
+  }
+
+  /**
+   * Save current view configuration (filters, sort) to Supabase
+   */
+  private saveCurrentViewConfig(): void {
+    const currentView = this.getCurrentView();
+    if (!currentView) return;
+
+    // Update the view config
+    currentView.config.filters = this.activeFilters();
+    const sort = this.activeSort();
+    if (sort) {
+      currentView.config.sortBy = sort.columnId;
+      currentView.config.sortOrder = sort.order;
+    } else {
+      delete currentView.config.sortBy;
+      delete currentView.config.sortOrder;
+    }
+
+    // Persist to Supabase (debounced via changeSubject)
+    this.changeSubject.next();
   }
 
   ngOnDestroy() {

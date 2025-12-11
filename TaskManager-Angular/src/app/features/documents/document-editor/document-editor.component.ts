@@ -118,7 +118,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   // Navigation FAB
   fabContext = computed(() => this.navigationFabService.createContext({
     currentPage: 'document-editor',
-    isDirty: this.documentState().isSaving,
+    isDirty: this.isDirty(),
     hasUnsavedChanges: this.isDirty()
   }));
 

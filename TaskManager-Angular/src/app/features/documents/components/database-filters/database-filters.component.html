@@ -1,0 +1,227 @@
+<div class="database-filters" (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()">
+  <!-- Section 1: Filtres Rapides (toujours visibles) -->
+  <div class="quick-filters">
+    <button
+      mat-stroked-button
+      (click)="onQuickFilter('text')"
+      class="quick-filter-button">
+      <mat-icon>text_fields</mat-icon>
+      Texte
+    </button>
+    <button
+      mat-stroked-button
+      (click)="onQuickFilter('number')"
+      class="quick-filter-button">
+      <mat-icon>numbers</mat-icon>
+      Nombre
+    </button>
+    <button
+      mat-stroked-button
+      (click)="onQuickFilter('date')"
+      class="quick-filter-button">
+      <mat-icon>calendar_today</mat-icon>
+      Date
+    </button>
+    <button
+      mat-stroked-button
+      (click)="onQuickFilter('select')"
+      class="quick-filter-button">
+      <mat-icon>list</mat-icon>
+      Sélection
+    </button>
+  </div>
+
+  <!-- Section 2: Constructeur de Filtres (panel extensible) -->
+  <mat-expansion-panel class="filter-builder-panel">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <mat-icon>filter_list</mat-icon>
+        Filtres avancés ({{ activeFilters.length }})
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <div class="filter-builder">
+      <!-- Sélecteur de colonne -->
+      <mat-form-field appearance="outline">
+        <mat-label>Colonne</mat-label>
+        <mat-select
+          [value]="editingFilter().columnId"
+          (selectionChange)="onColumnChange($event.value)">
+          @for (column of columns; track column.id) {
+            <mat-option [value]="column.id">{{ column.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Sélecteur d'opérateur -->
+      @if (selectedColumn()) {
+        <mat-form-field appearance="outline">
+          <mat-label>Opérateur</mat-label>
+          <mat-select
+            [value]="editingFilter().operator"
+            (selectionChange)="onOperatorChange($event.value)">
+            @for (op of availableOperators(); track op) {
+              <mat-option [value]="op">{{ getOperatorLabel(op) }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
+      <!-- Input de valeur (dynamique selon type de colonne et opérateur) -->
+      @if (
+        selectedColumn();
+        as col
+      ) {
+        @if (
+          editingFilter().operator &&
+          editingFilter().operator !== 'is_empty' &&
+          editingFilter().operator !== 'is_not_empty'
+        ) {
+          @switch (col.type) {
+            @case ('text') {
+              <mat-form-field appearance="outline">
+                <mat-label>Valeur</mat-label>
+                <input
+                  matInput
+                  [value]="editingFilter().value || ''"
+                  (input)="onValueChange($any($event.target).value)"
+                  (keydown)="$event.stopPropagation()"
+                  (keydown.enter)="$event.stopPropagation(); $event.preventDefault()"
+                  placeholder="Entrez du texte..." />
+              </mat-form-field>
+            }
+            @case ('number') {
+              <mat-form-field appearance="outline">
+                <mat-label>Valeur</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  [value]="editingFilter().value || ''"
+                  (input)="onValueChange($any($event.target).value)"
+                  (keydown)="$event.stopPropagation()"
+                  (keydown.enter)="$event.stopPropagation(); $event.preventDefault()"
+                  placeholder="Entrez un nombre..." />
+              </mat-form-field>
+            }
+            @case ('date') {
+              <mat-form-field appearance="outline">
+                <mat-label>Valeur</mat-label>
+                <input
+                  matInput
+                  type="date"
+                  [value]="editingFilter().value || ''"
+                  (input)="onValueChange($any($event.target).value)"
+                  (keydown)="$event.stopPropagation()"
+                  (keydown.enter)="$event.stopPropagation(); $event.preventDefault()" />
+              </mat-form-field>
+            }
+            @case ('select') {
+              <mat-form-field appearance="outline">
+                <mat-label>Valeur</mat-label>
+                <mat-select
+                  [value]="editingFilter().value"
+                  (selectionChange)="onValueChange($event.value)">
+                  @for (choice of col.options?.choices ?? []; track choice.id) {
+                    <mat-option [value]="choice.id">{{
+                      choice.label
+                    }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
+            @case ('multi-select') {
+              <mat-form-field appearance="outline">
+                <mat-label>Valeur</mat-label>
+                <mat-select
+                  [value]="editingFilter().value"
+                  (selectionChange)="onValueChange($event.value)">
+                  @for (choice of col.options?.choices ?? []; track choice.id) {
+                    <mat-option [value]="choice.id">{{
+                      choice.label
+                    }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
+            @case ('checkbox') {
+              <mat-form-field appearance="outline">
+                <mat-label>Valeur</mat-label>
+                <mat-select
+                  [value]="editingFilter().value"
+                  (selectionChange)="onValueChange($event.value)">
+                  <mat-option [value]="true">Vrai</mat-option>
+                  <mat-option [value]="false">Faux</mat-option>
+                </mat-select>
+              </mat-form-field>
+            }
+            @case ('url') {
+              <mat-form-field appearance="outline">
+                <mat-label>Valeur</mat-label>
+                <input
+                  matInput
+                  type="url"
+                  [value]="editingFilter().value || ''"
+                  (input)="onValueChange($any($event.target).value)"
+                  (keydown)="$event.stopPropagation()"
+                  (keydown.enter)="$event.stopPropagation(); $event.preventDefault()"
+                  placeholder="Entrez une URL..." />
+              </mat-form-field>
+            }
+            @case ('email') {
+              <mat-form-field appearance="outline">
+                <mat-label>Valeur</mat-label>
+                <input
+                  matInput
+                  type="email"
+                  [value]="editingFilter().value || ''"
+                  (input)="onValueChange($any($event.target).value)"
+                  (keydown)="$event.stopPropagation()"
+                  (keydown.enter)="$event.stopPropagation(); $event.preventDefault()"
+                  placeholder="Entrez un email..." />
+              </mat-form-field>
+            }
+          }
+        }
+      }
+
+      <button
+        mat-raised-button
+        color="primary"
+        (click)="onAddFilter()"
+        [disabled]="
+          !editingFilter().columnId ||
+          !editingFilter().operator ||
+          (editingFilter().operator !== 'is_empty' &&
+            editingFilter().operator !== 'is_not_empty' &&
+            !editingFilter().value)
+        ">
+        <mat-icon>add</mat-icon>
+        Ajouter le filtre
+      </button>
+    </div>
+  </mat-expansion-panel>
+
+  <!-- Section 3: Résumé des Filtres Actifs -->
+  @if (activeFilters.length > 0) {
+    <div class="active-filters">
+      <div class="active-filters-header">
+        <span class="active-filters-count"
+          >{{ activeFilters.length }} filtre(s) actif(s)</span
+        >
+        <button mat-button color="warn" (click)="clearAll.emit()">
+          Tout effacer
+        </button>
+      </div>
+      <mat-chip-set class="active-filters-chips">
+        @for (filter of activeFilters; track $index) {
+          <mat-chip [removable]="true" (removed)="onRemoveFilter($index)">
+            {{ getFilterLabel(filter) }}
+            <button matChipRemove>
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </mat-chip>
+        }
+      </mat-chip-set>
+    </div>
+  }
+</div>
