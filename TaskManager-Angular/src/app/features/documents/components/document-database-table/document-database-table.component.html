@@ -27,7 +27,24 @@
     <div class="database-header">
       <div class="database-title">
         <mat-icon class="database-icon">table_view</mat-icon>
-        <h3>{{ databaseConfig().name }}</h3>
+        @if (isEditingName()) {
+          <input
+            type="text"
+            class="database-name-input"
+            [value]="tempDatabaseName()"
+            (input)="tempDatabaseName.set($any($event.target).value)"
+            (blur)="onSaveDatabaseName()"
+            (keydown)="onNameInputKeydown($event)"
+            autofocus />
+        } @else {
+          <button
+            type="button"
+            (click)="onStartEditingName()"
+            class="database-name-editable"
+            matTooltip="Cliquer pour modifier le nom">
+            {{ databaseConfig().name }}
+          </button>
+        }
         <span class="database-stats">
           {{ rowCount() }} ligne(s) • {{ columnCount() }} colonne(s)
         </span>
@@ -69,6 +86,17 @@
           </button>
         </div>
 
+        <!-- Bulk Actions (shown when rows are selected) -->
+        @if (selectedCount() > 0) {
+          <div class="bulk-actions">
+            <span class="selected-count">{{ selectedCount() }} sélectionnée(s)</span>
+            <button mat-stroked-button color="warn" (click)="onDeleteSelectedRows()">
+              <mat-icon>delete</mat-icon>
+              Supprimer
+            </button>
+          </div>
+        }
+
         <!-- Add Row Button -->
         <button mat-raised-button color="primary" (click)="onAddRow()">
           <mat-icon>add</mat-icon>
@@ -81,35 +109,143 @@
     <div class="database-content">
       @switch (currentView()) {
         @case ('table') {
-          <!-- Table View (placeholder for now) -->
-          <div class="table-view-placeholder">
-            <p class="text-gray-500">Vue tableau - En cours de développement</p>
-            <p class="text-sm text-gray-400 mt-2">
-              {{ rowCount() }} ligne(s) chargée(s)
-            </p>
-
-            <!-- Temporary: Show column names -->
-            @if (columnCount() > 0) {
-              <div class="mt-4">
-                <p class="text-xs text-gray-400 mb-2">Colonnes :</p>
-                <div class="flex flex-wrap gap-2">
-                  @for (column of databaseConfig().columns; track column.id) {
-                    <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-                      {{ column.name }} ({{ column.type }})
-                    </span>
-                  }
-                </div>
+          <!-- Table View -->
+          <div class="table-view">
+            @if (isLoading()) {
+              <div class="flex items-center justify-center py-8">
+                <mat-spinner diameter="32"></mat-spinner>
+                <span class="ml-3 text-gray-500">Chargement des données...</span>
+              </div>
+            } @else if (rowCount() === 0) {
+              <!-- Empty State -->
+              <div class="empty-state">
+                <mat-icon class="empty-icon">inbox</mat-icon>
+                <p class="empty-text">Aucune ligne dans cette base de données</p>
+                <button mat-raised-button color="primary" (click)="onAddRow()">
+                  <mat-icon>add</mat-icon>
+                  Ajouter la première ligne
+                </button>
+              </div>
+            } @else {
+              <!-- Data Table -->
+              <div class="table-wrapper" (keydown)="onTableKeydown($event)">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th class="row-select-header">
+                        <button
+                          mat-icon-button
+                          class="select-all-button"
+                          (click)="onToggleSelectAll()"
+                          matTooltip="Sélectionner tout">
+                          @if (isAllSelected()) {
+                            <mat-icon>check_box</mat-icon>
+                          } @else if (isSomeSelected()) {
+                            <mat-icon>indeterminate_check_box</mat-icon>
+                          } @else {
+                            <mat-icon>check_box_outline_blank</mat-icon>
+                          }
+                        </button>
+                      </th>
+                      @for (column of databaseConfig().columns; track column.id) {
+                        <th class="column-header">
+                          <div class="column-header-content">
+                            <span class="column-name">{{ column.name }}</span>
+                            <span class="column-type">{{ column.type }}</span>
+                            <button
+                              mat-icon-button
+                              class="column-menu-button"
+                              [matMenuTriggerFor]="columnMenu">
+                              <mat-icon>more_vert</mat-icon>
+                            </button>
+                            <mat-menu #columnMenu="matMenu">
+                              <button mat-menu-item (click)="onEditColumn(column.id)">
+                                <mat-icon>edit</mat-icon>
+                                <span>Modifier</span>
+                              </button>
+                              <button mat-menu-item (click)="onDeleteColumn(column.id)">
+                                <mat-icon>delete</mat-icon>
+                                <span>Supprimer</span>
+                              </button>
+                            </mat-menu>
+                          </div>
+                        </th>
+                      }
+                      <th class="add-column-header">
+                        <button
+                          mat-icon-button
+                          (click)="onAddColumn()"
+                          matTooltip="Ajouter une colonne">
+                          <mat-icon>add</mat-icon>
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of rows(); track row.id) {
+                      <tr class="data-row" [class.selected]="isRowSelected(row.id)">
+                        <td class="row-select-cell">
+                          <button
+                            mat-icon-button
+                            class="row-select-button"
+                            (click)="onToggleRowSelection(row.id)">
+                            @if (isRowSelected(row.id)) {
+                              <mat-icon>check_box</mat-icon>
+                            } @else {
+                              <mat-icon>check_box_outline_blank</mat-icon>
+                            }
+                          </button>
+                        </td>
+                        @for (column of databaseConfig().columns; track column.id) {
+                          <td class="data-cell" (click)="onCellClick(row.id, column.id, $event)">
+                            @if (column.type === 'checkbox') {
+                              <!-- Checkbox type -->
+                              <mat-checkbox
+                                [checked]="row.cells[column.id] || false"
+                                (change)="onUpdateCell(row.id, column.id, $event.checked)">
+                              </mat-checkbox>
+                            } @else if (column.type === 'select') {
+                              <!-- Select type -->
+                              <select
+                                class="cell-select"
+                                [value]="row.cells[column.id] || ''"
+                                (change)="onUpdateCell(row.id, column.id, $any($event.target).value)"
+                                (click)="$event.stopPropagation()">
+                                <option value="">-</option>
+                              </select>
+                            } @else {
+                              <!-- Text, number, date, url, email types -->
+                              <input
+                                type="{{ getCellInputType(column.type) }}"
+                                class="cell-input"
+                                [value]="row.cells[column.id] || ''"
+                                (blur)="onUpdateCell(row.id, column.id, $any($event.target).value)"
+                                (keydown.enter)="$any($event.target).blur()"
+                                (click)="$event.stopPropagation()"
+                                placeholder="-" />
+                            }
+                          </td>
+                        }
+                        <td class="row-actions-cell">
+                          <button
+                            mat-icon-button
+                            [matMenuTriggerFor]="rowMenu"
+                            matTooltip="Actions">
+                            <mat-icon>more_horiz</mat-icon>
+                          </button>
+                          <mat-menu #rowMenu="matMenu">
+                            <button mat-menu-item (click)="onDeleteRows([row.id])">
+                              <mat-icon>delete</mat-icon>
+                              <span>Supprimer</span>
+                            </button>
+                          </mat-menu>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
               </div>
             }
-
-            <!-- Add Column Button -->
-            <button
-              mat-stroked-button
-              class="mt-4"
-              (click)="onAddColumn()">
-              <mat-icon>add</mat-icon>
-              Ajouter une colonne
-            </button>
           </div>
         }
         @case ('kanban') {

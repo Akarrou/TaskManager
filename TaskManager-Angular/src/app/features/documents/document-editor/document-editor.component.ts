@@ -25,7 +25,7 @@ import { BubbleMenuComponent } from '../bubble-menu/bubble-menu.component';
 import { DocumentService, Document, DocumentBreadcrumb } from '../services/document.service';
 import { NavigationFabComponent, NavigationContext } from '../../../shared/components/navigation-fab/navigation-fab.component';
 import { NavigationFabService } from '../../../shared/components/navigation-fab/navigation-fab.service';
-import { debounceTime, Subject, takeUntil } from 'rxjs';
+import { debounceTime, Subject, takeUntil, map, catchError, throwError, take } from 'rxjs';
 import { DocumentState, DocumentSnapshot, createSnapshot, hasChanges } from '../models/document-content.types';
 import { Columns, Column } from '../extensions/columns.extension';
 import { FontSize } from '../extensions/font-size.extension';
@@ -44,6 +44,8 @@ import { TaskSectionExtension } from '../extensions/task-section.extension';
 import { TaskSectionRendererDirective } from '../directives/task-section-renderer.directive';
 import { DatabaseTableExtension } from '../extensions/database-table.extension';
 import { DatabaseTableRendererDirective } from '../directives/database-table-renderer.directive';
+import { DatabaseService } from '../services/database.service';
+import { DEFAULT_DATABASE_CONFIG } from '../models/database.model';
 
 const lowlight = createLowlight(all);
 
@@ -61,6 +63,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   private documentService = inject(DocumentService);
   private navigationFabService = inject(NavigationFabService);
   private dialog = inject(MatDialog);
+  private databaseService = inject(DatabaseService);
 
   editor: Editor;
   showSlashMenu = signal(false);
@@ -98,6 +101,19 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
   private changeSubject = new Subject<void>();
+
+  // Callback for directives to trigger manual save
+  saveDocumentCallback = () => {
+    // Force content update from editor before saving
+    if (this.editor) {
+      const currentContent = this.editor.getJSON();
+      this.documentState.update(state => ({
+        ...state,
+        content: currentContent
+      }));
+    }
+    this.saveDocument();
+  };
 
   // Navigation FAB
   fabContext = computed(() => this.navigationFabService.createContext({
@@ -377,8 +393,12 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   saveDocument() {
     const state = this.documentState();
 
-    // Skip if already saving or not dirty
-    if (state.isSaving || !this.isDirty()) return;
+    // Skip if already saving
+    if (state.isSaving) return;
+
+    // For new documents (no ID), always save even if not dirty
+    // For existing documents, only save if dirty
+    if (state.id && !this.isDirty()) return;
 
     // Update state: saving started
     this.documentState.update(s => ({ ...s, isSaving: true }));
@@ -418,6 +438,58 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         this.documentState.update(s => ({ ...s, isSaving: false }));
       }
     });
+  }
+
+  /**
+   * Immediate save without debounce - returns Observable for synchronization
+   * Used by database creation to ensure databaseId is persisted before refresh
+   */
+  saveDocumentImmediate() {
+    const state = this.documentState();
+
+    // If no document ID yet, we can't save (document must be created first)
+    if (!state.id) {
+      console.warn('Cannot save immediately: document not yet created');
+      return new Subject<void>().asObservable();
+    }
+
+    // Force update content from editor before saving
+    const currentContent = this.editor.getJSON();
+    console.log('💾 saveDocumentImmediate - content to save:', JSON.stringify(currentContent, null, 2));
+
+    this.documentState.update(s => ({
+      ...s,
+      content: currentContent,
+      isSaving: true
+    }));
+
+    const payload = {
+      title: state.title,
+      content: currentContent
+    };
+
+    return this.documentService.updateDocument(state.id, payload).pipe(
+      takeUntil(this.destroy$),
+      map((doc) => {
+        // Update state: save complete
+        this.documentState.update(s => ({
+          ...s,
+          isSaving: false,
+          lastSaved: new Date()
+        }));
+
+        // Update snapshot (no longer dirty)
+        this.originalSnapshot.set({
+          title: doc.title,
+          content: doc.content
+        });
+      }),
+      catchError((err) => {
+        console.error('Failed to save document immediately:', err);
+        this.documentState.update(s => ({ ...s, isSaving: false }));
+        return throwError(() => err);
+      })
+    );
   }
 
   handleKeyDown(view: EditorView, event: KeyboardEvent): boolean {
@@ -809,9 +881,38 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Insert database table block
-    this.editor.chain().focus().insertDatabaseTable().run();
-    this.showSlashMenu.set(false);
+    console.log('🆕 Creating database BEFORE inserting block...');
+
+    // Step 1: Create the database in Supabase FIRST
+    this.databaseService.createDatabase({
+      documentId: currentDocId,
+      config: DEFAULT_DATABASE_CONFIG,
+    })
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (response) => {
+        console.log('✅ Database created with ID:', response.databaseId);
+
+        // Step 2: Insert the block with the pre-generated databaseId
+        this.editor.chain().focus().insertDatabaseTable(response.databaseId).run();
+
+        // Step 3: Save immediately to persist the databaseId
+        this.saveDocumentImmediate().pipe(take(1)).subscribe({
+          next: () => {
+            console.log('✅ Document saved with new database block');
+          },
+          error: (err) => {
+            console.error('❌ Failed to save document after database creation:', err);
+          }
+        });
+
+        this.showSlashMenu.set(false);
+      },
+      error: (err) => {
+        console.error('❌ Failed to create database:', err);
+        alert('Impossible de créer la base de données. Veuillez réessayer.');
+      }
+    });
   }
 
   ngOnDestroy(): void {

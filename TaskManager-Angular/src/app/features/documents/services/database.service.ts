@@ -105,10 +105,16 @@ export class DatabaseService {
         .from('document_databases')
         .select('*')
         .eq('database_id', databaseId)
-        .single()
+        .maybeSingle()
     ).pipe(
       map(response => {
         if (response.error) throw response.error;
+        if (!response.data) {
+          // Throw error with PGRST116 code for compatibility with existing error handling
+          const error: any = new Error(`Database not found: ${databaseId}`);
+          error.code = 'PGRST116';
+          throw error;
+        }
         return response.data as DocumentDatabase;
       })
     );

@@ -4,8 +4,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
-import { Subject, takeUntil, debounceTime } from 'rxjs';
+import { Subject, takeUntil, debounceTime, delay, of, retry, timer, switchMap, catchError, tap, take } from 'rxjs';
 import {
   DatabaseConfig,
   DatabaseRow,
@@ -16,6 +18,11 @@ import {
   ViewType,
 } from '../../models/database.model';
 import { DatabaseService } from '../../services/database.service';
+import {
+  ColumnEditorDialogComponent,
+  ColumnEditorDialogData,
+  ColumnEditorDialogResult,
+} from '../column-editor-dialog/column-editor-dialog.component';
 
 /**
  * DocumentDatabaseTableComponent
@@ -36,6 +43,8 @@ import { DatabaseService } from '../../services/database.service';
     MatIconModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
+    MatMenuModule,
+    MatCheckboxModule,
   ],
   templateUrl: './document-database-table.component.html',
   styleUrl: './document-database-table.component.scss',
@@ -66,17 +75,33 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   columnCount = computed(() => this.databaseConfig().columns.length);
   rowCount = computed(() => this.rows().length);
 
+  // Row selection state
+  selectedRowIds = signal<Set<string>>(new Set());
+  isAllSelected = computed(() => {
+    const rows = this.rows();
+    const selected = this.selectedRowIds();
+    return rows.length > 0 && selected.size === rows.length;
+  });
+  isSomeSelected = computed(() => {
+    const selected = this.selectedRowIds();
+    return selected.size > 0 && !this.isAllSelected();
+  });
+  selectedCount = computed(() => this.selectedRowIds().size);
+
+  // Database name editing
+  isEditingName = signal(false);
+  tempDatabaseName = signal('');
+
   private destroy$ = new Subject<void>();
   private changeSubject = new Subject<void>();
 
   ngOnInit() {
-    // Set initial config from input
+    // Set initial view from input config (but don't trust column config - will be loaded from Supabase)
     if (this.config) {
-      this.databaseConfig.set(this.config);
       this.currentView.set(this.config.defaultView || 'table');
     }
 
-    // Initialize database (create if needed or load existing data)
+    // Initialize database (load metadata and config from Supabase)
     this.initializeDatabase();
 
     // Setup debounced save
@@ -88,61 +113,63 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Initialize database: create physical table if first time, or load data
+   * Initialize database: load existing data or show error if database doesn't exist
    */
   initializeDatabase() {
     this.isInitializing.set(true);
     this.error.set(null);
 
-    // Check if database already exists in Supabase
+    // If databaseId is empty, show error - database should be created BEFORE inserting block
+    if (!this.databaseId || this.databaseId === '') {
+      console.error('❌ Empty databaseId - database should be created before block insertion');
+      this.error.set('Erreur: Base de données non initialisée');
+      this.isInitializing.set(false);
+      return;
+    }
+
+    // Load existing database metadata (source of truth for config)
+    console.log('📥 Loading database with ID:', this.databaseId);
     this.databaseService.getDatabaseMetadata(this.databaseId).subscribe({
       next: (metadata) => {
-        // Database exists, load rows
-        this.loadRows();
-        this.isInitializing.set(false);
+        console.log('✅ Database metadata loaded:', metadata);
+
+        // Load config from Supabase (source of truth)
+        this.databaseConfig.set(metadata.config);
+
+        // Sync config to TipTap node (update document with latest config)
+        this.syncToTipTap();
+
+        // Database exists, check if it's newly created (within last 2 seconds)
+        const createdAt = new Date(metadata.created_at);
+        const now = new Date();
+        const ageInSeconds = (now.getTime() - createdAt.getTime()) / 1000;
+        const isNewlyCreated = ageInSeconds < 2;
+
+        if (isNewlyCreated) {
+          console.log('✅ Newly created database detected, starting schema availability polling...');
+
+          // Poll until table is available in PostgREST schema cache
+          this.waitForSchemaAvailability();
+        } else {
+          console.log('✅ Existing database found, loading rows immediately...');
+          this.loadRows();
+          this.isInitializing.set(false);
+        }
       },
       error: (err) => {
-        // Database doesn't exist yet, create it
+        // Database doesn't exist - this is an error (should have been created first)
         if (err.code === 'PGRST116') {
-          // Not found error
-          this.createDatabase();
+          console.error('❌ Database not found in Supabase:', this.databaseId);
+          this.error.set('Base de données introuvable');
         } else {
+          console.error('❌ Error loading database metadata:', err);
           this.error.set('Erreur lors du chargement de la base de données');
-          this.isInitializing.set(false);
-          console.error('Error loading database metadata:', err);
         }
+        this.isInitializing.set(false);
       },
     });
   }
 
-  /**
-   * Create physical database table in Supabase
-   */
-  private createDatabase() {
-    this.isCreatingDatabase.set(true);
-
-    this.databaseService
-      .createDatabase({
-        documentId: this.documentId,
-        config: this.databaseConfig(),
-      })
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          console.log('Database created:', response);
-          this.isCreatingDatabase.set(false);
-          this.isInitializing.set(false);
-          // Load initial empty rows
-          this.loadRows();
-        },
-        error: (err) => {
-          console.error('Failed to create database:', err);
-          this.error.set('Impossible de créer la base de données');
-          this.isCreatingDatabase.set(false);
-          this.isInitializing.set(false);
-        },
-      });
-  }
 
   /**
    * Load rows from Supabase
@@ -166,6 +193,89 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
           console.error('Failed to load rows:', err);
           this.error.set('Erreur lors du chargement des données');
           this.isLoading.set(false);
+        },
+      });
+  }
+
+  /**
+   * Wait for PostgREST schema to be available using intelligent polling
+   * Polls the table until it becomes available (max 15 attempts = 30 seconds)
+   */
+  private waitForSchemaAvailability() {
+    this.isLoading.set(true);
+
+    const maxAttempts = 15;
+    let attemptCount = 0;
+    let tableReady = false;
+
+    // Poll every 2 seconds, max 15 times
+    timer(0, 2000)
+      .pipe(
+        take(maxAttempts),
+        switchMap(() => {
+          attemptCount++;
+          console.log(`🔍 Polling attempt ${attemptCount}/${maxAttempts} - checking table availability...`);
+
+          return this.databaseService.getRows({
+            databaseId: this.databaseId,
+            limit: 1, // Just check if table exists
+            offset: 0,
+          }).pipe(
+            tap((rows) => {
+              console.log(`✅ Table is available! Found ${rows.length} row(s)`);
+              tableReady = true;
+            }),
+            catchError((err) => {
+              // Schema cache errors - table not ready yet
+              const isSchemaError = err.code === 'PGRST116' || err.code === 'PGRST204' || err.code === 'PGRST205' || err.code === '42P01';
+
+              if (isSchemaError && attemptCount < maxAttempts) {
+                console.log(`⏳ Table not yet available (${err.code}), will retry in 2s...`);
+                return of(null); // Return null to continue polling
+              } else if (attemptCount >= maxAttempts) {
+                console.error(`❌ Max polling attempts reached (${maxAttempts})`);
+                throw new Error('TIMEOUT');
+              } else {
+                // Other error - stop polling
+                console.error('❌ Unexpected error:', err);
+                throw err;
+              }
+            })
+          );
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: (rows) => {
+          // If we got actual rows (not null from catchError), table is ready
+          if (rows !== null && !tableReady) {
+            tableReady = true;
+            console.log('✅ Schema available, loading all rows...');
+            this.loadRows();
+            this.isInitializing.set(false);
+          }
+        },
+        error: (err) => {
+          if (err.message === 'TIMEOUT') {
+            this.error.set('La table n\'est pas encore disponible après 30 secondes. Veuillez rafraîchir la page.');
+          } else {
+            this.error.set('Erreur lors du chargement des données');
+          }
+          this.isLoading.set(false);
+          this.isInitializing.set(false);
+        },
+        complete: () => {
+          // If polling completed and table is ready, load rows
+          if (tableReady) {
+            console.log('✅ Polling complete - table ready');
+            this.loadRows();
+            this.isInitializing.set(false);
+          } else if (this.isLoading()) {
+            // If polling completed without success, show timeout error
+            this.error.set('La table n\'est pas encore disponible. Veuillez rafraîchir la page dans quelques secondes.');
+            this.isLoading.set(false);
+            this.isInitializing.set(false);
+          }
         },
       });
   }
@@ -265,16 +375,103 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
    * Add a new column
    */
   onAddColumn() {
-    // TODO: Open column editor dialog
-    console.log('Add column - TODO: implement dialog');
+    const existingColumnIds = this.databaseConfig().columns.map((col) => col.id);
+
+    const dialogData: ColumnEditorDialogData = {
+      existingColumnIds,
+      mode: 'add',
+    };
+
+    const dialogRef = this.dialog.open(ColumnEditorDialogComponent, {
+      width: '600px',
+      data: dialogData,
+      disableClose: true,
+    });
+
+    dialogRef.afterClosed().subscribe((result: ColumnEditorDialogResult | undefined) => {
+      if (!result) return;
+
+      const newColumn = result.column;
+
+      // Add column to database
+      this.databaseService
+        .addColumn({
+          databaseId: this.databaseId,
+          column: newColumn,
+        })
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            // Update config
+            this.databaseConfig.update((config) => ({
+              ...config,
+              columns: [...config.columns, newColumn],
+            }));
+
+            this.changeSubject.next();
+          },
+          error: (err) => {
+            console.error('Failed to add column:', err);
+            alert('Impossible d\'ajouter la colonne');
+          },
+        });
+    });
   }
 
   /**
    * Edit column configuration
    */
   onEditColumn(columnId: string) {
-    // TODO: Open column editor dialog
-    console.log('Edit column:', columnId);
+    const column = this.databaseConfig().columns.find((col) => col.id === columnId);
+    if (!column) return;
+
+    const existingColumnIds = this.databaseConfig()
+      .columns.filter((col) => col.id !== columnId)
+      .map((col) => col.id);
+
+    const dialogData: ColumnEditorDialogData = {
+      column,
+      existingColumnIds,
+      mode: 'edit',
+    };
+
+    const dialogRef = this.dialog.open(ColumnEditorDialogComponent, {
+      width: '600px',
+      data: dialogData,
+      disableClose: true,
+    });
+
+    dialogRef.afterClosed().subscribe((result: ColumnEditorDialogResult | undefined) => {
+      if (!result) return;
+
+      const updatedColumn = result.column;
+
+      // Update column configuration (metadata only)
+      this.databaseService
+        .updateColumn({
+          databaseId: this.databaseId,
+          columnId,
+          updates: updatedColumn,
+        })
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            // Update config
+            this.databaseConfig.update((config) => ({
+              ...config,
+              columns: config.columns.map((col) =>
+                col.id === columnId ? updatedColumn : col
+              ),
+            }));
+
+            this.changeSubject.next();
+          },
+          error: (err) => {
+            console.error('Failed to update column:', err);
+            alert('Impossible de modifier la colonne');
+          },
+        });
+    });
   }
 
   /**
@@ -363,6 +560,162 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
       default:
         return null;
     }
+  }
+
+  /**
+   * Get HTML input type based on column type
+   */
+  getCellInputType(columnType: string): string {
+    switch (columnType) {
+      case 'number':
+        return 'number';
+      case 'date':
+        return 'date';
+      case 'email':
+        return 'email';
+      case 'url':
+        return 'url';
+      case 'text':
+      default:
+        return 'text';
+    }
+  }
+
+  /**
+   * Handle cell click (for future inline editing enhancements)
+   */
+  onCellClick(rowId: string, columnId: string, event: Event): void {
+    // Placeholder for future click handling
+    // Could be used for more complex editing UI
+  }
+
+  /**
+   * Prevent TipTap from intercepting keyboard events inside the table
+   * This prevents the database block from being deleted when typing in cells
+   */
+  onTableKeydown(event: KeyboardEvent): void {
+    // Stop propagation to prevent TipTap from handling keyboard events
+    // Exception: Allow Escape key to propagate (to exit editing)
+    if (event.key !== 'Escape') {
+      event.stopPropagation();
+    }
+  }
+
+  /**
+   * Toggle selection for all rows
+   */
+  onToggleSelectAll(): void {
+    if (this.isAllSelected()) {
+      // Deselect all
+      this.selectedRowIds.set(new Set());
+    } else {
+      // Select all
+      const allRowIds = this.rows().map(row => row.id);
+      this.selectedRowIds.set(new Set(allRowIds));
+    }
+  }
+
+  /**
+   * Toggle selection for a single row
+   */
+  onToggleRowSelection(rowId: string): void {
+    const currentSelection = new Set(this.selectedRowIds());
+
+    if (currentSelection.has(rowId)) {
+      currentSelection.delete(rowId);
+    } else {
+      currentSelection.add(rowId);
+    }
+
+    this.selectedRowIds.set(currentSelection);
+  }
+
+  /**
+   * Check if a row is selected
+   */
+  isRowSelected(rowId: string): boolean {
+    return this.selectedRowIds().has(rowId);
+  }
+
+  /**
+   * Delete selected rows
+   */
+  onDeleteSelectedRows(): void {
+    const selectedIds = Array.from(this.selectedRowIds());
+    if (selectedIds.length === 0) return;
+
+    const confirmMessage = `Voulez-vous vraiment supprimer ${selectedIds.length} ligne(s) ?`;
+    if (!confirm(confirmMessage)) return;
+
+    this.onDeleteRows(selectedIds);
+    // Clear selection after deletion
+    this.selectedRowIds.set(new Set());
+  }
+
+  /**
+   * Start editing database name
+   */
+  onStartEditingName(): void {
+    this.tempDatabaseName.set(this.databaseConfig().name);
+    this.isEditingName.set(true);
+  }
+
+  /**
+   * Save database name
+   */
+  onSaveDatabaseName(): void {
+    const newName = this.tempDatabaseName().trim();
+
+    // Don't save if name is empty or unchanged
+    if (!newName || newName === this.databaseConfig().name) {
+      this.isEditingName.set(false);
+      return;
+    }
+
+    // Update config locally
+    this.databaseConfig.update(config => ({
+      ...config,
+      name: newName
+    }));
+
+    // Save to Supabase
+    this.databaseService.updateDatabaseConfig(this.databaseId, this.databaseConfig())
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          console.log('✅ Database name updated:', newName);
+          this.syncToTipTap();
+          this.isEditingName.set(false);
+        },
+        error: (err) => {
+          console.error('❌ Failed to update database name:', err);
+          alert('Erreur lors de la mise à jour du nom');
+          this.isEditingName.set(false);
+        }
+      });
+  }
+
+  /**
+   * Cancel editing database name
+   */
+  onCancelEditingName(): void {
+    this.isEditingName.set(false);
+    this.tempDatabaseName.set('');
+  }
+
+  /**
+   * Handle keydown in name input
+   */
+  onNameInputKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.onSaveDatabaseName();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      this.onCancelEditingName();
+    }
+    // Stop propagation to prevent TipTap interference
+    event.stopPropagation();
   }
 
   ngOnDestroy() {

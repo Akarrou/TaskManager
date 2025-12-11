@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  supabaseUrl: 'https://eoejjfztgdpdciqlvnte.supabase.co',
-  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvZWpqZnp0Z2RwZGNpcWx2bnRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyODI4OTIsImV4cCI6MjA4MDg1ODg5Mn0.D3dlen6PvIRep2wZuoVlZtkyhNMqmhgRda4fILZ7lS4',
+  supabaseUrl: 'http://localhost:8000',
+  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY1NDA0NTc4LCJleHAiOjIwODA5ODA1Nzh9.uxmGgPIWxA4EjqomO-rNLt4T62qMoLQn4Kz2alLhP8w',
   projectName: 'AgroFlow Task Manager'
 };

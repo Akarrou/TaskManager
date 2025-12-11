@@ -423,6 +423,7 @@ export const DEFAULT_COLUMN_WIDTHS: Record<ColumnType, number> = {
 
 /**
  * Default database configuration for new databases
+ * IMPORTANT: Must have at least one column for PostgreSQL table creation
  */
 export const DEFAULT_DATABASE_CONFIG: DatabaseConfig = {
   name: 'Nouvelle base de données',
@@ -432,24 +433,9 @@ export const DEFAULT_DATABASE_CONFIG: DatabaseConfig = {
       name: 'Nom',
       type: 'text',
       visible: true,
-      required: true,
+      required: false,
       order: 0,
       width: DEFAULT_COLUMN_WIDTHS.text,
-    },
-    {
-      id: 'col-status',
-      name: 'Statut',
-      type: 'select',
-      visible: true,
-      order: 1,
-      width: DEFAULT_COLUMN_WIDTHS.select,
-      options: {
-        choices: [
-          { id: 'todo', label: 'À faire', color: 'bg-gray-200' },
-          { id: 'in-progress', label: 'En cours', color: 'bg-blue-200' },
-          { id: 'done', label: 'Terminé', color: 'bg-green-200' },
-        ],
-      },
     },
   ],
   views: [

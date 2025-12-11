@@ -9,6 +9,7 @@ import {
   Renderer2,
   Input,
 } from '@angular/core';
+import { Editor } from '@tiptap/core';
 import { DocumentDatabaseTableComponent } from '../components/document-database-table/document-database-table.component';
 import { DatabaseNodeAttributes } from '../models/database.model';
 
@@ -20,7 +21,7 @@ import { DatabaseNodeAttributes } from '../models/database.model';
  * TaskSectionRendererDirective but handles database-specific rendering.
  *
  * Usage:
- * <div appDatabaseTableRenderer [documentId]="documentId"></div>
+ * <div appDatabaseTableRenderer [documentId]="documentId" [editor]="editor"></div>
  */
 @Directive({
   selector: '[appDatabaseTableRenderer]',
@@ -35,6 +36,11 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
    * Document ID (required for creating databases)
    */
   @Input() documentId!: string;
+
+  /**
+   * TipTap Editor instance (required for updating node attributes)
+   */
+  @Input() editor?: Editor;
 
   /**
    * Callback to update TipTap node attributes when database changes
@@ -82,14 +88,9 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
       }
 
       // Extract attributes from the block
-      const databaseId = block.getAttribute('data-database-id');
+      const databaseId = block.getAttribute('data-database-id') || '';
       const configAttr = block.getAttribute('data-config');
       const storageMode = block.getAttribute('data-storage-mode') || 'supabase';
-
-      if (!databaseId) {
-        console.warn('Database block found without database ID');
-        return;
-      }
 
       // Parse config
       let config = null;
@@ -106,6 +107,8 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
         console.warn('Database block found without valid config');
         return;
       }
+
+      // Note: databaseId can be empty string for new databases (will be created on init)
 
       // Clear placeholder content
       block.innerHTML = '';
@@ -143,14 +146,56 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
    * Update TipTap node attributes when database changes
    */
   private updateNodeAttributes(element: HTMLElement, attrs: DatabaseNodeAttributes) {
-    // Update DOM attributes
+    console.log('Updating database node attributes:', attrs);
+
+    // Update DOM attributes (for immediate visual update)
     element.setAttribute('data-database-id', attrs.databaseId);
     element.setAttribute('data-config', JSON.stringify(attrs.config));
     element.setAttribute('data-storage-mode', attrs.storageMode);
 
-    // Dispatch custom event to notify TipTap
-    if (this.onDataChange) {
-      this.onDataChange(element, attrs);
+    // Update TipTap node via transaction
+    if (this.editor) {
+      const pos = this.findNodePosition(element);
+      if (pos !== null) {
+        // Apply the transaction synchronously
+        const success = this.editor.commands.command(({ tr }) => {
+          tr.setNodeMarkup(pos, undefined, attrs);
+          return true;
+        });
+
+        if (!success) {
+          console.error('❌ Failed to update TipTap node');
+          return;
+        }
+
+        console.log('✅ Updated TipTap node at position', pos, 'with attrs:', attrs);
+      } else {
+        console.error('❌ Could not find node position for element');
+      }
+    } else {
+      console.warn('⚠️ Editor not provided - using fallback method');
+      // Fallback: use callback if provided
+      if (this.onDataChange) {
+        this.onDataChange(element, attrs);
+      }
+    }
+  }
+
+  /**
+   * Find the position of a TipTap node from a DOM element
+   */
+  private findNodePosition(element: HTMLElement): number | null {
+    if (!this.editor) return null;
+
+    const { view } = this.editor;
+    const domNode = element;
+
+    try {
+      const pos = view.posAtDOM(domNode, 0);
+      return pos;
+    } catch (error) {
+      console.error('Failed to find node position:', error);
+      return null;
     }
   }
 

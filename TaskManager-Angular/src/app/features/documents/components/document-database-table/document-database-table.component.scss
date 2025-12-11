@@ -75,6 +75,42 @@
     color: #111827;
   }
 
+  .database-name-editable {
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.15s;
+    border: none;
+    background: transparent;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #111827;
+    font-family: inherit;
+    text-align: left;
+
+    &:hover {
+      background: #f3f4f6;
+    }
+  }
+
+  .database-name-input {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #111827;
+    border: 1px solid #3b82f6;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    outline: none;
+    background: white;
+    flex: 1;
+    max-width: 400px;
+
+    &:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+  }
+
   .database-stats {
     font-size: 0.75rem;
     color: #6b7280;
@@ -88,6 +124,23 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: #eff6ff;
+  border: 1px solid #3b82f6;
+  border-radius: 6px;
+
+  .selected-count {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1e40af;
+  }
 }
 
 .view-switcher {
@@ -113,20 +166,265 @@
 
 // Database Content
 .database-content {
-  padding: 1.5rem;
   min-height: 200px;
 }
 
-// View Placeholders
-.table-view-placeholder {
+// Empty State
+.empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 3rem 2rem;
   text-align: center;
+
+  .empty-icon {
+    font-size: 3rem;
+    width: 3rem;
+    height: 3rem;
+    color: #9ca3af;
+    margin-bottom: 1rem;
+  }
+
+  .empty-text {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+  }
 }
 
+// Table View
+.table-view {
+  width: 100%;
+}
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #9ca3af;
+  border-radius: 6px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+
+  thead {
+    background: #e5e7eb;
+    border-bottom: 2px solid #6b7280;
+  }
+
+  th,
+  td {
+    padding: 0.375rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #9ca3af;
+    border-right: 1px solid #9ca3af;
+  }
+
+  th:last-child,
+  td:last-child {
+    border-right: none;
+  }
+
+  .row-select-header,
+  .row-select-cell {
+    width: 50px;
+    text-align: center;
+    padding: 0.5rem;
+  }
+
+  .row-select-header {
+    background: #e5e7eb; // Match column headers
+
+    .select-all-button {
+      opacity: 1;
+      color: #374151;
+    }
+  }
+
+  .row-select-cell {
+    .row-select-button {
+      opacity: 1; // Always visible
+      color: #6b7280;
+      transition: color 0.2s;
+
+      &:hover {
+        color: #374151;
+      }
+    }
+  }
+
+  .column-header {
+    position: relative;
+    font-weight: 600;
+    color: #1f2937;
+    min-width: 150px;
+    background: #e5e7eb;
+
+    .column-header-content {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .column-name {
+        flex: 1;
+      }
+
+      .column-type {
+        font-size: 0.75rem;
+        color: #6b7280;
+        font-weight: 400;
+        padding: 0.125rem 0.5rem;
+        background: #e5e7eb;
+        border-radius: 4px;
+      }
+
+      .column-menu-button {
+        opacity: 1; // Always visible for better UX
+        transition: all 0.2s;
+        flex-shrink: 0; // Prevent button from shrinking
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        ::ng-deep .mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
+      }
+    }
+
+    &:hover .column-menu-button {
+      background-color: #e5e7eb;
+      border-radius: 4px;
+    }
+  }
+
+  .add-column-header {
+    width: 60px;
+    text-align: center;
+  }
+
+  .data-row {
+    transition: background-color 0.15s;
+    background: #ffffff;
+
+    &:nth-child(even) {
+      background: #fafafa;
+    }
+
+    &:hover {
+      background: #f3f4f6;
+    }
+
+    &.selected {
+      background: #eff6ff;
+
+      &:hover {
+        background: #dbeafe;
+      }
+    }
+
+    &:last-child td {
+      border-bottom: none;
+    }
+  }
+
+  .data-cell {
+    color: #111827;
+    padding: 0.375rem 0.75rem;
+    vertical-align: middle;
+
+    .cell-content {
+      min-height: 1.5rem;
+      line-height: 1.5rem;
+    }
+
+    .cell-input {
+      width: 100%;
+      border: none;
+      background: transparent;
+      padding: 0;
+      font-size: 0.875rem;
+      color: #111827;
+      outline: none;
+      transition: background-color 0.15s;
+      line-height: 1.5rem;
+
+      &:hover {
+        background: #f3f4f6;
+        padding: 0 0.25rem;
+        margin: 0 -0.25rem;
+        border-radius: 2px;
+      }
+
+      &:focus {
+        background: #fff;
+        border: 1px solid #3b82f6;
+        border-radius: 4px;
+        padding: 0.125rem 0.375rem;
+        margin: -0.125rem -0.375rem;
+      }
+
+      &::placeholder {
+        color: #9ca3af;
+      }
+    }
+
+    .cell-select {
+      width: 100%;
+      border: none;
+      background: transparent;
+      padding: 0;
+      font-size: 0.875rem;
+      color: #111827;
+      cursor: pointer;
+      outline: none;
+      transition: background-color 0.15s;
+      line-height: 1.5rem;
+
+      &:hover {
+        background: #f3f4f6;
+        padding: 0 0.25rem;
+        margin: 0 -0.25rem;
+        border-radius: 2px;
+      }
+
+      &:focus {
+        background: #fff;
+        border: 1px solid #3b82f6;
+        border-radius: 4px;
+        padding: 0.125rem 0.375rem;
+        margin: -0.125rem -0.375rem;
+      }
+    }
+
+    ::ng-deep mat-checkbox {
+      .mdc-checkbox {
+        padding: 0;
+      }
+    }
+  }
+
+  .row-actions-cell {
+    width: 60px;
+    text-align: center;
+
+    button {
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+  }
+
+  .data-row:hover .row-actions-cell button {
+    opacity: 1;
+  }
+}
+
+// View Placeholders
 .view-placeholder {
   display: flex;
   flex-direction: column;

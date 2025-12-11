@@ -1,0 +1,54 @@
+# ========================================
+# Supabase Self-Hosted - .gitignore
+# ========================================
+
+# Variables d'environnement (SENSIBLE - NE JAMAIS COMMITER)
+.env
+.keys
+keys.txt
+
+# Credentials
+*credentials*.txt
+*password*.txt
+
+# Données Docker (volumes)
+volumes/db/data/
+volumes/storage/data/
+volumes/logs/
+volumes/*/data/
+
+# Node modules
+scripts/node_modules/
+scripts/package-lock.json
+node_modules/
+package-lock.json
+
+# Backups SQL
+*.sql
+*.dump
+backups/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+temp/
+*.tmp

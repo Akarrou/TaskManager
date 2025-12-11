@@ -27,8 +27,9 @@ declare module '@tiptap/core' {
     databaseTable: {
       /**
        * Insert a new database table block
+       * @param databaseId - Optional pre-generated database ID
        */
-      insertDatabaseTable: () => ReturnType;
+      insertDatabaseTable: (databaseId?: string) => ReturnType;
     };
   }
 }
@@ -51,11 +52,14 @@ export const DatabaseTableExtension = Node.create<DatabaseTableOptions>({
   // Atomic node (treated as a single unit, cannot place cursor inside)
   atom: true,
 
-  // Can be dragged to reorder
-  draggable: true,
+  // Disable draggable to prevent interference with input interactions
+  draggable: false,
 
   // Content is isolated (cannot be edited inline)
   isolating: true,
+
+  // Prevent deletion when typing inside the block
+  selectable: false,
 
   /**
    * Default options
@@ -73,36 +77,34 @@ export const DatabaseTableExtension = Node.create<DatabaseTableOptions>({
     return {
       // Unique database identifier
       databaseId: {
-        default: null,
-        parseHTML: element => element.getAttribute('data-database-id'),
+        default: '',
+        parseHTML: element => element.getAttribute('data-database-id') || '',
         renderHTML: attributes => {
-          if (!attributes['databaseId']) {
-            return {};
-          }
+          // Always render the attribute, even if empty
+          // Empty string signals "database not yet created"
           return {
-            'data-database-id': attributes['databaseId'],
+            'data-database-id': attributes['databaseId'] || '',
           };
         },
       },
 
       // Database configuration (columns, views, etc.)
       config: {
-        default: null,
+        default: DEFAULT_DATABASE_CONFIG,
         parseHTML: element => {
           const configAttr = element.getAttribute('data-config');
-          if (!configAttr) return null;
+          if (!configAttr) return DEFAULT_DATABASE_CONFIG;
           try {
             return JSON.parse(configAttr);
           } catch {
-            return null;
+            return DEFAULT_DATABASE_CONFIG;
           }
         },
         renderHTML: attributes => {
-          if (!attributes['config']) {
-            return {};
-          }
+          // Always render config, use default if not provided
+          const config = attributes['config'] || DEFAULT_DATABASE_CONFIG;
           return {
-            'data-config': JSON.stringify(attributes['config']),
+            'data-config': JSON.stringify(config),
           };
         },
       },
@@ -157,16 +159,13 @@ export const DatabaseTableExtension = Node.create<DatabaseTableOptions>({
     return {
       /**
        * Insert a new database table with default configuration
+       * @param databaseId - Optional pre-generated database ID (recommended)
        */
       insertDatabaseTable:
-        () =>
+        (databaseId?: string) =>
         ({ commands }) => {
-          // Generate unique database ID
-          const databaseId = generateDatabaseId();
-
-          // Create node attributes with default config
           const attributes: DatabaseNodeAttributes = {
-            databaseId,
+            databaseId: databaseId || '', // Use provided ID or empty string
             config: DEFAULT_DATABASE_CONFIG,
             storageMode: 'supabase',
           };

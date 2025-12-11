@@ -1,0 +1,135 @@
+<div class="column-editor-dialog">
+  <h2 mat-dialog-title class="dialog-title">
+    <mat-icon class="title-icon">view_column</mat-icon>
+    {{ dialogTitle }}
+  </h2>
+
+  <mat-dialog-content class="dialog-content">
+    <form [formGroup]="columnForm" class="column-form">
+      <!-- Column Name -->
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Nom de la colonne</mat-label>
+        <input
+          matInput
+          formControlName="name"
+          placeholder="Ex: Nom, Statut, Date limite"
+          required
+        />
+        <mat-icon matPrefix>label</mat-icon>
+        @if (columnForm.get('name')?.hasError('required')) {
+          <mat-error>Le nom est requis</mat-error>
+        }
+      </mat-form-field>
+
+      <!-- Column Type -->
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Type de colonne</mat-label>
+        <mat-select formControlName="type" required>
+          @for (type of columnTypes; track type.value) {
+            <mat-option [value]="type.value">
+              {{ type.label }}
+            </mat-option>
+          }
+        </mat-select>
+        <mat-icon matPrefix>category</mat-icon>
+      </mat-form-field>
+
+      <!-- Options for Select/Multi-Select -->
+      @if (isSelectType) {
+        <div class="choices-section">
+          <div class="choices-header">
+            <h3 class="text-sm font-medium text-gray-700">Options de sélection</h3>
+            <button
+              type="button"
+              mat-stroked-button
+              color="primary"
+              (click)="addChoice()"
+              class="add-choice-btn"
+            >
+              <mat-icon>add</mat-icon>
+              Ajouter une option
+            </button>
+          </div>
+
+          <div class="choices-list">
+            @for (choice of choices(); track choice.id) {
+              <div class="choice-item">
+                <mat-form-field appearance="outline" class="choice-label-field">
+                  <mat-label>Label</mat-label>
+                  <input
+                    matInput
+                    [value]="choice.label"
+                    (input)="updateChoiceLabel(choice.id, $any($event.target).value)"
+                    placeholder="Nom de l'option"
+                  />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="choice-color-field">
+                  <mat-label>Couleur</mat-label>
+                  <mat-select
+                    [value]="choice.color"
+                    (selectionChange)="updateChoiceColor(choice.id, $event.value)"
+                  >
+                    @for (color of availableColors; track color.value) {
+                      <mat-option [value]="color.value">
+                        <span class="inline-flex items-center gap-2">
+                          <span
+                            class="w-4 h-4 rounded-full {{ color.value }}"
+                          ></span>
+                          {{ color.label }}
+                        </span>
+                      </mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <button
+                  type="button"
+                  mat-icon-button
+                  color="warn"
+                  (click)="removeChoice(choice.id)"
+                  [disabled]="choices().length === 1"
+                  matTooltip="Supprimer l'option"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+
+          @if (choices().length === 0) {
+            <div class="empty-choices">
+              <p class="text-sm text-gray-500">
+                Aucune option définie. Cliquez sur "Ajouter une option" pour commencer.
+              </p>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Column Options -->
+      <div class="column-options">
+        <mat-checkbox formControlName="required" class="option-checkbox">
+          Champ obligatoire
+        </mat-checkbox>
+
+        <mat-checkbox formControlName="visible" class="option-checkbox">
+          Colonne visible par défaut
+        </mat-checkbox>
+      </div>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dialog-actions">
+    <button mat-button type="button" (click)="onCancel()">Annuler</button>
+    <button
+      mat-raised-button
+      color="primary"
+      type="button"
+      (click)="onSave()"
+      [disabled]="!isFormValid"
+    >
+      {{ isEditMode() ? 'Enregistrer' : 'Ajouter' }}
+    </button>
+  </mat-dialog-actions>
+</div>

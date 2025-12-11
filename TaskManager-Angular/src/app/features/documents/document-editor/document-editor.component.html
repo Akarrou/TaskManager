@@ -51,7 +51,8 @@
     (click)="focusEditor($event)"
     appTaskSectionRenderer
     appDatabaseTableRenderer
-    [documentId]="documentState().id || ''">
+    [documentId]="documentState().id || ''"
+    [editor]="editor">
     <tiptap-editor
       [editor]="editor"
       class="editor-content">
