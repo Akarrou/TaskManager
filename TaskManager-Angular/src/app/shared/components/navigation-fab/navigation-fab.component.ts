@@ -113,7 +113,7 @@ export class NavigationFabComponent implements OnInit {
           label: 'Nouvelle tâche',
           tooltip: 'Créer une nouvelle tâche',
           action: () => this.navigateTo('/tasks/new'),
-          color: 'primary'
+          color: 'accent'
         },
         {
           id: 'new-document',
@@ -121,7 +121,7 @@ export class NavigationFabComponent implements OnInit {
           label: 'Nouveau document',
           tooltip: 'Créer un nouveau document',
           action: () => this.navigateTo('/documents/new'),
-          color: 'primary'
+          color: 'warn'
         },
         {
           id: 'document-list',
@@ -180,6 +180,18 @@ export class NavigationFabComponent implements OnInit {
         label: 'Nouveau document',
         tooltip: 'Créer un nouveau document',
         action: () => this.navigateTo('/documents/new'),
+        color: 'primary'
+      });
+    }
+
+    // Actions spécifiques à l'éditeur de document
+    if (ctx.currentPage === 'document-editor') {
+      actions.push({
+        id: 'document-list',
+        icon: 'description',
+        label: 'Mes documents',
+        tooltip: 'Retour à la liste des documents',
+        action: () => this.navigateTo('/documents'),
         color: 'primary'
       });
     }

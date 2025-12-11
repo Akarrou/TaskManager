@@ -6,6 +6,7 @@ import { AuthService } from './core/services/auth';
 import { HeaderNavComponent } from './shared/components/header-nav/header-nav.component';
 import { ToastComponent } from './shared/components/toast/toast.component';
 import { NavigationFabComponent } from './shared/components/navigation-fab/navigation-fab.component';
+import { Footer } from './shared/components/footer/footer';
 import { Store } from '@ngrx/store';
 import { AppState } from './app.state';
 import * as ProjectActions from './features/projects/store/project.actions';
@@ -14,13 +15,14 @@ import { FabStore } from './core/stores/fab.store';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, HeaderNavComponent, ToastComponent, NavigationFabComponent],
+  imports: [RouterOutlet, CommonModule, HeaderNavComponent, ToastComponent, NavigationFabComponent, Footer],
   template: `
     <div class="app-container">
       <app-header-nav></app-header-nav>
       <main class="main-content">
         <router-outlet></router-outlet>
       </main>
+      <app-footer></app-footer>
       <app-toast></app-toast>
 
       <!-- FAB Centralisé -->

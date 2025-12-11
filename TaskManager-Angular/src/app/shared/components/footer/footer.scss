@@ -1,0 +1,62 @@
+@use "../../../styles/variables" as v;
+
+.c-footer {
+  background-color: v.$background-color-form;
+  border-top: 1px solid v.$border-color-light;
+  margin-top: auto;
+
+  &__content {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    text-align: center;
+  }
+
+  &__nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  &__nav-link {
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-medium;
+    color: v.$text-color-light;
+    text-decoration: none;
+    transition: color v.$transition-duration v.$transition-timing-function;
+
+    &:hover {
+      color: v.$primary-color;
+    }
+  }
+
+  &__social {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  &__social-link {
+    color: v.$text-color-disabled;
+    transition: color v.$transition-duration v.$transition-timing-function;
+
+    svg {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    &:hover {
+      color: v.$primary-color;
+    }
+  }
+
+  &__copyright {
+    font-size: v.$font-size-sm;
+    color: v.$text-color-light;
+    margin: 0;
+  }
+}

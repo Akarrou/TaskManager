@@ -1,10 +1,12 @@
 .app-container {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   font-family: 'Inter', system-ui, sans-serif;
 }
 
 .main-content {
-  min-height: calc(100vh - 70px); // 70px est la hauteur du header
+  flex: 1;
   padding: 0;
 } 

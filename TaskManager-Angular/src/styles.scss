@@ -560,3 +560,46 @@ body.dragging .bubble-menu-wrapper {
   outline-color: #60a5fa !important;
   background-color: rgba(96, 165, 250, 0.1);
 }
+
+// ============================================================================
+// GLOBAL LAYOUT STYLES
+// ============================================================================
+
+.c-main-content {
+  max-width: v.$breakpoint-xl;
+  margin: 0 auto;
+  padding: v.$space-8 v.$space-6;
+  min-height: 80vh;
+
+  @media (min-width: v.$breakpoint-lg) {
+    padding-left: v.$space-10;
+    padding-right: v.$space-10;
+  }
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: v.$space-4;
+    margin-bottom: v.$space-8;
+
+    @media (min-width: v.$breakpoint-md) {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+
+  &__title {
+    font-size: v.$font-size-3xl;
+    font-weight: v.$font-weight-black;
+    letter-spacing: -0.025em;
+    color: v.$text-color-dark;
+  }
+
+  &__subtitle {
+    margin-top: v.$space-1;
+    font-size: v.$font-size-sm;
+    color: v.$text-color-light;
+  }
+}
