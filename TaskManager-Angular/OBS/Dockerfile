@@ -35,9 +35,6 @@ RUN apk add --no-cache gettext
 # Copier le build Angular dans nginx
 COPY --from=builder /app/dist/TaskManager-Angular/browser /usr/share/nginx/html
 
-# Renommer index.csr.html en index.html pour Nginx
-RUN mv /usr/share/nginx/html/index.csr.html /usr/share/nginx/html/index.html
-
 # Copier la config nginx
 COPY OBS/nginx.conf /etc/nginx/nginx.conf
 

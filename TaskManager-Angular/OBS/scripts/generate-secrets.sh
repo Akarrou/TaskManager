@@ -45,7 +45,8 @@ generate_secret() {
 }
 
 generate_long_secret() {
-    openssl rand -base64 64 | tr -d "\n"
+    # Use hex encoding for URL-safe secrets (no special characters like / + =)
+    openssl rand -hex 64 | cut -c1-88
 }
 
 generate_uuid() {

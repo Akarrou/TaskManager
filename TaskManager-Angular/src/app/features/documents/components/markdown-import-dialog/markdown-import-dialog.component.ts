@@ -5,7 +5,7 @@
 
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import { MatDialogRef, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -18,6 +18,10 @@ import { DocumentService, Document } from '../../services/document.service';
 import { convertMarkdownToTipTap } from '../../utils/markdown-to-tiptap-converter';
 import { MarkdownFrontMatter } from '../../models/markdown-import.model';
 import { JSONContent } from '@tiptap/core';
+
+interface MarkdownImportDialogData {
+  projectId: string;
+}
 
 type ImportStep = 'upload' | 'preview' | 'complete';
 
@@ -41,8 +45,10 @@ export class MarkdownImportDialogComponent {
   private dialogRef = inject(MatDialogRef<MarkdownImportDialogComponent>);
   private markdownParser = inject(MarkdownParserService);
   private documentService = inject(DocumentService);
+  private data = inject<MarkdownImportDialogData>(MAT_DIALOG_DATA);
 
   // State signals
+  projectId = signal<string>(this.data.projectId);
   selectedFile = signal<File | null>(null);
   frontMatter = signal<MarkdownFrontMatter | null>(null);
   rawContent = signal<string>('');
@@ -174,6 +180,7 @@ export class MarkdownImportDialogComponent {
       this.documentService.createDocument({
         title: this.titleControl.value || 'Sans titre',
         content: jsonContent,
+        project_id: this.projectId(),
       }).subscribe({
         next: (doc) => {
           this.importedDocument.set(doc);

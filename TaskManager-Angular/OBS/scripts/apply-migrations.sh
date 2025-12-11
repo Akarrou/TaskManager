@@ -16,17 +16,29 @@ NC='\033[0m' # No Color
 echo "=== 🚀 Application des Migrations Supabase ==="
 echo ""
 
-# Verify schema_migrations table exists
+# Check if schema_migrations table exists, create it if not
 echo "📋 Vérification table schema_migrations..."
-docker exec $DB_CONTAINER psql -U $DB_USER -d $DB_NAME -c "
+table_exists=$(docker exec $DB_CONTAINER psql -U $DB_USER -d $DB_NAME -t -c "
   SELECT COUNT(*) FROM information_schema.tables
   WHERE table_schema='public' AND table_name='schema_migrations'
-" | grep -q "1" || {
-  echo -e "${RED}❌ Table schema_migrations manquante${NC}"
-  echo "Veuillez d'abord créer la table avec 20251210235959_create_schema_migrations_table.sql"
-  exit 1
-}
-echo -e "${GREEN}✓ Table schema_migrations présente${NC}"
+" | xargs)
+
+if [ "$table_exists" -eq 0 ]; then
+  echo -e "${YELLOW}⚠️  Table schema_migrations manquante, création en cours...${NC}"
+
+  # Apply the schema_migrations table creation migration first
+  schema_migration_file="$MIGRATION_DIR/20251210235959_create_schema_migrations_table.sql"
+
+  if [ -f "$schema_migration_file" ]; then
+    docker exec -i $DB_CONTAINER psql -U $DB_USER -d $DB_NAME < "$schema_migration_file" > /dev/null 2>&1
+    echo -e "${GREEN}✓ Table schema_migrations créée${NC}"
+  else
+    echo -e "${RED}❌ Fichier de migration schema_migrations introuvable: $schema_migration_file${NC}"
+    exit 1
+  fi
+else
+  echo -e "${GREEN}✓ Table schema_migrations présente${NC}"
+fi
 echo ""
 
 # Get list of migrations sorted by version
