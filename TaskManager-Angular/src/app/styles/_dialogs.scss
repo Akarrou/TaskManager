@@ -1,0 +1,395 @@
+// ============================================================================
+// SHARED DIALOG STYLES
+// ============================================================================
+// Global styles for all Material dialogs to ensure consistent look and feel
+// across the application following the design system.
+
+@use "variables" as v;
+
+// ============================================================================
+// DIALOG TITLE STYLES
+// ============================================================================
+
+.dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: v.$font-size-xl !important;
+  font-weight: v.$font-weight-semibold !important;
+  color: v.$text-color-dark !important;
+  margin: 0 !important;
+  padding: 1.5rem 1.5rem 1rem 1.5rem !important;
+  border-bottom: 1px solid v.$border-color-light;
+
+  mat-icon {
+    font-size: 1.5rem;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}
+
+// Title variants with icons
+.dialog-title-default {
+  @extend .dialog-title;
+  color: v.$primary-color !important;
+
+  mat-icon {
+    color: v.$primary-color;
+  }
+}
+
+.dialog-title-danger {
+  @extend .dialog-title;
+  color: v.$error-color !important;
+
+  mat-icon {
+    color: v.$error-color;
+  }
+}
+
+.dialog-title-warning {
+  @extend .dialog-title;
+  color: v.$warning-color !important;
+
+  mat-icon {
+    color: v.$warning-color;
+  }
+}
+
+.dialog-title-info {
+  @extend .dialog-title;
+  color: v.$primary-color-light !important;
+
+  mat-icon {
+    color: v.$primary-color-light;
+  }
+}
+
+.dialog-title-success {
+  @extend .dialog-title;
+  color: v.$success-color !important;
+
+  mat-icon {
+    color: v.$success-color;
+  }
+}
+
+// ============================================================================
+// DIALOG CONTENT STYLES
+// ============================================================================
+
+.dialog-content {
+  padding: 1.5rem !important;
+  color: v.$text-color-medium;
+  font-size: v.$font-size-base;
+  line-height: 1.6;
+  min-height: 60px;
+
+  p {
+    margin: 0 0 1rem 0;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  strong {
+    font-weight: v.$font-weight-semibold;
+    color: v.$text-color-dark;
+  }
+}
+
+// ============================================================================
+// DIALOG ACTIONS (BUTTONS AREA)
+// ============================================================================
+
+.dialog-actions {
+  padding: 1rem 1.5rem 1.5rem 1.5rem !important;
+  gap: 0.75rem !important;
+  border-top: 1px solid v.$border-color-light;
+  background-color: v.$background-color-light;
+}
+
+// ============================================================================
+// DIALOG BUTTONS
+// ============================================================================
+
+.dialog-btn {
+  padding: 0.5rem 1.25rem !important;
+  font-weight: v.$font-weight-medium !important;
+  border-radius: v.$border-radius-md !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+
+  mat-icon {
+    font-size: 1.25rem;
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+// Secondary button (Cancel, Back, etc.)
+.dialog-btn-secondary {
+  @extend .dialog-btn;
+  color: v.$text-color-medium !important;
+  background-color: transparent !important;
+  border: 1px solid v.$border-color-medium !important;
+
+  &:hover {
+    background-color: v.$background-color-hover !important;
+    border-color: v.$border-color-medium !important;
+  }
+
+  &:focus {
+    outline: 2px solid v.$primary-color !important;
+    outline-offset: 2px !important;
+  }
+}
+
+// Primary button (Confirm, Save, Submit)
+.dialog-btn-primary {
+  @extend .dialog-btn;
+  color: white !important;
+  background: linear-gradient(135deg, v.$primary-color 0%, v.$primary-color-dark 100%) !important;
+  border: none !important;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2) !important;
+
+  &:hover {
+    background: linear-gradient(135deg, v.$primary-color-dark 0%, v.$primary-color 100%) !important;
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3) !important;
+  }
+
+  &:focus {
+    outline: 2px solid v.$primary-color !important;
+    outline-offset: 2px !important;
+  }
+
+  &:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+  }
+}
+
+// Danger button (Delete, Remove, Destroy)
+.dialog-btn-danger {
+  @extend .dialog-btn;
+  color: white !important;
+  background-color: v.$error-color !important;
+  border: none !important;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2) !important;
+
+  &:hover {
+    background-color: #dc2626 !important;
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3) !important;
+  }
+
+  &:focus {
+    outline: 2px solid v.$error-color !important;
+    outline-offset: 2px !important;
+  }
+
+  &:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+  }
+}
+
+// ============================================================================
+// ALERT/INFO BOXES WITHIN DIALOGS
+// ============================================================================
+
+.dialog-alert {
+  padding: 1rem;
+  border-radius: v.$border-radius-md;
+  margin: 1rem 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+
+  mat-icon {
+    flex-shrink: 0;
+    font-size: 1.25rem;
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  &-content {
+    flex: 1;
+
+    p {
+      margin: 0 0 0.5rem 0;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  &-title {
+    font-weight: v.$font-weight-semibold;
+    margin-bottom: 0.5rem;
+  }
+}
+
+.dialog-alert-info {
+  @extend .dialog-alert;
+  background-color: #eff6ff;
+  border-left: 4px solid v.$primary-color;
+
+  mat-icon {
+    color: v.$primary-color;
+  }
+
+  .dialog-alert-title {
+    color: #1e40af;
+  }
+
+  p {
+    color: #1e3a8a;
+  }
+}
+
+.dialog-alert-warning {
+  @extend .dialog-alert;
+  background-color: #fef3c7;
+  border-left: 4px solid v.$warning-color;
+
+  mat-icon {
+    color: v.$warning-color;
+  }
+
+  .dialog-alert-title {
+    color: #92400e;
+  }
+
+  p {
+    color: #78350f;
+  }
+}
+
+.dialog-alert-danger {
+  @extend .dialog-alert;
+  background-color: v.$danger-bg;
+  border-left: 4px solid v.$error-color;
+
+  mat-icon {
+    color: v.$error-color;
+  }
+
+  .dialog-alert-title {
+    color: v.$danger-text;
+  }
+
+  p {
+    color: #991b1b;
+  }
+}
+
+.dialog-alert-success {
+  @extend .dialog-alert;
+  background-color: #d1fae5;
+  border-left: 4px solid v.$success-color;
+
+  mat-icon {
+    color: v.$success-color;
+  }
+
+  .dialog-alert-title {
+    color: #065f46;
+  }
+
+  p {
+    color: #064e3b;
+  }
+}
+
+// ============================================================================
+// DIALOG DIVIDERS
+// ============================================================================
+
+.dialog-divider {
+  height: 1px;
+  background-color: v.$border-color-light;
+  margin: 1.5rem 0;
+  border: none;
+}
+
+// ============================================================================
+// DIALOG LOADING STATE
+// ============================================================================
+
+.dialog-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: v.$text-color-light;
+
+  mat-spinner {
+    display: inline-block;
+  }
+}
+
+// ============================================================================
+// FORM STYLES WITHIN DIALOGS
+// ============================================================================
+
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  mat-form-field {
+    width: 100%;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 1rem;
+
+    mat-form-field {
+      flex: 1;
+    }
+  }
+
+  .form-section-title {
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-semibold;
+    color: v.$text-color-dark;
+    margin: 1rem 0 0.5rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+}
+
+// ============================================================================
+// RESPONSIVE ADJUSTMENTS
+// ============================================================================
+
+@media (max-width: v.$breakpoint-sm) {
+  .dialog-title {
+    font-size: v.$font-size-lg !important;
+    padding: 1rem !important;
+  }
+
+  .dialog-content {
+    padding: 1rem !important;
+  }
+
+  .dialog-actions {
+    flex-direction: column-reverse;
+    padding: 1rem !important;
+
+    button {
+      width: 100%;
+    }
+  }
+
+  .dialog-form .form-row {
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+}

@@ -1,7 +1,9 @@
-<div class="csv-import-dialog">
-  <h2 mat-dialog-title>Importer CSV - {{ tableName }}</h2>
+<h2 mat-dialog-title class="dialog-title-default">
+  <mat-icon>table_chart</mat-icon>
+  Importer CSV - {{ tableName }}
+</h2>
 
-  <mat-dialog-content class="dialog-content">
+<mat-dialog-content class="dialog-content">
     <mat-stepper #stepper linear>
       <!-- Step 1: Upload fichier -->
       <mat-step [completed]="selectedFile() !== null">
@@ -9,21 +11,28 @@
 
         <div class="step-content">
           <p class="text-gray-600 mb-4">
-            Sélectionnez un fichier CSV à importer. Le fichier doit contenir
-            une ligne d'en-tête avec les noms de colonnes.
+            Glissez-déposez un fichier CSV ou cliquez sur le bouton ci-dessous.
           </p>
 
-          <div class="upload-zone" (click)="fileInput.click()">
-            <mat-icon class="upload-icon">upload_file</mat-icon>
-            <p class="text-lg font-medium">
-              {{
-                selectedFile()
-                  ? fileName()
-                  : 'Cliquez pour sélectionner un fichier CSV'
-              }}
-            </p>
+          <div
+            class="upload-zone"
+            (drop)="onFileDrop($event)"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)">
             @if (selectedFile()) {
-            <p class="text-sm text-gray-500">{{ fileSize() }} MB</p>
+              <mat-icon class="upload-icon text-green-500">check_circle</mat-icon>
+              <p class="text-lg font-medium">{{ fileName() }}</p>
+              <p class="text-sm text-gray-500">{{ fileSize() }} MB</p>
+            } @else {
+              <mat-icon class="upload-icon">cloud_upload</mat-icon>
+              <p class="text-lg font-medium">
+                Glissez-déposez un fichier CSV ici
+              </p>
+              <p class="text-sm text-gray-500">ou</p>
+              <button mat-raised-button color="primary" type="button" (click)="fileInput.click()">
+                <mat-icon>folder_open</mat-icon>
+                Parcourir
+              </button>
             }
           </div>
 
@@ -32,7 +41,7 @@
             type="file"
             accept=".csv"
             (change)="onFileSelected($event)"
-            class="hidden"
+            style="display: none;"
           />
 
           <div class="mt-4 p-4 bg-blue-50 rounded">
@@ -291,9 +300,11 @@
     </mat-stepper>
   </mat-dialog-content>
 
-  <mat-dialog-actions align="end">
+  <mat-dialog-actions class="dialog-actions">
     @if (importResult()) {
-    <button mat-button (click)="close()">Fermer</button>
+      <button mat-raised-button class="dialog-btn-primary" (click)="close()" cdkFocusInitial>
+        <mat-icon>check</mat-icon>
+        Fermer
+      </button>
     }
   </mat-dialog-actions>
-</div>

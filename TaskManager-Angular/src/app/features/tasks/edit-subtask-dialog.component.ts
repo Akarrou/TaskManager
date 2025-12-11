@@ -7,14 +7,24 @@ import { ISubtask } from './subtask.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-edit-subtask-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule],
-  templateUrl: './edit-subtask-dialog.component.html',
-  styleUrls: ['./edit-subtask-dialog.component.scss']
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatIconModule
+  ],
+  templateUrl: './edit-subtask-dialog.component.html'
 })
 export class EditSubtaskDialogComponent {
   private fb = inject(FormBuilder);

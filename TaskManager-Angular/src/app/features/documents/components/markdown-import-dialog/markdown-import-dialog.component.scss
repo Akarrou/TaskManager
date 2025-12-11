@@ -1,11 +1,7 @@
-.markdown-import-dialog {
-  min-width: 500px;
-  max-width: 600px;
+// Component-specific styles (global dialog styles in _dialogs.scss)
 
-  mat-dialog-content {
-    position: relative;
-    padding: 1.5rem 1rem;
-  }
+mat-dialog-content {
+  position: relative;
 }
 
 /* Upload Section */

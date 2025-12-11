@@ -1,24 +1,31 @@
-<h1 mat-dialog-title>{{ data.title }}</h1>
-<div mat-dialog-content>
-  <p *ngFor="let p of data.message.split('\\n')">{{ p }}</p>
-</div>
-<div mat-dialog-actions align="end">
+<h2 mat-dialog-title class="dialog-title-danger">
+  <mat-icon>warning</mat-icon>
+  {{ data.title }}
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  @for (p of data.message.split('\\n'); track $index) {
+    <p>{{ p }}</p>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
   <button
     type="button"
-    class="cta-button primary-action-btn"
-    (click)="onNoClick()"
     mat-button
-  >
-  <mat-icon>cancel</mat-icon>
+    class="dialog-btn-secondary"
+    (click)="onNoClick()">
+    <mat-icon>cancel</mat-icon>
     Annuler
   </button>
 
-  <button 
-  type="button"
-  mat-button
-  class="error-button primary-action-btn"
-  [mat-dialog-close]="true"
-  cdkFocusInitial>
-  <mat-icon>delete</mat-icon> Supprimer
-</button>
-</div> 
+  <button
+    type="button"
+    mat-raised-button
+    class="dialog-btn-danger"
+    [mat-dialog-close]="true"
+    cdkFocusInitial>
+    <mat-icon>delete</mat-icon>
+    Supprimer
+  </button>
+</mat-dialog-actions> 

@@ -1,0 +1,51 @@
+<h2 mat-dialog-title class="dialog-title-danger">
+  <mat-icon>warning</mat-icon>
+  Confirmer la suppression
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <p>
+    Voulez-vous vraiment supprimer le document
+    <strong>"{{ data.documentTitle }}"</strong> ?
+  </p>
+
+  @if (data.databaseCount > 0) {
+    <div class="dialog-alert-warning">
+      <mat-icon>info</mat-icon>
+      <div class="dialog-alert-content">
+        <p class="dialog-alert-title">
+          Ce document contient {{ data.databaseCount }}
+          base{{ data.databaseCount > 1 ? 's' : '' }} de données
+        </p>
+        <p>
+          Toutes les bases de données et leurs tables PostgreSQL associées seront
+          <strong>définitivement supprimées</strong>.
+        </p>
+      </div>
+    </div>
+  }
+
+  <p class="text-sm text-gray-600">
+    <mat-icon class="text-base align-middle">info</mat-icon>
+    Cette action est irréversible.
+  </p>
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
+  <button
+    mat-button
+    class="dialog-btn-secondary"
+    mat-dialog-close>
+    <mat-icon>cancel</mat-icon>
+    Annuler
+  </button>
+
+  <button
+    mat-raised-button
+    class="dialog-btn-danger"
+    [mat-dialog-close]="true"
+    cdkFocusInitial>
+    <mat-icon>delete</mat-icon>
+    Supprimer définitivement
+  </button>
+</mat-dialog-actions>

@@ -5,6 +5,7 @@
 @use "app/styles/variables" as v;
 @use "app/styles/mixins" as m;
 @use "app/styles/forms" as f;
+@use "app/styles/dialogs" as d;
 
 // Import Google Fonts after @use rules.
 @import url("https://fonts.googleapis.com/icon?family=Material+Icons+Outlined");

@@ -1,12 +1,9 @@
-<div class="markdown-import-dialog">
-  <!-- Header -->
-  <h2 mat-dialog-title class="flex items-center gap-2">
-    <mat-icon>upload_file</mat-icon>
-    Importer un fichier Markdown
-  </h2>
+<h2 mat-dialog-title class="dialog-title-default">
+  <mat-icon>upload_file</mat-icon>
+  Importer un fichier Markdown
+</h2>
 
-  <!-- Content -->
-  <mat-dialog-content class="min-h-[300px]">
+<mat-dialog-content class="dialog-content" style="min-height: 300px;">
     <!-- Step 1: Upload -->
     @if (currentStep() === 'upload') {
       <div class="upload-section">
@@ -20,19 +17,17 @@
             Glissez-déposez un fichier Markdown ici
           </p>
           <p class="dropzone-subtext">ou</p>
-          <label for="file-input" class="file-input-label">
-            <button mat-raised-button color="primary" type="button" (click)="fileInput.click()">
-              <mat-icon>folder_open</mat-icon>
-              Parcourir
-            </button>
-          </label>
+          <button mat-raised-button color="primary" type="button" (click)="fileInput.click()">
+            <mat-icon>folder_open</mat-icon>
+            Parcourir
+          </button>
           <input
             #fileInput
             type="file"
             id="file-input"
             accept=".md"
             (change)="onFileSelected($event)"
-            class="hidden"
+            style="display: none;"
           />
           <p class="dropzone-info">
             Fichiers .md uniquement • Maximum {{ MAX_FILE_SIZE_MB }} MB
@@ -146,18 +141,26 @@
   </mat-dialog-content>
 
   <!-- Actions -->
-  <mat-dialog-actions align="end">
+  <!-- Actions -->
+  <mat-dialog-actions class="dialog-actions">
     @if (currentStep() === 'upload') {
-      <button mat-button (click)="cancel()">Annuler</button>
+      <button mat-button class="dialog-btn-secondary" (click)="cancel()">
+        <mat-icon>cancel</mat-icon>
+        Annuler
+      </button>
     }
 
     @if (currentStep() === 'preview') {
-      <button mat-button (click)="resetToUpload()">Retour</button>
+      <button mat-button class="dialog-btn-secondary" (click)="resetToUpload()">
+        <mat-icon>arrow_back</mat-icon>
+        Retour
+      </button>
       <button
         mat-raised-button
-        color="primary"
+        class="dialog-btn-primary"
         (click)="importDocument()"
         [disabled]="isProcessing() || titleControl.invalid"
+        cdkFocusInitial
       >
         <mat-icon>upload</mat-icon>
         Importer
@@ -165,9 +168,9 @@
     }
 
     @if (currentStep() === 'complete') {
-      <button mat-raised-button color="primary" (click)="close()">
+      <button mat-raised-button class="dialog-btn-primary" (click)="close()" cdkFocusInitial>
+        <mat-icon>check</mat-icon>
         Fermer
       </button>
     }
   </mat-dialog-actions>
-</div>

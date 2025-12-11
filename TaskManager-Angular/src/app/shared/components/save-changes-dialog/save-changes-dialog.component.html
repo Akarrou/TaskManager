@@ -1,16 +1,38 @@
-<h2 mat-dialog-title>{{ data.title }}</h2>
-<div mat-dialog-content>
+<h2 mat-dialog-title class="dialog-title-warning">
+  <mat-icon>edit_note</mat-icon>
+  {{ data.title }}
+</h2>
+
+<mat-dialog-content class="dialog-content">
   <p>{{ data.message }}</p>
-</div>
-<div mat-dialog-actions class="btn-container">
-  <button type="button" mat-button class="cta-button primary-action-btn " (click)="onCancel()">
-    <mat-icon>cancel</mat-icon> Annuler
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
+  <button
+    type="button"
+    mat-button
+    class="dialog-btn-secondary"
+    (click)="onCancel()">
+    <mat-icon>cancel</mat-icon>
+    Annuler
   </button>
-  <button type="button" mat-button class="error-button primary-action-btn btn-small" (click)="onDiscard()">
-    <mat-icon>logout</mat-icon> Quitter
+
+  <button
+    type="button"
+    mat-button
+    class="dialog-btn-danger"
+    (click)="onDiscard()">
+    <mat-icon>delete_outline</mat-icon>
+    Quitter sans enregistrer
   </button>
-  <button type="button" mat-button class="btn-primary primary-action-btn btn-small" (click)="onSave()">
-    <mat-icon>save</mat-icon> Enregistrer
+
+  <button
+    type="button"
+    mat-raised-button
+    class="dialog-btn-primary"
+    (click)="onSave()"
+    cdkFocusInitial>
+    <mat-icon>save</mat-icon>
+    Enregistrer
   </button>
-  
-</div> 
+</mat-dialog-actions> 

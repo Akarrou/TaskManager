@@ -1,126 +1,120 @@
-.csv-import-dialog {
-  .dialog-content {
-    min-width: 800px;
-    max-width: 900px;
-    max-height: 70vh;
+// Component-specific styles (global dialog styles in _dialogs.scss)
+
+.step-content {
+  padding: 24px 0;
+  min-height: 300px;
+}
+
+// Step 1: Upload
+.upload-zone {
+  @apply border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer transition-colors;
+
+  &:hover {
+    @apply border-blue-500 bg-blue-50;
   }
 
-  .step-content {
-    padding: 24px 0;
-    min-height: 300px;
+  .upload-icon {
+    @apply text-6xl text-gray-400 mb-4;
   }
+}
 
-  // Step 1: Upload
-  .upload-zone {
-    @apply border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer transition-colors;
+.hidden {
+  display: none;
+}
 
-    &:hover {
-      @apply border-blue-500 bg-blue-50;
-    }
+// Step 2: Analysis result
+.analysis-result {
+  .success-message {
+    @apply flex items-start gap-4 p-4 bg-green-50 rounded-lg;
 
-    .upload-icon {
-      @apply text-6xl text-gray-400 mb-4;
-    }
-  }
-
-  .hidden {
-    display: none;
-  }
-
-  // Step 2: Analysis result
-  .analysis-result {
-    .success-message {
-      @apply flex items-start gap-4 p-4 bg-green-50 rounded-lg;
-
-      mat-icon {
-        @apply text-4xl;
-      }
-    }
-
-    .warnings {
-      @apply p-4 bg-orange-50 rounded-lg;
-
-      ul {
-        @apply list-disc list-inside space-y-1;
-      }
+    mat-icon {
+      @apply text-4xl;
     }
   }
 
-  // Step 3: Preview table
-  .preview-section {
-    .table-container {
-      @apply border border-gray-200 rounded-lg overflow-x-auto max-h-96;
+  .warnings {
+    @apply p-4 bg-orange-50 rounded-lg;
 
-      table {
-        width: 100%;
-        border-collapse: collapse;
-      }
+    ul {
+      @apply list-disc list-inside space-y-1;
+    }
+  }
+}
 
-      .column-header {
-        @apply bg-gray-50 border-b-2 border-gray-300;
-        min-width: 180px;
+// Step 3: Preview table
+.preview-section {
+  .table-container {
+    @apply border border-gray-200 rounded-lg overflow-x-auto max-h-96;
 
-        .header-content {
-          @apply flex flex-col gap-2 py-2;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
 
-          .type-select {
-            mat-form-field {
-              @apply text-sm;
-              margin-bottom: -1.25em;
-            }
+    .column-header {
+      @apply bg-gray-50 border-b-2 border-gray-300;
+      min-width: 180px;
+
+      .header-content {
+        @apply flex flex-col gap-2 py-2;
+
+        .type-select {
+          mat-form-field {
+            @apply text-sm;
+            margin-bottom: -1.25em;
           }
         }
       }
+    }
 
-      td {
-        @apply p-2 border-b border-gray-200 text-sm;
-        max-width: 200px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
+    td {
+      @apply p-2 border-b border-gray-200 text-sm;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}
+
+// Step 4: Import progress
+.import-progress {
+  @apply py-12 text-center;
+}
+
+.import-complete {
+  .success-card {
+    @apply flex items-start gap-4 p-6 bg-green-50 rounded-lg;
+
+    .success-icon {
+      @apply text-5xl text-green-600;
     }
   }
 
-  // Step 4: Import progress
-  .import-progress {
-    @apply py-12 text-center;
+  .warning-card {
+    @apply flex items-start gap-4 p-6 bg-orange-50 rounded-lg;
+
+    .warning-icon {
+      @apply text-5xl text-orange-600;
+    }
   }
 
-  .import-complete {
-    .success-card {
-      @apply flex items-start gap-4 p-6 bg-green-50 rounded-lg;
+  .error-card {
+    @apply flex items-start gap-4 p-6 bg-red-50 rounded-lg;
 
-      .success-icon {
-        @apply text-5xl text-green-600;
-      }
+    .error-icon {
+      @apply text-5xl text-red-600;
     }
+  }
 
-    .warning-card {
-      @apply flex items-start gap-4 p-6 bg-orange-50 rounded-lg;
+  .errors-section {
+    @apply border border-gray-200 rounded-lg p-4;
 
-      .warning-icon {
-        @apply text-5xl text-orange-600;
-      }
-    }
+    .error-list {
+      @apply max-h-60 overflow-y-auto space-y-2;
 
-    .error-card {
-      @apply flex items-start gap-4 p-6 bg-red-50 rounded-lg;
-
-      .error-icon {
-        @apply text-5xl text-red-600;
-      }
-    }
-
-    .errors-section {
-      @apply border border-gray-200 rounded-lg p-4;
-
-      .error-list {
-        @apply max-h-60 overflow-y-auto space-y-2;
-
-        .error-item {
-          @apply flex gap-3 text-sm p-2 bg-red-50 rounded;
-        }
+      .error-item {
+        @apply flex gap-3 text-sm p-2 bg-red-50 rounded;
       }
     }
   }

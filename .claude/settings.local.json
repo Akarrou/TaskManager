@@ -57,7 +57,11 @@
       "Bash(npx tsc:*)",
       "Bash(ng generate:*)",
       "Bash(pnpm install:*)",
-      "Bash(npm run start:*)"
+      "Bash(npm run start:*)",
+      "Bash(npx supabase:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(docker-compose exec:*)",
+      "Bash(docker ps:*)"
     ]
   },
   "enableAllProjectMcpServers": false

@@ -105,7 +105,43 @@ export class CsvImportDialogComponent {
     if (!input.files?.length) return;
 
     const file = input.files[0];
+    this.validateAndSetFile(file);
+  }
 
+  /**
+   * Drag & Drop: Prevent default behavior
+   */
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  /**
+   * Drag & Drop: Handle drag leave
+   */
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  /**
+   * Drag & Drop: Handle file drop
+   */
+  onFileDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const files = event.dataTransfer?.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    this.validateAndSetFile(file);
+  }
+
+  /**
+   * Validate and set the selected file
+   */
+  private validateAndSetFile(file: File): void {
     // Validation
     if (!file.name.endsWith('.csv')) {
       alert('Seuls les fichiers CSV sont acceptés.');
