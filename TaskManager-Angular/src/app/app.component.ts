@@ -15,58 +15,31 @@ import * as ProjectActions from './features/projects/store/project.actions';
   imports: [RouterOutlet, CommonModule, HeaderNavComponent, ToastComponent],
   template: `
     <div class="app-container">
-      @if (isInitialized()) {
-        <app-header-nav></app-header-nav>
-        <main class="main-content">
-          <router-outlet></router-outlet>
-        </main>
-        <app-toast></app-toast>
-      } @else {
-        <div class="app-loading">
-          <div class="loading-spinner">
-            <div class="spinner">🔄</div>
-          </div>
-          <p class="loading-text">Initialisation de l'application...</p>
-          <p class="loading-progress">{{ initStatus() }}</p>
-        </div>
-      }
+      <app-header-nav></app-header-nav>
+      <main class="main-content">
+        <router-outlet></router-outlet>
+      </main>
+      <app-toast></app-toast>
     </div>
   `,
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit {
-  title = 'AgroFlow Task Manager';
-  isInitialized = signal(false);
-  initStatus = signal('Démarrage...');
+  title = 'Kōdo';
 
   private supabaseService = inject(SupabaseService);
   private authService = inject(AuthService);
   private store = inject(Store<AppState>);
 
   async ngOnInit() {
-    this.initStatus.set('🚀 Démarrage de l\'application...');
-
     // Charger les données initiales de l'application
     this.store.dispatch(ProjectActions.loadProjects());
 
     try {
-      // ÉTAPE 1: Tester la connexion Supabase de base
-      this.initStatus.set('📡 Connexion à Supabase...');
+      // Tester la connexion Supabase de base
       await this.testSupabaseConnection();
-
-      this.initStatus.set('✅ Initialisation terminée !');
-
-      // Petit délai pour voir le message de succès
-      setTimeout(() => {
-        this.isInitialized.set(true);
-      }, 500);
-
     } catch (error) {
-      this.initStatus.set('⚠️ Initialisation avec erreurs...');
-
-      setTimeout(() => {
-        this.isInitialized.set(true);
-      }, 1000);
+      console.warn('⚠️ Initialisation avec erreurs...', error);
     }
   }
 
