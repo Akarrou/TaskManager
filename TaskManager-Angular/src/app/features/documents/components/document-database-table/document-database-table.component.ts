@@ -16,6 +16,7 @@ import {
   DEFAULT_DATABASE_CONFIG,
   DatabaseColumn,
   ViewType,
+  SelectChoice,
 } from '../../models/database.model';
 import { DatabaseService } from '../../services/database.service';
 import {
@@ -587,6 +588,100 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   onCellClick(rowId: string, columnId: string, event: Event): void {
     // Placeholder for future click handling
     // Could be used for more complex editing UI
+  }
+
+  /**
+   * Update multi-select cell value
+   */
+  onUpdateMultiSelectCell(rowId: string, columnId: string, selectElement: HTMLSelectElement): void {
+    const selectedOptions = Array.from(selectElement.selectedOptions);
+    const selectedValues = selectedOptions.map(option => option.value);
+
+    this.onUpdateCell(rowId, columnId, selectedValues);
+  }
+
+  /**
+   * Get selected choice object for single select
+   */
+  getSelectedChoice(cellValue: CellValue, column: DatabaseColumn): SelectChoice | null {
+    if (!cellValue || typeof cellValue !== 'string') return null;
+    if (!column.options?.choices) return null;
+
+    const selectedId = cellValue as string;
+    return column.options.choices.find(choice => choice.id === selectedId) || null;
+  }
+
+  /**
+   * Get selected choice objects from cell value (for multi-select)
+   */
+  getSelectedChoices(cellValue: CellValue, column: DatabaseColumn): SelectChoice[] {
+    if (!cellValue || !Array.isArray(cellValue)) return [];
+    if (!column.options?.choices) return [];
+
+    const selectedIds = cellValue as string[];
+    return column.options.choices.filter(choice => selectedIds.includes(choice.id));
+  }
+
+  /**
+   * Get available (unselected) choices
+   */
+  getAvailableChoices(cellValue: CellValue, column: DatabaseColumn): SelectChoice[] {
+    if (!column.options?.choices) return [];
+
+    const selectedIds = Array.isArray(cellValue) ? (cellValue as string[]) : [];
+    return column.options.choices.filter(choice => !selectedIds.includes(choice.id));
+  }
+
+  /**
+   * Convert Tailwind color class to CSS color
+   */
+  getChoiceColor(colorClass: string): string {
+    const colorMap: Record<string, string> = {
+      'bg-gray-200': '#e5e7eb',
+      'bg-red-200': '#fecaca',
+      'bg-orange-200': '#fed7aa',
+      'bg-yellow-200': '#fef08a',
+      'bg-green-200': '#bbf7d0',
+      'bg-teal-200': '#99f6e4',
+      'bg-blue-200': '#bfdbfe',
+      'bg-indigo-200': '#c7d2fe',
+      'bg-purple-200': '#e9d5ff',
+      'bg-pink-200': '#fbcfe8',
+    };
+
+    return colorMap[colorClass] || '#e5e7eb';
+  }
+
+  /**
+   * Add a choice to multi-select cell
+   */
+  addChoiceToCell(rowId: string, columnId: string, choiceId: string): void {
+    if (!choiceId) return;
+
+    const row = this.rows().find(r => r.id === rowId);
+    if (!row) return;
+
+    const currentValue = row.cells[columnId];
+    const selectedIds = Array.isArray(currentValue) ? (currentValue as string[]) : [];
+
+    if (!selectedIds.includes(choiceId)) {
+      const newValue = [...selectedIds, choiceId];
+      this.onUpdateCell(rowId, columnId, newValue);
+    }
+  }
+
+  /**
+   * Remove a choice from multi-select cell
+   */
+  removeChoiceFromCell(rowId: string, columnId: string, choiceId: string): void {
+    const row = this.rows().find(r => r.id === rowId);
+    if (!row) return;
+
+    const currentValue = row.cells[columnId];
+    const selectedIds = Array.isArray(currentValue) ? (currentValue as string[]) : [];
+
+    const newValue = selectedIds.filter(id => id !== choiceId);
+    this.onUpdateCell(rowId, columnId, newValue);
   }
 
   /**

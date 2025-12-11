@@ -205,14 +205,76 @@
                                 (change)="onUpdateCell(row.id, column.id, $event.checked)">
                               </mat-checkbox>
                             } @else if (column.type === 'select') {
-                              <!-- Select type -->
-                              <select
-                                class="cell-select"
-                                [value]="row.cells[column.id] || ''"
-                                (change)="onUpdateCell(row.id, column.id, $any($event.target).value)"
-                                (click)="$event.stopPropagation()">
-                                <option value="">-</option>
-                              </select>
+                              <!-- Select type - Display as badge -->
+                              <div class="select-cell">
+                                @if (getSelectedChoice(row.cells[column.id], column); as selectedChoice) {
+                                  <div class="selected-choice-container">
+                                    <span class="choice-badge" [style.background-color]="getChoiceColor(selectedChoice.color)">
+                                      {{ selectedChoice.label }}
+                                      <button
+                                        type="button"
+                                        class="remove-choice"
+                                        (click)="onUpdateCell(row.id, column.id, ''); $event.stopPropagation()">
+                                        ×
+                                      </button>
+                                    </span>
+                                    <select
+                                      class="change-choice-select"
+                                      [value]="''"
+                                      (change)="onUpdateCell(row.id, column.id, $any($event.target).value); $any($event.target).value = ''; $event.stopPropagation()"
+                                      (click)="$event.stopPropagation()">
+                                      <option value="">⟳ Changer</option>
+                                      @for (choice of column.options?.choices ?? []; track choice.id) {
+                                        <option [value]="choice.id">{{ choice.label }}</option>
+                                      }
+                                    </select>
+                                  </div>
+                                } @else {
+                                  <div class="empty-choice-container">
+                                    <span class="empty-select">-</span>
+                                    <select
+                                      class="change-choice-select"
+                                      [value]="''"
+                                      (change)="onUpdateCell(row.id, column.id, $any($event.target).value); $any($event.target).value = ''; $event.stopPropagation()"
+                                      (click)="$event.stopPropagation()">
+                                      <option value="">+ Sélectionner</option>
+                                      @for (choice of column.options?.choices ?? []; track choice.id) {
+                                        <option [value]="choice.id">{{ choice.label }}</option>
+                                      }
+                                    </select>
+                                  </div>
+                                }
+                              </div>
+                            } @else if (column.type === 'multi-select') {
+                              <!-- Multi-select type - Display as badges -->
+                              <div class="multi-select-cell">
+                                @if (getSelectedChoices(row.cells[column.id], column).length > 0) {
+                                  <div class="selected-badges">
+                                    @for (choice of getSelectedChoices(row.cells[column.id], column); track choice.id) {
+                                      <span class="choice-badge" [style.background-color]="getChoiceColor(choice.color)">
+                                        {{ choice.label }}
+                                        <button
+                                          type="button"
+                                          class="remove-choice"
+                                          (click)="removeChoiceFromCell(row.id, column.id, choice.id); $event.stopPropagation()">
+                                          ×
+                                        </button>
+                                      </span>
+                                    }
+                                  </div>
+                                } @else {
+                                  <span class="empty-multi-select">-</span>
+                                }
+                                <select
+                                  class="add-choice-select"
+                                  (change)="addChoiceToCell(row.id, column.id, $any($event.target).value); $any($event.target).value = ''; $event.stopPropagation()"
+                                  (click)="$event.stopPropagation()">
+                                  <option value="">+ Ajouter</option>
+                                  @for (choice of getAvailableChoices(row.cells[column.id], column); track choice.id) {
+                                    <option [value]="choice.id">{{ choice.label }}</option>
+                                  }
+                                </select>
+                              </div>
                             } @else {
                               <!-- Text, number, date, url, email types -->
                               <input
