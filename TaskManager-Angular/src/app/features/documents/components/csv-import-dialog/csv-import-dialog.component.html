@@ -4,7 +4,7 @@
 </h2>
 
 <mat-dialog-content class="dialog-content">
-    <mat-stepper #stepper linear>
+    <mat-stepper #stepper linear class="csv-stepper" (selectionChange)="currentStep.set($event.selectedIndex)">
       <!-- Step 1: Upload fichier -->
       <mat-step [completed]="selectedFile() !== null">
         <ng-template matStepLabel>Upload fichier</ng-template>
@@ -55,23 +55,6 @@
               <li>Première ligne doit contenir les en-têtes</li>
             </ul>
           </div>
-
-          <div class="step-actions">
-            <button mat-button mat-dialog-close class="dialog-btn-secondary">
-              <mat-icon>close</mat-icon>
-              Annuler
-            </button>
-            <button
-              mat-raised-button
-              matStepperNext
-              (click)="parseAndDetectTypes()"
-              [disabled]="!selectedFile()"
-              class="dialog-btn-primary"
-            >
-              <mat-icon>arrow_forward</mat-icon>
-              Suivant
-            </button>
-          </div>
         </div>
       </mat-step>
 
@@ -111,17 +94,6 @@
             </div>
             }
           </div>
-
-          <div class="step-actions">
-            <button mat-button matStepperPrevious class="dialog-btn-secondary">
-              <mat-icon>arrow_back</mat-icon>
-              Précédent
-            </button>
-            <button mat-raised-button matStepperNext class="dialog-btn-primary">
-              <mat-icon>arrow_forward</mat-icon>
-              Suivant
-            </button>
-          </div>
           }
         </div>
       </mat-step>
@@ -145,8 +117,8 @@
                 <ng-container [matColumnDef]="'col' + colIndex">
                   <th mat-header-cell *matHeaderCellDef class="column-header">
                     <div class="header-content">
-                      <div class="flex items-center gap-2">
-                        <span class="font-medium">{{ column.name }}</span>
+                      <div class="flex items-center gap-2 mb-2">
+                        <span class="c-form-label mb-0">{{ column.name }}</span>
                         <mat-icon
                           [class]="getConfidenceColor(column.confidence)"
                           [matTooltip]="
@@ -160,18 +132,15 @@
                         </mat-icon>
                       </div>
 
-                      <mat-form-field appearance="outline" class="type-select">
-                        <mat-select
-                          [value]="column.type"
-                          (selectionChange)="
-                            onColumnTypeChange(colIndex, $event.value)
-                          "
-                        >
-                          @for (type of columnTypes; track type) {
-                          <mat-option [value]="type">{{ type }}</mat-option>
-                          }
-                        </mat-select>
-                      </mat-form-field>
+                      <select
+                        [value]="column.type"
+                        (change)="onColumnTypeChange(colIndex, $any($event.target).value)"
+                        class="c-form-input type-select"
+                      >
+                        @for (type of columnTypes; track type) {
+                        <option [value]="type">{{ type }}</option>
+                        }
+                      </select>
                     </div>
                   </th>
                   <td mat-cell *matCellDef="let row">
@@ -197,22 +166,6 @@
             </p>
           </div>
           }
-
-          <div class="step-actions">
-            <button mat-button matStepperPrevious class="dialog-btn-secondary">
-              <mat-icon>arrow_back</mat-icon>
-              Précédent
-            </button>
-            <button
-              mat-raised-button
-              matStepperNext
-              (click)="startImport()"
-              class="dialog-btn-primary"
-            >
-              <mat-icon>play_arrow</mat-icon>
-              Lancer l'import
-            </button>
-          </div>
         </div>
       </mat-step>
 
@@ -313,10 +266,51 @@
   </mat-dialog-content>
 
   <mat-dialog-actions class="dialog-actions">
-    @if (importResult()) {
-      <button mat-raised-button class="dialog-btn-primary" (click)="close()" cdkFocusInitial>
-        <mat-icon>check</mat-icon>
-        Fermer
-      </button>
-    }
+    <!-- Step 0: Upload fichier -->
+    <button mat-button mat-dialog-close class="dialog-btn-secondary" [class.hidden]="currentStep() !== 0">
+      <mat-icon>close</mat-icon>
+      Annuler
+    </button>
+    <button
+      mat-raised-button
+      (click)="parseAndDetectTypes(); goToNextStep()"
+      [disabled]="!selectedFile()"
+      class="dialog-btn-primary"
+      [class.hidden]="currentStep() !== 0"
+    >
+      <mat-icon>arrow_forward</mat-icon>
+      Suivant
+    </button>
+
+    <!-- Step 1: Analyse -->
+    <button mat-button (click)="goToPreviousStep()" class="dialog-btn-secondary" [class.hidden]="currentStep() !== 1 || isParsingFile()">
+      <mat-icon>arrow_back</mat-icon>
+      Précédent
+    </button>
+    <button mat-raised-button (click)="goToNextStep()" class="dialog-btn-primary" [class.hidden]="currentStep() !== 1 || isParsingFile()">
+      <mat-icon>arrow_forward</mat-icon>
+      Suivant
+    </button>
+
+    <!-- Step 2: Configuration -->
+    <button mat-button (click)="goToPreviousStep()" class="dialog-btn-secondary" [class.hidden]="currentStep() !== 2">
+      <mat-icon>arrow_back</mat-icon>
+      Précédent
+    </button>
+    <button
+      mat-raised-button
+      (click)="startImport(); goToNextStep()"
+      class="dialog-btn-primary"
+      [class.hidden]="currentStep() !== 2"
+    >
+      <mat-icon>play_arrow</mat-icon>
+      Lancer l'import
+    </button>
+
+    <!-- Step 3: Import terminé -->
+    <span [class.hidden]="currentStep() !== 3 || !importResult()"></span>
+    <button mat-raised-button class="dialog-btn-primary" (click)="close()" [class.hidden]="currentStep() !== 3 || !importResult()" cdkFocusInitial>
+      <mat-icon>check</mat-icon>
+      Fermer
+    </button>
   </mat-dialog-actions>

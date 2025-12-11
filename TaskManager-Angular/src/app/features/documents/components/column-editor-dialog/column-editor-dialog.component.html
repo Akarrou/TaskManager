@@ -6,32 +6,44 @@
 <mat-dialog-content class="dialog-content">
     <form [formGroup]="columnForm" class="column-form">
       <!-- Column Name -->
-      <mat-form-field appearance="outline" class="w-full">
-        <mat-label>Nom de la colonne</mat-label>
+      <div class="c-form-group">
+        <label for="column-name" class="c-form-label">
+          Nom de la colonne
+          <span class="c-form-label__required">*</span>
+        </label>
         <input
-          matInput
+          id="column-name"
+          type="text"
           formControlName="name"
+          class="c-form-input"
+          [class.c-form-input--error]="columnForm.get('name')?.invalid && columnForm.get('name')?.touched"
           placeholder="Ex: Nom, Statut, Date limite"
-          required
         />
-        <mat-icon matPrefix>label</mat-icon>
-        @if (columnForm.get('name')?.hasError('required')) {
-          <mat-error>Le nom est requis</mat-error>
+        @if (columnForm.get('name')?.hasError('required') && columnForm.get('name')?.touched) {
+          <div class="c-form-error">
+            <span>Le nom est requis</span>
+          </div>
         }
-      </mat-form-field>
+      </div>
 
       <!-- Column Type -->
-      <mat-form-field appearance="outline" class="w-full">
-        <mat-label>Type de colonne</mat-label>
-        <mat-select formControlName="type" required>
+      <div class="c-form-group">
+        <label for="column-type" class="c-form-label">
+          Type de colonne
+          <span class="c-form-label__required">*</span>
+        </label>
+        <select
+          id="column-type"
+          formControlName="type"
+          class="c-form-input"
+        >
           @for (type of columnTypes; track type.value) {
-            <mat-option [value]="type.value">
+            <option [value]="type.value">
               {{ type.label }}
-            </mat-option>
+            </option>
           }
-        </mat-select>
-        <mat-icon matPrefix>category</mat-icon>
-      </mat-form-field>
+        </select>
+      </div>
 
       <!-- Options for Select/Multi-Select -->
       @if (isSelectType) {
@@ -51,36 +63,35 @@
           </div>
 
           <div class="choices-list">
-            @for (choice of choices(); track choice.id) {
+            @for (choice of choices(); track choice.id; let idx = $index) {
               <div class="choice-item">
-                <mat-form-field appearance="outline" class="choice-label-field">
-                  <mat-label>Label</mat-label>
+                <div class="choice-label-field">
+                  <label [for]="'choice-label-' + idx" class="c-form-label-small">Label</label>
                   <input
-                    matInput
+                    [id]="'choice-label-' + idx"
+                    type="text"
                     [value]="choice.label"
                     (input)="updateChoiceLabel(choice.id, $any($event.target).value)"
                     placeholder="Nom de l'option"
+                    class="c-form-input-small"
                   />
-                </mat-form-field>
+                </div>
 
-                <mat-form-field appearance="outline" class="choice-color-field">
-                  <mat-label>Couleur</mat-label>
-                  <mat-select
+                <div class="choice-color-field">
+                  <label [for]="'choice-color-' + idx" class="c-form-label-small">Couleur</label>
+                  <select
+                    [id]="'choice-color-' + idx"
                     [value]="choice.color"
-                    (selectionChange)="updateChoiceColor(choice.id, $event.value)"
+                    (change)="updateChoiceColor(choice.id, $any($event.target).value)"
+                    class="c-form-input-small"
                   >
                     @for (color of availableColors; track color.value) {
-                      <mat-option [value]="color.value">
-                        <span class="inline-flex items-center gap-2">
-                          <span
-                            class="w-4 h-4 rounded-full {{ color.value }}"
-                          ></span>
-                          {{ color.label }}
-                        </span>
-                      </mat-option>
+                      <option [value]="color.value">
+                        {{ color.label }}
+                      </option>
                     }
-                  </mat-select>
-                </mat-form-field>
+                  </select>
+                </div>
 
                 <button
                   type="button"
@@ -89,6 +100,7 @@
                   (click)="removeChoice(choice.id)"
                   [disabled]="choices().length === 1"
                   matTooltip="Supprimer l'option"
+                  class="delete-choice-btn"
                 >
                   <mat-icon>delete</mat-icon>
                 </button>

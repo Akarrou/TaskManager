@@ -632,9 +632,19 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   executeCommand(item: SlashCommand) {
-    this.editor.chain().focus().deleteRange({ from: this.editor.state.selection.from - 1, to: this.editor.state.selection.from }).run();
+    // Calculer la longueur totale à supprimer : '/' + texte du filtre
+    const filterLength = this.slashFilterText().length;
+    const totalLength = 1 + filterLength; // 1 pour le '/', + longueur du filtre
+
+    // Supprimer le '/' et tout le texte du filtre
+    this.editor.chain().focus().deleteRange({
+      from: this.editor.state.selection.from - totalLength,
+      to: this.editor.state.selection.from
+    }).run();
+
     item.action();
     this.showSlashMenu.set(false);
+    this.slashFilterText.set(''); // Réinitialiser le filtre
   }
 
   addTable() {

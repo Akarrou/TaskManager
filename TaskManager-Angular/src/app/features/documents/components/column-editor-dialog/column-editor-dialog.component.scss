@@ -1,31 +1,150 @@
 // Column-specific styles (global dialog styles are in _dialogs.scss)
+@use "sass:color";
+@use "../../../../styles/variables" as v;
+@use "../../../../styles/mixins" as m;
 
 .column-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: v.$space-6;
+}
+
+// ==========================================================================
+// Form Elements (aligned with project form)
+// ==========================================================================
+.c-form-group {
+  margin-bottom: v.$space-6;
+}
+
+.c-form-label {
+  display: block;
+  font-size: v.$font-size-sm;
+  font-weight: v.$font-weight-semibold;
+  color: v.$text-color-dark;
+  margin-bottom: v.$space-2;
+
+  &__required {
+    color: v.$error-color;
+    margin-left: v.$space-1;
+  }
+}
+
+.c-form-input {
+  width: 100%;
+  padding: v.$space-3 v.$space-4;
+  font-size: v.$font-size-base;
+  color: v.$text-color-dark;
+  background-color: v.$background-color-form;
+  border: 1px solid v.$border-color-medium;
+  border-radius: v.$border-radius-md;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: v.$primary-color;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background-color: white;
+  }
+
+  &::placeholder {
+    color: v.$text-color-disabled;
+  }
+
+  &--error {
+    border-color: v.$error-color;
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+  }
+}
+
+select.c-form-input {
+  appearance: none;
+  background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236B7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E');
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 0.65em auto;
+  padding-right: 2.5rem;
+}
+
+.c-form-error {
+  display: flex;
+  align-items: center;
+  gap: v.$space-2;
+  margin-top: v.$space-2;
+  font-size: v.$font-size-sm;
+  color: v.$error-color;
+
+  &::before {
+    content: '⚠';
+    font-size: v.$font-size-base;
+  }
+}
+
+// Small form elements for choice items
+.c-form-label-small {
+  display: block;
+  font-size: v.$font-size-xs;
+  font-weight: v.$font-weight-semibold;
+  color: v.$text-color-dark;
+  margin-bottom: v.$space-1;
+}
+
+.c-form-input-small {
+  width: 100%;
+  padding: v.$space-2 v.$space-3;
+  font-size: v.$font-size-sm;
+  color: v.$text-color-dark;
+  background-color: v.$background-color-form;
+  border: 1px solid v.$border-color-medium;
+  border-radius: v.$border-radius-md;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: v.$primary-color;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background-color: white;
+  }
+
+  &::placeholder {
+    color: v.$text-color-disabled;
+  }
+}
+
+select.c-form-input-small {
+  appearance: none;
+  background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236B7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E');
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 0.5em auto;
+  padding-right: 2rem;
 }
 
 // Choices Section
 .choices-section {
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  background-color: #f9fafb;
+  border: 1px solid v.$border-color-light;
+  border-radius: v.$border-radius-md;
+  padding: v.$space-4;
+  background-color: v.$background-color-light;
 
   .choices-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: v.$space-4;
 
     h3 {
       margin: 0;
+      font-size: v.$font-size-sm;
+      font-weight: v.$font-weight-semibold;
+      color: v.$text-color-dark;
     }
 
     .add-choice-btn {
       mat-icon {
-        margin-right: 0.25rem;
+        margin-right: v.$space-1;
       }
     }
   }
@@ -33,13 +152,13 @@
   .choices-list {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: v.$space-3;
   }
 
   .choice-item {
     display: flex;
-    gap: 0.5rem;
-    align-items: flex-start;
+    gap: v.$space-2;
+    align-items: flex-end;
 
     .choice-label-field {
       flex: 1;
@@ -48,13 +167,17 @@
     .choice-color-field {
       width: 180px;
     }
+
+    .delete-choice-btn {
+      margin-bottom: v.$space-1;
+    }
   }
 
   .empty-choices {
-    padding: 2rem;
+    padding: v.$space-8;
     text-align: center;
-    border: 2px dashed #d1d5db;
-    border-radius: 0.5rem;
+    border: 2px dashed v.$border-color-medium;
+    border-radius: v.$border-radius-md;
     background-color: white;
   }
 }
@@ -63,12 +186,12 @@
 .column-options {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding-top: 0.5rem;
+  gap: v.$space-2;
+  padding-top: v.$space-2;
 
   .option-checkbox {
     ::ng-deep .mdc-form-field {
-      font-size: 0.875rem;
+      font-size: v.$font-size-sm;
     }
   }
 }

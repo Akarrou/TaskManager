@@ -1,11 +1,11 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   MAT_DIALOG_DATA,
   MatDialogRef,
   MatDialogModule,
 } from '@angular/material/dialog';
-import { MatStepperModule } from '@angular/material/stepper';
+import { MatStepperModule, MatStepper } from '@angular/material/stepper';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -52,6 +52,9 @@ import { ColumnType, SelectChoice } from '../../models/database.model';
   styleUrl: './csv-import-dialog.component.scss',
 })
 export class CsvImportDialogComponent {
+  // ViewChild pour accéder au stepper
+  @ViewChild('stepper') stepper!: MatStepper;
+
   // Injections
   private dialogRef = inject(MatDialogRef<CsvImportDialogComponent>);
   private data = inject<CsvImportDialogData>(MAT_DIALOG_DATA);
@@ -71,6 +74,7 @@ export class CsvImportDialogComponent {
   importProgress = signal(0);
   importStatus = signal('');
   importResult = signal<CsvImportResult | null>(null);
+  currentStep = signal(0);
 
   // Computed
   fileName = computed(() => {
@@ -108,6 +112,20 @@ export class CsvImportDialogComponent {
   // Constants
   MAX_FILE_SIZE_MB = 10;
   MAX_ROWS = 10000;
+
+  // Debug helper
+  typeof = (val: any) => typeof val;
+
+  /**
+   * Navigation methods for stepper
+   */
+  goToNextStep(): void {
+    this.stepper.next();
+  }
+
+  goToPreviousStep(): void {
+    this.stepper.previous();
+  }
 
   /**
    * Step 1: Upload fichier CSV
