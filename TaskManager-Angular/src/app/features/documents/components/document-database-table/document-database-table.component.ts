@@ -169,10 +169,8 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     }
 
     // Load existing database metadata (source of truth for config)
-    console.log('📥 Loading database with ID:', this.databaseId);
     this.databaseService.getDatabaseMetadata(this.databaseId).subscribe({
       next: (metadata) => {
-        console.log('✅ Database metadata loaded:', metadata);
 
         // Load config from Supabase (source of truth)
         this.databaseConfig.set(metadata.config);
@@ -184,7 +182,6 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
         metadata.config.views.forEach(view => {
           // Clean up sortBy if column no longer exists
           if (view.config?.sortBy && !validColumnIds.has(view.config.sortBy)) {
-            console.log(`[CSV Import] Removing invalid sortBy "${view.config.sortBy}" from view "${view.type}"`);
             delete view.config.sortBy;
             delete view.config.sortOrder;
             configUpdated = true;
@@ -192,7 +189,6 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
 
           // Clean up groupBy if column no longer exists
           if (view.config?.groupBy && !validColumnIds.has(view.config.groupBy)) {
-            console.log(`[CSV Import] Removing invalid groupBy "${view.config.groupBy}" from view "${view.type}"`);
             delete view.config.groupBy;
             configUpdated = true;
           }
@@ -201,9 +197,6 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
           if (view.config?.filters && view.config.filters.length > 0) {
             const validFilters = view.config.filters.filter(filter => {
               const isValid = validColumnIds.has(filter.columnId);
-              if (!isValid) {
-                console.log(`[CSV Import] Removing filter on deleted column "${filter.columnId}" from view "${view.type}"`);
-              }
               return isValid;
             });
             if (validFilters.length !== view.config.filters.length) {
@@ -216,21 +209,18 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
         // Helper function to continue initialization after config is ready
         const continueInitialization = () => {
           // With lazy creation, table may not exist yet - loadRows() will handle empty tables gracefully
-          console.log('✅ Database metadata loaded, loading rows...');
           this.loadRows();
           this.isInitializing.set(false);
         };
 
         // If config was updated, persist to Supabase before continuing
         if (configUpdated) {
-          console.log('[CSV Import] View configs cleaned, persisting to Supabase...');
           this.databaseConfig.set(metadata.config);
           this.databaseService
             .updateDatabaseConfig(this.databaseId, metadata.config)
             .pipe(takeUntil(this.destroy$))
             .subscribe({
               next: () => {
-                console.log('[CSV Import] Updated config persisted to Supabase');
                 this.syncToTipTap();
                 this.loadViewConfig();
                 // Continue initialization AFTER config is saved
@@ -308,7 +298,6 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
           const isTableNotFound = err.code === 'PGRST116' || err.code === 'PGRST204' || err.code === 'PGRST205' || err.code === '42P01';
 
           if (isTableNotFound) {
-            console.log('ℹ️ Table not created yet (lazy creation), showing empty state');
             this.rows.set([]);
             this.totalCount.set(0);
             this.isLoading.set(false);
@@ -453,21 +442,17 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: () => {
-            console.log('[onAddColumn] Column added successfully, reloading metadata from Supabase');
             // Reload only metadata (not rows) to get the updated columns
             this.databaseService
               .getDatabaseMetadata(this.databaseId)
               .pipe(takeUntil(this.destroy$))
               .subscribe({
                 next: (metadata: any) => {
-                  console.log('[onAddColumn] Metadata reloaded:', metadata.config);
                   this.databaseConfig.set(metadata.config);
                   this.syncToTipTap();
                   this.loadViewConfig();
                 },
-                error: (err: any) => {
-                  console.error('[onAddColumn] Failed to reload metadata:', err);
-                },
+                error: () => {},
               });
           },
           error: (err) => {
@@ -878,7 +863,6 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
-          console.log('✅ Database name updated:', newName);
           this.syncToTipTap();
           this.isEditingName.set(false);
         },
@@ -1128,9 +1112,8 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   /**
    * Handle row click from Calendar
    */
-  onCalendarRowClick(rowId: string): void {
+  onCalendarRowClick(_rowId: string): void {
     // TODO: Open row detail dialog or scroll to row in table view
-    console.log('Calendar row clicked:', rowId);
   }
 
   /**
@@ -1182,9 +1165,8 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   /**
    * Handle row click from Timeline
    */
-  onTimelineRowClick(rowId: string): void {
+  onTimelineRowClick(_rowId: string): void {
     // TODO: Implement row editing or modal
-    console.log('Timeline row clicked:', rowId);
   }
 
   /**

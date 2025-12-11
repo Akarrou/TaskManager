@@ -262,7 +262,6 @@ export class KanbanCardComponent {
 
   onTaskClick(task: Task | ISubtask): void {
     // This might need further refactoring if sub-items are also KanbanItems
-    console.log('Task clicked:', task);
   }
 
   /**

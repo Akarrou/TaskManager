@@ -99,7 +99,6 @@ export class DocumentListComponent implements OnInit {
 
     // 2. Extraire les IDs de bases de données du contenu
     const databaseIds = this.documentService.extractDatabaseIds(doc.content);
-    console.log('[deleteDocument] Bases de données trouvées:', databaseIds);
 
     // 3. Ouvrir le dialog de confirmation
     const dialogRef = this.dialog.open(DeleteDocumentDialogComponent, {
@@ -136,7 +135,6 @@ export class DocumentListComponent implements OnInit {
     deleteDatabases$.subscribe({
       next: (results) => {
         const successCount = results.filter(r => r === true).length;
-        console.log(`[deleteDocument] ${successCount}/${databaseIds.length} bases supprimées`);
 
         // Supprimer le document
         this.documentService.deleteDocument(documentId).subscribe({

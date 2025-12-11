@@ -2,15 +2,117 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>TaskManagerAngular</title>
+  <title>Kōdo</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="icon" type="image/svg+xml" href="assets/images/kodo-favicon-light.svg">
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    .app-loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    .loading-logo {
+      width: 280px;
+      height: auto;
+      animation: logoFloat 2s ease-in-out infinite;
+    }
+
+    .loading-spinner {
+      position: relative;
+      width: 60px;
+      height: 60px;
+    }
+
+    .spinner-circle {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border: 4px solid #f3f4f6;
+      border-top-color: #e94560;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    .loading-text {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 1rem;
+      font-weight: 300;
+      color: #1a1a2e;
+      letter-spacing: 0.5px;
+      margin: 0;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes logoFloat {
+      0%, 100% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+  </style>
 </head>
 <body>
-  <app-root></app-root>
+  <app-root>
+    <div class="app-loading">
+      <div class="loading-container">
+        <img src="assets/images/kodo-logo-header-light.svg" alt="Kōdo" class="loading-logo">
+        <div class="loading-spinner">
+          <div class="spinner-circle"></div>
+        </div>
+        <p class="loading-text">Chargement en cours...</p>
+      </div>
+    </div>
+  </app-root>
 </body>
 </html>

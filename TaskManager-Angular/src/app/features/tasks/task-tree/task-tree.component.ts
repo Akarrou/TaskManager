@@ -167,10 +167,8 @@ export class TaskTreeComponent implements OnInit, OnChanges {
 
   // Drag & drop
   async drop(event: CdkDragDrop<TaskTreeNode[]>, parentNode: TaskTreeNode | null = null) {
-    console.log('DROP EVENT', event, parentNode); // DEBUG
     const dragged = event.item.data;
     const newParent = parentNode;
-    console.log('dragged:', dragged, 'newParent:', newParent, 'parentNode:', parentNode); // DEBUG
 
     if (dragged.type === 'task' && newParent && newParent.type === 'feature') {
       await this.taskService.updateTask(dragged.id, { parent_task_id: newParent.id });

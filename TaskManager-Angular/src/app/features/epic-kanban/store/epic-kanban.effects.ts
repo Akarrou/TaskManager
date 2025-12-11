@@ -65,11 +65,9 @@ export class EpicKanbanEffects {
   moveFeature$ = createEffect(() =>
     this.actions$.pipe(
       ofType(EpicKanbanActions.moveFeature),
-      tap(action => console.log('%c[DnD Effect] Received moveFeature action', 'color: #E67E22;', action)),
       mergeMap(({ featureId, newStatus }) =>
         from(this.epicKanbanService.updateFeatureStatus(featureId, newStatus)).pipe(
           map(() => {
-            console.log('%c[DnD Effect] Service call successful. Dispatching moveFeatureSuccess.', 'color: #2ECC71;');
             return EpicKanbanActions.moveFeatureSuccess({ featureId, newStatus });
           }),
           catchError((error) => {

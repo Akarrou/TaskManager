@@ -160,8 +160,6 @@ export class MarkdownImportDialogComponent {
       // Convert Markdown to TipTap JSONContent
       const jsonContent = convertMarkdownToTipTap(content);
 
-      console.log('[Markdown Import] Converted JSONContent:', JSON.stringify(jsonContent, null, 2));
-
       if (!jsonContent || !jsonContent.type) {
         throw new Error('La conversion Markdown a échoué');
       }

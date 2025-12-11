@@ -455,7 +455,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
     // Force update content from editor before saving
     const currentContent = this.editor.getJSON();
-    console.log('💾 saveDocumentImmediate - content to save:', JSON.stringify(currentContent, null, 2));
 
     this.documentState.update(s => ({
       ...s,
@@ -640,9 +639,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
             }
           ])
           .run();
-
-        // Message de confirmation
-        console.log('Nouveau document créé avec lien:', createdDoc.id);
       },
       error: (err: Error) => {
         console.error('Erreur lors de la création du document', err);
@@ -881,8 +877,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       return;
     }
 
-    console.log('🆕 Creating database BEFORE inserting block...');
-
     // Step 1: Create the database in Supabase FIRST
     this.databaseService.createDatabase({
       documentId: currentDocId,
@@ -891,16 +885,12 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (response) => {
-        console.log('✅ Database created with ID:', response.databaseId);
-
         // Step 2: Insert the block with the pre-generated databaseId
         this.editor.chain().focus().insertDatabaseTable(response.databaseId).run();
 
         // Step 3: Save immediately to persist the databaseId
         this.saveDocumentImmediate().pipe(take(1)).subscribe({
-          next: () => {
-            console.log('✅ Document saved with new database block');
-          },
+          next: () => {},
           error: (err) => {
             console.error('❌ Failed to save document after database creation:', err);
           }

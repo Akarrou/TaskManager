@@ -50,8 +50,6 @@ export class DatabaseService {
    * Creates the table if it doesn't exist yet (lazy creation)
    */
   ensureTableExists(databaseId: string): Observable<boolean> {
-    console.log('[ensureTableExists] Vérification existence table pour:', databaseId);
-
     return from(
       this.client.rpc('ensure_table_exists', {
         p_database_id: databaseId
@@ -66,12 +64,6 @@ export class DatabaseService {
         if (!data?.success) {
           console.error('[ensureTableExists] Échec:', data?.error);
           throw new Error(data?.error || 'Échec de la création de table');
-        }
-
-        if (data.created) {
-          console.log('[ensureTableExists] ✅ Table créée:', data.table_name);
-        } else {
-          console.log('[ensureTableExists] ℹ️ Table existe déjà:', data.table_name);
         }
 
         return true;
@@ -91,12 +83,6 @@ export class DatabaseService {
     const databaseId = this.generateDatabaseId();
     const tableName = this.generateTableName(databaseId);
 
-    console.log('[createDatabase] Création metadata uniquement (lazy creation):', {
-      databaseId,
-      tableName,
-      config: request.config.name
-    });
-
     // Insert metadata record WITHOUT creating PostgreSQL table
     return from(
       this.client
@@ -112,7 +98,6 @@ export class DatabaseService {
         .single()
     ).pipe(
       map(() => {
-        console.log('[createDatabase] ✅ Metadata créée, table PostgreSQL sera créée au premier usage');
         return {
           databaseId,
           tableName,
@@ -178,8 +163,6 @@ export class DatabaseService {
    * Delete database (drops table and metadata)
    */
   deleteDatabase(databaseId: string): Observable<boolean> {
-    console.log('[deleteDatabase] Suppression cascade de la base:', databaseId);
-
     return from(
       this.client.rpc('delete_database_cascade', {
         p_database_id: databaseId
@@ -196,7 +179,6 @@ export class DatabaseService {
           throw new Error(data?.error || 'Échec de la suppression');
         }
 
-        console.log('[deleteDatabase] Suppression réussie:', data);
         return true;
       }),
       catchError((err: any) => {
@@ -452,11 +434,6 @@ export class DatabaseService {
    * Add a new column
    */
   addColumn(request: AddColumnRequest): Observable<boolean> {
-    console.log('[addColumn] Request received:', {
-      databaseId: request.databaseId,
-      column: request.column,
-    });
-
     // 1. Ensure table exists first (lazy creation)
     return this.ensureTableExists(request.databaseId).pipe(
       switchMap(() => this.getDatabaseMetadata(request.databaseId)),
@@ -465,12 +442,6 @@ export class DatabaseService {
         // Remplacer les tirets par des underscores pour PostgreSQL
         const columnName = `col_${request.column.id.replace(/-/g, '_')}`;
         const columnType = COLUMN_TYPE_TO_PG_TYPE[request.column.type];
-
-        console.log('[addColumn] Calling RPC add_column_to_table:', {
-          table_name: tableName,
-          column_name: columnName,
-          column_type: columnType,
-        });
 
         // Add column to physical table
         return from(
@@ -481,7 +452,6 @@ export class DatabaseService {
           })
         ).pipe(
           map((response: any) => {
-            console.log('[addColumn] RPC Response:', response);
             if (response.error) {
               console.error('[addColumn] RPC Error:', response.error);
               throw response.error;
@@ -493,7 +463,6 @@ export class DatabaseService {
             const updatedConfig = { ...metadata.config };
             updatedConfig.columns.push(request.column);
 
-            console.log('[addColumn] Updating database config with new column');
             return this.updateDatabaseConfig(request.databaseId, updatedConfig);
           })
         );
@@ -690,7 +659,6 @@ export class DatabaseService {
       options?: { choices?: SelectChoice[] };
     }>
   ): Observable<DatabaseColumn[]> {
-    console.log('[createColumnsFromCsv] Starting column creation for', columns.length, 'columns');
     const createdColumns: DatabaseColumn[] = [];
 
     // Créer un observable pour chaque colonne avec un délai pour éviter le rate-limiting
@@ -706,19 +674,12 @@ export class DatabaseService {
 
       createdColumns.push(column);
 
-      console.log(`[createColumnsFromCsv] Creating column ${index + 1}/${columns.length}:`, {
-        name: column.name,
-        type: column.type,
-        id: column.id,
-      });
-
       return this.addColumn({
         databaseId,
         column,
       }).pipe(
         delay(100), // Anti-throttle Supabase (100ms entre chaque requête)
         map(() => {
-          console.log(`[createColumnsFromCsv] Column ${index + 1} created successfully`);
           return column;
         }),
         catchError((err: any) => {
@@ -732,7 +693,6 @@ export class DatabaseService {
     return concat(...columnCreations$).pipe(
       toArray(),
       map((cols: DatabaseColumn[]) => {
-        console.log('[createColumnsFromCsv] All columns created:', cols.length);
         return cols;
       }),
       catchError((err: any) => {
@@ -765,7 +725,6 @@ export class DatabaseService {
         })
       ).pipe(
         map(({ data, error }: { data: any; error: any }) => {
-          console.log('[CSV Import] RPC Response:', { data, error });
           if (error) {
             console.error('[CSV Import] RPC Error:', error);
             throw error;
@@ -774,7 +733,6 @@ export class DatabaseService {
           // Incrémenter compteur et notifier progression
           const batchImported = data?.inserted_count || batch.length;
           imported += batchImported;
-          console.log('[CSV Import] Batch imported:', batchImported, 'Total:', imported);
           onProgress?.(imported, rows.length);
 
           // Collecter erreurs du batch

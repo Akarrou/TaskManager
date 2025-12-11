@@ -258,7 +258,6 @@ export class CsvImportDialogComponent {
       await new Promise<void>((resolve, reject) => {
         this.databaseService.ensureTableExists(this.databaseId).subscribe({
           next: () => {
-            console.log('[CSV Import] ✅ Table PostgreSQL prête');
             resolve();
           },
           error: err => {
@@ -281,7 +280,6 @@ export class CsvImportDialogComponent {
       });
 
       const existingColumns = metadata.config?.columns || [];
-      console.log('[CSV Import] Colonnes existantes à supprimer:', existingColumns);
 
       // Supprimer séquentiellement chaque colonne existante
       for (const col of existingColumns) {
@@ -290,7 +288,6 @@ export class CsvImportDialogComponent {
             .deleteColumn({ databaseId: this.databaseId, columnId: col.id })
             .subscribe({
               next: () => {
-                console.log('[CSV Import] Colonne supprimée:', col.name);
                 resolve();
               },
               error: err => {

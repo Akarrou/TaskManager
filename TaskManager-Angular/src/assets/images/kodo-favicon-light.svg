@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#e94560"/>
+      <stop offset="100%" style="stop-color:#ff6b6b"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Point d'accent rouge en haut -->
+  <circle cx="16" cy="3" r="2" fill="url(#accent)"/>
+  
+  <!-- Cercle ensō simplifié -->
+  <circle 
+    cx="16" 
+    cy="18" 
+    r="11" 
+    fill="none" 
+    stroke="#1a1a2e" 
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-dasharray="62 69"
+    stroke-dashoffset="5"
+    opacity="0.9"
+  />
+  
+  <!-- Structure centrale simplifiée -->
+  <line x1="13" y1="12" x2="13" y2="24" stroke="url(#accent)" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="16" y1="10" x2="16" y2="26" stroke="url(#accent)" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="19" y1="12" x2="19" y2="24" stroke="url(#accent)" stroke-width="2.5" stroke-linecap="round"/>
+  
+  <!-- Connexions horizontales -->
+  <line x1="11" y1="15" x2="21" y2="15" stroke="#1a1a2e" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  <line x1="11" y1="21" x2="21" y2="21" stroke="#1a1a2e" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+</svg>

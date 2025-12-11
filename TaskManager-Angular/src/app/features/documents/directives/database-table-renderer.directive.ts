@@ -146,8 +146,6 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
    * Update TipTap node attributes when database changes
    */
   private updateNodeAttributes(element: HTMLElement, attrs: DatabaseNodeAttributes) {
-    console.log('Updating database node attributes:', attrs);
-
     // Update DOM attributes (for immediate visual update)
     element.setAttribute('data-database-id', attrs.databaseId);
     element.setAttribute('data-config', JSON.stringify(attrs.config));
@@ -164,11 +162,8 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
         });
 
         if (!success) {
-          console.error('❌ Failed to update TipTap node');
           return;
         }
-
-        console.log('✅ Updated TipTap node at position', pos, 'with attrs:', attrs);
       } else {
         console.error('❌ Could not find node position for element');
       }

@@ -101,7 +101,6 @@ export class DocumentTasksSectionComponent implements OnDestroy {
 
   onTaskDelete(taskId: string) {
     // TODO: Implement task deletion
-    console.log('Delete task:', taskId);
   }
 
   onTaskDeleteFromTable(task: Task) {

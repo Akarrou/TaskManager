@@ -62,7 +62,6 @@ export class AppComponent implements OnInit {
       }, 500);
 
     } catch (error) {
-      console.log('🔄 Continuons quand même...');
       this.initStatus.set('⚠️ Initialisation avec erreurs...');
 
       setTimeout(() => {
@@ -75,7 +74,6 @@ export class AppComponent implements OnInit {
     try {
       const supabase = this.supabaseService.client;
       if (supabase) {
-        console.log('🔌 Client Supabase créé:', !!supabase);
       }
 
       // Test simple avec la méthode healthCheck du service
@@ -84,7 +82,6 @@ export class AppComponent implements OnInit {
       if (error) {
         console.warn('⚠️ Erreur de connexion Supabase:', this.supabaseService.handleError(error));
       } else {
-        console.log('✅ Connexion Supabase réussie !', data ? 'Données récupérées' : 'Base accessible');
       }
     } catch (error) {
       console.warn('⚠️ Test Supabase échoué:', error);
@@ -97,13 +94,11 @@ export class AppComponent implements OnInit {
     if (error) {
       console.warn('Avertissement connexion Supabase:', error);
     } else {
-      console.log('✅ Supabase connecté avec succès');
     }
   }
 
   private async initializeAuth(): Promise<void> {
     // Initialiser l'état d'authentification
     await this.authService.initialize();
-    console.log('✅ Service d\'authentification initialisé');
   }
 }

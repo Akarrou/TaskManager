@@ -17,6 +17,5 @@ import { CommonModule } from '@angular/common';
 export class MinimalDndComponent {
   tasks = [{ title: 'Tâche 1' }, { title: 'Tâche 2' }];
   drop(event: CdkDragDrop<any[]>) {
-    console.log('DROP EVENT', event);
   }
 } 

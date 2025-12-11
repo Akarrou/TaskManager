@@ -135,7 +135,6 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
       toColumnId: event.newStatus,
       newStatus: event.newStatus as TaskStatus,
     }));
-    console.log('🔄 Feature moved:', event);
   }
 
   onFeatureExpand(featureId: string): void {
@@ -324,7 +323,6 @@ export class EpicKanbanComponent implements OnInit, OnDestroy {
           verticalPosition: 'top'
         });
       }).catch(err => {
-        console.log('Erreur lors du partage:', err);
         this.fallbackCopyToClipboard(shareUrl);
       });
     } else {

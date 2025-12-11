@@ -118,7 +118,6 @@ export class TaskFormComponent implements OnInit {
   ngOnInit(): void {
     // Lire les query params pour la création contextuelle
     this.route.queryParams.subscribe(params => {
-      console.log('queryParams', params); // debug
       const type = params['type'] as 'epic' | 'feature' | 'task' | undefined;
       const parentId = params['parent_task_id'] as string | undefined;
       const returnTo = params['returnTo'] as string | undefined;
@@ -126,7 +125,6 @@ export class TaskFormComponent implements OnInit {
 
       if (type) {
         this.contextType = type;
-        console.log('contextType', this.contextType);
         this.isTypeLocked = true;
       }
       if (parentId) {
@@ -144,7 +142,6 @@ export class TaskFormComponent implements OnInit {
 
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
-      console.log('paramMap id', id); // debug
       if (id) {
         this.currentTaskId.set(id);
         this.pageTitle.set('Modifier la tâche');
@@ -756,7 +753,6 @@ export class TaskFormComponent implements OnInit {
 
   // Gestionnaire des actions du FAB
   onNavigationAction(actionId: string) {
-    console.log('Navigation action clicked:', actionId);
     
     switch (actionId) {
       case 'dashboard':
@@ -819,7 +815,6 @@ export class TaskFormComponent implements OnInit {
   }
 
   onFileDeleted(fileId: string) {
-    console.log('Fichier supprimé:', fileId);
   }
 
   onFileRemoved(file: FileAttachment) {

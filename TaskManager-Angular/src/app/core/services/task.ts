@@ -278,7 +278,6 @@ export class TaskService {
   async createTask(task: Omit<Task, 'id' | 'created_at' | 'updated_at'>): Promise<string | null> {
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
-    console.log('task', task);
     // On retire task_number et subtasks si présents
     // On s'assure que les champs array sont bien formatés
     const { task_number, subtasks, ...taskWithoutNumber } = task;
@@ -303,8 +302,6 @@ export class TaskService {
     }
 
     // Log du payload nettoyé
-    console.log('Payload nettoyé envoyé à Supabase:', cleanedPayload);
-    console.log('Project ID envoyé:', cleanedPayload['project_id']);
 
     try {
       const { data, error } = await this.supabaseService.tasks
@@ -334,7 +331,6 @@ export class TaskService {
     this.errorSignal.set(null);
 
     try {
-      console.log('updateTask - id:', id, 'updates:', updates); // DEBUG
       const { data, error } = await this.supabaseService.tasks
         .update(updates)
         .eq('id', id)
@@ -348,7 +344,6 @@ export class TaskService {
         return false;
       } else {
         await this.loadTasks();
-        console.log('updateTask - success:', data); // DEBUG
         return true;
       }
     } catch (error) {

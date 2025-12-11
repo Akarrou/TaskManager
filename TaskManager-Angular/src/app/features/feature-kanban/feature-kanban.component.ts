@@ -125,7 +125,6 @@ export class FeatureKanbanComponent implements OnInit, OnDestroy {
   }
 
   onTaskEdit(item: KanbanItem): void {
-    console.log('Editing task:', item);
     // Navigate to task edit page
     if (item.id) {
       this.router.navigate(['/tasks', item.id, 'edit']);
@@ -183,7 +182,6 @@ export class FeatureKanbanComponent implements OnInit, OnDestroy {
 
   onSaveItem(item: Partial<KanbanItem>): void {
     // Implementation for saving item
-    console.log('Saving item:', item);
   }
 
   onDeleteItem(item: KanbanItem): void {

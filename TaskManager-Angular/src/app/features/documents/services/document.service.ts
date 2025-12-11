@@ -304,11 +304,9 @@ export class DocumentService {
           console.error('Error fetching tasks for document:', response.error);
           throw response.error;
         }
-        console.log('Document tasks raw response:', response.data);
         const tasks = (response.data || [])
           .filter((rel: any) => rel.tasks) // Filter out any null tasks
           .map((rel: any) => rel.tasks as Task);
-        console.log(`Found ${tasks.length} tasks for document ${documentId}`);
         return tasks;
       })
     );
