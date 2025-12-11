@@ -122,6 +122,20 @@ export class ProjectEffects implements OnInitEffects {
         )
     );
 
+    selectProject$ = createEffect(() =>
+        this.actions$.pipe(
+            ofType(ProjectActions.selectProject),
+            tap(() => {
+                // Redirect to dashboard when project changes
+                // Only redirect if not already on dashboard
+                if (!this.router.url.includes('/dashboard')) {
+                    this.router.navigate(['/dashboard']);
+                }
+            })
+        ),
+        { dispatch: false }
+    );
+
     ngrxOnInitEffects(): Action {
         return ProjectActions.init();
     }
