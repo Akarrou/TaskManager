@@ -46,54 +46,80 @@ export class DatabaseService {
   // =====================================================================
 
   /**
-   * Create a new database with dynamic PostgreSQL table
+   * Ensure the PostgreSQL table exists for a database
+   * Creates the table if it doesn't exist yet (lazy creation)
+   */
+  ensureTableExists(databaseId: string): Observable<boolean> {
+    console.log('[ensureTableExists] Vérification existence table pour:', databaseId);
+
+    return from(
+      this.client.rpc('ensure_table_exists', {
+        p_database_id: databaseId
+      })
+    ).pipe(
+      map(({ data, error }: { data: any; error: any }) => {
+        if (error) {
+          console.error('[ensureTableExists] Erreur RPC:', error);
+          throw error;
+        }
+
+        if (!data?.success) {
+          console.error('[ensureTableExists] Échec:', data?.error);
+          throw new Error(data?.error || 'Échec de la création de table');
+        }
+
+        if (data.created) {
+          console.log('[ensureTableExists] ✅ Table créée:', data.table_name);
+        } else {
+          console.log('[ensureTableExists] ℹ️ Table existe déjà:', data.table_name);
+        }
+
+        return true;
+      }),
+      catchError((err: any) => {
+        console.error('[ensureTableExists] Erreur:', err);
+        return throwError(() => new Error(`Impossible de créer la table: ${err.message}`));
+      })
+    );
+  }
+
+  /**
+   * Create a new database metadata (WITHOUT creating PostgreSQL table yet - lazy creation)
+   * The table will be created later via ensureTableExists() when first needed (CSV import or add column)
    */
   createDatabase(request: CreateDatabaseRequest): Observable<CreateDatabaseResponse> {
     const databaseId = this.generateDatabaseId();
     const tableName = this.generateTableName(databaseId);
 
-    // Prepare columns for RPC function
-    const columns = request.config.columns.map(col => ({
-      name: `col_${col.id.replace(/-/g, '_')}`,
-      type: COLUMN_TYPE_TO_PG_TYPE[col.type],
-    }));
+    console.log('[createDatabase] Création metadata uniquement (lazy creation):', {
+      databaseId,
+      tableName,
+      config: request.config.name
+    });
 
+    // Insert metadata record WITHOUT creating PostgreSQL table
     return from(
-      this.client.rpc('create_dynamic_table', {
-        table_name: tableName,
-        columns,
-      })
+      this.client
+        .from('document_databases')
+        .insert({
+          document_id: request.documentId,
+          database_id: databaseId,
+          table_name: tableName,
+          name: request.config.name,
+          config: request.config,
+        })
+        .select()
+        .single()
     ).pipe(
-      switchMap(() =>
-        // Insert metadata record
-        from(
-          this.client
-            .from('document_databases')
-            .insert({
-              document_id: request.documentId,
-              database_id: databaseId,
-              table_name: tableName,
-              name: request.config.name,
-              config: request.config,
-            })
-            .select()
-            .single()
-        )
-      ),
-      switchMap(() =>
-        // Create update trigger for the table
-        from(
-          this.client.rpc('create_update_trigger', {
-            table_name: tableName,
-          })
-        )
-      ),
-      map(() => ({
-        databaseId,
-        tableName,
-      })),
+      map(() => {
+        console.log('[createDatabase] ✅ Metadata créée, table PostgreSQL sera créée au premier usage');
+        return {
+          databaseId,
+          tableName,
+        };
+      }),
       catchError(error => {
-        console.error('Failed to create database:', error);
+        console.error('[createDatabase] Échec création metadata:', error);
         return throwError(() => error);
       })
     );
@@ -431,7 +457,9 @@ export class DatabaseService {
       column: request.column,
     });
 
-    return this.getDatabaseMetadata(request.databaseId).pipe(
+    // 1. Ensure table exists first (lazy creation)
+    return this.ensureTableExists(request.databaseId).pipe(
+      switchMap(() => this.getDatabaseMetadata(request.databaseId)),
       switchMap(metadata => {
         const tableName = metadata.table_name;
         // Remplacer les tirets par des underscores pour PostgreSQL

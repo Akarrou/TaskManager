@@ -191,6 +191,19 @@
     font-size: 0.875rem;
     margin-bottom: 1rem;
   }
+
+  .empty-hint {
+    color: #9ca3af;
+    font-size: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .empty-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 }
 
 // Table View

@@ -423,30 +423,18 @@ export const DEFAULT_COLUMN_WIDTHS: Record<ColumnType, number> = {
 
 /**
  * Default database configuration for new databases
- * IMPORTANT: Must have at least one column for PostgreSQL table creation
+ * Starts with NO columns - user must add columns or import CSV
+ * With lazy creation, the PostgreSQL table is only created when needed
  */
 export const DEFAULT_DATABASE_CONFIG: DatabaseConfig = {
   name: 'Nouvelle base de données',
-  columns: [
-    {
-      id: 'col-name',
-      name: 'Nom',
-      type: 'text',
-      visible: true,
-      required: false,
-      order: 0,
-      width: DEFAULT_COLUMN_WIDTHS.text,
-    },
-  ],
+  columns: [], // Empty by default - user adds columns manually or via CSV import
   views: [
     {
       id: 'view-table',
       name: 'Vue tableau',
       type: 'table',
-      config: {
-        sortBy: 'col-name',
-        sortOrder: 'asc',
-      },
+      config: {},
     },
   ],
   defaultView: 'table',

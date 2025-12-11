@@ -105,11 +105,13 @@
           </button>
         }
 
-        <!-- Add Row Button -->
-        <button mat-raised-button color="primary" (click)="onAddRow()">
-          <mat-icon>add</mat-icon>
-          Nouvelle ligne
-        </button>
+        <!-- Add Row Button (only if there are columns) -->
+        @if (columnCount() > 0) {
+          <button mat-raised-button color="primary" (click)="onAddRow()">
+            <mat-icon>add</mat-icon>
+            Nouvelle ligne
+          </button>
+        }
       </div>
     </div>
 
@@ -132,8 +134,27 @@
                 <mat-spinner diameter="32"></mat-spinner>
                 <span class="ml-3 text-gray-500">Chargement des données...</span>
               </div>
+            } @else if (columnCount() === 0) {
+              <!-- No Columns State -->
+              <div class="empty-state">
+                <mat-icon class="empty-icon">view_column</mat-icon>
+                <p class="empty-text">Aucune colonne dans cette base de données</p>
+                <p class="empty-hint">Commencez par ajouter une colonne ou importer un fichier CSV</p>
+                <div class="empty-actions">
+                  <button mat-raised-button color="primary" (click)="onAddColumn()">
+                    <mat-icon>add</mat-icon>
+                    Ajouter une colonne
+                  </button>
+                  @if (canImportCsv()) {
+                    <button mat-stroked-button (click)="openCsvImportDialog()">
+                      <mat-icon>upload_file</mat-icon>
+                      Importer CSV
+                    </button>
+                  }
+                </div>
+              </div>
             } @else if (rowCount() === 0) {
-              <!-- Empty State -->
+              <!-- Empty Rows State -->
               <div class="empty-state">
                 <mat-icon class="empty-icon">inbox</mat-icon>
                 <p class="empty-text">Aucune ligne dans cette base de données</p>

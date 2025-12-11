@@ -252,7 +252,25 @@ export class CsvImportDialogComponent {
     this.importProgress.set(0);
 
     try {
-      // Étape 0: Supprimer toutes les colonnes existantes (colonnes par défaut)
+      // Étape 0: S'assurer que la table PostgreSQL existe (lazy creation)
+      this.importStatus.set('Création de la table...');
+
+      await new Promise<void>((resolve, reject) => {
+        this.databaseService.ensureTableExists(this.databaseId).subscribe({
+          next: () => {
+            console.log('[CSV Import] ✅ Table PostgreSQL prête');
+            resolve();
+          },
+          error: err => {
+            console.error('[CSV Import] Erreur création table:', err);
+            reject(err);
+          },
+        });
+      });
+
+      this.importProgress.set(5);
+
+      // Étape 1: Récupérer metadata et supprimer colonnes existantes
       this.importStatus.set('Suppression des colonnes par défaut...');
 
       const metadata = await new Promise<any>((resolve, reject) => {
@@ -288,9 +306,9 @@ export class CsvImportDialogComponent {
         });
       }
 
-      this.importProgress.set(10);
+      this.importProgress.set(15);
 
-      // Étape 1: Créer les colonnes
+      // Étape 2: Créer les colonnes
       this.importStatus.set('Création des colonnes...');
 
       const createdColumns = await new Promise((resolve, reject) => {
@@ -309,9 +327,9 @@ export class CsvImportDialogComponent {
           });
       });
 
-      this.importProgress.set(25);
+      this.importProgress.set(30);
 
-      // Étape 2: Préparer les lignes
+      // Étape 3: Préparer les lignes
       const headers = data[0];
       const rows = data.slice(1);
 
@@ -327,7 +345,7 @@ export class CsvImportDialogComponent {
         return cells;
       });
 
-      // Étape 3: Importer les lignes par batch
+      // Étape 4: Importer les lignes par batch
       this.importStatus.set('Importation des lignes...');
 
       const result = await new Promise<CsvImportResult>((resolve, reject) => {
@@ -336,7 +354,7 @@ export class CsvImportDialogComponent {
             this.databaseId,
             formattedRows,
             (current, total) => {
-              const progress = 25 + Math.floor((current / total) * 70);
+              const progress = 30 + Math.floor((current / total) * 65);
               this.importProgress.set(progress);
               this.importStatus.set(
                 `Importation... ${current}/${total} lignes`

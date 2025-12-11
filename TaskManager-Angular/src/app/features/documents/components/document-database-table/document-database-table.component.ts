@@ -8,7 +8,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatDialog } from '@angular/material/dialog';
-import { Subject, takeUntil, debounceTime, delay, of, retry, timer, switchMap, catchError, tap, take } from 'rxjs';
+import { Subject, takeUntil, debounceTime } from 'rxjs';
 import {
   DatabaseConfig,
   DatabaseRow,
@@ -215,22 +215,10 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
 
         // Helper function to continue initialization after config is ready
         const continueInitialization = () => {
-          // Database exists, check if it's newly created (within last 2 seconds)
-          const createdAt = new Date(metadata.created_at);
-          const now = new Date();
-          const ageInSeconds = (now.getTime() - createdAt.getTime()) / 1000;
-          const isNewlyCreated = ageInSeconds < 2;
-
-          if (isNewlyCreated) {
-            console.log('✅ Newly created database detected, starting schema availability polling...');
-
-            // Poll until table is available in PostgREST schema cache
-            this.waitForSchemaAvailability();
-          } else {
-            console.log('✅ Existing database found, loading rows immediately...');
-            this.loadRows();
-            this.isInitializing.set(false);
-          }
+          // With lazy creation, table may not exist yet - loadRows() will handle empty tables gracefully
+          console.log('✅ Database metadata loaded, loading rows...');
+          this.loadRows();
+          this.isInitializing.set(false);
         };
 
         // If config was updated, persist to Supabase before continuing
@@ -316,9 +304,19 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
           this.isLoading.set(false);
         },
         error: (err: any) => {
-          console.error('Failed to load rows:', err);
-          this.error.set('Erreur lors du chargement des données');
-          this.isLoading.set(false);
+          // With lazy creation, table might not exist yet - this is normal for new databases
+          const isTableNotFound = err.code === 'PGRST116' || err.code === 'PGRST204' || err.code === 'PGRST205' || err.code === '42P01';
+
+          if (isTableNotFound) {
+            console.log('ℹ️ Table not created yet (lazy creation), showing empty state');
+            this.rows.set([]);
+            this.totalCount.set(0);
+            this.isLoading.set(false);
+          } else {
+            console.error('Failed to load rows:', err);
+            this.error.set('Erreur lors du chargement des données');
+            this.isLoading.set(false);
+          }
         },
       });
   }
@@ -332,88 +330,6 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     this.loadRowsWithFilters();
   }
 
-  /**
-   * Wait for PostgREST schema to be available using intelligent polling
-   * Polls the table until it becomes available (max 15 attempts = 30 seconds)
-   */
-  private waitForSchemaAvailability() {
-    this.isLoading.set(true);
-
-    const maxAttempts = 15;
-    let attemptCount = 0;
-    let tableReady = false;
-
-    // Poll every 2 seconds, max 15 times
-    timer(0, 2000)
-      .pipe(
-        take(maxAttempts),
-        switchMap(() => {
-          attemptCount++;
-          console.log(`🔍 Polling attempt ${attemptCount}/${maxAttempts} - checking table availability...`);
-
-          return this.databaseService.getRows({
-            databaseId: this.databaseId,
-            limit: 1, // Just check if table exists
-            offset: 0,
-          }).pipe(
-            tap((rows) => {
-              console.log(`✅ Table is available! Found ${rows.length} row(s)`);
-              tableReady = true;
-            }),
-            catchError((err) => {
-              // Schema cache errors - table not ready yet
-              const isSchemaError = err.code === 'PGRST116' || err.code === 'PGRST204' || err.code === 'PGRST205' || err.code === '42P01';
-
-              if (isSchemaError && attemptCount < maxAttempts) {
-                console.log(`⏳ Table not yet available (${err.code}), will retry in 2s...`);
-                return of(null); // Return null to continue polling
-              } else if (attemptCount >= maxAttempts) {
-                console.error(`❌ Max polling attempts reached (${maxAttempts})`);
-                throw new Error('TIMEOUT');
-              } else {
-                // Other error - stop polling
-                console.error('❌ Unexpected error:', err);
-                throw err;
-              }
-            })
-          );
-        }),
-        takeUntil(this.destroy$)
-      )
-      .subscribe({
-        next: (rows) => {
-          // If we got actual rows (not null from catchError), table is ready
-          if (rows !== null && !tableReady) {
-            tableReady = true;
-            console.log('✅ Schema available, loading all rows...');
-            this.loadRows();
-            this.isInitializing.set(false);
-          }
-        },
-        error: (err) => {
-          if (err.message === 'TIMEOUT') {
-            this.error.set('La table n\'est pas encore disponible après 30 secondes. Veuillez rafraîchir la page.');
-          } else {
-            this.error.set('Erreur lors du chargement des données');
-          }
-          this.isLoading.set(false);
-          this.isInitializing.set(false);
-        },
-        complete: () => {
-          // If polling completed and table is ready, load rows
-          if (tableReady) {
-            console.log('✅ Polling complete - table ready');
-            this.loadRows();
-            this.isInitializing.set(false);
-          } else if (this.isLoading()) {
-            // If polling completed without success, show timeout error
-            this.error.set('La table n\'est pas encore disponible. Veuillez rafraîchir la page dans quelques secondes.');
-            this.isLoading.set(false);
-            this.isInitializing.set(false);
-          }
-        },
-      });
-  }
 
   /**
    * Add a new row
@@ -537,13 +453,22 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: () => {
-            // Update config
-            this.databaseConfig.update((config) => ({
-              ...config,
-              columns: [...config.columns, newColumn],
-            }));
-
-            this.changeSubject.next();
+            console.log('[onAddColumn] Column added successfully, reloading metadata from Supabase');
+            // Reload only metadata (not rows) to get the updated columns
+            this.databaseService
+              .getDatabaseMetadata(this.databaseId)
+              .pipe(takeUntil(this.destroy$))
+              .subscribe({
+                next: (metadata: any) => {
+                  console.log('[onAddColumn] Metadata reloaded:', metadata.config);
+                  this.databaseConfig.set(metadata.config);
+                  this.syncToTipTap();
+                  this.loadViewConfig();
+                },
+                error: (err: any) => {
+                  console.error('[onAddColumn] Failed to reload metadata:', err);
+                },
+              });
           },
           error: (err) => {
             console.error('Failed to add column:', err);

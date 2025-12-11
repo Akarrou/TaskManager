@@ -13,6 +13,7 @@ import { DatabaseService } from '../services/database.service';
 import { NavigationFabComponent, NavigationContext } from '../../../shared/components/navigation-fab/navigation-fab.component';
 import { NavigationFabService } from '../../../shared/components/navigation-fab/navigation-fab.service';
 import { DeleteDocumentDialogComponent } from '../components/delete-document-dialog/delete-document-dialog.component';
+import { MarkdownImportDialogComponent } from '../components/markdown-import-dialog/markdown-import-dialog.component';
 
 @Component({
   selector: 'app-document-list',
@@ -66,6 +67,24 @@ export class DocumentListComponent implements OnInit {
 
   createNewDocument() {
     this.router.navigate(['/documents/new']);
+  }
+
+  openMarkdownImportDialog(): void {
+    const dialogRef = this.dialog.open(MarkdownImportDialogComponent, {
+      width: '600px',
+      disableClose: true,
+    });
+
+    dialogRef.afterClosed().subscribe((doc: Document | null) => {
+      if (doc) {
+        this.snackBar.open('Document Markdown importé avec succès', 'OK', {
+          duration: 3000
+        });
+        this.loadDocuments();
+        // Optionally navigate to the new document
+        // this.router.navigate(['/documents', doc.id]);
+      }
+    });
   }
 
   async deleteDocument(event: Event, id: string) {

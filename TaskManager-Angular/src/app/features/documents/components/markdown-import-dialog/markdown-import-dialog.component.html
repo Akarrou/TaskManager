@@ -1,0 +1,173 @@
+<div class="markdown-import-dialog">
+  <!-- Header -->
+  <h2 mat-dialog-title class="flex items-center gap-2">
+    <mat-icon>upload_file</mat-icon>
+    Importer un fichier Markdown
+  </h2>
+
+  <!-- Content -->
+  <mat-dialog-content class="min-h-[300px]">
+    <!-- Step 1: Upload -->
+    @if (currentStep() === 'upload') {
+      <div class="upload-section">
+        <div
+          class="dropzone"
+          (drop)="onFileDrop($event)"
+          (dragover)="onDragOver($event)"
+        >
+          <mat-icon class="dropzone-icon">cloud_upload</mat-icon>
+          <p class="dropzone-text">
+            Glissez-déposez un fichier Markdown ici
+          </p>
+          <p class="dropzone-subtext">ou</p>
+          <label for="file-input" class="file-input-label">
+            <button mat-raised-button color="primary" type="button" (click)="fileInput.click()">
+              <mat-icon>folder_open</mat-icon>
+              Parcourir
+            </button>
+          </label>
+          <input
+            #fileInput
+            type="file"
+            id="file-input"
+            accept=".md"
+            (change)="onFileSelected($event)"
+            class="hidden"
+          />
+          <p class="dropzone-info">
+            Fichiers .md uniquement • Maximum {{ MAX_FILE_SIZE_MB }} MB
+          </p>
+        </div>
+
+        @if (errorMessage()) {
+          <div class="error-message">
+            <mat-icon>error</mat-icon>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Step 2: Preview & Edit -->
+    @if (currentStep() === 'preview') {
+      <div class="preview-section">
+        <h3 class="section-title">Aperçu des métadonnées</h3>
+
+        <!-- Title Field -->
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Titre du document</mat-label>
+          <input matInput [formControl]="titleControl" placeholder="Sans titre" />
+          @if (titleControl.invalid && titleControl.touched) {
+            <mat-error>Le titre est requis</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Front Matter Display -->
+        @if (frontMatter()) {
+          <div class="front-matter-display">
+            <h4 class="metadata-title">Métadonnées du fichier</h4>
+            <dl class="metadata-list">
+              @if (frontMatter()?.title) {
+                <div class="metadata-item">
+                  <dt>Titre original :</dt>
+                  <dd>{{ frontMatter()?.title }}</dd>
+                </div>
+              }
+              @if (frontMatter()?.author) {
+                <div class="metadata-item">
+                  <dt>Auteur :</dt>
+                  <dd>{{ frontMatter()?.author }}</dd>
+                </div>
+              }
+              @if (frontMatter()?.date) {
+                <div class="metadata-item">
+                  <dt>Date :</dt>
+                  <dd>{{ frontMatter()?.date }}</dd>
+                </div>
+              }
+              @if (frontMatter()?.description) {
+                <div class="metadata-item">
+                  <dt>Description :</dt>
+                  <dd>{{ frontMatter()?.description }}</dd>
+                </div>
+              }
+              @if (frontMatter()?.tags && (frontMatter()?.tags?.length ?? 0) > 0) {
+                <div class="metadata-item">
+                  <dt>Tags :</dt>
+                  <dd>
+                    <span class="tag" *ngFor="let tag of frontMatter()?.tags ?? []">
+                      {{ tag }}
+                    </span>
+                  </dd>
+                </div>
+              }
+            </dl>
+          </div>
+        }
+
+        <!-- File Info -->
+        <div class="file-info">
+          <mat-icon>description</mat-icon>
+          <span>{{ selectedFile()?.name }}</span>
+          <span class="file-size">
+            ({{ (selectedFile()?.size || 0) / 1024 | number: '1.0-0' }} KB)
+          </span>
+        </div>
+
+        @if (errorMessage()) {
+          <div class="error-message">
+            <mat-icon>error</mat-icon>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Step 3: Complete -->
+    @if (currentStep() === 'complete') {
+      <div class="complete-section">
+        <div class="success-icon">
+          <mat-icon>check_circle</mat-icon>
+        </div>
+        <h3 class="success-title">Import réussi !</h3>
+        <p class="success-message">
+          Le document "{{ importedDocument()?.title }}" a été créé avec succès.
+        </p>
+      </div>
+    }
+
+    <!-- Processing Spinner -->
+    @if (isProcessing()) {
+      <div class="processing-overlay">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p class="processing-text">Traitement en cours...</p>
+      </div>
+    }
+  </mat-dialog-content>
+
+  <!-- Actions -->
+  <mat-dialog-actions align="end">
+    @if (currentStep() === 'upload') {
+      <button mat-button (click)="cancel()">Annuler</button>
+    }
+
+    @if (currentStep() === 'preview') {
+      <button mat-button (click)="resetToUpload()">Retour</button>
+      <button
+        mat-raised-button
+        color="primary"
+        (click)="importDocument()"
+        [disabled]="isProcessing() || titleControl.invalid"
+      >
+        <mat-icon>upload</mat-icon>
+        Importer
+      </button>
+    }
+
+    @if (currentStep() === 'complete') {
+      <button mat-raised-button color="primary" (click)="close()">
+        Fermer
+      </button>
+    }
+  </mat-dialog-actions>
+</div>

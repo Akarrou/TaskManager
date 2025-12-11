@@ -1,7 +1,17 @@
 <div class="c-document-list">
   <header class="c-document-list__header">
-    <h1 class="c-document-list__title">Mes Documents</h1>
-    <p class="c-document-list__subtitle">Gérez vos notes et documents.</p>
+    <div class="c-document-list__header-content">
+      <div>
+        <h1 class="c-document-list__title">Mes Documents</h1>
+        <p class="c-document-list__subtitle">Gérez vos notes et documents.</p>
+      </div>
+      <div class="c-document-list__actions">
+        <button mat-raised-button color="accent" (click)="openMarkdownImportDialog()">
+          <mat-icon>upload_file</mat-icon>
+          Importer Markdown
+        </button>
+      </div>
+    </div>
   </header>
 
   <div class="c-document-list__grid" *ngIf="!loading(); else loadingTemplate">
