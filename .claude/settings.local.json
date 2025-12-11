@@ -61,7 +61,9 @@
       "Bash(npx supabase:*)",
       "Bash(docker-compose ps:*)",
       "Bash(docker-compose exec:*)",
-      "Bash(docker ps:*)"
+      "Bash(docker ps:*)",
+      "Bash(./scripts/apply-migrations.sh:*)",
+      "Bash(./scripts/validate-schema.sh:*)"
     ]
   },
   "enableAllProjectMcpServers": false
