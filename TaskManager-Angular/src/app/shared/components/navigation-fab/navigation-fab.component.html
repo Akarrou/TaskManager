@@ -27,7 +27,7 @@
             [color]="mainColor()"
             class="fab-main-button"
             [class.fab-opened]="isOpen()"
-            [class.fab-has-changes]="context.isDirty || context.hasUnsavedChanges"
+            [class.fab-has-changes]="context().isDirty || context().hasUnsavedChanges"
             [matTooltip]="isOpen() ? 'Fermer' : 'Actions de navigation'"
             matTooltipPosition="left"
             (click)="toggleFab()"
@@ -44,7 +44,7 @@
 
     <!-- Indicateur de changements non sauvés - en dehors du bouton -->
     <div class="fab-changes-indicator"
-         *ngIf="(context.isDirty || context.hasUnsavedChanges) && !isOpen()">
+         *ngIf="(context().isDirty || context().hasUnsavedChanges) && !isOpen()">
     </div>
   </div>
 

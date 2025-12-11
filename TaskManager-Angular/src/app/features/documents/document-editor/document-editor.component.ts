@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject, signal, computed, ViewEncapsulation } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal, computed, effect, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -23,8 +23,7 @@ import { all, createLowlight } from 'lowlight';
 import { SlashMenuComponent, SlashCommand } from '../slash-menu/slash-menu.component';
 import { BubbleMenuComponent } from '../bubble-menu/bubble-menu.component';
 import { DocumentService, Document, DocumentBreadcrumb } from '../services/document.service';
-import { NavigationFabComponent, NavigationContext } from '../../../shared/components/navigation-fab/navigation-fab.component';
-import { NavigationFabService } from '../../../shared/components/navigation-fab/navigation-fab.service';
+import { FabStore } from '../../../core/stores/fab.store';
 import { debounceTime, Subject, takeUntil, map, catchError, throwError, take } from 'rxjs';
 import { DocumentState, DocumentSnapshot, createSnapshot, hasChanges } from '../models/document-content.types';
 import { Columns, Column } from '../extensions/columns.extension';
@@ -52,7 +51,7 @@ const lowlight = createLowlight(all);
 @Component({
   selector: 'app-document-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, NavigationFabComponent, TaskSectionRendererDirective, DatabaseTableRendererDirective],
+  imports: [CommonModule, FormsModule, RouterLink, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, TaskSectionRendererDirective, DatabaseTableRendererDirective],
   templateUrl: './document-editor.component.html',
   styleUrl: './document-editor.component.scss',
   encapsulation: ViewEncapsulation.None
@@ -61,9 +60,10 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private documentService = inject(DocumentService);
-  private navigationFabService = inject(NavigationFabService);
+  private fabStore = inject(FabStore);
   private dialog = inject(MatDialog);
   private databaseService = inject(DatabaseService);
+  private pageId = crypto.randomUUID();
 
   editor: Editor;
   showSlashMenu = signal(false);
@@ -96,7 +96,14 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   isDirty = computed(() => {
     const current = this.documentState();
     const original = this.originalSnapshot();
-    return hasChanges(createSnapshot(current), original);
+    const dirty = hasChanges(createSnapshot(current), original);
+    console.log('[DocumentEditor] isDirty computed:', dirty, {
+      currentTitle: current.title,
+      originalTitle: original?.title,
+      currentContent: JSON.stringify(current.content).substring(0, 100),
+      originalContent: original?.content ? JSON.stringify(original.content).substring(0, 100) : 'null'
+    });
+    return dirty;
   });
 
   private destroy$ = new Subject<void>();
@@ -115,14 +122,24 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.saveDocument();
   };
 
-  // Navigation FAB
-  fabContext = computed(() => this.navigationFabService.createContext({
-    currentPage: 'document-editor',
-    isDirty: this.isDirty(),
-    hasUnsavedChanges: this.isDirty()
-  }));
+  // Effect to sync FAB state with isDirty - must be in injection context
+  private syncFabEffect = effect(() => {
+    const dirty = this.isDirty();
+    console.log('[DocumentEditor] Effect triggered - Updating FAB with isDirty:', dirty);
+    this.fabStore.registerPage(
+      {
+        context: {
+          currentPage: 'document-editor',
+          isDirty: dirty,
+          hasUnsavedChanges: dirty
+        },
+        actions: [],
+        onSave: () => this.saveDocument()
+      },
+      this.pageId
+    );
+  }, { allowSignalWrites: true });
 
-  fabActions = this.navigationFabService.getCommonActions('document-editor');
 
   menuItems: SlashCommand[] = [
     // Texte et titres
@@ -330,19 +347,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         this.loadDocument(params['id']);
       }
     });
-
-    // Add Save action to custom actions
-    this.fabActions = [
-      {
-        id: 'save',
-        icon: 'save',
-        label: 'Sauvegarder',
-        tooltip: 'Sauvegarder maintenant',
-        action: () => this.saveDocument(),
-        color: 'primary'
-      },
-      ...this.fabActions
-    ];
   }
 
   async loadDocument(id: string) {
@@ -414,19 +418,27 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
     save$.pipe(takeUntil(this.destroy$)).subscribe({
       next: (doc) => {
-        // Update state: save complete
-        this.documentState.update(s => ({
+        console.log('[DocumentEditor] Save successful, updating snapshot');
+
+        // Capture current state before updating
+        const currentState = this.documentState();
+
+        // Update state: save complete (keep current local content)
+        this.documentState.update((s: DocumentState) => ({
           ...s,
           id: doc.id,
           isSaving: false,
           lastSaved: new Date()
         }));
 
-        // Update snapshot (no longer dirty)
+        // Update snapshot to match CURRENT local state (not server content)
+        // This ensures isDirty becomes false
         this.originalSnapshot.set({
-          title: doc.title,
-          content: doc.content
+          title: currentState.title,
+          content: currentState.content
         });
+
+        console.log('[DocumentEditor] After save - isDirty should be false');
 
         // Update URL if new document
         if (!state.id) {
@@ -906,6 +918,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.fabStore.unregisterPage(this.pageId);
     this.editor.destroy();
     this.destroy$.next();
     this.destroy$.complete();

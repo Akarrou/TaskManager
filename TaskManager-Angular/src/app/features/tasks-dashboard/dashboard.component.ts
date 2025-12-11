@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -18,8 +18,7 @@ import { ViewToggleComponent, ViewMode } from '../../shared/components/view-togg
 import { KanbanBoardComponent, KanbanGroupBy } from '../../shared/components/kanban-board/kanban-board.component';
 import { CalendarViewComponent } from '../../shared/components/calendar-view/calendar-view.component';
 import { TimelineViewComponent } from '../../shared/components/timeline-view/timeline-view.component';
-import { NavigationFabComponent } from '../../shared/components/navigation-fab/navigation-fab.component';
-import { NavigationFabService } from '../../shared/components/navigation-fab/navigation-fab.service';
+import { FabStore } from '../../core/stores/fab.store';
 
 @Component({
   selector: 'app-tasks-dashboard',
@@ -35,27 +34,23 @@ import { NavigationFabService } from '../../shared/components/navigation-fab/nav
     ViewToggleComponent,
     KanbanBoardComponent,
     CalendarViewComponent,
-    TimelineViewComponent,
-    NavigationFabComponent
+    TimelineViewComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
-export class TasksDashboardComponent implements OnInit {
+export class TasksDashboardComponent implements OnInit, OnDestroy {
   private supabaseService = inject(SupabaseService);
   private taskService = inject(TaskService);
   private router = inject(Router);
   private dialog = inject(MatDialog);
   private userService = inject(UserService);
   private store = inject(Store);
-  private navigationFabService = inject(NavigationFabService);
+  private fabStore = inject(FabStore);
+  private pageId = crypto.randomUUID();
 
   supabaseStatus = signal<'connecting' | 'connected' | 'error'>('connecting');
   statusMessage = signal('Connexion en cours...');
-
-  // Navigation FAB configuration
-  fabContext = computed(() => this.navigationFabService.createContext({ currentPage: 'dashboard' }));
-  fabActions = this.navigationFabService.getCommonActions('dashboard');
 
   tasks = this.taskService.tasks;
   loading = this.taskService.loading;
@@ -170,6 +165,15 @@ export class TasksDashboardComponent implements OnInit {
   }
 
   async ngOnInit() {
+    // Enregistrer la configuration FAB
+    this.fabStore.registerPage(
+      {
+        context: { currentPage: 'tasks-dashboard' },
+        actions: []
+      },
+      this.pageId
+    );
+
     await this.loadUsers();
 
     // Subscribe to selected project ID changes
@@ -185,6 +189,10 @@ export class TasksDashboardComponent implements OnInit {
         this.currentSearchFilters.set(parsed);
       } catch (e) { /* Ignorer si parsing échoue */ }
     }
+  }
+
+  ngOnDestroy() {
+    this.fabStore.unregisterPage(this.pageId);
   }
 
   private async loadUsers() {

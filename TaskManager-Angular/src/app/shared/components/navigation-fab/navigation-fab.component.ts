@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, OnInit, signal, computed, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -40,8 +40,9 @@ export interface NavigationContext {
 export class NavigationFabComponent implements OnInit {
   private router = inject(Router);
 
-  @Input() context: NavigationContext = {};
-  @Input() customActions: NavigationAction[] = [];
+  // Utiliser signal inputs pour la réactivité
+  context = input<NavigationContext>({});
+  customActions = input<NavigationAction[]>([]);
   @Input() position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' = 'bottom-right';
   @Input() size: 'small' | 'medium' | 'large' = 'medium';
 
@@ -55,20 +56,100 @@ export class NavigationFabComponent implements OnInit {
 
   // Actions par défaut basées sur le contexte
   defaultActions = computed(() => {
+    const ctx = this.context();
+    const route = this.currentRoute();
     const actions: NavigationAction[] = [];
-    
-    // Action Dashboard (toujours visible)
-    actions.push({
-      id: 'dashboard',
-      icon: 'dashboard',
-      label: 'Dashboard',
-      tooltip: 'Retour au Dashboard',
-      action: () => this.navigateTo('/dashboard'),
-      color: 'secondary'
-    });
+
+    // 1. TOUJOURS EN PREMIER : Action Dashboard (cohérence globale, même couleur)
+    // Afficher "Dashboard principal" sur tasks-dashboard, sinon "Dashboard" partout ailleurs
+    if (ctx.currentPage === 'tasks-dashboard') {
+      actions.push({
+        id: 'dashboard',
+        icon: 'dashboard',
+        label: 'Dashboard principal',
+        tooltip: 'Retour au Dashboard principal',
+        action: () => this.navigateTo('/dashboard'),
+        color: 'accent'
+      });
+    } else if (ctx.currentPage !== 'dashboard') {
+      actions.push({
+        id: 'dashboard',
+        icon: 'dashboard',
+        label: 'Dashboard',
+        tooltip: 'Retour au Dashboard',
+        action: () => this.navigateTo('/dashboard'),
+        color: 'accent'
+      });
+    }
+
+    // 2. Actions contextuelles selon la page
+
+    // Page de création ou édition de tâche
+    if (route.includes('/tasks/new') || (route.includes('/tasks/') && route.includes('/edit'))) {
+      actions.push({
+        id: 'tasks-dashboard',
+        icon: 'view_list',
+        label: 'Dashboard Tâches',
+        tooltip: 'Retour au Dashboard des tâches',
+        action: () => this.navigateTo('/dashboard/tasks'),
+        color: 'primary'
+      });
+    }
+
+    // Actions spécifiques au Dashboard principal
+    if (ctx.currentPage === 'dashboard') {
+      actions.push(
+        {
+          id: 'tasks-dashboard',
+          icon: 'view_list',
+          label: 'Dashboard Tâches',
+          tooltip: 'Aller au Dashboard des tâches',
+          action: () => this.navigateTo('/dashboard/tasks'),
+          color: 'primary'
+        },
+        {
+          id: 'new-task',
+          icon: 'add_task',
+          label: 'Nouvelle tâche',
+          tooltip: 'Créer une nouvelle tâche',
+          action: () => this.navigateTo('/tasks/new'),
+          color: 'primary'
+        },
+        {
+          id: 'new-document',
+          icon: 'post_add',
+          label: 'Nouveau document',
+          tooltip: 'Créer un nouveau document',
+          action: () => this.navigateTo('/documents/new'),
+          color: 'primary'
+        },
+        {
+          id: 'document-list',
+          icon: 'description',
+          label: 'Mes documents',
+          tooltip: 'Voir la liste des documents',
+          action: () => this.navigateTo('/documents'),
+          color: 'primary'
+        }
+      );
+    }
+
+    // Actions spécifiques au Dashboard des tâches
+    if (ctx.currentPage === 'tasks-dashboard') {
+      actions.push({
+        id: 'new-task',
+        icon: 'add_task',
+        label: 'Nouvelle tâche',
+        tooltip: 'Créer une nouvelle tâche',
+        action: () => this.navigateTo('/tasks/new'),
+        color: 'primary'
+      });
+    }
 
     // Action Sauvegarde (si changements non sauvés)
-    if (this.context.isDirty || this.context.hasUnsavedChanges) {
+    console.log('[NavigationFAB] Checking save action - isDirty:', ctx.isDirty, 'hasUnsavedChanges:', ctx.hasUnsavedChanges, 'currentPage:', ctx.currentPage);
+    if (ctx.isDirty || ctx.hasUnsavedChanges) {
+      console.log('[NavigationFAB] Adding save action');
       actions.push({
         id: 'save',
         icon: 'save',
@@ -80,7 +161,7 @@ export class NavigationFabComponent implements OnInit {
     }
 
     // Action Navigation sans sauvegarde (si changements)
-    if (this.context.hasUnsavedChanges) {
+    if (ctx.hasUnsavedChanges) {
       actions.push({
         id: 'navigate-without-save',
         icon: 'exit_to_app',
@@ -91,16 +172,15 @@ export class NavigationFabComponent implements OnInit {
       });
     }
 
-    // Actions contextuelles selon la page
-    const route = this.currentRoute();
-    if (route.includes('/tasks/') && route.includes('/edit')) {
+    // Actions spécifiques à la liste des documents
+    if (ctx.currentPage === 'document-list') {
       actions.push({
-        id: 'task-list',
-        icon: 'list',
-        label: 'Liste des tâches',
-        tooltip: 'Voir toutes les tâches',
-        action: () => this.navigateTo('/tasks'),
-        color: 'accent'
+        id: 'new-document',
+        icon: 'post_add',
+        label: 'Nouveau document',
+        tooltip: 'Créer un nouveau document',
+        action: () => this.navigateTo('/documents/new'),
+        color: 'primary'
       });
     }
 
@@ -120,7 +200,7 @@ export class NavigationFabComponent implements OnInit {
 
   // Toutes les actions disponibles
   allActions = computed(() => {
-    return [...this.defaultActions(), ...this.customActions];
+    return [...this.defaultActions(), ...this.customActions()];
   });
 
   // Actions visibles (filtrées)
@@ -130,7 +210,8 @@ export class NavigationFabComponent implements OnInit {
 
   // Icône principale du FAB
   mainIcon = computed(() => {
-    if (this.context.isDirty || this.context.hasUnsavedChanges) {
+    const ctx = this.context();
+    if (ctx.isDirty || ctx.hasUnsavedChanges) {
       return 'save_alt';
     }
     return 'navigation';
@@ -138,7 +219,8 @@ export class NavigationFabComponent implements OnInit {
 
   // Couleur principale du FAB
   mainColor = computed(() => {
-    if (this.context.isDirty || this.context.hasUnsavedChanges) {
+    const ctx = this.context();
+    if (ctx.isDirty || ctx.hasUnsavedChanges) {
       return 'primary';
     }
     return 'secondary';
@@ -174,8 +256,9 @@ export class NavigationFabComponent implements OnInit {
 
   private navigateTo(route: string) {
     this.navigateRequested.emit(route);
-    
-    if (this.context.canNavigateAway !== false) {
+
+    const ctx = this.context();
+    if (ctx.canNavigateAway !== false) {
       this.router.navigate([route]);
     }
   }
@@ -194,14 +277,15 @@ export class NavigationFabComponent implements OnInit {
   }
 
   public addAction(action: NavigationAction) {
-    this.customActions.push(action);
+    // Note: customActions est maintenant un input signal (read-only)
+    // Cette méthode est conservée pour compatibilité mais ne fait rien
+    console.warn('addAction() is deprecated - use customActions input instead');
   }
 
   public removeAction(actionId: string) {
-    const index = this.customActions.findIndex(a => a.id === actionId);
-    if (index > -1) {
-      this.customActions.splice(index, 1);
-    }
+    // Note: customActions est maintenant un input signal (read-only)
+    // Cette méthode est conservée pour compatibilité mais ne fait rien
+    console.warn('removeAction() is deprecated - use customActions input instead');
   }
 
   // TrackBy function pour optimiser les performances de ngFor

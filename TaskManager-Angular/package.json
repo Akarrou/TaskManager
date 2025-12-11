@@ -26,6 +26,7 @@
     "@ngrx/effects": "^19.2.1",
     "@ngrx/entity": "^19.2.1",
     "@ngrx/router-store": "^19.2.1",
+    "@ngrx/signals": "^20.1.0",
     "@ngrx/store": "^19.2.1",
     "@ngrx/store-devtools": "^19.2.1",
     "@supabase/supabase-js": "^2.49.10",

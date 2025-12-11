@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { TaskService } from '../../core/services/task';
 import { DocumentService } from '../documents/services/document.service';
 import { IStat, DocumentsStats } from './general-dashboard.model';
+import { FabStore } from '../../core/stores/fab.store';
 
 @Component({
   selector: 'app-general-dashboard',
@@ -14,16 +15,31 @@ import { IStat, DocumentsStats } from './general-dashboard.model';
   templateUrl: './general-dashboard.component.html',
   styleUrls: ['./general-dashboard.component.scss']
 })
-export class GeneralDashboardComponent implements OnInit {
+export class GeneralDashboardComponent implements OnInit, OnDestroy {
   private taskService = inject(TaskService);
   private documentService = inject(DocumentService);
   private router = inject(Router);
+  private fabStore = inject(FabStore);
+  private pageId = crypto.randomUUID();
 
   stats = signal<IStat[]>([]);
   loading = signal(true);
 
   ngOnInit(): void {
+    // Enregistrer la configuration FAB
+    this.fabStore.registerPage(
+      {
+        context: { currentPage: 'dashboard' },
+        actions: []
+      },
+      this.pageId
+    );
+
     this.loadDashboardData();
+  }
+
+  ngOnDestroy(): void {
+    this.fabStore.unregisterPage(this.pageId);
   }
 
   async loadDashboardData(): Promise<void> {

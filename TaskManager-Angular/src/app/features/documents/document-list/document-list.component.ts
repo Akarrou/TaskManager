@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,10 +10,9 @@ import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { DocumentService, Document } from '../services/document.service';
 import { DatabaseService } from '../services/database.service';
-import { NavigationFabComponent, NavigationContext } from '../../../shared/components/navigation-fab/navigation-fab.component';
-import { NavigationFabService } from '../../../shared/components/navigation-fab/navigation-fab.service';
 import { DeleteDocumentDialogComponent } from '../components/delete-document-dialog/delete-document-dialog.component';
 import { MarkdownImportDialogComponent } from '../components/markdown-import-dialog/markdown-import-dialog.component';
+import { FabStore } from '../../../core/stores/fab.store';
 
 @Component({
   selector: 'app-document-list',
@@ -22,29 +21,47 @@ import { MarkdownImportDialogComponent } from '../components/markdown-import-dia
     CommonModule,
     MatIconModule,
     MatButtonModule,
-    MatCardModule,
-    NavigationFabComponent
+    MatCardModule
   ],
   templateUrl: './document-list.component.html',
   styleUrls: ['./document-list.component.scss']
 })
-export class DocumentListComponent implements OnInit {
+export class DocumentListComponent implements OnInit, OnDestroy {
   private documentService = inject(DocumentService);
   private databaseService = inject(DatabaseService);
   private router = inject(Router);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
-  private navigationFabService = inject(NavigationFabService);
+  private fabStore = inject(FabStore);
+  private pageId = crypto.randomUUID();
 
   documents = signal<Document[]>([]);
   loading = signal(true);
 
-  // Navigation FAB configuration
-  fabContext = signal<NavigationContext>(this.navigationFabService.createContext({ currentPage: 'document-list' }));
-  fabActions = this.navigationFabService.getCommonActions('document-list');
-
   ngOnInit() {
+    // Enregistrer la configuration FAB avec custom actions
+    this.fabStore.registerPage(
+      {
+        context: { currentPage: 'document-list' },
+        actions: [
+          {
+            id: 'import-markdown',
+            icon: 'upload_file',
+            label: 'Importer Markdown',
+            tooltip: 'Importer un fichier Markdown',
+            action: () => this.openMarkdownImportDialog(),
+            color: 'accent'
+          }
+        ]
+      },
+      this.pageId
+    );
+
     this.loadDocuments();
+  }
+
+  ngOnDestroy() {
+    this.fabStore.unregisterPage(this.pageId);
   }
 
   loadDocuments() {

@@ -1,18 +1,20 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from './core/services/supabase';
 import { AuthService } from './core/services/auth';
 import { HeaderNavComponent } from './shared/components/header-nav/header-nav.component';
 import { ToastComponent } from './shared/components/toast/toast.component';
+import { NavigationFabComponent } from './shared/components/navigation-fab/navigation-fab.component';
 import { Store } from '@ngrx/store';
 import { AppState } from './app.state';
 import * as ProjectActions from './features/projects/store/project.actions';
+import { FabStore } from './core/stores/fab.store';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, HeaderNavComponent, ToastComponent],
+  imports: [RouterOutlet, CommonModule, HeaderNavComponent, ToastComponent, NavigationFabComponent],
   template: `
     <div class="app-container">
       <app-header-nav></app-header-nav>
@@ -20,6 +22,14 @@ import * as ProjectActions from './features/projects/store/project.actions';
         <router-outlet></router-outlet>
       </main>
       <app-toast></app-toast>
+
+      <!-- FAB Centralisé -->
+      <app-navigation-fab
+        [context]="fabStore.context()"
+        [customActions]="fabStore.actions()"
+        (saveRequested)="handleSaveRequest()"
+        (navigateRequested)="handleNavigateRequest($event)">
+      </app-navigation-fab>
     </div>
   `,
   styleUrls: ['./app.component.scss']
@@ -30,6 +40,10 @@ export class AppComponent implements OnInit {
   private supabaseService = inject(SupabaseService);
   private authService = inject(AuthService);
   private store = inject(Store<AppState>);
+  private router = inject(Router);
+
+  // FAB Store pour la gestion centralisée du FAB
+  protected readonly fabStore = inject(FabStore);
 
   async ngOnInit() {
     // Charger les données initiales de l'application
@@ -40,6 +54,24 @@ export class AppComponent implements OnInit {
       await this.testSupabaseConnection();
     } catch (error) {
       console.warn('⚠️ Initialisation avec erreurs...', error);
+    }
+  }
+
+  /**
+   * Gère la demande de sauvegarde depuis le FAB
+   */
+  async handleSaveRequest(): Promise<void> {
+    await this.fabStore.executeSave();
+  }
+
+  /**
+   * Gère la demande de navigation depuis le FAB
+   * Vérifie si la navigation est autorisée avant de naviguer
+   */
+  async handleNavigateRequest(route: string): Promise<void> {
+    const canNavigate = await this.fabStore.canNavigateAway(route);
+    if (canNavigate) {
+      this.router.navigate([route]);
     }
   }
 
