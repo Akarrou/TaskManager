@@ -3,10 +3,16 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { DocumentService, Document } from '../services/document.service';
+import { DatabaseService } from '../services/database.service';
 import { NavigationFabComponent, NavigationContext } from '../../../shared/components/navigation-fab/navigation-fab.component';
 import { NavigationFabService } from '../../../shared/components/navigation-fab/navigation-fab.service';
+import { DeleteDocumentDialogComponent } from '../components/delete-document-dialog/delete-document-dialog.component';
 
 @Component({
   selector: 'app-document-list',
@@ -23,7 +29,10 @@ import { NavigationFabService } from '../../../shared/components/navigation-fab/
 })
 export class DocumentListComponent implements OnInit {
   private documentService = inject(DocumentService);
+  private databaseService = inject(DatabaseService);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
+  private snackBar = inject(MatSnackBar);
   private navigationFabService = inject(NavigationFabService);
 
   documents = signal<Document[]>([]);
@@ -61,9 +70,85 @@ export class DocumentListComponent implements OnInit {
 
   async deleteDocument(event: Event, id: string) {
     event.stopPropagation();
-    if (confirm('Voulez-vous vraiment supprimer ce document ?')) {
-      await this.documentService.deleteDocument(id).toPromise();
-      this.loadDocuments();
+
+    // 1. Récupérer le document pour extraire les bases de données
+    const doc = this.documents().find(d => d.id === id);
+    if (!doc) {
+      this.snackBar.open('Document introuvable', 'OK', { duration: 3000 });
+      return;
     }
+
+    // 2. Extraire les IDs de bases de données du contenu
+    const databaseIds = this.documentService.extractDatabaseIds(doc.content);
+    console.log('[deleteDocument] Bases de données trouvées:', databaseIds);
+
+    // 3. Ouvrir le dialog de confirmation
+    const dialogRef = this.dialog.open(DeleteDocumentDialogComponent, {
+      width: '500px',
+      data: {
+        documentTitle: doc.title,
+        databaseCount: databaseIds.length
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (confirmed) {
+        this.performDelete(id, databaseIds);
+      }
+    });
+  }
+
+  private performDelete(documentId: string, databaseIds: string[]) {
+    // 1. Supprimer les bases de données en cascade (parallèle)
+    const deleteDatabases$ = databaseIds.length > 0
+      ? forkJoin(
+          databaseIds.map(dbId =>
+            this.databaseService.deleteDatabase(dbId).pipe(
+              catchError(err => {
+                console.error(`[deleteDocument] Erreur suppression base ${dbId}:`, err);
+                return of(false); // Continue même si une base échoue
+              })
+            )
+          )
+        )
+      : of([]);
+
+    // 2. Après suppression des bases, supprimer le document
+    deleteDatabases$.subscribe({
+      next: (results) => {
+        const successCount = results.filter(r => r === true).length;
+        console.log(`[deleteDocument] ${successCount}/${databaseIds.length} bases supprimées`);
+
+        // Supprimer le document
+        this.documentService.deleteDocument(documentId).subscribe({
+          next: (success) => {
+            if (success) {
+              this.snackBar.open(
+                `Document supprimé${databaseIds.length > 0 ? ` avec ${databaseIds.length} base(s) de données` : ''}`,
+                'OK',
+                { duration: 5000 }
+              );
+              this.loadDocuments();
+            } else {
+              this.snackBar.open('Erreur lors de la suppression du document', 'OK', {
+                duration: 5000
+              });
+            }
+          },
+          error: (err) => {
+            console.error('[deleteDocument] Erreur suppression document:', err);
+            this.snackBar.open('Erreur lors de la suppression du document', 'OK', {
+              duration: 5000
+            });
+          }
+        });
+      },
+      error: (err) => {
+        console.error('[deleteDocument] Erreur suppression bases:', err);
+        this.snackBar.open('Erreur lors de la suppression des bases de données', 'OK', {
+          duration: 5000
+        });
+      }
+    });
   }
 }

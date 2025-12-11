@@ -120,6 +120,31 @@ export class DocumentService {
   }
 
   /**
+   * Extrait les IDs de bases de données du contenu d'un document
+   * Parcourt récursivement le JSON TipTap pour trouver tous les noeuds database
+   */
+  extractDatabaseIds(content: JSONContent): string[] {
+    const databaseIds: string[] = [];
+
+    const traverse = (node: any) => {
+      if (!node) return;
+
+      // Si c'est un noeud database avec un databaseId
+      if (node.type === 'database' && node.attrs?.databaseId) {
+        databaseIds.push(node.attrs.databaseId);
+      }
+
+      // Parcourir récursivement les enfants
+      if (node.content && Array.isArray(node.content)) {
+        node.content.forEach((child: any) => traverse(child));
+      }
+    };
+
+    traverse(content);
+    return databaseIds;
+  }
+
+  /**
    * Get the breadcrumb path (parent hierarchy) for a document
    * Returns array from root to current document
    */

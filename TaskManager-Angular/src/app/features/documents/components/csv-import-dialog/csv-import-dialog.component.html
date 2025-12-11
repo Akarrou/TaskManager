@@ -1,0 +1,299 @@
+<div class="csv-import-dialog">
+  <h2 mat-dialog-title>Importer CSV - {{ tableName }}</h2>
+
+  <mat-dialog-content class="dialog-content">
+    <mat-stepper #stepper linear>
+      <!-- Step 1: Upload fichier -->
+      <mat-step [completed]="selectedFile() !== null">
+        <ng-template matStepLabel>Upload fichier</ng-template>
+
+        <div class="step-content">
+          <p class="text-gray-600 mb-4">
+            Sélectionnez un fichier CSV à importer. Le fichier doit contenir
+            une ligne d'en-tête avec les noms de colonnes.
+          </p>
+
+          <div class="upload-zone" (click)="fileInput.click()">
+            <mat-icon class="upload-icon">upload_file</mat-icon>
+            <p class="text-lg font-medium">
+              {{
+                selectedFile()
+                  ? fileName()
+                  : 'Cliquez pour sélectionner un fichier CSV'
+              }}
+            </p>
+            @if (selectedFile()) {
+            <p class="text-sm text-gray-500">{{ fileSize() }} MB</p>
+            }
+          </div>
+
+          <input
+            #fileInput
+            type="file"
+            accept=".csv"
+            (change)="onFileSelected($event)"
+            class="hidden"
+          />
+
+          <div class="mt-4 p-4 bg-blue-50 rounded">
+            <p class="text-sm text-blue-900">
+              <strong>Limites:</strong>
+            </p>
+            <ul class="text-sm text-blue-800 list-disc list-inside">
+              <li>Taille max: {{ MAX_FILE_SIZE_MB }} MB</li>
+              <li>Lignes max: {{ MAX_ROWS | number }}</li>
+              <li>Seuls fichiers .csv acceptés</li>
+              <li>Première ligne doit contenir les en-têtes</li>
+            </ul>
+          </div>
+
+          <div class="mt-6 flex justify-end">
+            <button mat-button mat-dialog-close>Annuler</button>
+            <button
+              mat-raised-button
+              color="primary"
+              matStepperNext
+              (click)="parseAndDetectTypes()"
+              [disabled]="!selectedFile()"
+            >
+              Suivant
+            </button>
+          </div>
+        </div>
+      </mat-step>
+
+      <!-- Step 2: Parsing & Détection (automatique) -->
+      <mat-step [completed]="preview() !== null">
+        <ng-template matStepLabel>Analyse</ng-template>
+
+        <div class="step-content">
+          @if (isParsingFile()) {
+          <div class="flex flex-col items-center justify-center py-12">
+            <mat-spinner diameter="60"></mat-spinner>
+            <p class="mt-4 text-lg">Analyse du fichier CSV...</p>
+          </div>
+          } @else if (preview()) {
+          <div class="analysis-result">
+            <div class="success-message">
+              <mat-icon class="text-green-600">check_circle</mat-icon>
+              <div>
+                <p class="font-medium text-lg">
+                  Analyse terminée avec succès !
+                </p>
+                <p class="text-gray-600">
+                  {{ preview()!.headers.length }} colonnes détectées, {{
+                  preview()!.totalRows | number }} lignes à importer
+                </p>
+              </div>
+            </div>
+
+            @if (preview()!.warnings.length > 0) {
+            <div class="warnings mt-4">
+              <p class="font-medium text-orange-800 mb-2">Avertissements:</p>
+              <ul class="text-sm">
+                @for (warning of preview()!.warnings; track $index) {
+                <li class="text-orange-700">{{ warning }}</li>
+                }
+              </ul>
+            </div>
+            }
+          </div>
+
+          <div class="mt-6 flex justify-between">
+            <button mat-button matStepperPrevious>Précédent</button>
+            <button mat-raised-button color="primary" matStepperNext>
+              Suivant
+            </button>
+          </div>
+          }
+        </div>
+      </mat-step>
+
+      <!-- Step 3: Configuration & Preview -->
+      <mat-step>
+        <ng-template matStepLabel>Configuration</ng-template>
+
+        <div class="step-content">
+          <p class="text-gray-600 mb-4">
+            Vérifiez les types de colonnes détectés automatiquement. Vous
+            pouvez les modifier si nécessaire.
+          </p>
+
+          @if (preview()) {
+          <div class="preview-section">
+            <div class="table-container">
+              <table mat-table [dataSource]="preview()!.sampleData">
+                @for (column of detectedColumns(); track $index; let colIndex
+                = $index) {
+                <ng-container [matColumnDef]="'col' + colIndex">
+                  <th mat-header-cell *matHeaderCellDef class="column-header">
+                    <div class="header-content">
+                      <div class="flex items-center gap-2">
+                        <span class="font-medium">{{ column.name }}</span>
+                        <mat-icon
+                          [class]="getConfidenceColor(column.confidence)"
+                          [matTooltip]="
+                            'Confiance: ' +
+                            (column.confidence * 100 | number : '1.0-0') +
+                            '%'
+                          "
+                          class="text-base"
+                        >
+                          {{ getConfidenceIcon(column.confidence) }}
+                        </mat-icon>
+                      </div>
+
+                      <mat-form-field appearance="outline" class="type-select">
+                        <mat-select
+                          [value]="column.type"
+                          (selectionChange)="
+                            onColumnTypeChange(colIndex, $event.value)
+                          "
+                        >
+                          @for (type of columnTypes; track type) {
+                          <mat-option [value]="type">{{ type }}</mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+                    </div>
+                  </th>
+                  <td mat-cell *matCellDef="let row">
+                    {{ row[colIndex] || '-' }}
+                  </td>
+                </ng-container>
+                }
+
+                <tr
+                  mat-header-row
+                  *matHeaderRowDef="columnDisplayNames()"
+                ></tr>
+                <tr
+                  mat-row
+                  *matRowDef="let row; columns: columnDisplayNames()"
+                ></tr>
+              </table>
+            </div>
+
+            <p class="text-xs text-gray-500 mt-2">
+              Affichage des 10 premières lignes. {{ preview()!.totalRows |
+              number }} lignes au total seront importées.
+            </p>
+          </div>
+          }
+
+          <div class="mt-6 flex justify-between">
+            <button mat-button matStepperPrevious>Précédent</button>
+            <button
+              mat-raised-button
+              color="primary"
+              matStepperNext
+              (click)="startImport()"
+            >
+              Lancer l'import
+            </button>
+          </div>
+        </div>
+      </mat-step>
+
+      <!-- Step 4: Import en cours -->
+      <mat-step>
+        <ng-template matStepLabel>Import</ng-template>
+
+        <div class="step-content">
+          @if (isImporting()) {
+          <div class="import-progress">
+            <p class="text-lg font-medium mb-4">{{ importStatus() }}</p>
+
+            <mat-progress-bar
+              mode="determinate"
+              [value]="importProgress()"
+              class="mb-2"
+            ></mat-progress-bar>
+
+            <p class="text-sm text-gray-600">
+              {{ importProgress() }}% terminé
+            </p>
+          </div>
+          } @else if (importResult()) {
+          <div class="import-complete">
+            @if (importResult()!.errors.length === 0) {
+            <!-- Succès total -->
+            <div class="success-card">
+              <mat-icon class="success-icon">check_circle</mat-icon>
+              <div>
+                <p class="text-xl font-medium">Import réussi !</p>
+                <p class="text-gray-600 mt-2">
+                  {{ importResult()!.columnsCreated }} colonnes créées, {{
+                  importResult()!.rowsImported | number }} lignes importées
+                </p>
+              </div>
+            </div>
+            } @else if (importResult()!.rowsImported > 0) {
+            <!-- Succès partiel -->
+            <div class="warning-card">
+              <mat-icon class="warning-icon">warning</mat-icon>
+              <div>
+                <p class="text-xl font-medium">Import partiel</p>
+                <p class="text-gray-600 mt-2">
+                  {{ importResult()!.rowsImported | number }} / {{
+                  preview()!.totalRows | number }} lignes importées.
+                  {{ importResult()!.errors.length }} erreurs.
+                </p>
+              </div>
+            </div>
+
+            <div class="errors-section mt-4">
+              <p class="font-medium mb-2">Erreurs rencontrées:</p>
+              <div class="error-list">
+                @for (error of importResult()!.errors.slice(0, 50); track
+                $index) {
+                <div class="error-item">
+                  <span class="font-mono text-sm"
+                    >Ligne {{ error.row }}:</span
+                  >
+                  <span class="text-sm">{{ error.message }}</span>
+                </div>
+                }
+              </div>
+
+              @if (importResult()!.errors.length > 50) {
+              <p class="text-xs text-gray-500 mt-2">
+                ... et {{ importResult()!.errors.length - 50 }} autres erreurs
+              </p>
+              }
+
+              <button
+                mat-stroked-button
+                (click)="downloadErrorLog()"
+                class="mt-4"
+              >
+                <mat-icon>download</mat-icon>
+                Télécharger le log d'erreurs (CSV)
+              </button>
+            </div>
+            } @else {
+            <!-- Échec total -->
+            <div class="error-card">
+              <mat-icon class="error-icon">error</mat-icon>
+              <div>
+                <p class="text-xl font-medium">Échec de l'import</p>
+                <p class="text-gray-600 mt-2">
+                  Aucune ligne n'a pu être importée. Veuillez vérifier les
+                  données et réessayer.
+                </p>
+              </div>
+            </div>
+            }
+          </div>
+          }
+        </div>
+      </mat-step>
+    </mat-stepper>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    @if (importResult()) {
+    <button mat-button (click)="close()">Fermer</button>
+    }
+  </mat-dialog-actions>
+</div>

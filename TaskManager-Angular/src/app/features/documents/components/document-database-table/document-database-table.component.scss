@@ -626,6 +626,38 @@
   }
 }
 
+// Pagination
+.database-paginator {
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+
+  ::ng-deep {
+    .mat-mdc-paginator-container {
+      padding: 0.5rem 1rem;
+      min-height: 56px;
+    }
+
+    .mat-mdc-paginator-page-size-label,
+    .mat-mdc-paginator-range-label {
+      margin: 0 0.5rem;
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+
+    .mat-mdc-paginator-page-size-select {
+      margin: 0 0.5rem;
+    }
+
+    .mat-mdc-icon-button {
+      color: #6b7280;
+
+      &:disabled {
+        color: #d1d5db;
+      }
+    }
+  }
+}
+
 // Responsive
 @media (max-width: 768px) {
   .database-header {
@@ -636,5 +668,14 @@
   .database-actions {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .database-paginator {
+    ::ng-deep {
+      .mat-mdc-paginator-container {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+    }
   }
 }

@@ -94,6 +94,17 @@
           </div>
         }
 
+        <!-- Import CSV Button (only for empty tables) -->
+        @if (canImportCsv()) {
+          <button
+            mat-stroked-button
+            (click)="openCsvImportDialog()"
+            matTooltip="Importer des données depuis un fichier CSV">
+            <mat-icon>upload_file</mat-icon>
+            Importer CSV
+          </button>
+        }
+
         <!-- Add Row Button -->
         <button mat-raised-button color="primary" (click)="onAddRow()">
           <mat-icon>add</mat-icon>
@@ -132,6 +143,17 @@
                 </button>
               </div>
             } @else {
+              <!-- Pagination Controls -->
+              <mat-paginator
+                [length]="totalCount()"
+                [pageSize]="pageSize()"
+                [pageIndex]="pageIndex()"
+                [pageSizeOptions]="pageSizeOptions"
+                (page)="onPageChange($event)"
+                showFirstLastButtons
+                class="database-paginator">
+              </mat-paginator>
+
               <!-- Data Table -->
               <div class="table-wrapper" (keydown)="onTableKeydown($event)">
                 <table class="data-table">
@@ -329,6 +351,17 @@
                   </tbody>
                 </table>
               </div>
+
+              <!-- Bottom Pagination Controls -->
+              <mat-paginator
+                [length]="totalCount()"
+                [pageSize]="pageSize()"
+                [pageIndex]="pageIndex()"
+                [pageSizeOptions]="pageSizeOptions"
+                (page)="onPageChange($event)"
+                showFirstLastButtons
+                class="database-paginator">
+              </mat-paginator>
             }
           </div>
         }

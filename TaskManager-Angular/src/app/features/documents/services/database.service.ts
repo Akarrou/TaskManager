@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../../../core/services/supabase';
-import { from, Observable, throwError } from 'rxjs';
-import { map, catchError, switchMap } from 'rxjs/operators';
+import { from, Observable, throwError, concat, of, delay } from 'rxjs';
+import { map, catchError, switchMap, toArray } from 'rxjs/operators';
 import {
   DatabaseConfig,
   DatabaseColumn,
@@ -20,7 +20,10 @@ import {
   COLUMN_TYPE_TO_PG_TYPE,
   Filter,
   SortOrder,
+  ColumnType,
+  SelectChoice,
 } from '../models/database.model';
+import { CsvImportResult, CsvImportError } from '../models/csv-import.model';
 
 /**
  * DatabaseService
@@ -51,7 +54,7 @@ export class DatabaseService {
 
     // Prepare columns for RPC function
     const columns = request.config.columns.map(col => ({
-      name: `col_${col.id}`,
+      name: `col_${col.id.replace(/-/g, '_')}`,
       type: COLUMN_TYPE_TO_PG_TYPE[col.type],
     }));
 
@@ -149,26 +152,30 @@ export class DatabaseService {
    * Delete database (drops table and metadata)
    */
   deleteDatabase(databaseId: string): Observable<boolean> {
-    return this.getDatabaseMetadata(databaseId).pipe(
-      switchMap(metadata =>
-        from(
-          this.client.rpc('delete_dynamic_table', {
-            table_name: metadata.table_name,
-          })
-        )
-      ),
-      switchMap(() =>
-        from(
-          this.client
-            .from('document_databases')
-            .delete()
-            .eq('database_id', databaseId)
-        )
-      ),
-      map(() => true),
-      catchError(error => {
-        console.error('Failed to delete database:', error);
-        return throwError(() => error);
+    console.log('[deleteDatabase] Suppression cascade de la base:', databaseId);
+
+    return from(
+      this.client.rpc('delete_database_cascade', {
+        p_database_id: databaseId
+      })
+    ).pipe(
+      map(({ data, error }: { data: any; error: any }) => {
+        if (error) {
+          console.error('[deleteDatabase] Erreur RPC:', error);
+          throw error;
+        }
+
+        if (!data?.success) {
+          console.error('[deleteDatabase] Échec suppression:', data?.error);
+          throw new Error(data?.error || 'Échec de la suppression');
+        }
+
+        console.log('[deleteDatabase] Suppression réussie:', data);
+        return true;
+      }),
+      catchError((err: any) => {
+        console.error('[deleteDatabase] Erreur lors de la suppression:', err);
+        return throwError(() => new Error(`Impossible de supprimer la base: ${err.message}`));
       })
     );
   }
@@ -188,7 +195,7 @@ export class DatabaseService {
         // Build query
         // Convert column ID to PostgreSQL column name (col_<id> format)
         const sortColumn = params.sortBy
-          ? `col_${params.sortBy}`
+          ? `col_${params.sortBy.replace(/-/g, '_')}`
           : 'row_order';
         let query = this.client
           .from(tableName)
@@ -217,6 +224,53 @@ export class DatabaseService {
       }),
       catchError(error => {
         console.error('Failed to fetch rows:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Get rows with total count for pagination
+   */
+  getRowsWithCount(params: QueryRowsParams): Observable<{ rows: DatabaseRow[]; totalCount: number }> {
+    return this.getDatabaseMetadata(params.databaseId).pipe(
+      switchMap(metadata => {
+        const tableName = metadata.table_name;
+
+        // Build query with count
+        const sortColumn = params.sortBy
+          ? `col_${params.sortBy.replace(/-/g, '_')}`
+          : 'row_order';
+        let query = this.client
+          .from(tableName)
+          .select('*', { count: 'exact' })
+          .order(sortColumn, {
+            ascending: params.sortOrder !== 'desc',
+          });
+
+        // Apply filters
+        if (params.filters && params.filters.length > 0) {
+          params.filters.forEach(filter => {
+            query = this.applyFilter(query, filter);
+          });
+        }
+
+        // Apply pagination
+        const limit = params.limit || 100;
+        const offset = params.offset || 0;
+        query = query.range(offset, offset + limit - 1);
+
+        return from(query);
+      }),
+      map(response => {
+        if (response.error) throw response.error;
+        return {
+          rows: this.mapRowsFromDb(response.data || []),
+          totalCount: response.count || 0,
+        };
+      }),
+      catchError(error => {
+        console.error('Failed to fetch rows with count:', error);
         return throwError(() => error);
       })
     );
@@ -256,7 +310,7 @@ export class DatabaseService {
     return this.getDatabaseMetadata(request.databaseId).pipe(
       switchMap(metadata => {
         const tableName = metadata.table_name;
-        const columnName = `col_${request.columnId}`;
+        const columnName = `col_${request.columnId.replace(/-/g, '_')}`;
 
         return from(
           this.client
@@ -372,11 +426,23 @@ export class DatabaseService {
    * Add a new column
    */
   addColumn(request: AddColumnRequest): Observable<boolean> {
+    console.log('[addColumn] Request received:', {
+      databaseId: request.databaseId,
+      column: request.column,
+    });
+
     return this.getDatabaseMetadata(request.databaseId).pipe(
       switchMap(metadata => {
         const tableName = metadata.table_name;
-        const columnName = `col_${request.column.id}`;
+        // Remplacer les tirets par des underscores pour PostgreSQL
+        const columnName = `col_${request.column.id.replace(/-/g, '_')}`;
         const columnType = COLUMN_TYPE_TO_PG_TYPE[request.column.type];
+
+        console.log('[addColumn] Calling RPC add_column_to_table:', {
+          table_name: tableName,
+          column_name: columnName,
+          column_type: columnType,
+        });
 
         // Add column to physical table
         return from(
@@ -386,17 +452,32 @@ export class DatabaseService {
             column_type: columnType,
           })
         ).pipe(
+          map((response: any) => {
+            console.log('[addColumn] RPC Response:', response);
+            if (response.error) {
+              console.error('[addColumn] RPC Error:', response.error);
+              throw response.error;
+            }
+            return response.data;
+          }),
           switchMap(() => {
             // Update config in metadata
             const updatedConfig = { ...metadata.config };
             updatedConfig.columns.push(request.column);
 
+            console.log('[addColumn] Updating database config with new column');
             return this.updateDatabaseConfig(request.databaseId, updatedConfig);
           })
         );
       }),
       catchError(error => {
-        console.error('Failed to add column:', error);
+        console.error('[addColumn] Failed to add column:', {
+          error,
+          message: error?.message,
+          details: error?.details,
+          hint: error?.hint,
+          code: error?.code,
+        });
         return throwError(() => error);
       })
     );
@@ -439,7 +520,7 @@ export class DatabaseService {
     return this.getDatabaseMetadata(request.databaseId).pipe(
       switchMap(metadata => {
         const tableName = metadata.table_name;
-        const columnName = `col_${request.columnId}`;
+        const columnName = `col_${request.columnId.replace(/-/g, '_')}`;
 
         // Delete column from physical table
         return from(
@@ -492,7 +573,7 @@ export class DatabaseService {
     const result: Record<string, unknown> = {};
 
     Object.entries(cells).forEach(([columnId, value]) => {
-      result[`col_${columnId}`] = value;
+      result[`col_${columnId.replace(/-/g, '_')}`] = value;
     });
 
     return result;
@@ -507,7 +588,8 @@ export class DatabaseService {
     // Extract cell values (columns starting with 'col_')
     Object.entries(dbRow).forEach(([key, value]) => {
       if (key.startsWith('col_')) {
-        const columnId = key.replace('col_', '');
+        // Reconvertir underscores en tirets pour matcher les columnId UUID
+        const columnId = key.replace('col_', '').replace(/_/g, '-');
         cells[columnId] = value as CellValue;
       }
     });
@@ -532,7 +614,7 @@ export class DatabaseService {
    * Apply a filter to a Supabase query
    */
   private applyFilter(query: any, filter: Filter): any {
-    const columnName = `col_${filter.columnId}`;
+    const columnName = `col_${filter.columnId.replace(/-/g, '_')}`;
 
     switch (filter.operator) {
       case 'equals':
@@ -562,5 +644,166 @@ export class DatabaseService {
       default:
         return query;
     }
+  }
+
+  // =====================================================================
+  // CSV Import Methods
+  // =====================================================================
+
+  /**
+   * Crée plusieurs colonnes séquentiellement à partir d'un CSV
+   * Réutilise la méthode addColumn existante pour garantir la cohérence
+   */
+  createColumnsFromCsv(
+    databaseId: string,
+    columns: Array<{
+      name: string;
+      type: ColumnType;
+      options?: { choices?: SelectChoice[] };
+    }>
+  ): Observable<DatabaseColumn[]> {
+    console.log('[createColumnsFromCsv] Starting column creation for', columns.length, 'columns');
+    const createdColumns: DatabaseColumn[] = [];
+
+    // Créer un observable pour chaque colonne avec un délai pour éviter le rate-limiting
+    const columnCreations$ = columns.map((col, index) => {
+      const column: DatabaseColumn = {
+        id: crypto.randomUUID(),
+        name: col.name,
+        type: col.type,
+        options: col.options,
+        visible: true,
+        order: index,
+      };
+
+      createdColumns.push(column);
+
+      console.log(`[createColumnsFromCsv] Creating column ${index + 1}/${columns.length}:`, {
+        name: column.name,
+        type: column.type,
+        id: column.id,
+      });
+
+      return this.addColumn({
+        databaseId,
+        column,
+      }).pipe(
+        delay(100), // Anti-throttle Supabase (100ms entre chaque requête)
+        map(() => {
+          console.log(`[createColumnsFromCsv] Column ${index + 1} created successfully`);
+          return column;
+        }),
+        catchError((err: any) => {
+          console.error(`[createColumnsFromCsv] Column ${index + 1} failed:`, err);
+          throw err; // Re-throw pour propager l'erreur
+        })
+      );
+    });
+
+    // Exécuter séquentiellement et collecter tous les résultats
+    return concat(...columnCreations$).pipe(
+      toArray(),
+      map((cols: DatabaseColumn[]) => {
+        console.log('[createColumnsFromCsv] All columns created:', cols.length);
+        return cols;
+      }),
+      catchError((err: any) => {
+        console.error('[createColumnsFromCsv] Column creation failed:', err);
+        return throwError(() => new Error(`Impossible de créer la colonne: ${err.message}`));
+      })
+    );
+  }
+
+  /**
+   * Importe des lignes CSV en batch via la RPC bulk_insert_rows
+   * Continue sur erreur pour permettre import partiel
+   */
+  importRowsFromCsv(
+    databaseId: string,
+    rows: Array<Record<string, CellValue>>,
+    onProgress?: (current: number, total: number) => void
+  ): Observable<CsvImportResult> {
+    const BATCH_SIZE = 100;
+    const batches = this.chunkArray(rows, BATCH_SIZE);
+    const errors: CsvImportError[] = [];
+    let imported = 0;
+
+    // Créer un observable pour chaque batch
+    const batchImports$ = batches.map((batch, batchIndex) =>
+      from(
+        this.client.rpc('bulk_insert_rows', {
+          p_database_id: databaseId,
+          p_rows: batch.map(row => JSON.stringify({ cells: row })),
+        })
+      ).pipe(
+        map(({ data, error }: { data: any; error: any }) => {
+          console.log('[CSV Import] RPC Response:', { data, error });
+          if (error) {
+            console.error('[CSV Import] RPC Error:', error);
+            throw error;
+          }
+
+          // Incrémenter compteur et notifier progression
+          const batchImported = data?.inserted_count || batch.length;
+          imported += batchImported;
+          console.log('[CSV Import] Batch imported:', batchImported, 'Total:', imported);
+          onProgress?.(imported, rows.length);
+
+          // Collecter erreurs du batch
+          if (data?.errors && Array.isArray(data.errors)) {
+            data.errors.forEach((err: any) => {
+              errors.push({
+                row: batchIndex * BATCH_SIZE + (err.row || 0),
+                message: err.message || 'Erreur inconnue',
+              });
+            });
+          }
+
+          return data;
+        }),
+        catchError((err: any) => {
+          // En cas d'erreur totale du batch, marquer toutes les lignes comme échouées
+          batch.forEach((_, i) => {
+            errors.push({
+              row: batchIndex * BATCH_SIZE + i + 1,
+              message: err.message || 'Erreur lors de l\'insertion',
+            });
+          });
+          return of(null); // Continuer malgré l'erreur
+        })
+      )
+    );
+
+    // Exécuter tous les batches séquentiellement
+    return concat(...batchImports$).pipe(
+      toArray(),
+      map(() => ({
+        columnsCreated: 0, // Sera défini par l'appelant
+        rowsImported: imported,
+        errors,
+      }))
+    );
+  }
+
+  /**
+   * Vérifie si une base de données est vierge (sans lignes)
+   * Utilisé pour autoriser/bloquer l'import CSV
+   */
+  isDatabaseEmpty(databaseId: string): Observable<boolean> {
+    return this.getRows({ databaseId, limit: 1 }).pipe(
+      map((rows: DatabaseRow[]) => rows.length === 0),
+      catchError(() => of(true)) // En cas d'erreur, considérer comme vide
+    );
+  }
+
+  /**
+   * Divise un array en batches de taille fixe
+   */
+  private chunkArray<T>(array: T[], size: number): T[][] {
+    const chunks: T[][] = [];
+    for (let i = 0; i < array.length; i += size) {
+      chunks.push(array.slice(i, i + size));
+    }
+    return chunks;
   }
 }

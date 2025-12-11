@@ -6,6 +6,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatDialog } from '@angular/material/dialog';
 import { Subject, takeUntil, debounceTime, delay, of, retry, timer, switchMap, catchError, tap, take } from 'rxjs';
 import {
@@ -28,10 +29,15 @@ import {
   ColumnEditorDialogData,
   ColumnEditorDialogResult,
 } from '../column-editor-dialog/column-editor-dialog.component';
+import {
+  CsvImportDialogComponent,
+} from '../csv-import-dialog/csv-import-dialog.component';
+import { CsvImportDialogData, CsvImportResult } from '../../models/csv-import.model';
 import { DatabaseFiltersComponent } from '../database-filters/database-filters.component';
 import { DatabaseKanbanView } from '../database-kanban-view/database-kanban-view';
 import { DatabaseCalendarView } from '../database-calendar-view/database-calendar-view';
 import { DatabaseTimelineView } from '../database-timeline-view/database-timeline-view';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 /**
  * DocumentDatabaseTableComponent
@@ -54,6 +60,7 @@ import { DatabaseTimelineView } from '../database-timeline-view/database-timelin
     MatTooltipModule,
     MatMenuModule,
     MatCheckboxModule,
+    MatPaginatorModule,
     DatabaseFiltersComponent,
     DatabaseKanbanView,
     DatabaseCalendarView,
@@ -65,6 +72,7 @@ import { DatabaseTimelineView } from '../database-timeline-view/database-timelin
 export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   private databaseService = inject(DatabaseService);
   private dialog = inject(MatDialog);
+  private snackBar = inject(MatSnackBar);
 
   // Inputs
   @Input() databaseId!: string;
@@ -88,6 +96,12 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   activeFilters = signal<Filter[]>([]);
   activeSort = signal<{ columnId: string; order: SortOrder } | null>(null);
 
+  // Pagination state
+  pageSize = signal<number>(50);
+  pageIndex = signal<number>(0);
+  totalCount = signal<number>(0);
+  pageSizeOptions = [10, 25, 50, 100];
+
   // Kanban view state
   kanbanGroupByColumnId = signal<string | undefined>(undefined);
 
@@ -100,8 +114,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
 
   // Computed
   columnCount = computed(() => this.databaseConfig().columns.length);
-  rowCount = computed(() => this.rows().length);
-  filteredRowCount = computed(() => this.rows().length);
+  rowCount = computed(() => this.totalCount()); // Use totalCount for accurate row count with pagination
 
   // Row selection state
   selectedRowIds = signal<Set<string>>(new Set());
@@ -164,27 +177,92 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
         // Load config from Supabase (source of truth)
         this.databaseConfig.set(metadata.config);
 
-        // Load filters and sort from current view (now that config is loaded)
-        this.loadViewConfig();
+        // Clean up view configs: remove references to deleted columns
+        const validColumnIds = new Set(metadata.config.columns.map(col => col.id));
+        let configUpdated = false;
 
-        // Sync config to TipTap node (update document with latest config)
-        this.syncToTipTap();
+        metadata.config.views.forEach(view => {
+          // Clean up sortBy if column no longer exists
+          if (view.config?.sortBy && !validColumnIds.has(view.config.sortBy)) {
+            console.log(`[CSV Import] Removing invalid sortBy "${view.config.sortBy}" from view "${view.type}"`);
+            delete view.config.sortBy;
+            delete view.config.sortOrder;
+            configUpdated = true;
+          }
 
-        // Database exists, check if it's newly created (within last 2 seconds)
-        const createdAt = new Date(metadata.created_at);
-        const now = new Date();
-        const ageInSeconds = (now.getTime() - createdAt.getTime()) / 1000;
-        const isNewlyCreated = ageInSeconds < 2;
+          // Clean up groupBy if column no longer exists
+          if (view.config?.groupBy && !validColumnIds.has(view.config.groupBy)) {
+            console.log(`[CSV Import] Removing invalid groupBy "${view.config.groupBy}" from view "${view.type}"`);
+            delete view.config.groupBy;
+            configUpdated = true;
+          }
 
-        if (isNewlyCreated) {
-          console.log('✅ Newly created database detected, starting schema availability polling...');
+          // Clean up filters that reference deleted columns
+          if (view.config?.filters && view.config.filters.length > 0) {
+            const validFilters = view.config.filters.filter(filter => {
+              const isValid = validColumnIds.has(filter.columnId);
+              if (!isValid) {
+                console.log(`[CSV Import] Removing filter on deleted column "${filter.columnId}" from view "${view.type}"`);
+              }
+              return isValid;
+            });
+            if (validFilters.length !== view.config.filters.length) {
+              view.config.filters = validFilters;
+              configUpdated = true;
+            }
+          }
+        });
 
-          // Poll until table is available in PostgREST schema cache
-          this.waitForSchemaAvailability();
+        // Helper function to continue initialization after config is ready
+        const continueInitialization = () => {
+          // Database exists, check if it's newly created (within last 2 seconds)
+          const createdAt = new Date(metadata.created_at);
+          const now = new Date();
+          const ageInSeconds = (now.getTime() - createdAt.getTime()) / 1000;
+          const isNewlyCreated = ageInSeconds < 2;
+
+          if (isNewlyCreated) {
+            console.log('✅ Newly created database detected, starting schema availability polling...');
+
+            // Poll until table is available in PostgREST schema cache
+            this.waitForSchemaAvailability();
+          } else {
+            console.log('✅ Existing database found, loading rows immediately...');
+            this.loadRows();
+            this.isInitializing.set(false);
+          }
+        };
+
+        // If config was updated, persist to Supabase before continuing
+        if (configUpdated) {
+          console.log('[CSV Import] View configs cleaned, persisting to Supabase...');
+          this.databaseConfig.set(metadata.config);
+          this.databaseService
+            .updateDatabaseConfig(this.databaseId, metadata.config)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+              next: () => {
+                console.log('[CSV Import] Updated config persisted to Supabase');
+                this.syncToTipTap();
+                this.loadViewConfig();
+                // Continue initialization AFTER config is saved
+                continueInitialization();
+              },
+              error: (err) => {
+                console.error('[CSV Import] Failed to persist cleaned config:', err);
+                // Continue anyway with cleaned config in memory
+                this.syncToTipTap();
+                this.loadViewConfig();
+                // Continue initialization even if save failed
+                continueInitialization();
+              },
+            });
         } else {
-          console.log('✅ Existing database found, loading rows immediately...');
-          this.loadRows();
-          this.isInitializing.set(false);
+          // No cleanup needed, proceed normally
+          this.syncToTipTap();
+          this.loadViewConfig();
+          // Continue initialization immediately
+          continueInitialization();
         }
       },
       error: (err) => {
@@ -218,8 +296,8 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     const params: QueryRowsParams = {
       databaseId: this.databaseId,
       filters: this.activeFilters(),
-      limit: 100,
-      offset: 0,
+      limit: this.pageSize(),
+      offset: this.pageIndex() * this.pageSize(),
     };
 
     const sort = this.activeSort();
@@ -229,19 +307,29 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     }
 
     this.databaseService
-      .getRows(params)
+      .getRowsWithCount(params)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (rows) => {
+        next: ({ rows, totalCount }) => {
           this.rows.set(rows);
+          this.totalCount.set(totalCount);
           this.isLoading.set(false);
         },
-        error: (err) => {
+        error: (err: any) => {
           console.error('Failed to load rows:', err);
           this.error.set('Erreur lors du chargement des données');
           this.isLoading.set(false);
         },
       });
+  }
+
+  /**
+   * Handle page change from paginator
+   */
+  onPageChange(event: PageEvent): void {
+    this.pageIndex.set(event.pageIndex);
+    this.pageSize.set(event.pageSize);
+    this.loadRowsWithFilters();
   }
 
   /**
@@ -569,6 +657,47 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
    */
   onSwitchView(viewType: ViewType) {
     this.currentView.set(viewType);
+  }
+
+  /**
+   * Vérifie si l'import CSV est autorisé (aucune ligne uniquement)
+   */
+  canImportCsv(): boolean {
+    return this.rows().length === 0;
+  }
+
+  /**
+   * Ouvre le dialog d'import CSV
+   */
+  openCsvImportDialog() {
+    const dialogData: CsvImportDialogData = {
+      databaseId: this.databaseId,
+      tableName: this.databaseConfig().name || 'Base de données',
+    };
+
+    const dialogRef = this.dialog.open(CsvImportDialogComponent, {
+      width: '900px',
+      maxHeight: '90vh',
+      data: dialogData,
+      disableClose: false,
+    });
+
+    dialogRef.afterClosed().subscribe((result: CsvImportResult | null) => {
+      if (result && result.rowsImported > 0) {
+        // Recharger les métadonnées et les lignes
+        this.initializeDatabase();
+
+        // Afficher message de succès
+        const message =
+          result.errors.length === 0
+            ? `Import réussi ! ${result.columnsCreated} colonnes et ${result.rowsImported} lignes ajoutées.`
+            : `Import partiel : ${result.rowsImported} lignes importées sur ${result.rowsImported + result.errors.length}. ${result.errors.length} erreurs.`;
+
+        this.snackBar.open(message, 'OK', {
+          duration: 5000,
+        });
+      }
+    });
   }
 
   /**
@@ -913,6 +1042,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
    */
   onFilterChange(filters: Filter[]): void {
     this.activeFilters.set(filters);
+    this.pageIndex.set(0); // Reset to first page when filters change
     this.loadRowsWithFilters();
     this.saveCurrentViewConfig();
   }
@@ -922,6 +1052,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
    */
   onClearAllFilters(): void {
     this.activeFilters.set([]);
+    this.pageIndex.set(0); // Reset to first page when filters cleared
     this.loadRowsWithFilters();
     this.saveCurrentViewConfig();
   }
@@ -944,6 +1075,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
       this.activeSort.set(null);
     }
 
+    this.pageIndex.set(0); // Reset to first page when sort changes
     this.loadRowsWithFilters();
     this.saveCurrentViewConfig();
   }
