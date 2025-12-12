@@ -37,7 +37,7 @@ export interface ISubtask {
   estimated_hours?: number;
   guideline_refs?: string[];
   tags?: string[];
-  task_number?: number;
+  task_number?: string;
 }
 
 export interface Task {
@@ -57,7 +57,7 @@ export interface Task {
   prd_slug: string;
   estimated_hours?: number;
   actual_hours?: number;
-  task_number?: number;
+  task_number?: string;
   subtasks?: ISubtask[];
   environment: string[];
   guideline_refs: string[];
@@ -87,7 +87,7 @@ export interface KanbanItem {
   status: 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled' | string;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   type: 'epic' | 'feature' | 'task';
-  task_number?: number;
+  task_number?: string;
   type_icon?: string;
   tags?: string[];
   assignee?: string;

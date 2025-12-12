@@ -67,7 +67,7 @@
                 </thead>
                 <tbody class="c-table__body">
                   <tr class="c-table__row hover-line" *ngFor="let entry of filteredTasks()">
-                    <td class="c-table__cell c-table-column--task-number">{{ entry.databaseName }}</td>
+                    <td class="c-table__cell c-table-column--task-number">{{ entry.task_number || '-' }}</td>
                     <td class="c-table__cell c-table-column--env">
                       <!-- Environment badge not available in database-based tasks -->
                       <span class="env-badge env-badge--all" aria-label="Database Task" title="Database Task">DB</span>
@@ -85,7 +85,7 @@
                     <td class="c-table__cell c-table-column--due">{{ entry.due_date | date:'dd/MM/yyyy' }}</td>
                     <td class="c-table__cell c-table__cell--actions c-table-column--actions">
                       <div class="c-table__actions">
-                        <button class="c-icon-button" aria-label="Voir le document lié" (click)="navigateToDocument(entry.databaseId)">
+                        <button class="c-icon-button" aria-label="Voir le document de la tâche" (click)="navigateToTaskDocument(entry.databaseId, entry.id)">
                           <span class="material-icons-outlined">visibility</span>
                         </button>
                       </div>

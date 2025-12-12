@@ -222,7 +222,7 @@
                           }
                         </button>
                       </th>
-                      @for (column of databaseConfig().columns; track column.id) {
+                      @for (column of sortedColumns(); track column.id) {
                         @if (column.visible !== false) {
                           <th class="column-header" (click)="onColumnHeaderClick(column.id)" (keydown.enter)="onColumnHeaderClick(column.id)" (keydown.space)="onColumnHeaderClick(column.id)" tabindex="0">
                             <div class="column-header-content">
@@ -296,7 +296,7 @@
                             }
                           </button>
                         </td>
-                        @for (column of databaseConfig().columns; track column.id) {
+                        @for (column of sortedColumns(); track column.id) {
                           @if (column.visible !== false) {
                             <td class="data-cell" (click)="onCellClick(row.id, column.id, $event)">
                             @if (column.type === 'checkbox') {

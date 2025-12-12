@@ -21,7 +21,8 @@
       "Bash(npx supabase:*)",
       "Bash(docker exec:*)",
       "Bash(docker logs:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npx supabase db push)"
     ],
     "deny": [],
     "ask": []

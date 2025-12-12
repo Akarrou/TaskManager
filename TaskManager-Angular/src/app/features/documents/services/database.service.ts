@@ -4,6 +4,7 @@ import { from, Observable, throwError, concat, of, delay } from 'rxjs';
 import { map, catchError, switchMap, toArray } from 'rxjs/operators';
 import {
   DatabaseConfig,
+  DatabaseConfigExtended,
   DatabaseColumn,
   DatabaseRow,
   CellValue,
@@ -312,10 +313,53 @@ export class DatabaseService {
   addRow(request: AddRowRequest): Observable<DatabaseRow> {
     return this.getDatabaseMetadata(request.databaseId).pipe(
       switchMap(metadata => {
-        const tableName = metadata.table_name;
+        const config = metadata.config as DatabaseConfigExtended;
+        const isTaskDatabase = config?.type === 'task';
 
-        // Map cells to column names
-        const rowData = this.mapCellsToColumns(request.cells);
+        // Find Task Number and Status columns
+        const taskNumberColumn = metadata.config.columns.find(col => col.name === 'Task Number');
+        const statusColumn = metadata.config.columns.find(col => col.name === 'Status');
+
+        // Prepare cells
+        const cells = { ...request.cells };
+
+        // Auto-assign task_number if task database AND not already set
+        if (isTaskDatabase && taskNumberColumn && !cells[taskNumberColumn.id]) {
+          // Call RPC to get next task_number
+          return from(this.client.rpc('get_next_task_number')).pipe(
+            switchMap(({ data: taskNumber, error }) => {
+              if (error) {
+                console.error('Failed to get next task number:', error);
+                throw error;
+              }
+
+              // Assign task_number
+              cells[taskNumberColumn.id] = taskNumber;
+
+              // Auto-assign status 'backlog' if not set
+              if (statusColumn && !cells[statusColumn.id]) {
+                cells[statusColumn.id] = 'backlog';
+              }
+
+              // Continue with insertion
+              const tableName = metadata.table_name;
+              const rowData = this.mapCellsToColumns(cells);
+              rowData['row_order'] = request.row_order ?? 0;
+
+              return from(
+                this.client.from(tableName).insert(rowData).select().single()
+              );
+            })
+          );
+        }
+
+        // Non-task database OR task_number already set - continue normally
+        if (isTaskDatabase && statusColumn && !cells[statusColumn.id]) {
+          cells[statusColumn.id] = 'backlog';
+        }
+
+        const tableName = metadata.table_name;
+        const rowData = this.mapCellsToColumns(cells);
         rowData['row_order'] = request.row_order ?? 0;
 
         return from(

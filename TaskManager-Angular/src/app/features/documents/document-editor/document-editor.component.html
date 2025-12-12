@@ -52,6 +52,14 @@
 
   <!-- Pinned Properties & Save Status Row -->
   <div class="properties-status-row">
+    <!-- Task Number (fixed on the left) -->
+    @if (isDatabaseRowDocument() && getTaskNumber()) {
+      <div class="task-number-display">
+        <mat-icon class="task-number-icon">tag</mat-icon>
+        <span class="task-number-value">{{ getTaskNumber() }}</span>
+      </div>
+    }
+
     <!-- Pinned Properties (left side, only for task documents) -->
     @if (isDatabaseRowDocument() && getPinnedColumns().length > 0) {
       <div class="pinned-properties">
@@ -170,8 +178,21 @@
           </div>
         } @else if (databaseMetadata() && databaseRow()) {
           <div class="properties-list">
+            <!-- Task Number Property (First in list, readonly) -->
+            @if (getTaskNumber()) {
+              <div class="property-item property-item--readonly">
+                <div class="property-label-container">
+                  <mat-icon class="property-icon">tag</mat-icon>
+                  <span class="property-label">ID</span>
+                </div>
+                <div class="property-value-display property-value--readonly">
+                  {{ getTaskNumber() }}
+                </div>
+              </div>
+            }
+
             @for (column of databaseMetadata()!.config.columns; track column.id) {
-              @if (column.visible !== false && !isTitleColumn(column.name)) {
+              @if (column.visible !== false && !isTitleColumn(column.name) && column.name !== 'Task Number') {
                 <div class="property-item">
                   <div class="property-label-container">
                     <mat-icon class="property-icon">{{ getPropertyIcon(column.type) }}</mat-icon>

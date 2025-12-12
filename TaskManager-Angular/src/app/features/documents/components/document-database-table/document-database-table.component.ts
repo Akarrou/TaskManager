@@ -125,6 +125,20 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   columnCount = computed(() => this.databaseConfig().columns.length);
   rowCount = computed(() => this.totalCount()); // Use totalCount for accurate row count with pagination
 
+  // Sorted columns with Task Number first (for table display)
+  sortedColumns = computed(() => {
+    const columns = this.databaseConfig().columns;
+    const taskNumberColumn = columns.find((col: DatabaseColumn) => col.name === 'Task Number');
+
+    if (!taskNumberColumn) {
+      return columns;
+    }
+
+    // Place Task Number first, then all other columns in their original order
+    const otherColumns = columns.filter((col: DatabaseColumn) => col.name !== 'Task Number');
+    return [taskNumberColumn, ...otherColumns];
+  });
+
   // Row selection state
   selectedRowIds = signal<Set<string>>(new Set());
   isAllSelected = computed(() => {

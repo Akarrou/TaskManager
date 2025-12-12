@@ -13,6 +13,7 @@ import { SupabaseService } from '../../core/services/supabase';
 import { Task } from '../../core/models/task.model';
 import { TaskDatabaseService, TaskEntry } from '../../core/services/task-database.service';
 import { DatabaseService } from '../documents/services/database.service';
+import { Document } from '../documents/services/document.service';
 import { CellValue } from '../documents/models/database.model';
 import { SearchFilters, TaskSearchComponent } from '../../shared/components/task-search/task-search.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -187,10 +188,6 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
     ];
   });
 
-  constructor() {
-    effect(() => {
-    });
-  }
 
   async ngOnInit() {
     // Enregistrer la configuration FAB
@@ -437,11 +434,40 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
   }
 
   onTaskEdit(task: Task) {
-    // For database-based tasks, find the entry and navigate to the document
+    // For database-based tasks, find the entry and navigate to the task's linked document (row document)
     const taskEntry = this.taskEntries().find(e => e.id === task.id);
     if (taskEntry) {
-      this.navigateToDocument(taskEntry.databaseId);
+      this.navigateToTaskDocument(taskEntry.databaseId, task.id!);
     }
+  }
+
+  /**
+   * Navigate to the document linked to a database row (task document)
+   */
+  navigateToTaskDocument(databaseId: string, rowId: string) {
+    console.log('🔍 Navigating to task document:', { databaseId, rowId });
+
+    this.databaseService.getRowDocument(databaseId, rowId).subscribe({
+      next: (document: Document | null) => {
+        console.log('📄 Row document found:', document);
+
+        if (document) {
+          console.log('✅ Navigating to document:', document.id);
+          this.router.navigate(['/documents', document.id]);
+        } else {
+          console.error('❌ No document found for task row:', rowId);
+          console.log('⚠️ Falling back to database document');
+          // Fallback: navigate to database document if row document doesn't exist
+          this.navigateToDocument(databaseId);
+        }
+      },
+      error: (err: unknown) => {
+        console.error('❌ Failed to get task document:', err);
+        console.log('⚠️ Falling back to database document');
+        // Fallback: navigate to database document on error
+        this.navigateToDocument(databaseId);
+      }
+    });
   }
 
   onTaskDelete(taskId: string) {

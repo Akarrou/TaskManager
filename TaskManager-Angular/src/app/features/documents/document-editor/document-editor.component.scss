@@ -272,6 +272,34 @@
   }
 }
 
+// Task Number Display (fixed on the left)
+.task-number-display {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  margin-right: 1rem;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.task-number-icon {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+  color: #6b7280;
+}
+
+.task-number-value {
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.025em;
+}
+
 // Save status (right side)
 .save-status {
   margin-left: auto; // Toujours à droite même sans propriétés pinnées
@@ -982,6 +1010,19 @@ tiptap-editor:focus-within {
 
   &:hover {
     background-color: rgba(0, 0, 0, 0.02);
+  }
+
+  // Readonly variant (for Task Number)
+  &--readonly {
+    background-color: #f9fafb;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+
+    &:hover {
+      background-color: #f3f4f6;
+    }
   }
 }
 

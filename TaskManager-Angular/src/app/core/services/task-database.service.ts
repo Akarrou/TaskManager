@@ -24,6 +24,7 @@ export interface TaskEntry {
   id: string;                    // Database row ID
   databaseId: string;            // Source database ID
   databaseName: string;          // Database display name
+  task_number?: string;          // Formatted task number (e.g., "ID-0001")
 
   // Standard task properties (mapped from columns)
   title: string;
@@ -337,6 +338,7 @@ export class TaskDatabaseService {
       project_id: entry.project_id || '',
       epic_id: entry.epic_id,
       feature_id: entry.feature_id,
+      task_number: entry.task_number,
       // Fields not available in database tasks
       slug: '',
       prd_slug: '',
@@ -344,7 +346,6 @@ export class TaskDatabaseService {
       guideline_refs: [],
       created_by: undefined,
       completed_at: entry.status === 'completed' ? entry.updated_at : undefined,
-      task_number: undefined,
       subtasks: []
     };
   }
@@ -363,6 +364,7 @@ export class TaskDatabaseService {
       id: row.id,
       databaseId: databaseMetadata.database_id,
       databaseName: databaseMetadata.name,
+      task_number: this.getCellValue(row, columnMapping, 'Task Number') as string,
       title: this.getCellValue(row, columnMapping, 'Title') as string || 'Sans titre',
       description: this.getCellValue(row, columnMapping, 'Description') as string,
       status: this.normalizeStatus(this.getCellValue(row, columnMapping, 'Status') as string),
@@ -538,7 +540,7 @@ export class TaskDatabaseService {
     const standardColumns = [
       'Title', 'Description', 'Status', 'Priority', 'Type',
       'Assigned To', 'Due Date', 'Tags', 'Estimated Hours', 'Actual Hours',
-      'Parent Task ID', 'Epic ID', 'Feature ID', 'Project ID'
+      'Parent Task ID', 'Epic ID', 'Feature ID', 'Project ID', 'Task Number'
     ];
 
     const extraProps: Record<string, CellValue> = {};
@@ -586,6 +588,7 @@ export class TaskDatabaseService {
    */
   private propertyToColumnName(property: string): string {
     const mapping: Record<string, string> = {
+      'task_number': 'Task Number',
       'title': 'Title',
       'description': 'Description',
       'status': 'Status',

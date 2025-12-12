@@ -1366,6 +1366,27 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Get task number from database row
+   */
+  getTaskNumber(): string | null {
+    const row = this.databaseRow();
+    const metadata = this.databaseMetadata();
+
+    if (!row || !metadata) {
+      return null;
+    }
+
+    // Find Task Number column
+    const taskNumberColumn = metadata.config.columns.find(col => col.name === 'Task Number');
+    if (!taskNumberColumn) {
+      return null;
+    }
+
+    const taskNumber = row.cells[taskNumberColumn.id];
+    return taskNumber ? String(taskNumber) : null;
+  }
+
+  /**
    * Get Material icon name based on property type
    */
   getPropertyIcon(type: string): string {

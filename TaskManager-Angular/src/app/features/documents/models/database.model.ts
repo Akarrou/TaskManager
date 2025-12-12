@@ -668,6 +668,17 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     width: DEFAULT_COLUMN_WIDTHS.text,
     color: 'pink',
   },
+  {
+    id: crypto.randomUUID(),
+    name: 'Task Number',
+    type: 'text',
+    visible: true,
+    readonly: true,
+    required: false,
+    order: 14,
+    width: 120,
+    color: 'gray',
+  },
 ];
 
 /**
