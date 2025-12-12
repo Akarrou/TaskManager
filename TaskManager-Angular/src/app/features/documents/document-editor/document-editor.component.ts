@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject, signal, computed, effect, ViewEncapsulation } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal, computed, effect, ViewEncapsulation, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -36,6 +36,7 @@ import { Highlight } from '@tiptap/extension-highlight';
 import { TextAlign } from '@tiptap/extension-text-align';
 import { Link } from '@tiptap/extension-link';
 import { MatDialog } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
 import { TaskSearchModalComponent } from '../components/task-search-modal/task-search-modal.component';
 import { TaskMention, TaskMentionAttributes } from '../extensions/task-mention.extension';
 import { TaskSearchResult, TaskMentionData } from '../models/document-task-relation.model';
@@ -52,7 +53,7 @@ const lowlight = createLowlight(all);
 @Component({
   selector: 'app-document-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, TaskSectionRendererDirective, DatabaseTableRendererDirective],
+  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, TaskSectionRendererDirective, DatabaseTableRendererDirective],
   templateUrl: './document-editor.component.html',
   styleUrl: './document-editor.component.scss',
   encapsulation: ViewEncapsulation.None
@@ -103,6 +104,16 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   databaseRow = signal<DatabaseRow | null>(null);
   isLoadingDatabaseProperties = signal(false);
   propertiesExpanded = signal(true); // Accordion state
+
+  // Editable properties (Notion-style click-to-edit)
+  editingPropertyId = signal<string | null>(null);
+  tempPropertyValue = signal<CellValue>(null);
+  @ViewChild('propertyInput') propertyInput?: ElementRef<HTMLInputElement>;
+
+  // Editable title in breadcrumb
+  isEditingTitle = signal(false);
+  tempTitle = signal('');
+  @ViewChild('titleInput') titleInput?: ElementRef<HTMLInputElement>;
 
   // Snapshot for dirty tracking
   private originalSnapshot = signal<DocumentSnapshot | null>(null);
@@ -515,6 +526,47 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
    */
   togglePropertiesExpanded() {
     this.propertiesExpanded.update((expanded: boolean) => !expanded);
+  }
+
+  /**
+   * Start editing title in breadcrumb
+   */
+  startEditingTitle() {
+    this.tempTitle.set(this.documentState().title || '');
+    this.isEditingTitle.set(true);
+
+    // Focus the input after render
+    setTimeout(() => {
+      this.titleInput?.nativeElement.focus();
+      this.titleInput?.nativeElement.select();
+    }, 0);
+  }
+
+  /**
+   * Save edited title from breadcrumb
+   */
+  saveTitle() {
+    const newTitle = this.tempTitle().trim();
+
+    if (!newTitle) {
+      // Empty title not allowed, cancel editing
+      this.isEditingTitle.set(false);
+      return;
+    }
+
+    if (newTitle !== this.documentState().title) {
+      // Call existing onTitleChange with the new title
+      this.onTitleChange(newTitle);
+    }
+
+    this.isEditingTitle.set(false);
+  }
+
+  /**
+   * Cancel editing title
+   */
+  cancelEditTitle() {
+    this.isEditingTitle.set(false);
   }
 
   /**
@@ -1185,6 +1237,89 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         alert('Impossible de créer la base de données de tâches. Veuillez réessayer.');
       }
     });
+  }
+
+  /**
+   * Start editing a property (Notion-style click-to-edit)
+   */
+  startEditingProperty(columnId: string, currentValue: CellValue) {
+    this.editingPropertyId.set(columnId);
+    this.tempPropertyValue.set(currentValue);
+  }
+
+  /**
+   * Save property value
+   */
+  saveProperty(columnId: string) {
+    const newValue = this.tempPropertyValue();
+    const currentValue = this.databaseRow()?.cells[columnId];
+
+    if (newValue !== currentValue) {
+      this.onUpdateDatabaseProperty(columnId, newValue);
+    }
+
+    this.editingPropertyId.set(null);
+    this.tempPropertyValue.set(null);
+  }
+
+  /**
+   * Cancel property editing
+   */
+  cancelPropertyEdit() {
+    this.editingPropertyId.set(null);
+    this.tempPropertyValue.set(null);
+  }
+
+  /**
+   * Check if a property is currently being edited
+   */
+  isEditingProperty(columnId: string): boolean {
+    return this.editingPropertyId() === columnId;
+  }
+
+  /**
+   * Get display value for a property
+   */
+  getPropertyDisplayValue(column: DatabaseColumn, value: CellValue): string {
+    if (value === null || value === undefined || value === '') {
+      return 'Vide';
+    }
+
+    switch (column.type) {
+      case 'select':
+        const choice = column.options?.choices?.find(c => c.id === value);
+        return choice?.label || String(value);
+      case 'checkbox':
+        return value ? 'Oui' : 'Non';
+      case 'multi-select':
+        if (Array.isArray(value)) {
+          const labels = value.map(id => {
+            const choice = column.options?.choices?.find(c => c.id === id);
+            return choice?.label || id;
+          });
+          return labels.join(', ') || 'Aucune sélection';
+        }
+        return 'Aucune sélection';
+      default:
+        return String(value);
+    }
+  }
+
+  /**
+   * Get Material icon name based on property type
+   */
+  getPropertyIcon(type: string): string {
+    const iconMap: Record<string, string> = {
+      'text': 'subject',
+      'number': 'tag',
+      'select': 'arrow_drop_down_circle',
+      'multi-select': 'library_add_check',
+      'date': 'event',
+      'checkbox': 'check_box',
+      'url': 'link',
+      'email': 'email',
+    };
+    return iconMap[type] || 'label';
   }
 
   ngOnDestroy(): void {
