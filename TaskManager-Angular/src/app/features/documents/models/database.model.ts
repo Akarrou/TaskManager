@@ -147,6 +147,7 @@ export interface DatabaseConfig {
   columns: DatabaseColumn[];
   views: DatabaseView[];
   defaultView: ViewType;
+  pinnedColumns?: string[]; // Array of column IDs that are pinned
 }
 
 // =====================================================================
@@ -618,6 +619,9 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
  * @returns Complete database configuration with task-specific columns and views
  */
 export function createTaskDatabaseConfig(name: string = 'Task Database'): DatabaseConfigExtended {
+  // Get the Status column ID for pinning by default
+  const statusColumnId = TASK_DATABASE_TEMPLATE_COLUMNS.find(col => col.name === 'Status')?.id;
+
   return {
     name,
     type: 'task',
@@ -634,7 +638,7 @@ export function createTaskDatabaseConfig(name: string = 'Task Database'): Databa
         name: 'Vue Kanban',
         type: 'kanban',
         config: {
-          groupBy: TASK_DATABASE_TEMPLATE_COLUMNS.find(col => col.name === 'Status')?.id,
+          groupBy: statusColumnId,
         },
       },
       {
@@ -645,5 +649,6 @@ export function createTaskDatabaseConfig(name: string = 'Task Database'): Databa
       },
     ],
     defaultView: 'table',
+    pinnedColumns: statusColumnId ? [statusColumnId] : [], // Pin Status column by default
   };
 }

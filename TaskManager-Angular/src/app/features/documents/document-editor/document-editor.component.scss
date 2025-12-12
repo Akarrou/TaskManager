@@ -192,9 +192,65 @@
 }
 
 // ----------------------------------------------------------------------------
-// SECTION 4: SAVE STATUS
+// SECTION 4: PINNED PROPERTIES & SAVE STATUS ROW
 // ----------------------------------------------------------------------------
 
+.properties-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+:host-context(.dark) .properties-status-row {
+  border-bottom-color: #374151;
+}
+
+// Pinned properties (left side)
+.pinned-properties {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.pinned-property-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  background: #f3f4f6;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+:host-context(.dark) .pinned-property-item {
+  background: #374151;
+}
+
+.pinned-property-label {
+  font-weight: 500;
+  color: #6b7280;
+}
+
+:host-context(.dark) .pinned-property-label {
+  color: #9ca3af;
+}
+
+.pinned-property-value {
+  color: #111827;
+  font-weight: 600;
+}
+
+:host-context(.dark) .pinned-property-value {
+  color: #f3f4f6;
+}
+
+// Save status (right side)
 .save-status {
   display: flex;
   align-items: center;
@@ -937,10 +993,81 @@ tiptap-editor:focus-within {
   font-size: 0.875rem;
   font-weight: 500;
   color: #6b7280;
+  flex: 1;
 }
 
 :host-context(.dark) .property-label {
   color: #9ca3af;
+}
+
+// Pin button in property panel
+.pin-button {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.15s ease;
+
+  mat-icon {
+    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
+    color: #9ca3af;
+  }
+
+  &:hover {
+    background: #f3f4f6;
+
+    mat-icon {
+      color: #3b82f6;
+    }
+  }
+
+  &.pinned {
+    opacity: 1;
+
+    mat-icon {
+      color: #3b82f6;
+      transform: rotate(45deg);
+    }
+
+    &:hover mat-icon {
+      color: #2563eb;
+    }
+  }
+}
+
+.property-item:hover .pin-button {
+  opacity: 1;
+}
+
+:host-context(.dark) .pin-button {
+  mat-icon {
+    color: #6b7280;
+  }
+
+  &:hover {
+    background: #374151;
+
+    mat-icon {
+      color: #60a5fa;
+    }
+  }
+
+  &.pinned mat-icon {
+    color: #60a5fa;
+
+    &:hover {
+      color: #93c5fd;
+    }
+  }
 }
 
 .property-value {

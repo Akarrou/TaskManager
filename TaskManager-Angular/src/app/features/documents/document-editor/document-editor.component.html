@@ -50,18 +50,35 @@
     }
   </div>
 
-  <!-- Save Status Indicator (below header, aligned right) -->
-  <div class="save-status">
-    <span *ngIf="documentState().isSaving">
-      <span class="save-indicator"></span>
-      Sauvegarde...
-    </span>
-    <span *ngIf="!documentState().isSaving && documentState().lastSaved">
-      Dernière modification : {{ documentState().lastSaved | date:'HH:mm' }}
-    </span>
-    <span *ngIf="isDirty()" class="text-orange-500 text-xs ml-2">
-      • Non sauvegardé
-    </span>
+  <!-- Pinned Properties & Save Status Row -->
+  <div class="properties-status-row">
+    <!-- Pinned Properties (left side, only for task documents) -->
+    @if (isDatabaseRowDocument() && getPinnedColumns().length > 0) {
+      <div class="pinned-properties">
+        @for (column of getPinnedColumns(); track column.id) {
+          <div class="pinned-property-item">
+            <span class="pinned-property-label">{{ column.name }}</span>
+            <span class="pinned-property-value">
+              {{ getPropertyDisplayValue(column, databaseRow()!.cells[column.id]) }}
+            </span>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Save Status Indicator (right side) -->
+    <div class="save-status">
+      <span *ngIf="documentState().isSaving">
+        <span class="save-indicator"></span>
+        Sauvegarde...
+      </span>
+      <span *ngIf="!documentState().isSaving && documentState().lastSaved">
+        Dernière modification : {{ documentState().lastSaved | date:'HH:mm' }}
+      </span>
+      <span *ngIf="isDirty()" class="text-orange-500 text-xs ml-2">
+        • Non sauvegardé
+      </span>
+    </div>
   </div>
 
   <!-- Editor Content -->
@@ -140,6 +157,14 @@
                   <div class="property-label-container">
                     <mat-icon class="property-icon">{{ getPropertyIcon(column.type) }}</mat-icon>
                     <span class="property-label">{{ column.name }}</span>
+                    <button
+                      class="pin-button"
+                      (click)="toggleColumnPin(column.id)"
+                      [class.pinned]="isColumnPinned(column.id)"
+                      [title]="isColumnPinned(column.id) ? 'Désépingler' : 'Épingler'"
+                    >
+                      <mat-icon>{{ isColumnPinned(column.id) ? 'push_pin' : 'push_pin' }}</mat-icon>
+                    </button>
                   </div>
 
                   <!-- Click-to-edit: Display value or edit input -->

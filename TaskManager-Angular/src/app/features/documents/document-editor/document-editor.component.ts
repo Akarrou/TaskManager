@@ -529,6 +529,66 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Get pinned columns for display
+   */
+  getPinnedColumns(): DatabaseColumn[] {
+    const metadata = this.databaseMetadata();
+    if (!metadata) return [];
+
+    const pinnedColumnIds = metadata.config.pinnedColumns || [];
+    return metadata.config.columns.filter((col: DatabaseColumn) =>
+      pinnedColumnIds.includes(col.id) &&
+      col.visible !== false &&
+      !this.isTitleColumn(col.name)
+    );
+  }
+
+  /**
+   * Check if a column is pinned
+   */
+  isColumnPinned(columnId: string): boolean {
+    const metadata = this.databaseMetadata();
+    if (!metadata) return false;
+    return (metadata.config.pinnedColumns || []).includes(columnId);
+  }
+
+  /**
+   * Toggle pin status for a column
+   */
+  toggleColumnPin(columnId: string) {
+    const metadata = this.databaseMetadata();
+    if (!metadata) return;
+
+    const currentPinned = metadata.config.pinnedColumns || [];
+    const isPinned = currentPinned.includes(columnId);
+
+    const updatedPinned = isPinned
+      ? currentPinned.filter((id: string) => id !== columnId)
+      : [...currentPinned, columnId];
+
+    // Update config
+    const updatedConfig = {
+      ...metadata.config,
+      pinnedColumns: updatedPinned
+    };
+
+    // Save to database
+    this.databaseService.updateDatabaseConfig(metadata.database_id, updatedConfig)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          // Update local state
+          this.databaseMetadata.update((meta: DocumentDatabase | null) =>
+            meta ? { ...meta, config: updatedConfig } : null
+          );
+        },
+        error: (err: unknown) => {
+          console.error('Failed to update pinned columns:', err);
+        }
+      });
+  }
+
+  /**
    * Start editing title in breadcrumb
    */
   startEditingTitle() {
