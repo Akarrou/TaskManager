@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, computed, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -10,15 +10,17 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Actions, ofType } from '@ngrx/effects';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { InlineInvitationsComponent } from '../inline-invitations/inline-invitations.component';
 
 @Component({
   selector: 'app-project-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatSnackBarModule],
+  imports: [CommonModule, ReactiveFormsModule, MatSnackBarModule, InlineInvitationsComponent],
   templateUrl: './project-form.component.html',
   styleUrls: ['./project-form.component.scss']
 })
 export class ProjectFormComponent implements OnInit, OnDestroy {
+  @ViewChild(InlineInvitationsComponent) invitationsComponent?: InlineInvitationsComponent;
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -53,6 +55,11 @@ export class ProjectFormComponent implements OnInit, OnDestroy {
       ofType(ProjectActions.createProjectSuccess),
       takeUntil(this.destroy$)
     ).subscribe(({ project }) => {
+      // Envoyer les invitations si présentes
+      if (this.invitationsComponent && !this.isEditMode()) {
+        this.invitationsComponent.sendAllInvitations(project.id);
+      }
+
       this.snackBar.open(`Projet "${project.name}" créé avec succès!`, 'Fermer', {
         duration: 3000
       });

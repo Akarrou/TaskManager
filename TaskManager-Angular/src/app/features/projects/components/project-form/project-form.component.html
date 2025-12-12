@@ -44,6 +44,12 @@
                     placeholder="Décrivez l'objectif et le contexte de ce projet..."></textarea>
             </div>
 
+            <!-- Section Invitations -->
+            <app-inline-invitations
+                [projectId]="projectId()"
+                [isCreationMode]="!isEditMode()">
+            </app-inline-invitations>
+
             <!-- Boutons d'action -->
             <div class="c-form-actions">
                 <button
