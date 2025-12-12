@@ -61,6 +61,13 @@
             <span class="pinned-property-value">
               {{ getPropertyDisplayValue(column, databaseRow()!.cells[column.id]) }}
             </span>
+            <button
+              class="unpin-button"
+              (click)="toggleColumnPin(column.id)"
+              title="Désépingler"
+            >
+              <mat-icon>close</mat-icon>
+            </button>
           </div>
         }
       </div>
