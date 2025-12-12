@@ -22,7 +22,14 @@
       "Bash(docker exec:*)",
       "Bash(docker logs:*)",
       "Bash(ls:*)",
-      "Bash(npx supabase db push)"
+      "Bash(npx supabase db push)",
+      "Bash(supabase migration:*)",
+      "Bash(docker inspect:*)",
+      "Bash(cp:*)",
+      "Bash(tree:*)",
+      "Bash(mv:*)",
+      "Bash(rm:*)",
+      "Bash(docker compose run:*)"
     ],
     "deny": [],
     "ask": []
