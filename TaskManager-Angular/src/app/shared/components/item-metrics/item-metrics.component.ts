@@ -13,9 +13,9 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData } from 'chart.js';
 
-import { Task } from '../../../core/services/task';
-import { EpicMetrics } from '../../../features/epic-kanban/models/epic-board.model';
-import { KanbanItem } from '../../../features/epic-kanban/models/kanban-item.model';
+import { Task } from '../../../core/models/task.model';
+import { EpicMetrics } from '../../models/kanban.model';
+import { KanbanItem } from '../../../core/models/task.model';
 
 // T012 - Interfaces avancées pour métriques
 interface TaskMetrics {

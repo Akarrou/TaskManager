@@ -17,7 +17,7 @@ import { TimelineViewComponent } from '../../../../shared/components/timeline-vi
 
 // Import services and models
 import { DocumentService } from '../../services/document.service';
-import { Task } from '../../../../core/services/task';
+import { Task } from '../../../../core/models/task.model';
 
 @Component({
   selector: 'app-document-tasks-section',

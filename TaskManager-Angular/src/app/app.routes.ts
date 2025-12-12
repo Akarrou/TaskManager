@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { TaskFormComponent } from './features/tasks/task-form/task-form.component';
 import { authGuard, publicGuard } from './core/guards/auth.guards';
 
 export const routes: Routes = [
@@ -29,34 +28,6 @@ export const routes: Routes = [
         title: 'Dashboard Tâches - Kōdo'
       }
     ]
-  },
-  {
-    path: 'tasks/new',
-    canActivate: [authGuard],
-    component: TaskFormComponent,
-    title: 'Nouvelle tâche - Kōdo',
-    data: { renderMode: 'client' }
-  },
-  {
-    path: 'tasks/:id/edit',
-    canActivate: [authGuard],
-    component: TaskFormComponent,
-    title: 'Modifier la tâche - Kōdo',
-    data: { renderMode: 'client' }
-  },
-  {
-    path: 'epic/:id/kanban',
-    canActivate: [authGuard],
-    loadComponent: () => import('./features/epic-kanban/epic-kanban.component').then(m => m.EpicKanbanComponent),
-    title: 'Epic Kanban - Kōdo',
-    data: { renderMode: 'client' }
-  },
-  {
-    path: 'features/:featureId/tasks-kanban',
-    canActivate: [authGuard],
-    loadComponent: () => import('./features/feature-kanban/feature-kanban.component').then(m => m.FeatureKanbanComponent),
-    title: 'Feature Tasks Kanban - Kōdo',
-    data: { renderMode: 'client' }
   },
   {
     path: 'projects',

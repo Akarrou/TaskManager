@@ -13,8 +13,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
 
-import { KanbanItem } from '../../../features/epic-kanban/models/kanban-item.model';
-import { EpicMetrics } from '../../../features/epic-kanban/models/epic-board.model';
+import { KanbanItem } from '../../../core/models/task.model';
+import { EpicMetrics } from '../../models/kanban.model';
 
 @Component({
   selector: 'app-item-header',

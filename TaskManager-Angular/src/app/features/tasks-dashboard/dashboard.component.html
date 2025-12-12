@@ -66,7 +66,7 @@
                   </tr>
                 </thead>
                 <tbody class="c-table__body">
-                  <tr class="c-table__row hover-line" *ngFor="let entry of filteredTasks()" (dblclick)="navigateToEditTaskForm(taskDatabaseService.convertEntryToLegacyTask(entry))">
+                  <tr class="c-table__row hover-line" *ngFor="let entry of filteredTasks()">
                     <td class="c-table__cell c-table-column--task-number">{{ entry.databaseName }}</td>
                     <td class="c-table__cell c-table-column--env">
                       <!-- Environment badge not available in database-based tasks -->
@@ -85,11 +85,8 @@
                     <td class="c-table__cell c-table-column--due">{{ entry.due_date | date:'dd/MM/yyyy' }}</td>
                     <td class="c-table__cell c-table__cell--actions c-table-column--actions">
                       <div class="c-table__actions">
-                        <button class="c-icon-button" aria-label="Modifier la tâche" (click)="navigateToEditTaskForm(taskDatabaseService.convertEntryToLegacyTask(entry))">
-                          <span class="material-icons-outlined">edit</span>
-                        </button>
-                        <button class="c-icon-button c-icon-button--danger" aria-label="Supprimer la tâche" (click)="deleteTask(entry.id)">
-                          <span class="material-icons-outlined">delete</span>
+                        <button class="c-icon-button" aria-label="Voir le document lié" (click)="navigateToDocument(entry.databaseId)">
+                          <span class="material-icons-outlined">visibility</span>
                         </button>
                       </div>
                     </td>
@@ -97,6 +94,15 @@
                 </tbody>
               </table>
             </div>
+            <mat-paginator
+              #paginator
+              [length]="filteredCount()"
+              [pageSize]="pageSize()"
+              [pageIndex]="pageIndex()"
+              [pageSizeOptions]="pageSizeOptions"
+              (page)="onPageChange($event)"
+              showFirstLastButtons>
+            </mat-paginator>
           </div>
         }
 

@@ -139,6 +139,24 @@ export class DatabaseService {
   }
 
   /**
+   * Get the document ID associated with a database
+   */
+  getDocumentIdByDatabaseId(databaseId: string): Observable<string | null> {
+    return from(
+      this.client
+        .from('document_databases')
+        .select('document_id')
+        .eq('database_id', databaseId)
+        .maybeSingle()
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return response.data?.document_id || null;
+      })
+    );
+  }
+
+  /**
    * Update database configuration (name, columns metadata, views)
    */
   updateDatabaseConfig(databaseId: string, config: DatabaseConfig): Observable<boolean> {

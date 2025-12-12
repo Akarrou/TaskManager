@@ -1,15 +1,16 @@
-import { Component, OnInit, OnDestroy, inject, signal, computed, effect } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed, effect, viewChild, afterNextRender } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { SupabaseService } from '../../core/services/supabase';
-import { Task } from '../../core/services/task';
+import { Task } from '../../core/models/task.model';
 import { TaskDatabaseService, TaskEntry } from '../../core/services/task-database.service';
 import { DatabaseService } from '../documents/services/database.service';
 import { CellValue } from '../documents/models/database.model';
@@ -34,6 +35,7 @@ import { DashboardStatsStore } from '../../core/stores/dashboard-stats.store';
     MatSelectModule,
     MatButtonModule,
     MatCardModule,
+    MatPaginatorModule,
     TaskSearchComponent,
     ViewToggleComponent,
     KanbanBoardComponent,
@@ -63,6 +65,12 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
   totalCount = signal<number>(0);
   loading = signal<boolean>(false);
   taskError = signal<string | null>(null);
+
+  // Pagination
+  paginator = viewChild<MatPaginator>('paginator');
+  pageSize = signal<number>(10);
+  pageIndex = signal<number>(0);
+  pageSizeOptions = [5, 10, 25, 50, 100];
 
   // Project store selectors
   selectedProjectId$ = this.store.select(ProjectSelectors.selectSelectedProjectId);
@@ -101,7 +109,8 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
     tag: ''
   });
 
-  filteredTasks = computed(() => {
+  // Filtered tasks without pagination
+  allFilteredTasks = computed(() => {
     const allEntries = this.taskEntries();
     const filters = this.currentSearchFilters();
     let filtered = allEntries;
@@ -148,6 +157,17 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
 
     return filtered;
   });
+
+  // Paginated filtered tasks
+  filteredTasks = computed(() => {
+    const all = this.allFilteredTasks();
+    const startIndex = this.pageIndex() * this.pageSize();
+    const endIndex = startIndex + this.pageSize();
+    return all.slice(startIndex, endIndex);
+  });
+
+  // Total filtered count for paginator
+  filteredCount = computed(() => this.allFilteredTasks().length);
 
   // Computed signal for legacy Task[] to maintain compatibility with view components
   legacyTasks = computed(() => {
@@ -286,11 +306,20 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
     this.router.navigate(['/documents']);
   }
 
-  navigateToEditTaskForm(task: Task) {
-    // For database-based tasks, navigate to the linked document
-    // This requires fetching the document linked to the database row
-    console.log('Edit task:', task);
-    // TODO: Implement document navigation for database row editing
+  navigateToDocument(databaseId: string) {
+    // Fetch the document_id associated with this database
+    this.databaseService.getDocumentIdByDatabaseId(databaseId).subscribe({
+      next: (documentId) => {
+        if (documentId) {
+          this.router.navigate(['/documents', documentId]);
+        } else {
+          console.error('No document found for database:', databaseId);
+        }
+      },
+      error: (err) => {
+        console.error('Failed to get document ID:', err);
+      }
+    });
   }
 
   navigateToEpicKanban(epic: Task) {
@@ -339,7 +368,14 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
   onSearchFiltersChange(filters: SearchFilters) {
     this.currentSearchFilters.set(filters);
     localStorage.setItem('dashboardFilters', JSON.stringify(filters));
+    // Reset to first page when filters change
+    this.pageIndex.set(0);
     // Filtering is now handled automatically by the computed 'filteredTasks'
+  }
+
+  onPageChange(event: PageEvent) {
+    this.pageIndex.set(event.pageIndex);
+    this.pageSize.set(event.pageSize);
   }
 
   onViewChange(view: ViewMode) {
@@ -397,7 +433,11 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
   }
 
   onTaskEdit(task: Task) {
-    this.navigateToEditTaskForm(task);
+    // For database-based tasks, find the entry and navigate to the document
+    const taskEntry = this.taskEntries().find(e => e.id === task.id);
+    if (taskEntry) {
+      this.navigateToDocument(taskEntry.databaseId);
+    }
   }
 
   onTaskDelete(taskId: string) {

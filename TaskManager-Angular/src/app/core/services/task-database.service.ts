@@ -12,7 +12,7 @@ import {
   SortOrder,
 } from '../../features/documents/models/database.model';
 import { DatabaseService } from '../../features/documents/services/database.service';
-import { Task } from './task';
+import { Task } from '../models/task.model';
 
 /**
  * TaskEntry - Normalized task entry from database rows

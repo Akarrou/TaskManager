@@ -4,7 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
-import { Task } from '../../../core/services/task';
+import { Task } from '../../../core/models/task.model';
 
 interface CalendarDay {
   date: Date;

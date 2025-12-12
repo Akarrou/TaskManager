@@ -7,9 +7,9 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { Router } from '@angular/router';
 
-import { KanbanItem } from '../../../features/epic-kanban/models/kanban-item.model';
-import { Task } from '../../../core/services/task';
-import { ISubtask } from '../../../features/tasks/subtask.model';
+import { KanbanItem } from '../../../core/models/task.model';
+import { Task } from '../../../core/models/task.model';
+import { ISubtask } from '../../../core/models/task.model';
 
 @Component({
   selector: 'app-item-detail-popup',

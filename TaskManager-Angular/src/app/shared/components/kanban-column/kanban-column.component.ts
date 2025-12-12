@@ -8,8 +8,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { CdkDropList, CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { MatMenuModule } from '@angular/material/menu';
 
-import { KanbanItem } from '../../../features/epic-kanban/models/kanban-item.model';
-import { KanbanColumn } from '../../../features/epic-kanban/models/epic-board.model';
+import { KanbanItem } from '../../../core/models/task.model';
+import { KanbanColumn } from '../../models/kanban.model';
 import { KanbanCardComponent } from '../kanban-card/kanban-card.component';
 
 @Component({

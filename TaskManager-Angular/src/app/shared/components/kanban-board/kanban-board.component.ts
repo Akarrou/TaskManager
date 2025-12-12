@@ -4,7 +4,7 @@ import { CdkDragDrop, CdkDrag, CdkDropList, CdkDropListGroup, CdkDragPreview, Cd
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Task } from '../../../core/services/task';
+import { Task } from '../../../core/models/task.model';
 
 export type KanbanGroupBy = 'status' | 'priority';
 

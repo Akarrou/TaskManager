@@ -4,7 +4,7 @@ import { from, Observable, of } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
 import { JSONContent } from '@tiptap/core';
 import { DocumentTaskRelation, TaskMentionData, TaskSearchResult } from '../models/document-task-relation.model';
-import { Task } from '../../../core/services/task';
+import { Task } from '../../../core/models/task.model';
 
 export interface Document {
   id: string;

@@ -4,10 +4,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { DragDropModule, CdkDropListGroup, CdkDragDrop } from '@angular/cdk/drag-drop';
 import { KanbanColumnComponent } from '../kanban-column/kanban-column.component';
-import { KanbanItem } from '../../../features/epic-kanban/models/kanban-item.model';
-import { KanbanColumn } from '../../../features/epic-kanban/models/epic-board.model';
+import { KanbanItem } from '../../../core/models/task.model';
+import { KanbanColumn } from '../../models/kanban.model';
 import { NgIf, NgFor } from '@angular/common';
-import { Task } from '../../../core/services/task';
+import { Task } from '../../../core/models/task.model';
 
 @Component({
   selector: 'app-generic-kanban',

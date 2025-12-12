@@ -13,9 +13,9 @@ import { Router } from '@angular/router';
 
 import { ItemDetailPopupComponent } from '../item-detail-popup/item-detail-popup.component';
 
-import { ISubtask } from '../../../features/tasks/subtask.model';
-import { Task } from '../../../core/services/task';
-import { KanbanItem } from '../../../features/epic-kanban/models/kanban-item.model';
+import { ISubtask } from '../../../core/models/task.model';
+import { Task } from '../../../core/models/task.model';
+import { KanbanItem } from '../../../core/models/task.model';
 
 type TaskStatus = Task['status'];
 
