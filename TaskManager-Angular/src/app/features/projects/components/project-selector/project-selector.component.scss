@@ -1,43 +1,164 @@
 @use "sass:color";
 @use "../../../../styles/variables" as v;
-@use "../../../../styles/mixins" as m;
 
 :host {
   display: block;
+  position: relative;
 }
 
-.c-form-group {
-  margin-bottom: 0;
-  min-width: 280px;
+.c-project-selector {
+  position: relative;
 }
 
-.c-form-label {
-  display: block;
-  font-size: v.$font-size-sm;
-  font-weight: v.$font-weight-semibold;
-  color: v.$text-color-dark;
-  margin-bottom: v.$space-2;
-}
-
-.c-form-input {
-  width: 100%;
-  padding: v.$space-3 v.$space-4;
-  font-size: v.$font-size-base;
-  color: v.$text-color-dark;
-  background-color: v.$background-color-form;
-  border: 1px solid v.$border-color-medium;
-  border-radius: v.$border-radius-md;
-  transition: all 0.2s ease;
+// Bouton principal
+.c-project-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: v.$space-2;
+  padding: v.$space-2 v.$space-4;
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  border-radius: v.$border-radius-lg;
   cursor: pointer;
+  transition: all 0.2s ease;
+  color: v.$text-color-darkest;
+  font-size: v.$font-size-base;
+  font-weight: 600;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.25);
+  }
 
   &:focus {
     outline: none;
-    border-color: v.$primary-color;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    background-color: white;
+    box-shadow: 0 0 0 3px rgba(v.$primary-color, 0.15);
   }
 
-  &:hover {
-    border-color: v.$text-color-light;
+  &.is-open {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: v.$primary-color;
+    color: v.$primary-color;
   }
+}
+
+.c-project-name {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.c-project-icon {
+  font-size: 20px;
+  color: v.$text-color-light;
+  transition: color 0.2s ease;
+
+  .c-project-btn:hover &,
+  .c-project-btn.is-open & {
+    color: v.$primary-color;
+  }
+}
+
+// Dropdown
+.c-project-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 240px;
+  background: white;
+  border: 1px solid v.$border-color-light;
+  border-radius: v.$border-radius-lg;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  z-index: 1002;
+  overflow: hidden;
+  animation: dropdownFadeIn 0.15s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.c-dropdown-header {
+  padding: v.$space-3 v.$space-4;
+  border-bottom: 1px solid v.$border-color-light;
+  background: v.$background-color-light;
+}
+
+.c-dropdown-title {
+  font-size: v.$font-size-xs;
+  font-weight: 600;
+  color: v.$text-color-light;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.c-dropdown-list {
+  list-style: none;
+  margin: 0;
+  padding: v.$space-2 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.c-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: v.$space-3;
+  width: 100%;
+  padding: v.$space-3 v.$space-4;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  color: v.$text-color-dark;
+  font-size: v.$font-size-sm;
+
+  &:hover {
+    background: v.$background-color-hover;
+  }
+
+  &.is-selected {
+    background: rgba(59, 130, 246, 0.08);
+    color: v.$primary-color;
+
+    .c-item-icon {
+      color: v.$primary-color;
+    }
+  }
+}
+
+.c-item-icon {
+  font-size: 18px;
+  color: v.$text-color-light;
+}
+
+.c-item-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.c-check-icon {
+  font-size: 18px;
+  color: v.$primary-color;
+}
+
+// Overlay
+.c-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1001;
 }

@@ -1,12 +1,38 @@
-<div *ngIf="projects$ | async as projects" class="c-form-group">
-  <select
-    *ngIf="projects.length > 0"
-    id="project-selector"
-    [value]="(selectedProject$ | async)?.id"
-    (change)="onProjectChange($any($event.target).value)"
-    class="c-form-input">
-    <option *ngFor="let project of projects" [value]="project.id">
-      {{ project.name }}
-    </option>
-  </select>
+<div class="c-project-selector" *ngIf="projects$ | async as projects">
+  <ng-container *ngIf="projects.length > 0">
+    <!-- Bouton qui affiche le projet sélectionné -->
+    <button
+      type="button"
+      class="c-project-btn"
+      (click)="toggleDropdown()"
+      [class.is-open]="isOpen()">
+      <span class="c-project-name">{{ (selectedProject$ | async)?.name || 'Sélectionner un projet' }}</span>
+      <span class="material-icons-outlined c-project-icon">
+        {{ isOpen() ? 'expand_less' : 'expand_more' }}
+      </span>
+    </button>
+
+    <!-- Dropdown de sélection -->
+    <div class="c-project-dropdown" *ngIf="isOpen()">
+      <div class="c-dropdown-header">
+        <span class="c-dropdown-title">Mes projets</span>
+      </div>
+      <ul class="c-dropdown-list">
+        <li *ngFor="let project of projects">
+          <button
+            type="button"
+            class="c-dropdown-item"
+            [class.is-selected]="(selectedProject$ | async)?.id === project.id"
+            (click)="selectProject(project.id)">
+            <span class="material-icons-outlined c-item-icon">folder</span>
+            <span class="c-item-name">{{ project.name }}</span>
+            <span class="material-icons-outlined c-check-icon" *ngIf="(selectedProject$ | async)?.id === project.id">check</span>
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Overlay pour fermer le dropdown -->
+    <div class="c-overlay" *ngIf="isOpen()" (click)="closeDropdown()"></div>
+  </ng-container>
 </div>

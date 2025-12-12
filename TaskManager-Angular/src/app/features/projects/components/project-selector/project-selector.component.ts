@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
 import { AppState } from '../../../../app.state';
@@ -19,6 +19,7 @@ export class ProjectSelectorComponent implements OnInit {
 
   projects$!: Observable<Project[]>;
   selectedProject$!: Observable<Project | null>;
+  isOpen = signal(false);
 
   ngOnInit() {
     this.projects$ = this.store.select(selectAllProjects);
@@ -37,10 +38,19 @@ export class ProjectSelectorComponent implements OnInit {
     });
   }
 
-  onProjectChange(selectedId: string) {
-    if (selectedId) {
-      localStorage.setItem('selectedProjectId', selectedId);
-      this.store.dispatch(ProjectActions.selectProject({ projectId: selectedId }));
+  toggleDropdown(): void {
+    this.isOpen.set(!this.isOpen());
+  }
+
+  closeDropdown(): void {
+    this.isOpen.set(false);
+  }
+
+  selectProject(projectId: string): void {
+    if (projectId) {
+      localStorage.setItem('selectedProjectId', projectId);
+      this.store.dispatch(ProjectActions.selectProject({ projectId }));
+      this.closeDropdown();
     }
   }
 }

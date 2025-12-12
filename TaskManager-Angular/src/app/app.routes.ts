@@ -83,6 +83,12 @@ export const routes: Routes = [
     title: 'Modifier le Projet - Kōdo'
   },
   {
+    path: 'profile',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/profile/pages/profile-page/profile-page.component').then(m => m.ProfilePageComponent),
+    title: 'Mon Profil - Kōdo'
+  },
+  {
     path: '**',
     redirectTo: '/dashboard'
   }

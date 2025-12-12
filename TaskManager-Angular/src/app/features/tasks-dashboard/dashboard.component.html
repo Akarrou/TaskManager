@@ -66,31 +66,29 @@
                   </tr>
                 </thead>
                 <tbody class="c-table__body">
-                  <tr class="c-table__row hover-line" *ngFor="let task of filteredTasks()" (dblclick)="navigateToEditTaskForm(task)">
-                    <td class="c-table__cell c-table-column--task-number">{{ task.task_number }}</td>
+                  <tr class="c-table__row hover-line" *ngFor="let entry of filteredTasks()" (dblclick)="navigateToEditTaskForm(taskDatabaseService.convertEntryToLegacyTask(entry))">
+                    <td class="c-table__cell c-table-column--task-number">{{ entry.databaseName }}</td>
                     <td class="c-table__cell c-table-column--env">
-                      <span *ngIf="(task.environment?.length === 2 && task.environment.includes('frontend') && task.environment.includes('backend')) || (task.environment?.length === 1 && task.environment[0] === 'All')" class="env-badge env-badge--all" aria-label="Frontend et Backend" title="Frontend et Backend">F&B</span>
-                      <span *ngIf="task.environment?.length === 1 && task.environment[0] === 'frontend'" class="env-badge env-badge--fe" aria-label="Frontend" title="Frontend">FE</span>
-                      <span *ngIf="task.environment?.length === 1 && task.environment[0] === 'backend'" class="env-badge env-badge--be" aria-label="Backend" title="Backend">BE</span>
-                      <span *ngIf="task.environment?.length === 1 && task.environment[0] === 'OPS'" class="env-badge env-badge--ops" aria-label="OPS" title="OPS">OPS</span>
+                      <!-- Environment badge not available in database-based tasks -->
+                      <span class="env-badge env-badge--all" aria-label="Database Task" title="Database Task">DB</span>
                     </td>
-                    <td class="c-table__cell c-table-column--task">{{ task.title }}</td>
+                    <td class="c-table__cell c-table-column--task">{{ entry.title }}</td>
                     <td class="c-table__cell c-table-column--status">
-                      <span class="c-badge c-badge--status-{{ task.status }}">{{ getStatusLabel(task.status) }}</span>
+                      <span class="c-badge c-badge--status-{{ entry.status }}">{{ getStatusLabel(entry.status) }}</span>
                     </td>
                     <td class="c-table__cell c-table-column--priority">
-                      <span class="c-badge c-badge--priority-{{ task.priority }}">{{ getPriorityLabel(task.priority) }}</span>
+                      <span class="c-badge c-badge--priority-{{ entry.priority }}">{{ getPriorityLabel(entry.priority) }}</span>
                     </td>
                     <td class="c-table__cell c-table-column--assignee">
-                      {{ getAssigneeEmail(task.assigned_to) }}
+                      {{ getAssigneeEmail(entry.assigned_to) }}
                     </td>
-                    <td class="c-table__cell c-table-column--due">{{ task.due_date | date:'dd/MM/yyyy' }}</td>
+                    <td class="c-table__cell c-table-column--due">{{ entry.due_date | date:'dd/MM/yyyy' }}</td>
                     <td class="c-table__cell c-table__cell--actions c-table-column--actions">
                       <div class="c-table__actions">
-                        <button class="c-icon-button" aria-label="Modifier la tâche" (click)="navigateToEditTaskForm(task)">
+                        <button class="c-icon-button" aria-label="Modifier la tâche" (click)="navigateToEditTaskForm(taskDatabaseService.convertEntryToLegacyTask(entry))">
                           <span class="material-icons-outlined">edit</span>
                         </button>
-                        <button class="c-icon-button c-icon-button--danger" aria-label="Supprimer la tâche" (click)="deleteTask(task.id!)">
+                        <button class="c-icon-button c-icon-button--danger" aria-label="Supprimer la tâche" (click)="deleteTask(entry.id)">
                           <span class="material-icons-outlined">delete</span>
                         </button>
                       </div>
@@ -105,7 +103,7 @@
         <!-- Kanban View -->
         @if (currentView() === 'kanban') {
           <app-kanban-board
-            [tasks]="filteredTasks()"
+            [tasks]="legacyTasks()"
             [groupBy]="kanbanGroupBy()"
             (taskMoved)="onTaskMoved($event)"
             (taskEdit)="onTaskEdit($event)"
@@ -116,7 +114,7 @@
         <!-- Calendar View -->
         @if (currentView() === 'calendar') {
           <app-calendar-view
-            [tasks]="filteredTasks()"
+            [tasks]="legacyTasks()"
             (taskEdit)="onTaskEdit($event)"
             (taskDelete)="onTaskDelete($event)">
           </app-calendar-view>
@@ -125,7 +123,7 @@
         <!-- Timeline View -->
         @if (currentView() === 'timeline') {
           <app-timeline-view
-            [tasks]="filteredTasks()"
+            [tasks]="legacyTasks()"
             (taskEdit)="onTaskEdit($event)"
             (taskDelete)="onTaskDelete($event)">
           </app-timeline-view>

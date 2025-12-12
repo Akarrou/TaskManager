@@ -17,11 +17,6 @@
           </a>
         </li>
         <li class="nav-item">
-          <a routerLink="/dashboard/tasks" routerLinkActive="active" class="nav-link">
-            Tâches
-          </a>
-        </li>
-        <li class="nav-item">
           <a routerLink="/projects" routerLinkActive="active" class="nav-link">
             Projets
           </a>
@@ -29,6 +24,11 @@
         <li class="nav-item">
           <a routerLink="/documents" routerLinkActive="active" class="nav-link">
             Documents
+          </a>
+        </li>
+        <li class="nav-item">
+          <a routerLink="/dashboard/tasks" routerLinkActive="active" class="nav-link">
+            Tâches
           </a>
         </li>
       </ul>
@@ -59,8 +59,7 @@
           </div>
           <div class="dropdown-divider"></div>
           <ul class="dropdown-menu">
-            <li><a routerLink="/profile" class="dropdown-item">Mon profil</a></li>
-            <li><a routerLink="/settings" class="dropdown-item">Paramètres</a></li>
+            <li><a routerLink="/profile" class="dropdown-item" (click)="closeProfileMenu()">Mon profil</a></li>
             <li class="dropdown-divider"></li>
             <li><button (click)="logout()" class="dropdown-item logout-btn">Déconnexion</button></li>
           </ul>

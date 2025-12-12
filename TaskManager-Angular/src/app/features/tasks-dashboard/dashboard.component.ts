@@ -9,7 +9,10 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { SupabaseService } from '../../core/services/supabase';
-import { TaskService, Task } from '../../core/services/task';
+import { Task } from '../../core/services/task';
+import { TaskDatabaseService, TaskEntry } from '../../core/services/task-database.service';
+import { DatabaseService } from '../documents/services/database.service';
+import { CellValue } from '../documents/models/database.model';
 import { SearchFilters, TaskSearchComponent } from '../../shared/components/task-search/task-search.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { UserService } from '../../core/services/user.service';
@@ -19,6 +22,7 @@ import { KanbanBoardComponent, KanbanGroupBy } from '../../shared/components/kan
 import { CalendarViewComponent } from '../../shared/components/calendar-view/calendar-view.component';
 import { TimelineViewComponent } from '../../shared/components/timeline-view/timeline-view.component';
 import { FabStore } from '../../core/stores/fab.store';
+import { DashboardStatsStore } from '../../core/stores/dashboard-stats.store';
 
 @Component({
   selector: 'app-tasks-dashboard',
@@ -41,20 +45,24 @@ import { FabStore } from '../../core/stores/fab.store';
 })
 export class TasksDashboardComponent implements OnInit, OnDestroy {
   private supabaseService = inject(SupabaseService);
-  private taskService = inject(TaskService);
+  taskDatabaseService = inject(TaskDatabaseService); // Public for template access
+  private databaseService = inject(DatabaseService);
   private router = inject(Router);
   private dialog = inject(MatDialog);
   private userService = inject(UserService);
   private store = inject(Store);
   private fabStore = inject(FabStore);
+  private dashboardStatsStore = inject(DashboardStatsStore);
   private pageId = crypto.randomUUID();
 
   supabaseStatus = signal<'connecting' | 'connected' | 'error'>('connecting');
   statusMessage = signal('Connexion en cours...');
 
-  tasks = this.taskService.tasks;
-  loading = this.taskService.loading;
-  taskError = this.taskService.error;
+  // Database-based task entries
+  taskEntries = signal<TaskEntry[]>([]);
+  totalCount = signal<number>(0);
+  loading = signal<boolean>(false);
+  taskError = signal<string | null>(null);
 
   // Project store selectors
   selectedProjectId$ = this.store.select(ProjectSelectors.selectSelectedProjectId);
@@ -65,15 +73,15 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
 
   // Epics for selected project
   epicsForSelectedProject = computed(() => {
-    const allTasks = this.tasks();
+    const allEntries = this.taskEntries();
     const selectedProjectId = this.selectedProjectId();
-    
+
     // Filter epics that belong to the selected project
     if (!selectedProjectId) return [];
-    
-    return allTasks.filter(task => 
-      task.type === 'epic' && 
-      task.project_id === selectedProjectId
+
+    return allEntries.filter(entry =>
+      entry.type === 'epic' &&
+      entry.project_id === selectedProjectId
     );
   });
 
@@ -94,63 +102,62 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
   });
 
   filteredTasks = computed(() => {
-    const allTasks = this.tasks();
+    const allEntries = this.taskEntries();
     const filters = this.currentSearchFilters();
-    let filtered = allTasks;
+    let filtered = allEntries;
 
     if (filters.searchText) {
       const search = filters.searchText.toLowerCase();
-      filtered = filtered.filter(task =>
-        task.title.toLowerCase().includes(search) ||
-        (task.description && task.description.toLowerCase().includes(search)) ||
-        (task.slug && task.slug.toLowerCase().includes(search)) ||
-        (task.prd_slug && task.prd_slug.toLowerCase().includes(search)) ||
-        (task.task_number && task.task_number.toString().includes(search))
+      filtered = filtered.filter(entry =>
+        entry.title.toLowerCase().includes(search) ||
+        (entry.description && entry.description.toLowerCase().includes(search)) ||
+        (entry.databaseName && entry.databaseName.toLowerCase().includes(search))
       );
     }
 
     if (filters.status) {
-      filtered = filtered.filter(task => task.status === filters.status);
+      filtered = filtered.filter(entry => entry.status === filters.status);
     }
     if (filters.priority) {
-      filtered = filtered.filter(task => task.priority === filters.priority);
-    }
-    if (filters.environment) {
-      filtered = filtered.filter(task => task.environment && task.environment.includes(filters.environment));
+      filtered = filtered.filter(entry => entry.priority === filters.priority);
     }
     if (filters.type) {
-      filtered = filtered.filter(task => task.type === filters.type);
-    }
-    if (filters.prd_slug && typeof filters.prd_slug === 'string' && filters.prd_slug.trim()) {
-      filtered = filtered.filter(task => task.prd_slug && task.prd_slug.toLowerCase().includes(filters.prd_slug!.toLowerCase()));
+      filtered = filtered.filter(entry => entry.type === filters.type);
     }
     if (filters.tag && typeof filters.tag === 'string' && filters.tag.trim()) {
-      filtered = filtered.filter(task => task.tags && task.tags.some((tag: string) => tag.toLowerCase().includes(filters.tag!.toLowerCase())));
+      filtered = filtered.filter(entry => entry.tags && entry.tags.some((tag: string) => tag.toLowerCase().includes(filters.tag!.toLowerCase())));
     }
 
     // Handle hierarchy for epics/features
     if (filters.type === 'epic' || filters.type === 'feature') {
       const descendants = new Set<string>();
-      const collectDescendants = (task: Task) => {
-        descendants.add(task.id!);
-        for (const child of allTasks) {
-          if (child.parent_task_id === task.id) {
+      const collectDescendants = (entry: TaskEntry) => {
+        descendants.add(entry.id);
+        for (const child of allEntries) {
+          if (child.parent_task_id === entry.id) {
             collectDescendants(child);
           }
         }
       };
-      
+
       for (const root of filtered) {
         collectDescendants(root);
       }
-      return allTasks.filter((t: Task) => descendants.has(t.id!));
+      return allEntries.filter((e: TaskEntry) => descendants.has(e.id));
     }
 
     return filtered;
   });
 
+  // Computed signal for legacy Task[] to maintain compatibility with view components
+  legacyTasks = computed(() => {
+    return this.filteredTasks().map(entry =>
+      this.taskDatabaseService.convertEntryToLegacyTask(entry)
+    );
+  });
+
   stats = computed(() => {
-    const taskStats = this.getTaskStats();
+    const taskStats = this.dashboardStatsStore.taskStats();
     return [
       { title: 'Tâches totales', value: taskStats.total, icon: 'list_alt', iconClass: 'c-stat-card__icon--total' },
       { title: 'En cours', value: taskStats.inProgress, icon: 'hourglass_top', iconClass: 'c-stat-card__icon--in-progress' },
@@ -175,6 +182,10 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
     );
 
     await this.loadUsers();
+    await this.loadTaskEntries();
+
+    // Charger les stats des tâches depuis la BDD (via RPC)
+    this.dashboardStatsStore.loadTaskStats({ projectId: undefined });
 
     // Subscribe to selected project ID changes
     this.selectedProjectId$.subscribe(projectId => {
@@ -189,6 +200,25 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
         this.currentSearchFilters.set(parsed);
       } catch (e) { /* Ignorer si parsing échoue */ }
     }
+  }
+
+  private loadTaskEntries(): void {
+    this.loading.set(true);
+    this.taskDatabaseService.getAllTaskEntries({
+      limit: 1000,
+      offset: 0
+    }).subscribe({
+      next: (result) => {
+        this.taskEntries.set(result.entries);
+        this.totalCount.set(result.totalCount);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.error('Error loading task entries:', err);
+        this.taskError.set('Failed to load tasks from databases');
+        this.loading.set(false);
+      }
+    });
   }
 
   ngOnDestroy() {
@@ -207,7 +237,8 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
   }
 
   getTaskStats() {
-    return this.taskService.getStats();
+    const entries = this.filteredTasks();
+    return this.taskDatabaseService.getTaskStats(entries);
   }
 
   getStatusIcon(): string {
@@ -239,24 +270,27 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
   }
 
   async createSampleData() {
-    await this.taskService.createSampleTasks();
+    // No longer needed with database-based tasks
+    console.log('Sample data creation not supported for database-based tasks');
   }
 
   async refreshData() {
-    await this.taskService.loadTasks();
+    this.loadTaskEntries();
   }
 
   async debugTasks() {
   }
 
   navigateToNewTaskForm() {
-    this.router.navigate(['/tasks/new']);
+    // Redirect to documents for creating new task database
+    this.router.navigate(['/documents']);
   }
 
   navigateToEditTaskForm(task: Task) {
-    if (task.id) {
-      this.router.navigate(['/tasks', task.id, 'edit']);
-    }
+    // For database-based tasks, navigate to the linked document
+    // This requires fetching the document linked to the database row
+    console.log('Edit task:', task);
+    // TODO: Implement document navigation for database row editing
   }
 
   navigateToEpicKanban(epic: Task) {
@@ -276,15 +310,29 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
     try {
       const result = await firstValueFrom(dialogRef.afterClosed());
       if (result) {
-        const success = await this.taskService.deleteTask(id);
-        if (success) {
-          // Optionally show a success snackbar
-        } else {
-          // Optionally show an error snackbar
+        // Find the task entry to get database information
+        const taskEntry = this.taskEntries().find(e => e.id === id);
+        if (taskEntry) {
+          // Delete the database row
+          this.databaseService.deleteRows({
+            databaseId: taskEntry.databaseId,
+            rowIds: [id]
+          }).subscribe({
+            next: () => {
+              // Reload task entries after deletion
+              this.loadTaskEntries();
+              // Rafraîchir les stats des tâches
+              this.dashboardStatsStore.loadTaskStats({});
+            },
+            error: (err) => {
+              console.error('Failed to delete task:', err);
+              this.taskError.set('Failed to delete task');
+            }
+          });
         }
       }
     } catch (error) {
-      // Optionally show an error snackbar
+      console.error('Error in delete dialog:', error);
     }
   }
 
@@ -306,20 +354,46 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
     const { task, newStatus, newPriority } = event;
     if (!task.id) return;
 
-    const updates: Partial<Task> = {};
-    if (newStatus) {
-      updates.status = newStatus as Task['status'];
-    }
-    if (newPriority) {
-      updates.priority = newPriority as Task['priority'];
+    // Find the corresponding TaskEntry
+    const taskEntry = this.taskEntries().find(e => e.id === task.id);
+    if (!taskEntry) {
+      console.error('Task entry not found for id:', task.id);
+      return;
     }
 
-    const success = await this.taskService.updateTask(task.id, updates);
-    if (!success) {
-      console.error('Erreur lors de la mise à jour de la tâche');
-      // Reload tasks to revert the optimistic update
-      await this.taskService.loadTasks();
+    // Get database metadata to find column IDs
+    const dbMetadata = await firstValueFrom(
+      this.taskDatabaseService.getDatabaseMetadata(taskEntry.databaseId)
+    );
+
+    const updates: Record<string, CellValue> = {};
+
+    // Find Status and Priority columns by name
+    const statusColumn = dbMetadata.config.columns.find(col => col.name === 'Status');
+    const priorityColumn = dbMetadata.config.columns.find(col => col.name === 'Priority');
+
+    if (newStatus && statusColumn) {
+      updates[statusColumn.id] = newStatus;
     }
+    if (newPriority && priorityColumn) {
+      updates[priorityColumn.id] = newPriority;
+    }
+
+    // Update database row
+    this.databaseService.updateRow(taskEntry.databaseId, task.id, updates).subscribe({
+      next: () => {
+        // Reload task entries to reflect changes
+        this.loadTaskEntries();
+        // Rafraîchir les stats des tâches
+        this.dashboardStatsStore.loadTaskStats({});
+      },
+      error: (err) => {
+        console.error('Failed to update task:', err);
+        this.taskError.set('Failed to update task');
+        // Reload to revert optimistic update
+        this.loadTaskEntries();
+      }
+    });
   }
 
   onTaskEdit(task: Task) {
@@ -367,7 +441,7 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
   }
 
   exportRoadmapMarkdown() {
-    const tasks = this.filteredTasks();
+    const tasks = this.legacyTasks();
     if (!tasks.length) {
       this.downloadFile('# Roadmap (aucune tâche filtrée)\n', 'roadmap.md', 'text/markdown');
       return;
@@ -393,7 +467,7 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
   }
 
   exportRoadmapJson() {
-    const tasks = this.filteredTasks();
+    const tasks = this.legacyTasks();
     if (!tasks.length) {
       this.downloadFile(JSON.stringify({ message: 'Aucune tâche filtrée.' }, null, 2), 'roadmap.json', 'application/json');
       return;
@@ -414,7 +488,7 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
   }
 
   getFilteredTreeTasks(): Task[] {
-    return this.filteredTasks();
+    return this.legacyTasks();
   }
 
   // TrackBy function for epic cards performance optimization
