@@ -23,6 +23,25 @@ export type ColumnType =
   | 'email';
 
 /**
+ * Predefined colors for pinned properties
+ */
+export type PropertyColor = 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'pink' | 'orange' | 'gray';
+
+/**
+ * Color palette for pinned properties (light backgrounds with dark text for readability)
+ */
+export const PROPERTY_COLORS: Record<PropertyColor, { bg: string; text: string; border: string }> = {
+  blue: { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd' },
+  green: { bg: '#dcfce7', text: '#166534', border: '#86efac' },
+  yellow: { bg: '#fef3c7', text: '#92400e', border: '#fcd34d' },
+  red: { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' },
+  purple: { bg: '#ede9fe', text: '#5b21b6', border: '#c4b5fd' },
+  pink: { bg: '#fce7f3', text: '#9f1239', border: '#f9a8d4' },
+  orange: { bg: '#ffedd5', text: '#9a3412', border: '#fdba74' },
+  gray: { bg: '#f3f4f6', text: '#374151', border: '#d1d5db' },
+};
+
+/**
  * Number format options for number columns
  */
 export type NumberFormat = 'integer' | 'decimal' | 'currency' | 'percentage';
@@ -62,6 +81,7 @@ export interface DatabaseColumn {
   visible: boolean;
   required?: boolean;
   order: number;
+  color?: PropertyColor; // Color for pinned properties display
 }
 
 // =====================================================================
@@ -356,6 +376,15 @@ export interface DatabaseError {
 // =====================================================================
 
 /**
+ * Get default color for a column based on its index
+ * Uses round-robin assignment through the color palette
+ */
+export function getDefaultColumnColor(index: number): PropertyColor {
+  const colors: PropertyColor[] = ['blue', 'green', 'yellow', 'red', 'purple', 'pink', 'orange', 'gray'];
+  return colors[index % colors.length];
+}
+
+/**
  * Type guard to check if a column has select choices
  */
 export function hasSelectChoices(column: DatabaseColumn): column is DatabaseColumn & {
@@ -465,6 +494,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     required: true,
     order: 0,
     width: DEFAULT_COLUMN_WIDTHS.text,
+    color: 'blue',
   },
   {
     id: crypto.randomUUID(),
@@ -473,6 +503,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     visible: true,
     order: 1,
     width: 300,
+    color: 'green',
   },
   {
     id: crypto.randomUUID(),
@@ -481,6 +512,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     visible: true,
     order: 2,
     width: DEFAULT_COLUMN_WIDTHS.select,
+    color: 'yellow',
     options: {
       choices: [
         { id: 'pending', label: 'Pending', color: 'bg-gray-200' },
@@ -497,6 +529,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     visible: true,
     order: 3,
     width: DEFAULT_COLUMN_WIDTHS.select,
+    color: 'red',
     options: {
       choices: [
         { id: 'low', label: 'Low', color: 'bg-gray-100' },
@@ -513,6 +546,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     visible: true,
     order: 4,
     width: DEFAULT_COLUMN_WIDTHS.select,
+    color: 'purple',
     options: {
       choices: [
         { id: 'epic', label: 'Epic', color: 'bg-purple-200' },
@@ -528,6 +562,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     visible: true,
     order: 5,
     width: DEFAULT_COLUMN_WIDTHS.text,
+    color: 'pink',
   },
   {
     id: crypto.randomUUID(),
@@ -536,6 +571,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     visible: true,
     order: 6,
     width: DEFAULT_COLUMN_WIDTHS.date,
+    color: 'orange',
     options: {
       dateFormat: 'DD/MM/YYYY',
     },
@@ -547,6 +583,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     visible: true,
     order: 7,
     width: DEFAULT_COLUMN_WIDTHS['multi-select'],
+    color: 'gray',
     options: {
       choices: [
         { id: 'frontend', label: 'Frontend', color: 'bg-cyan-200' },
@@ -564,6 +601,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     visible: true,
     order: 8,
     width: DEFAULT_COLUMN_WIDTHS.number,
+    color: 'blue',
     options: {
       format: 'decimal',
     },
@@ -575,6 +613,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     visible: true,
     order: 9,
     width: DEFAULT_COLUMN_WIDTHS.number,
+    color: 'green',
     options: {
       format: 'decimal',
     },
@@ -586,6 +625,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     visible: false,
     order: 10,
     width: DEFAULT_COLUMN_WIDTHS.text,
+    color: 'yellow',
   },
   {
     id: crypto.randomUUID(),
@@ -594,6 +634,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     visible: false,
     order: 11,
     width: DEFAULT_COLUMN_WIDTHS.text,
+    color: 'red',
   },
   {
     id: crypto.randomUUID(),
@@ -602,6 +643,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     visible: false,
     order: 12,
     width: DEFAULT_COLUMN_WIDTHS.text,
+    color: 'purple',
   },
   {
     id: crypto.randomUUID(),
@@ -610,6 +652,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     visible: false,
     order: 13,
     width: DEFAULT_COLUMN_WIDTHS.text,
+    color: 'pink',
   },
 ];
 

@@ -56,9 +56,20 @@
     @if (isDatabaseRowDocument() && getPinnedColumns().length > 0) {
       <div class="pinned-properties">
         @for (column of getPinnedColumns(); track column.id) {
-          <div class="pinned-property-item">
-            <span class="pinned-property-label">{{ column.name }}</span>
-            <span class="pinned-property-value">
+          <div
+            class="pinned-property-item"
+            [style.background-color]="getColumnColor(column).bg"
+          >
+            <span
+              class="pinned-property-label"
+              [style.color]="getColumnColor(column).text"
+            >
+              {{ column.name }}
+            </span>
+            <span
+              class="pinned-property-value"
+              [style.color]="getColumnColor(column).text"
+            >
               {{ getPropertyDisplayValue(column, databaseRow()!.cells[column.id]) }}
             </span>
             <button
@@ -66,7 +77,7 @@
               (click)="toggleColumnPin(column.id)"
               title="Désépingler"
             >
-              <mat-icon>close</mat-icon>
+              <mat-icon [style.color]="getColumnColor(column).text">close</mat-icon>
             </button>
           </div>
         }
@@ -109,6 +120,7 @@
     [selectedIndex]="slashMenuIndex()"
     [filterText]="slashFilterText()"
     (commandSelected)="executeCommand($event)"
+    (closeMenu)="closeSlashMenu()"
     [style.top.px]="slashMenuPosition().top"
     [style.left.px]="slashMenuPosition().left"
     class="slash-menu">

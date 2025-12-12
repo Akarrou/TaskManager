@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, signal, computed, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal, computed, OnChanges, SimpleChanges, HostListener, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface SlashCommand {
@@ -25,8 +25,11 @@ export class SlashMenuComponent implements OnChanges {
   @Input() selectedIndex = 0;
   @Input() filterText = '';
   @Output() commandSelected = new EventEmitter<SlashCommand>();
+  @Output() closeMenu = new EventEmitter<void>();
 
   filterTextSignal = signal<string>('');
+
+  constructor(private elementRef: ElementRef) {}
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['filterText']) {
@@ -68,7 +71,7 @@ export class SlashMenuComponent implements OnChanges {
       {
         title: 'Format',
         commands: items.filter(item =>
-          ['bold', 'italic', 'strike', 'code', 'quote'].includes(item.id)
+          ['code', 'quote'].includes(item.id)
         )
       },
       {
@@ -102,5 +105,14 @@ export class SlashMenuComponent implements OnChanges {
   // Get global index for a command within a section
   getGlobalIndex(command: SlashCommand): number {
     return this.filteredItems().findIndex(item => item.id === command.id);
+  }
+
+  // Close menu when clicking outside
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const clickedInside = this.elementRef.nativeElement.contains(event.target);
+    if (!clickedInside) {
+      this.closeMenu.emit();
+    }
   }
 }

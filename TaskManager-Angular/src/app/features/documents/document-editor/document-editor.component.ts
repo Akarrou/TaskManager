@@ -27,7 +27,7 @@ import { FabStore } from '../../../core/stores/fab.store';
 import { debounceTime, Subject, takeUntil, map, catchError, throwError, take, forkJoin } from 'rxjs';
 import { DocumentState, DocumentSnapshot, createSnapshot, hasChanges } from '../models/document-content.types';
 import { Columns, Column } from '../extensions/columns.extension';
-import { DatabaseRow, DatabaseColumn, DocumentDatabase, CellValue, createTaskDatabaseConfig } from '../models/database.model';
+import { DatabaseRow, DatabaseColumn, DocumentDatabase, CellValue, createTaskDatabaseConfig, PROPERTY_COLORS, PropertyColor, getDefaultColumnColor } from '../models/database.model';
 import { FontSize } from '../extensions/font-size.extension';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { FontFamily } from '@tiptap/extension-font-family';
@@ -184,11 +184,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     { id: 'divider', label: 'Séparateur', icon: 'horizontal_rule', action: () => this.editor.chain().focus().setHorizontalRule().run() },
     { id: 'codeBlock', label: 'Bloc de code', icon: 'integration_instructions', action: () => this.editor.chain().focus().toggleCodeBlock().run() },
     { id: 'code', label: 'Code inline', icon: 'code', action: () => this.editor.chain().focus().toggleCode().run() },
-
-    // Formatage texte
-    { id: 'bold', label: 'Gras', icon: 'format_bold', action: () => this.editor.chain().focus().toggleBold().run() },
-    { id: 'italic', label: 'Italique', icon: 'format_italic', action: () => this.editor.chain().focus().toggleItalic().run() },
-    { id: 'strike', label: 'Barré', icon: 'strikethrough_s', action: () => this.editor.chain().focus().toggleStrike().run() },
 
     // Éléments structurels
     { id: 'table', label: 'Tableau', icon: 'table_chart', action: () => this.addTable() },
@@ -908,6 +903,11 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.slashFilterText.set(''); // Réinitialiser le filtre
   }
 
+  closeSlashMenu() {
+    this.showSlashMenu.set(false);
+    this.slashFilterText.set('');
+  }
+
   addTable() {
     const rows = window.prompt('Nombre de lignes:', '3');
     if (!rows) return;
@@ -1380,6 +1380,30 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       'email': 'email',
     };
     return iconMap[type] || 'label';
+  }
+
+  /**
+   * Get color values for a column (background, text, border)
+   * Assigns color automatically based on column index if not specified
+   */
+  getColumnColor(column: DatabaseColumn): { bg: string; text: string; border: string } {
+    // If column has a color, use it
+    if (column.color) {
+      return PROPERTY_COLORS[column.color];
+    }
+
+    // Otherwise, assign a color based on the column's position in the metadata
+    const metadata = this.databaseMetadata();
+    if (metadata) {
+      const columnIndex = metadata.config.columns.findIndex((col: DatabaseColumn) => col.id === column.id);
+      if (columnIndex >= 0) {
+        const autoColor = getDefaultColumnColor(columnIndex);
+        return PROPERTY_COLORS[autoColor];
+      }
+    }
+
+    // Final fallback to gray
+    return PROPERTY_COLORS.gray;
   }
 
   ngOnDestroy(): void {

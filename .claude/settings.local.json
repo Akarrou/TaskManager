@@ -75,7 +75,9 @@
       "Bash(npx ng build --configuration development)",
       "Bash(docker compose ps:*)",
       "Bash(docker compose restart:*)",
-      "Bash(docker compose logs:*)"
+      "Bash(docker compose logs:*)",
+      "Bash(pnpm list:*)",
+      "Bash(pnpm exec ng build:*)"
     ]
   },
   "enableAllProjectMcpServers": false
