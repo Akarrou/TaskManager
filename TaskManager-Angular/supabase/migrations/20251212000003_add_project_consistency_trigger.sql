@@ -31,13 +31,22 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger on document_task_relations
-DROP TRIGGER IF EXISTS enforce_document_task_project_consistency ON public.document_task_relations;
+-- Create trigger on document_task_relations (only if table exists)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_name = 'document_task_relations'
+    ) THEN
+        DROP TRIGGER IF EXISTS enforce_document_task_project_consistency ON public.document_task_relations;
 
-CREATE TRIGGER enforce_document_task_project_consistency
-    BEFORE INSERT OR UPDATE ON public.document_task_relations
-    FOR EACH ROW
-    EXECUTE FUNCTION validate_document_task_project_consistency();
+        CREATE TRIGGER enforce_document_task_project_consistency
+            BEFORE INSERT OR UPDATE ON public.document_task_relations
+            FOR EACH ROW
+            EXECUTE FUNCTION validate_document_task_project_consistency();
+    END IF;
+END $$;
 
 -- Add comment for documentation
 COMMENT ON FUNCTION validate_document_task_project_consistency() IS 'Validates that tasks and documents belong to the same project when linked together';

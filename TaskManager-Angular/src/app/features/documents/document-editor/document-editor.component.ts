@@ -24,9 +24,10 @@ import { SlashMenuComponent, SlashCommand } from '../slash-menu/slash-menu.compo
 import { BubbleMenuComponent } from '../bubble-menu/bubble-menu.component';
 import { DocumentService, Document, DocumentBreadcrumb } from '../services/document.service';
 import { FabStore } from '../../../core/stores/fab.store';
-import { debounceTime, Subject, takeUntil, map, catchError, throwError, take } from 'rxjs';
+import { debounceTime, Subject, takeUntil, map, catchError, throwError, take, forkJoin } from 'rxjs';
 import { DocumentState, DocumentSnapshot, createSnapshot, hasChanges } from '../models/document-content.types';
 import { Columns, Column } from '../extensions/columns.extension';
+import { DatabaseRow, DatabaseColumn, DocumentDatabase, CellValue, createTaskDatabaseConfig } from '../models/database.model';
 import { FontSize } from '../extensions/font-size.extension';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { FontFamily } from '@tiptap/extension-font-family';
@@ -84,11 +85,24 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     content: {},
     isDirty: false,
     isSaving: false,
-    lastSaved: null
+    lastSaved: null,
+    database_id: null,
+    database_row_id: null
   });
 
   // Breadcrumb hierarchy
   breadcrumbs = signal<DocumentBreadcrumb[]>([]);
+
+  // Database row properties (for Notion-style database pages)
+  isDatabaseRowDocument = computed(() => {
+    const doc = this.documentState();
+    return !!(doc.id && doc.database_id);
+  });
+
+  databaseMetadata = signal<DocumentDatabase | null>(null);
+  databaseRow = signal<DatabaseRow | null>(null);
+  isLoadingDatabaseProperties = signal(false);
+  propertiesExpanded = signal(true); // Accordion state
 
   // Snapshot for dirty tracking
   private originalSnapshot = signal<DocumentSnapshot | null>(null);
@@ -172,13 +186,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     { id: 'columns3', label: '3 Colonnes', icon: 'view_week', action: () => this.editor.chain().focus().setColumns(3).run() },
     { id: 'newDocument', label: 'Nouvelle page', icon: 'note_add', action: () => this.createLinkedDocument() },
 
-    // Tâches
-    { id: 'taskSection', label: 'Section de tâches', icon: 'task_alt', action: () => this.insertTaskSection() },
-    { id: 'linkTask', label: 'Lier une tâche', icon: 'link', action: () => this.openTaskSearchModal() },
-    { id: 'createTask', label: 'Créer une tâche', icon: 'add_task', action: () => this.createNewTaskFromDocument() },
-
     // Base de données
     { id: 'database', label: 'Base de données', icon: 'table_view', action: () => this.insertDatabase() },
+    { id: 'taskDatabase', label: 'Base de données de tâches', icon: 'task_alt', action: () => this.insertTaskDatabase() },
 
     // Utilitaires
     { id: 'break', label: 'Saut de ligne', icon: 'keyboard_return', action: () => this.editor.chain().focus().setHardBreak().run() },
@@ -361,7 +371,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
             content: doc.content,
             isDirty: false,
             isSaving: false,
-            lastSaved: doc.updated_at ? new Date(doc.updated_at) : null
+            lastSaved: doc.updated_at ? new Date(doc.updated_at) : null,
+            database_id: doc.database_id || null,
+            database_row_id: doc.database_row_id || null
           });
 
           // Set original snapshot for dirty tracking
@@ -373,6 +385,11 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
           // Load breadcrumb hierarchy
           const breadcrumbPath = await this.documentService.getDocumentBreadcrumb(id);
           this.breadcrumbs.set(breadcrumbPath);
+
+          // Check if this document is linked to a database row (Notion-style)
+          if (doc.database_id && doc.database_row_id) {
+            this.loadDatabaseProperties(doc.database_id, doc.database_row_id);
+          }
 
           // Update editor content
           if (doc.content && Object.keys(doc.content).length > 0) {
@@ -393,6 +410,138 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       },
       error: (err) => console.error('Error loading doc', err)
     });
+  }
+
+  /**
+   * Load database metadata and row data for database-linked documents
+   * This enables Notion-style property editing
+   */
+  private loadDatabaseProperties(databaseId: string, rowId: string) {
+    this.isLoadingDatabaseProperties.set(true);
+
+    forkJoin({
+      metadata: this.databaseService.getDatabaseMetadata(databaseId),
+      rows: this.databaseService.getRows({ databaseId, limit: 1000 })
+    })
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: ({ metadata, rows }: { metadata: DocumentDatabase; rows: DatabaseRow[] }) => {
+        this.databaseMetadata.set(metadata);
+
+        // Find the specific row for this document
+        const row = rows.find((r: DatabaseRow) => r.id === rowId);
+        if (row) {
+          this.databaseRow.set(row);
+        }
+
+        this.isLoadingDatabaseProperties.set(false);
+      },
+      error: (err: unknown) => {
+        console.error('Failed to load database properties:', err);
+        this.isLoadingDatabaseProperties.set(false);
+      }
+    });
+  }
+
+  /**
+   * Update a database property cell value
+   * Syncs changes back to the database row
+   */
+  onUpdateDatabaseProperty(columnId: string, value: CellValue) {
+    const doc = this.documentState();
+    if (!doc.database_id || !doc.database_row_id) return;
+
+    this.databaseService.updateCell({
+      databaseId: doc.database_id,
+      rowId: doc.database_row_id,
+      columnId,
+      value
+    })
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: () => {
+        // Update local state
+        this.databaseRow.update((row: DatabaseRow | null) => {
+          if (!row) return row;
+          return {
+            ...row,
+            cells: {
+              ...row.cells,
+              [columnId]: value
+            }
+          };
+        });
+      },
+      error: (err: unknown) => {
+        console.error('Failed to update database property:', err);
+        alert('Impossible de mettre à jour la propriété');
+      }
+    });
+  }
+
+  /**
+   * Helper to safely get array value from cell (for multi-select)
+   */
+  getCellAsArray(cellValue: CellValue | undefined): string[] {
+    if (!cellValue) return [];
+    if (Array.isArray(cellValue)) return cellValue as string[];
+    return [];
+  }
+
+  /**
+   * Check if a column is the title column (to sync with document title)
+   */
+  isTitleColumn(columnName: string): boolean {
+    return columnName.toLowerCase().includes('title') || columnName.toLowerCase().includes('titre');
+  }
+
+  /**
+   * Check if a column is the description column (to use textarea)
+   */
+  isDescriptionColumn(columnName: string): boolean {
+    return columnName.toLowerCase().includes('description');
+  }
+
+  /**
+   * Check if a column should be narrow (status, priority, hours)
+   */
+  isNarrowColumn(columnName: string): boolean {
+    const narrowColumns = ['status', 'statut', 'priority', 'priorité', 'hours', 'heures', 'estimated', 'estimé', 'actual'];
+    return narrowColumns.some(narrow => columnName.toLowerCase().includes(narrow));
+  }
+
+  /**
+   * Toggle the properties accordion
+   */
+  togglePropertiesExpanded() {
+    this.propertiesExpanded.update((expanded: boolean) => !expanded);
+  }
+
+  /**
+   * Update document title (called from title property input)
+   * This syncs the title with both the document and the database row
+   */
+  onUpdateDocumentTitle(newTitle: string) {
+    // Update document state locally
+    this.documentState.update((state: DocumentState) => ({
+      ...state,
+      title: newTitle,
+      isDirty: true
+    }));
+
+    // Find the title column ID and update the database property
+    const metadata = this.databaseMetadata();
+    const titleColumn = metadata?.config.columns.find((col: DatabaseColumn) => this.isTitleColumn(col.name));
+    if (titleColumn) {
+      this.onUpdateDatabaseProperty(titleColumn.id, newTitle);
+    }
+  }
+
+  /**
+   * Helper to convert string to number
+   */
+  toNumber(value: string): number {
+    return Number(value);
   }
 
   saveDocument() {
@@ -990,6 +1139,50 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('❌ Failed to create database:', err);
         alert('Impossible de créer la base de données. Veuillez réessayer.');
+      }
+    });
+  }
+
+  /**
+   * Insert a pre-configured task database with 14 task-specific columns
+   * Creates a Notion-style task database with Status, Priority, Type, etc.
+   */
+  insertTaskDatabase() {
+    const currentDocId = this.documentState().id;
+    if (!currentDocId) {
+      alert('Sauvegardez le document d\'abord');
+      return;
+    }
+
+    // Create task database with pre-configured columns
+    const taskConfig = createTaskDatabaseConfig('Tâches');
+
+    // Step 1: Create the database in Supabase with task template
+    this.databaseService.createDatabase({
+      documentId: currentDocId,
+      config: taskConfig,
+    })
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (response) => {
+        // Step 2: Insert the block with the pre-generated databaseId
+        this.editor.chain().focus().insertDatabaseTable(response.databaseId).run();
+
+        // Step 3: Save immediately to persist the databaseId
+        this.saveDocumentImmediate().pipe(take(1)).subscribe({
+          next: () => {
+            console.log('✅ Task database created successfully');
+          },
+          error: (err) => {
+            console.error('❌ Failed to save document after task database creation:', err);
+          }
+        });
+
+        this.showSlashMenu.set(false);
+      },
+      error: (err) => {
+        console.error('❌ Failed to create task database:', err);
+        alert('Impossible de créer la base de données de tâches. Veuillez réessayer.');
       }
     });
   }

@@ -72,21 +72,15 @@ export class SlashMenuComponent implements OnChanges {
         )
       },
       {
-        title: 'Médias',
+        title: 'Contenu avancé',
         commands: items.filter(item =>
-          ['image', 'table', 'codeBlock', 'database'].includes(item.id)
+          ['image', 'table', 'codeBlock', 'database', 'taskDatabase'].includes(item.id)
         )
       },
       {
         title: 'Structure',
         commands: items.filter(item =>
           ['columns2', 'columns3', 'divider', 'newDocument'].includes(item.id)
-        )
-      },
-      {
-        title: 'Tâches',
-        commands: items.filter(item =>
-          ['taskSection', 'linkTask', 'createTask'].includes(item.id)
         )
       },
       {

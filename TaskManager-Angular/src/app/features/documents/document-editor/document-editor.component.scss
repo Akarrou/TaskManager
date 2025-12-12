@@ -144,7 +144,7 @@
   border: none;
   background: transparent;
   padding: 0;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem; /* Réduit de 1rem à 0.5rem */
   color: #111827;
   outline: none;
 }
@@ -166,7 +166,7 @@
 // ----------------------------------------------------------------------------
 
 .save-status {
-  margin-bottom: 2rem;
+  margin-bottom: 0.75rem; /* Réduit de 2rem à 0.75rem */
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -594,5 +594,259 @@ tiptap-editor:focus-within {
   &:hover {
     border-color: #4b5563 !important;
   }
+}
+
+// ----------------------------------------------------------------------------
+// DATABASE PROPERTIES SECTION (Notion-style row properties - Compact Accordion)
+// ----------------------------------------------------------------------------
+
+.database-properties-section {
+  margin: 0 0 1rem 0; /* Pas de marge top, 1rem bottom pour espacer de l'éditeur */
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  background-color: #fafafa;
+  overflow: hidden;
+}
+
+:host-context(.dark) .database-properties-section {
+  border-color: #374151;
+  background-color: #1f2937;
+}
+
+.properties-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s;
+
+  &:hover {
+    background-color: #f3f4f6;
+  }
+}
+
+:host-context(.dark) .properties-header:hover {
+  background-color: #374151;
+}
+
+.properties-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+:host-context(.dark) .properties-title {
+  color: #9ca3af;
+}
+
+.properties-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  color: #9ca3af;
+}
+
+.toggle-icon {
+  display: inline-block;
+  transition: transform 0.2s;
+
+  .properties-toggle.expanded & {
+    transform: rotate(180deg);
+  }
+}
+
+.properties-content {
+  padding: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+:host-context(.dark) .properties-content {
+  border-top-color: #374151;
+}
+
+.properties-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+.loading-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.properties-grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .properties-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .properties-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.property-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  &.property-row-narrow {
+    grid-column: span 1;
+  }
+
+  &.property-row-wide {
+    grid-column: 1 / -1; /* Occupe toute la largeur */
+  }
+}
+
+.property-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: capitalize;
+}
+
+:host-context(.dark) .property-label {
+  color: #9ca3af;
+}
+
+.property-value {
+  width: 100%;
+}
+
+.property-input,
+.property-select {
+  width: 100%;
+  height: 2rem; /* Hauteur fixe pour uniformité */
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
+  background-color: white;
+  color: #111827;
+  transition: all 0.15s;
+  box-sizing: border-box; /* Assure que height inclut padding et border */
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+}
+
+.property-input-title {
+  font-weight: 500;
+}
+
+.property-textarea {
+  width: 100%;
+  min-height: 4.5rem; /* 3 lignes environ */
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
+  background-color: white;
+  color: #111827;
+  transition: all 0.15s;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+  line-height: 1.4;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+}
+
+:host-context(.dark) .property-input,
+:host-context(.dark) .property-select,
+:host-context(.dark) .property-textarea {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #f3f4f6;
+
+  &:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.1);
+  }
+}
+
+.property-checkbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+  accent-color: #3b82f6;
+}
+
+.property-text {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  background-color: #f9fafb;
+  border-radius: 0.375rem;
+}
+
+:host-context(.dark) .property-text {
+  color: #9ca3af;
+  background-color: #374151;
+}
+
+.multi-select-container {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  background-color: white;
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+}
+
+:host-context(.dark) .multi-select-container {
+  background-color: #374151;
+  border-color: #4b5563;
+}
+
+.multi-select-placeholder {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+:host-context(.dark) .multi-select-placeholder {
+  color: #9ca3af;
 }
 

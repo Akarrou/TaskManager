@@ -15,6 +15,10 @@ export interface Document {
   created_at?: string;
   updated_at?: string;
   user_id?: string;
+
+  // Database row link (for Notion-like database pages)
+  database_id?: string | null; // ID of the database (format: db-<uuid>) if this document represents a database row
+  database_row_id?: string | null; // ID of the row in the database_<uuid> table
 }
 
 export interface DocumentBreadcrumb {
@@ -77,6 +81,15 @@ export class DocumentService {
       newDoc['project_id'] = doc.project_id;
     }
 
+    // Include database link if provided (for database row documents)
+    if (doc.database_id !== undefined) {
+      newDoc['database_id'] = doc.database_id;
+    }
+
+    if (doc.database_row_id !== undefined) {
+      newDoc['database_row_id'] = doc.database_row_id;
+    }
+
     return from(
       this.client
         .from('documents')
@@ -89,6 +102,29 @@ export class DocumentService {
         return response.data as Document;
       })
     );
+  }
+
+  /**
+   * Create a document linked to a database row (Notion-style)
+   * This document represents a row in a database and will display properties when opened
+   */
+  createDatabaseRowDocument(data: {
+    title: string;
+    database_id: string;
+    database_row_id: string;
+    project_id?: string;
+    content?: JSONContent;
+  }): Observable<Document> {
+    // Default to valid empty TipTap document structure if no content provided
+    const defaultContent: JSONContent = { type: 'doc', content: [] };
+
+    return this.createDocument({
+      title: data.title,
+      database_id: data.database_id,
+      database_row_id: data.database_row_id,
+      project_id: data.project_id,
+      content: data.content || defaultContent,
+    });
   }
 
   updateDocument(id: string, updates: Partial<Document>): Observable<Document> {
@@ -153,28 +189,78 @@ export class DocumentService {
   /**
    * Get the breadcrumb path (parent hierarchy) for a document
    * Returns array from root to current document
+   * For database row documents, includes the parent document containing the database
    */
   async getDocumentBreadcrumb(documentId: string): Promise<DocumentBreadcrumb[]> {
     const breadcrumbs: DocumentBreadcrumb[] = [];
     let currentId: string | null = documentId;
 
-    // Traverse up the parent chain (max 10 levels to prevent infinite loops)
-    for (let i = 0; i < 10 && currentId; i++) {
-      const result = await this.client
-        .from('documents')
-        .select('id, title, parent_id')
-        .eq('id', currentId)
+    // First, check if this is a database row document
+    const currentDocResult = await this.client
+      .from('documents')
+      .select('id, title, parent_id, database_id')
+      .eq('id', documentId)
+      .single();
+
+    if (currentDocResult.error || !currentDocResult.data) {
+      return breadcrumbs;
+    }
+
+    const currentDoc = currentDocResult.data;
+
+    // If this is a database row document, find the parent document containing the database
+    if (currentDoc.database_id) {
+      const databaseResult = await this.client
+        .from('document_databases')
+        .select('document_id')
+        .eq('database_id', currentDoc.database_id)
         .single();
 
-      if (result.error || !result.data) break;
+      if (!databaseResult.error && databaseResult.data) {
+        // Get the parent document that contains the database
+        const parentDocResult = await this.client
+          .from('documents')
+          .select('id, title')
+          .eq('id', databaseResult.data.document_id)
+          .single();
 
-      // Add to beginning of array (we're traversing backwards)
-      breadcrumbs.unshift({
-        id: result.data.id,
-        title: result.data.title
-      });
+        if (!parentDocResult.error && parentDocResult.data) {
+          // Add parent document to breadcrumb
+          breadcrumbs.push({
+            id: parentDocResult.data.id,
+            title: parentDocResult.data.title
+          });
+        }
+      }
+    }
 
-      currentId = result.data.parent_id as string | null;
+    // Add current document
+    breadcrumbs.push({
+      id: currentDoc.id,
+      title: currentDoc.title
+    });
+
+    // If there's a parent_id hierarchy, traverse it (for non-database row documents)
+    if (!currentDoc.database_id && currentDoc.parent_id) {
+      currentId = currentDoc.parent_id as string | null;
+
+      for (let i = 0; i < 10 && currentId; i++) {
+        const result = await this.client
+          .from('documents')
+          .select('id, title, parent_id')
+          .eq('id', currentId)
+          .single();
+
+        if (result.error || !result.data) break;
+
+        // Add to beginning of array (we're traversing backwards)
+        breadcrumbs.unshift({
+          id: result.data.id,
+          title: result.data.title
+        });
+
+        currentId = result.data.parent_id as string | null;
+      }
     }
 
     return breadcrumbs;

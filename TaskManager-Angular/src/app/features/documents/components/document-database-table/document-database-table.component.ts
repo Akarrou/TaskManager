@@ -1,5 +1,6 @@
 import { Component, Input, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -24,6 +25,7 @@ import {
   DatabaseView,
 } from '../../models/database.model';
 import { DatabaseService } from '../../services/database.service';
+import { Document, DocumentService } from '../../services/document.service';
 import {
   ColumnEditorDialogComponent,
   ColumnEditorDialogData,
@@ -71,8 +73,10 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 })
 export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   private databaseService = inject(DatabaseService);
+  private documentService = inject(DocumentService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
+  private router = inject(Router);
 
   // Inputs
   @Input() databaseId!: string;
@@ -322,6 +326,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
 
   /**
    * Add a new row
+   * For task databases, also creates a linked document (Notion-style)
    */
   onAddRow() {
     const newRowOrder = this.rows().length;
@@ -332,22 +337,54 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
       emptyCells[col.id] = this.getDefaultValueForColumn(col);
     });
 
-    this.databaseService
-      .addRow({
-        databaseId: this.databaseId,
-        cells: emptyCells,
-        row_order: newRowOrder,
-      })
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (newRow) => {
-          this.rows.update((rows) => [...rows, newRow]);
-        },
-        error: (err) => {
-          console.error('Failed to add row:', err);
-          alert('Impossible d\'ajouter une ligne');
-        },
-      });
+    // Check if this is a task database (has type: 'task' in config)
+    const config = this.databaseConfig() as DatabaseConfig & { type?: string };
+    const isTaskDatabase = config.type === 'task';
+
+    if (isTaskDatabase) {
+      // For task databases, create row WITH linked document
+      // Note: No project_id for task row documents
+      this.databaseService
+        .addRowWithDocument(
+          this.databaseId,
+          emptyCells,
+          undefined, // No project_id for task row documents
+          newRowOrder
+        )
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: ({ row }: { row: DatabaseRow; document: Document }) => {
+            // Update local state with the new row
+            this.rows.update((rows: DatabaseRow[]) => [...rows, row]);
+            // Update total count to hide empty state
+            this.totalCount.update((count: number) => count + 1);
+          },
+          error: (err: unknown) => {
+            console.error('Failed to add row with document:', err);
+            alert('Impossible d\'ajouter une ligne');
+          },
+        });
+    } else {
+      // For regular databases, just create the row
+      this.databaseService
+        .addRow({
+          databaseId: this.databaseId,
+          cells: emptyCells,
+          row_order: newRowOrder,
+        })
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (newRow: DatabaseRow) => {
+            this.rows.update((rows: DatabaseRow[]) => [...rows, newRow]);
+            // Update total count to hide empty state
+            this.totalCount.update((count: number) => count + 1);
+          },
+          error: (err: unknown) => {
+            console.error('Failed to add row:', err);
+            alert('Impossible d\'ajouter une ligne');
+          },
+        });
+    }
   }
 
   /**
@@ -366,6 +403,30 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
         return row;
       })
     );
+
+    // Check if this is a title column update -> sync with linked document
+    const titleColumn = this.databaseConfig().columns.find(
+      (col: DatabaseColumn) => col.id === columnId && (col.name.toLowerCase().includes('title') || col.name.toLowerCase().includes('titre'))
+    );
+
+    if (titleColumn && typeof value === 'string') {
+      // Get the linked document for this row and update its title
+      this.databaseService.getRowDocument(this.databaseId, rowId)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (linkedDoc: Document | null) => {
+            if (linkedDoc) {
+              // Update the document title
+              this.documentService.updateDocument(linkedDoc.id, { title: value })
+                .pipe(takeUntil(this.destroy$))
+                .subscribe({
+                  error: (err: unknown) => console.error('Failed to sync document title:', err)
+                });
+            }
+          },
+          error: (err: unknown) => console.error('Failed to get linked document:', err)
+        });
+    }
 
     // Persist to database
     this.databaseService
@@ -403,6 +464,8 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.rows.update((rows) => rows.filter((row) => !rowIds.includes(row.id)));
+          // Update total count
+          this.totalCount.update((count: number) => count - rowIds.length);
         },
         error: (err) => {
           console.error('Failed to delete rows:', err);
@@ -830,6 +893,37 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     this.onDeleteRows(selectedIds);
     // Clear selection after deletion
     this.selectedRowIds.set(new Set());
+  }
+
+  /**
+   * Open the document linked to a database row (Notion-style)
+   * This allows users to click on a row and open it as a full page with properties and content
+   */
+  onOpenRowDocument(rowId: string): void {
+    this.databaseService
+      .getRowDocument(this.databaseId, rowId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (document: Document | null) => {
+          if (document) {
+            // Navigate to the existing document
+            this.router.navigate(['/documents', document.id]);
+          } else {
+            // Document doesn't exist yet - this shouldn't happen with the new flow
+            // but we can handle it gracefully
+            console.warn('No document found for row:', rowId);
+            this.snackBar.open('Document introuvable pour cette ligne', 'OK', {
+              duration: 3000,
+            });
+          }
+        },
+        error: (err: unknown) => {
+          console.error('Failed to get row document:', err);
+          this.snackBar.open('Erreur lors de l\'ouverture du document', 'OK', {
+            duration: 3000,
+          });
+        },
+      });
   }
 
   /**

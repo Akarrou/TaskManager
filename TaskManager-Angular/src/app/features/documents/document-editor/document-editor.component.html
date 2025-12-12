@@ -45,6 +45,129 @@
     </span>
   </div>
 
+  <!-- Database Properties Section -->
+  @if (isDatabaseRowDocument()) {
+    <div class="database-properties-section">
+      <div class="properties-header" (click)="togglePropertiesExpanded()">
+        <h3 class="properties-title">Propriétés de la tâche</h3>
+        <div class="properties-toggle" [class.expanded]="propertiesExpanded()">
+          <span class="toggle-icon">▼</span>
+        </div>
+      </div>
+
+      @if (propertiesExpanded()) {
+        <div class="properties-content">
+          @if (isLoadingDatabaseProperties()) {
+            <div class="properties-loading">
+              <span class="loading-spinner"></span>
+              Chargement des propriétés...
+            </div>
+          } @else if (databaseMetadata() && databaseRow()) {
+            <div class="properties-grid">
+          @for (column of databaseMetadata()!.config.columns; track column.id) {
+            @if (column.visible !== false && !isTitleColumn(column.name)) {
+              <div class="property-row" [class.property-row-narrow]="isNarrowColumn(column.name)" [class.property-row-wide]="isDescriptionColumn(column.name)">
+                <label class="property-label">{{ column.name }}</label>
+                <div class="property-value">
+                  @switch (column.type) {
+                    @case ('text') {
+                      @if (isDescriptionColumn(column.name)) {
+                        <!-- Description column: use textarea -->
+                        <textarea
+                          [value]="databaseRow()!.cells[column.id] || ''"
+                          (change)="onUpdateDatabaseProperty(column.id, $any($event.target).value)"
+                          class="property-textarea"
+                          rows="3"
+                          placeholder="Saisir une description..."
+                        ></textarea>
+                      } @else {
+                        <!-- Regular text input -->
+                        <input
+                          type="text"
+                          [value]="databaseRow()!.cells[column.id] || ''"
+                          (change)="onUpdateDatabaseProperty(column.id, $any($event.target).value)"
+                          class="property-input"
+                          placeholder="Saisir du texte..."
+                        />
+                      }
+                    }
+                    @case ('number') {
+                      <input
+                        type="number"
+                        [value]="databaseRow()!.cells[column.id] || 0"
+                        (change)="onUpdateDatabaseProperty(column.id, toNumber($any($event.target).value))"
+                        class="property-input"
+                        placeholder="0"
+                      />
+                    }
+                    @case ('select') {
+                      <select
+                        [value]="databaseRow()!.cells[column.id] || ''"
+                        (change)="onUpdateDatabaseProperty(column.id, $any($event.target).value)"
+                        class="property-select"
+                      >
+                        <option value="">Sélectionner...</option>
+                        @for (choice of column.options?.choices || []; track choice.id) {
+                          <option [value]="choice.id">{{ choice.label }}</option>
+                        }
+                      </select>
+                    }
+                    @case ('date') {
+                      <input
+                        type="date"
+                        [value]="databaseRow()!.cells[column.id] || ''"
+                        (change)="onUpdateDatabaseProperty(column.id, $any($event.target).value)"
+                        class="property-input"
+                      />
+                    }
+                    @case ('checkbox') {
+                      <input
+                        type="checkbox"
+                        [checked]="!!databaseRow()!.cells[column.id]"
+                        (change)="onUpdateDatabaseProperty(column.id, $any($event.target).checked)"
+                        class="property-checkbox"
+                      />
+                    }
+                    @case ('url') {
+                      <input
+                        type="url"
+                        [value]="databaseRow()!.cells[column.id] || ''"
+                        (change)="onUpdateDatabaseProperty(column.id, $any($event.target).value)"
+                        class="property-input"
+                        placeholder="https://..."
+                      />
+                    }
+                    @case ('email') {
+                      <input
+                        type="email"
+                        [value]="databaseRow()!.cells[column.id] || ''"
+                        (change)="onUpdateDatabaseProperty(column.id, $any($event.target).value)"
+                        class="property-input"
+                        placeholder="email@exemple.com"
+                      />
+                    }
+                    @case ('multi-select') {
+                      <div class="multi-select-container">
+                        <span class="multi-select-placeholder">
+                          {{ getCellAsArray(databaseRow()!.cells[column.id]).join(', ') || 'Aucune sélection' }}
+                        </span>
+                      </div>
+                    }
+                    @default {
+                      <span class="property-text">{{ databaseRow()!.cells[column.id] }}</span>
+                    }
+                  }
+                </div>
+              </div>
+            }
+          }
+        </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
   <!-- Editor Content -->
   <div
     class="editor-wrapper"

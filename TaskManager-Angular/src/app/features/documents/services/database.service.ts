@@ -24,6 +24,7 @@ import {
   SelectChoice,
 } from '../models/database.model';
 import { CsvImportResult, CsvImportError } from '../models/csv-import.model';
+import { DocumentService, Document } from './document.service';
 
 /**
  * DatabaseService
@@ -36,6 +37,7 @@ import { CsvImportResult, CsvImportError } from '../models/csv-import.model';
 })
 export class DatabaseService {
   private supabase = inject(SupabaseService);
+  private documentService = inject(DocumentService);
 
   private get client() {
     return this.supabase.client;
@@ -76,14 +78,14 @@ export class DatabaseService {
   }
 
   /**
-   * Create a new database metadata (WITHOUT creating PostgreSQL table yet - lazy creation)
-   * The table will be created later via ensureTableExists() when first needed (CSV import or add column)
+   * Create a new database metadata AND create PostgreSQL table immediately
+   * This ensures the table exists right away for adding rows
    */
   createDatabase(request: CreateDatabaseRequest): Observable<CreateDatabaseResponse> {
     const databaseId = this.generateDatabaseId();
     const tableName = this.generateTableName(databaseId);
 
-    // Insert metadata record WITHOUT creating PostgreSQL table
+    // Step 1: Insert metadata record
     return from(
       this.client
         .from('document_databases')
@@ -97,6 +99,8 @@ export class DatabaseService {
         .select()
         .single()
     ).pipe(
+      // Step 2: Create PostgreSQL table immediately
+      switchMap(() => this.ensureTableExists(databaseId)),
       map(() => {
         return {
           databaseId,
@@ -104,7 +108,7 @@ export class DatabaseService {
         };
       }),
       catchError(error => {
-        console.error('[createDatabase] Échec création metadata:', error);
+        console.error('[createDatabase] Échec création database:', error);
         return throwError(() => error);
       })
     );
@@ -421,6 +425,82 @@ export class DatabaseService {
       }),
       catchError(error => {
         console.error('Failed to update row order:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Add a row and create a linked document (for Notion-style database pages)
+   * This creates both the database row and a document that represents that row.
+   * The document will have database_id and database_row_id set to link back to the row.
+   */
+  addRowWithDocument(
+    databaseId: string,
+    cells: Record<string, CellValue>,
+    projectId?: string,
+    rowOrder?: number
+  ): Observable<{ row: DatabaseRow; document: Document }> {
+    // First, add the row to get its ID
+    return this.addRow({
+      databaseId,
+      cells,
+      row_order: rowOrder,
+    }).pipe(
+      switchMap((row: DatabaseRow) => {
+        // Extract title from the first visible text column
+        return this.getDatabaseMetadata(databaseId).pipe(
+          switchMap((metadata: DocumentDatabase) => {
+            // Find first visible text/title column
+            const titleColumn = metadata.config.columns.find(
+              (col: DatabaseColumn) => col.visible && (col.type === 'text' || col.name.toLowerCase().includes('title'))
+            );
+
+            const title = titleColumn
+              ? (cells[titleColumn.id] as string) || 'Sans titre'
+              : 'Sans titre';
+
+            // Create the linked document
+            return this.documentService.createDatabaseRowDocument({
+              title,
+              database_id: databaseId,
+              database_row_id: row.id,
+              project_id: projectId,
+            }).pipe(
+              map((document: Document) => ({ row, document }))
+            );
+          })
+        );
+      }),
+      catchError((error: unknown) => {
+        console.error('Failed to add row with document:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Get the document linked to a database row
+   * Returns null if no document is linked to this row
+   */
+  getRowDocument(
+    databaseId: string,
+    rowId: string
+  ): Observable<Document | null> {
+    return from(
+      this.client
+        .from('documents')
+        .select('*')
+        .eq('database_id', databaseId)
+        .eq('database_row_id', rowId)
+        .maybeSingle()
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return response.data as Document | null;
+      }),
+      catchError(error => {
+        console.error('Failed to get row document:', error);
         return throwError(() => error);
       })
     );

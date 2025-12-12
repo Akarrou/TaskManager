@@ -361,6 +361,10 @@
                             <mat-icon>more_horiz</mat-icon>
                           </button>
                           <mat-menu #rowMenu="matMenu">
+                            <button mat-menu-item (click)="onOpenRowDocument(row.id)">
+                              <mat-icon>open_in_new</mat-icon>
+                              <span>Ouvrir</span>
+                            </button>
                             <button mat-menu-item (click)="onDeleteRows([row.id])">
                               <mat-icon>delete</mat-icon>
                               <span>Supprimer</span>

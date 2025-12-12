@@ -23,6 +23,10 @@ export interface DocumentState {
   isSaving: boolean;
   /** Timestamp of last successful save */
   lastSaved: Date | null;
+  /** Database ID if this document represents a database row (Notion-style) */
+  database_id?: string | null;
+  /** Database row ID if this document represents a database row */
+  database_row_id?: string | null;
 }
 
 /**
