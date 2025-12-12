@@ -42,17 +42,20 @@ export class KanbanBoardComponent {
   taskDelete = output<string>();
 
   statusColumns: { id: string; title: string; color: string; bgColor: string }[] = [
+    { id: 'backlog', title: 'Backlog', color: '#6b7280', bgColor: '#f3f4f6' },
     { id: 'pending', title: 'À faire', color: '#f59e0b', bgColor: '#fef9c3' },
     { id: 'in_progress', title: 'En cours', color: '#0ea5e9', bgColor: '#e0f2fe' },
     { id: 'completed', title: 'Terminées', color: '#22c55e', bgColor: '#dcfce7' },
-    { id: 'cancelled', title: 'Annulées', color: '#6b7280', bgColor: '#f3f4f6' }
+    { id: 'cancelled', title: 'Annulées', color: '#6b7280', bgColor: '#f3f4f6' },
+    { id: 'blocked', title: 'Bloquée', color: '#dc2626', bgColor: '#fee2e2' },
+    { id: 'awaiting_info', title: 'En attente d\'infos', color: '#a855f7', bgColor: '#f3e8ff' }
   ];
 
   priorityColumns: { id: string; title: string; color: string; bgColor: string }[] = [
-    { id: 'urgent', title: 'Urgente', color: '#dc2626', bgColor: '#fee2e2' },
-    { id: 'high', title: 'Haute', color: '#ef4444', bgColor: '#fee2e2' },
+    { id: 'low', title: 'Faible', color: '#818cf8', bgColor: '#e0e7ff' },
     { id: 'medium', title: 'Moyenne', color: '#f97316', bgColor: '#ffedd5' },
-    { id: 'low', title: 'Basse', color: '#818cf8', bgColor: '#e0e7ff' }
+    { id: 'high', title: 'Haute', color: '#ef4444', bgColor: '#fee2e2' },
+    { id: 'critical', title: 'Critique', color: '#dc2626', bgColor: '#fee2e2' }
   ];
 
   columns = computed<KanbanColumn[]>(() => {
@@ -126,7 +129,8 @@ export class KanbanBoardComponent {
 
   getPriorityIcon(priority: string): string {
     switch (priority) {
-      case 'urgent': return 'priority_high';
+      case 'critical': return 'priority_high';
+      case 'urgent': return 'priority_high'; // Legacy support
       case 'high': return 'arrow_upward';
       case 'medium': return 'remove';
       case 'low': return 'arrow_downward';

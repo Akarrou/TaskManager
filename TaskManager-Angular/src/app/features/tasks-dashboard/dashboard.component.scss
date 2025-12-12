@@ -356,37 +356,64 @@
   font-weight: v.$font-weight-medium;
   text-transform: capitalize;
 
-  // Hardcoded colors for badges as they are specific combinations
-  &--status-in-progress {
-    background-color: #e0f2fe;
-    color: #0369a1;
-    border: 1px solid #bae6fd;
+  // Status badges - Updated with all 7 statuses
+  &--status-backlog {
+    background-color: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
   }
   &--status-pending {
     background-color: #fef9c3;
     color: #b45309;
     border: 1px solid #fde047;
   }
+  &--status-in_progress {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+  }
   &--status-completed {
     background-color: #dcfce7;
     color: #15803d;
     border: 1px solid #bbf7d0;
   }
-
-  &--priority-high {
+  &--status-cancelled {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+  }
+  &--status-blocked {
     background-color: #fee2e2;
     color: #b91c1c;
     border: 1px solid #fca5a5;
+  }
+  &--status-awaiting_info {
+    background-color: #f3e8ff;
+    color: #7c3aed;
+    border: 1px solid #e9d5ff;
+  }
+
+  // Priority badges - Updated with all 4 priorities
+  &--priority-low {
+    background-color: #e0e7ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
   }
   &--priority-medium {
     background-color: #ffedd5;
     color: #c2410c;
     border: 1px solid #fdba74;
   }
-  &--priority-low {
-    background-color: #e0e7ff;
-    color: #4338ca;
-    border: 1px solid #c7d2fe;
+  &--priority-high {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+  }
+  &--priority-critical {
+    background-color: #fecaca;
+    color: #991b1b;
+    border: 1px solid #f87171;
+    font-weight: v.$font-weight-bold;
   }
 }
 

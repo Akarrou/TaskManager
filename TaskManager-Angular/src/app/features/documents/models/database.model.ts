@@ -519,10 +519,13 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     color: 'yellow',
     options: {
       choices: [
-        { id: 'pending', label: 'Pending', color: 'bg-gray-200' },
-        { id: 'in-progress', label: 'In Progress', color: 'bg-blue-200' },
-        { id: 'completed', label: 'Completed', color: 'bg-green-200' },
-        { id: 'blocked', label: 'Blocked', color: 'bg-red-200' },
+        { id: 'backlog', label: 'Backlog', color: 'bg-gray-200' },
+        { id: 'pending', label: 'À faire', color: 'bg-yellow-200' },
+        { id: 'in_progress', label: 'En cours', color: 'bg-blue-200' },
+        { id: 'completed', label: 'Terminée', color: 'bg-green-200' },
+        { id: 'cancelled', label: 'Annulée', color: 'bg-gray-300' },
+        { id: 'blocked', label: 'Bloquée', color: 'bg-red-200' },
+        { id: 'awaiting_info', label: 'En attente d\'infos', color: 'bg-purple-200' },
       ],
     },
   },
@@ -537,10 +540,10 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     color: 'red',
     options: {
       choices: [
-        { id: 'low', label: 'Low', color: 'bg-gray-100' },
-        { id: 'medium', label: 'Medium', color: 'bg-yellow-200' },
-        { id: 'high', label: 'High', color: 'bg-orange-200' },
-        { id: 'critical', label: 'Critical', color: 'bg-red-300' },
+        { id: 'low', label: 'Faible', color: 'bg-gray-100' },
+        { id: 'medium', label: 'Moyenne', color: 'bg-yellow-200' },
+        { id: 'high', label: 'Haute', color: 'bg-orange-200' },
+        { id: 'critical', label: 'Critique', color: 'bg-red-300' },
       ],
     },
   },

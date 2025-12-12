@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
+import { getStatusLabel, getPriorityLabel } from '../../models/task-constants';
 
 export interface SearchFilters {
   searchText: string;
@@ -46,31 +47,34 @@ export interface SearchFilters {
         <!-- Filtre par statut -->
         <div class="filter-group">
           <label class="filter-label">Statut</label>
-          <select 
+          <select
             class="filter-select"
             [(ngModel)]="statusFilter"
             (change)="onFilterChange()"
             aria-label="Filtrer par statut">
             <option value="">Tous</option>
-            <option value="pending">En attente</option>
+            <option value="backlog">Backlog</option>
+            <option value="pending">À faire</option>
             <option value="in_progress">En cours</option>
             <option value="completed">Terminé</option>
             <option value="cancelled">Annulé</option>
+            <option value="blocked">Bloqué</option>
+            <option value="awaiting_info">En attente d'infos</option>
           </select>
         </div>
         <!-- Filtre par priorité -->
         <div class="filter-group">
           <label class="filter-label">Priorité</label>
-          <select 
+          <select
             class="filter-select priority-select"
             [(ngModel)]="priorityFilter"
             (change)="onFilterChange()"
             aria-label="Filtrer par priorité">
             <option value="">Toutes</option>
-            <option value="low">Basse</option>
+            <option value="low">Faible</option>
             <option value="medium">Moyenne</option>
             <option value="high">Haute</option>
-            <option value="urgent">Urgente</option>
+            <option value="critical">Critique</option>
           </select>
         </div>
         <!-- Filtre par environnement -->
@@ -323,23 +327,11 @@ export class TaskSearchComponent implements OnChanges {
   }
 
   getStatusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      pending: 'En attente',
-      in_progress: 'En cours',
-      completed: 'Terminé',
-      cancelled: 'Annulé'
-    };
-    return labels[status] || status;
+    return getStatusLabel(status);
   }
 
   getPriorityLabel(priority: string): string {
-    const labels: Record<string, string> = {
-      low: 'Basse',
-      medium: 'Moyenne',
-      high: 'Haute',
-      urgent: 'Urgente'
-    };
-    return labels[priority] || priority;
+    return getPriorityLabel(priority);
   }
 
   private emitFilters() {

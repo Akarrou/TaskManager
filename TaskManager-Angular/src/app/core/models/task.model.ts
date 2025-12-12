@@ -7,6 +7,18 @@
  *
  * The TaskDatabaseService provides a convertEntryToLegacyTask() method
  * to convert from the new TaskEntry format to this legacy format.
+ *
+ * IMPORTANT: This interface maintains backward compatibility.
+ * - Status values: 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled'
+ * - Priority values: 'low' | 'medium' | 'high' | 'urgent'
+ *
+ * New TaskEntry model uses:
+ * - Status: 'backlog' | 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'blocked' | 'awaiting_info'
+ * - Priority: 'low' | 'medium' | 'high' | 'critical'
+ *
+ * Conversion happens via TaskDatabaseService methods:
+ * - normalizeStatus() and normalizePriority() for reading from database
+ * - mapStatusToLegacy() and mapPriorityToLegacy() for converting to legacy format
  */
 
 export interface ISubtask {

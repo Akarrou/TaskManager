@@ -63,6 +63,9 @@ export const DashboardStatsStore = signalStore(
       inProgress: 0,
       completed: 0,
       blocked: 0,
+      backlog: 0,
+      awaitingInfo: 0,
+      cancelled: 0,
       completionRate: 0
     },
     documentStats: {
@@ -201,6 +204,9 @@ export const DashboardStatsStore = signalStore(
           inProgress: 0,
           completed: 0,
           blocked: 0,
+          backlog: 0,
+          awaitingInfo: 0,
+          cancelled: 0,
           completionRate: 0
         },
         documentStats: {

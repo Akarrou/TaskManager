@@ -24,6 +24,7 @@ import { CalendarViewComponent } from '../../shared/components/calendar-view/cal
 import { TimelineViewComponent } from '../../shared/components/timeline-view/timeline-view.component';
 import { FabStore } from '../../core/stores/fab.store';
 import { DashboardStatsStore } from '../../core/stores/dashboard-stats.store';
+import { getStatusLabel, getPriorityLabel } from '../../shared/models/task-constants';
 
 @Component({
   selector: 'app-tasks-dashboard',
@@ -281,10 +282,13 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
 
   getTaskStatusIcon(status: string): string {
     switch (status) {
+      case 'backlog': return 'inventory_2';
       case 'pending': return 'hourglass_empty';
       case 'in_progress': return 'sync';
       case 'completed': return 'check_circle_outline';
       case 'cancelled': return 'cancel';
+      case 'blocked': return 'block';
+      case 'awaiting_info': return 'help_outline';
       default: return 'help_outline';
     }
   }
@@ -445,23 +449,11 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
   }
 
   getStatusLabel(status: string): string {
-    const statusMap: { [key: string]: string } = {
-      pending: 'En attente',
-      in_progress: 'En cours',
-      completed: 'Terminée',
-      cancelled: 'Annulée'
-    };
-    return statusMap[status] || status;
+    return getStatusLabel(status);
   }
 
   getPriorityLabel(priority: string): string {
-    const priorityMap: { [key: string]: string } = {
-      low: 'Faible',
-      medium: 'Moyenne',
-      high: 'Élevée',
-      urgent: 'Urgente'
-    };
-    return priorityMap[priority] || priority;
+    return getPriorityLabel(priority);
   }
 
   private buildTaskTree(tasks: Task[]): any[] {

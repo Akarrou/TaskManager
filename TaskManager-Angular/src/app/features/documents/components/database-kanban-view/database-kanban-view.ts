@@ -133,8 +133,11 @@ export class DatabaseKanbanView {
   getChoiceColor(color: string): string {
     // Map Tailwind color classes to actual colors
     const colorMap: Record<string, string> = {
+      'bg-gray-100': '#f3f4f6',
       'bg-gray-200': '#e5e7eb',
+      'bg-gray-300': '#d1d5db',
       'bg-red-200': '#fecaca',
+      'bg-red-300': '#fca5a5',
       'bg-orange-200': '#fed7aa',
       'bg-yellow-200': '#fef08a',
       'bg-green-200': '#bbf7d0',

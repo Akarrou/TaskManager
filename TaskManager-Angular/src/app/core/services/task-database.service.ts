@@ -13,6 +13,7 @@ import {
 } from '../../features/documents/models/database.model';
 import { DatabaseService } from '../../features/documents/services/database.service';
 import { Task } from '../models/task.model';
+import { TaskStatus, TaskPriority, LEGACY_STATUS_MAP, LEGACY_PRIORITY_MAP } from '../../shared/models/task-constants';
 
 /**
  * TaskEntry - Normalized task entry from database rows
@@ -27,8 +28,8 @@ export interface TaskEntry {
   // Standard task properties (mapped from columns)
   title: string;
   description?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'blocked';
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  status: TaskStatus;            // Now using imported TaskStatus type
+  priority: TaskPriority;        // Now using imported TaskPriority type
   type: 'epic' | 'feature' | 'task';
   assigned_to?: string;
   due_date?: string;
@@ -60,6 +61,9 @@ export interface TaskStats {
   inProgress: number;
   completed: number;
   blocked: number;
+  backlog: number;        // NEW: Count of tasks in backlog
+  awaitingInfo: number;   // NEW: Count of tasks awaiting information
+  cancelled: number;      // NEW: Count of cancelled tasks
   completionRate: number;
 }
 
@@ -248,18 +252,24 @@ export class TaskDatabaseService {
    */
   getTaskStats(entries: TaskEntry[]): TaskStats {
     const total = entries.length;
+    const backlog = entries.filter(e => e.status === 'backlog').length;
     const pending = entries.filter(e => e.status === 'pending').length;
     const inProgress = entries.filter(e => e.status === 'in_progress').length;
     const completed = entries.filter(e => e.status === 'completed').length;
     const blocked = entries.filter(e => e.status === 'blocked').length;
+    const awaitingInfo = entries.filter(e => e.status === 'awaiting_info').length;
+    const cancelled = entries.filter(e => e.status === 'cancelled').length;
     const completionRate = total > 0 ? (completed / total) * 100 : 0;
 
     return {
       total,
+      backlog,
       pending,
       inProgress,
       completed,
       blocked,
+      awaitingInfo,
+      cancelled,
       completionRate
     };
   }
@@ -296,6 +306,9 @@ export class TaskDatabaseService {
           inProgress: 0,
           completed: 0,
           blocked: 0,
+          backlog: 0,
+          awaitingInfo: 0,
+          cancelled: 0,
           completionRate: 0
         });
       })
@@ -394,13 +407,22 @@ export class TaskDatabaseService {
 
   /**
    * Normalize status value to TaskEntry status enum
+   * Supports English, French, and legacy values for backward compatibility
    */
-  private normalizeStatus(value: string | null | undefined): TaskEntry['status'] {
+  private normalizeStatus(value: string | null | undefined): TaskStatus {
     if (!value) return 'pending';
 
     const normalized = value.toLowerCase().replace(/\s+/g, '-');
 
+    // Check legacy mappings first
+    if (LEGACY_STATUS_MAP[normalized]) {
+      return LEGACY_STATUS_MAP[normalized];
+    }
+
+    // Direct mappings
     switch (normalized) {
+      case 'backlog':
+        return 'backlog';
       case 'pending':
       case 'en-attente':
       case 'à-faire':
@@ -414,22 +436,37 @@ export class TaskDatabaseService {
       case 'terminée':
       case 'done':
         return 'completed';
+      case 'cancelled':
+      case 'annulée':
+        return 'cancelled';
       case 'blocked':
       case 'bloquée':
         return 'blocked';
+      case 'awaiting-info':
+      case 'awaiting_info':
+      case 'en-attente-d-infos':
+        return 'awaiting_info';
       default:
+        console.warn(`Unknown status value: ${value}, defaulting to 'pending'`);
         return 'pending';
     }
   }
 
   /**
    * Normalize priority value to TaskEntry priority enum
+   * Supports English, French, and legacy values for backward compatibility
    */
-  private normalizePriority(value: string | null | undefined): TaskEntry['priority'] {
+  private normalizePriority(value: string | null | undefined): TaskPriority {
     if (!value) return 'medium';
 
     const normalized = value.toLowerCase();
 
+    // Check legacy mappings first
+    if (LEGACY_PRIORITY_MAP[normalized]) {
+      return LEGACY_PRIORITY_MAP[normalized];
+    }
+
+    // Direct mappings
     switch (normalized) {
       case 'low':
       case 'faible':
@@ -442,12 +479,13 @@ export class TaskDatabaseService {
       case 'high':
       case 'haute':
       case 'élevée':
+      case 'elevee':
         return 'high';
       case 'critical':
       case 'critique':
-      case 'urgent':
         return 'critical';
       default:
+        console.warn(`Unknown priority value: ${value}, defaulting to 'medium'`);
         return 'medium';
     }
   }
@@ -598,9 +636,11 @@ export class TaskDatabaseService {
 
   /**
    * Map TaskEntry status to legacy Task status
+   * Maps new status values to legacy format for backward compatibility
    */
-  private mapStatusToLegacy(status: TaskEntry['status']): Task['status'] {
+  private mapStatusToLegacy(status: TaskStatus): Task['status'] {
     switch (status) {
+      case 'backlog':
       case 'pending':
         return 'pending';
       case 'in_progress':
@@ -608,7 +648,10 @@ export class TaskDatabaseService {
       case 'completed':
         return 'completed';
       case 'blocked':
-        return 'cancelled'; // Map blocked to cancelled as legacy doesn't have blocked
+      case 'cancelled':
+        return 'cancelled';
+      case 'awaiting_info':
+        return 'pending'; // Map awaiting_info to pending in legacy
       default:
         return 'pending';
     }
@@ -616,8 +659,9 @@ export class TaskDatabaseService {
 
   /**
    * Map TaskEntry priority to legacy Task priority
+   * Maps new priority values to legacy format for backward compatibility
    */
-  private mapPriorityToLegacy(priority: TaskEntry['priority']): Task['priority'] {
+  private mapPriorityToLegacy(priority: TaskPriority): Task['priority'] {
     switch (priority) {
       case 'low':
         return 'low';

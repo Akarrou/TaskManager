@@ -258,6 +258,12 @@
       height: 16px;
     }
 
+    &.priority-critical {
+      color: #dc2626;
+      background: #fee2e2;
+      font-weight: 700;
+    }
+
     &.priority-urgent {
       color: #dc2626;
       background: #fee2e2;
