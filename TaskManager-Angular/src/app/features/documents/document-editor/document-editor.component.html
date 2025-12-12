@@ -36,6 +36,18 @@
         }
       }
     </div>
+
+    <!-- Properties toggle button (only for task documents) -->
+    @if (isDatabaseRowDocument()) {
+      <button
+        class="properties-toggle-button"
+        (click)="togglePropertiesPanel()"
+        [class.active]="propertiesPanelOpen()"
+        title="Ouvrir les propriétés"
+      >
+        <mat-icon>tune</mat-icon>
+      </button>
+    }
   </div>
 
   <!-- Save Status Indicator (below header, aligned right) -->
@@ -51,86 +63,6 @@
       • Non sauvegardé
     </span>
   </div>
-
-  <!-- Database Properties Section -->
-  @if (isDatabaseRowDocument()) {
-    <div class="database-properties-section">
-      <div class="properties-header" (click)="togglePropertiesExpanded()">
-        <h3 class="properties-title">Propriétés de la tâche</h3>
-        <div class="properties-toggle" [class.expanded]="propertiesExpanded()">
-          <span class="toggle-icon">▼</span>
-        </div>
-      </div>
-
-      @if (propertiesExpanded()) {
-        <div class="properties-content">
-          @if (isLoadingDatabaseProperties()) {
-            <div class="properties-loading">
-              <span class="loading-spinner"></span>
-              Chargement des propriétés...
-            </div>
-          } @else if (databaseMetadata() && databaseRow()) {
-            <div class="properties-list">
-          @for (column of databaseMetadata()!.config.columns; track column.id) {
-            @if (column.visible !== false && !isTitleColumn(column.name)) {
-              <div class="property-item">
-                <div class="property-label-container">
-                  <mat-icon class="property-icon">{{ getPropertyIcon(column.type) }}</mat-icon>
-                  <span class="property-label">{{ column.name }}</span>
-                </div>
-
-                <!-- Click-to-edit: Display value or edit input -->
-                @if (!isEditingProperty(column.id)) {
-                  <button
-                    class="property-value-display"
-                    (click)="startEditingProperty(column.id, databaseRow()!.cells[column.id])"
-                  >
-                    {{ getPropertyDisplayValue(column, databaseRow()!.cells[column.id]) }}
-                  </button>
-                } @else {
-                  @if (column.type === 'select') {
-                    <select
-                      #propertyInput
-                      class="property-input-edit"
-                      [value]="tempPropertyValue() || ''"
-                      (change)="tempPropertyValue.set($any($event.target).value); saveProperty(column.id)"
-                      (blur)="saveProperty(column.id)"
-                      (keydown.escape)="cancelPropertyEdit()"
-                    >
-                      <option value="">Sélectionner...</option>
-                      @for (choice of column.options?.choices || []; track choice.id) {
-                        <option [value]="choice.id">{{ choice.label }}</option>
-                      }
-                    </select>
-                  } @else if (column.type === 'checkbox') {
-                    <input
-                      type="checkbox"
-                      class="property-checkbox-edit"
-                      [checked]="!!tempPropertyValue()"
-                      (change)="tempPropertyValue.set($any($event.target).checked); saveProperty(column.id)"
-                    />
-                  } @else {
-                    <input
-                      #propertyInput
-                      [type]="column.type === 'number' ? 'number' : column.type === 'date' ? 'date' : column.type === 'url' ? 'url' : column.type === 'email' ? 'email' : 'text'"
-                      class="property-input-edit"
-                      [value]="tempPropertyValue() || ''"
-                      (input)="tempPropertyValue.set(column.type === 'number' ? toNumber($any($event.target).value) : $any($event.target).value)"
-                      (blur)="saveProperty(column.id)"
-                      (keydown.enter)="saveProperty(column.id)"
-                      (keydown.escape)="cancelPropertyEdit()"
-                    />
-                  }
-                }
-              </div>
-            }
-          }
-        </div>
-          }
-        </div>
-      }
-    </div>
-  }
 
   <!-- Editor Content -->
   <div
@@ -166,4 +98,99 @@
     [style.left.px]="bubbleMenuPosition().left"
     class="bubble-menu-wrapper">
   </app-bubble-menu>
+
+  <!-- Properties Panel Backdrop (overlay semi-transparent) -->
+  @if (propertiesPanelOpen() && isDatabaseRowDocument()) {
+    <div
+      class="properties-backdrop"
+      (click)="togglePropertiesPanel()"
+    ></div>
+  }
+
+  <!-- Properties Panel (overlay fixe à droite) -->
+  @if (isDatabaseRowDocument()) {
+    <div
+      class="properties-panel"
+      [class.open]="propertiesPanelOpen()"
+    >
+      <!-- Header du panel -->
+      <div class="properties-panel-header">
+        <h3 class="properties-panel-title">Propriétés de la tâche</h3>
+        <button
+          class="properties-panel-close"
+          (click)="togglePropertiesPanel()"
+          title="Fermer"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <!-- Content du panel -->
+      <div class="properties-panel-content">
+        @if (isLoadingDatabaseProperties()) {
+          <div class="properties-loading">
+            <span class="loading-spinner"></span>
+            Chargement des propriétés...
+          </div>
+        } @else if (databaseMetadata() && databaseRow()) {
+          <div class="properties-list">
+            @for (column of databaseMetadata()!.config.columns; track column.id) {
+              @if (column.visible !== false && !isTitleColumn(column.name)) {
+                <div class="property-item">
+                  <div class="property-label-container">
+                    <mat-icon class="property-icon">{{ getPropertyIcon(column.type) }}</mat-icon>
+                    <span class="property-label">{{ column.name }}</span>
+                  </div>
+
+                  <!-- Click-to-edit: Display value or edit input -->
+                  @if (!isEditingProperty(column.id)) {
+                    <button
+                      class="property-value-display"
+                      (click)="startEditingProperty(column.id, databaseRow()!.cells[column.id])"
+                    >
+                      {{ getPropertyDisplayValue(column, databaseRow()!.cells[column.id]) }}
+                    </button>
+                  } @else {
+                    @if (column.type === 'select') {
+                      <select
+                        #propertyInput
+                        class="property-input-edit"
+                        [value]="tempPropertyValue() || ''"
+                        (change)="tempPropertyValue.set($any($event.target).value); saveProperty(column.id)"
+                        (blur)="saveProperty(column.id)"
+                        (keydown.escape)="cancelPropertyEdit()"
+                      >
+                        <option value="">Sélectionner...</option>
+                        @for (choice of column.options?.choices || []; track choice.id) {
+                          <option [value]="choice.id">{{ choice.label }}</option>
+                        }
+                      </select>
+                    } @else if (column.type === 'checkbox') {
+                      <input
+                        type="checkbox"
+                        class="property-checkbox-edit"
+                        [checked]="!!tempPropertyValue()"
+                        (change)="tempPropertyValue.set($any($event.target).checked); saveProperty(column.id)"
+                      />
+                    } @else {
+                      <input
+                        #propertyInput
+                        [type]="column.type === 'number' ? 'number' : column.type === 'date' ? 'date' : column.type === 'url' ? 'url' : column.type === 'email' ? 'email' : 'text'"
+                        class="property-input-edit"
+                        [value]="tempPropertyValue() || ''"
+                        (input)="tempPropertyValue.set(column.type === 'number' ? toNumber($any($event.target).value) : $any($event.target).value)"
+                        (blur)="saveProperty(column.id)"
+                        (keydown.enter)="saveProperty(column.id)"
+                        (keydown.escape)="cancelPropertyEdit()"
+                      />
+                    }
+                  }
+                </div>
+              }
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
 </div>

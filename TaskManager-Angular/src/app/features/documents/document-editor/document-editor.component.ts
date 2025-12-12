@@ -103,7 +103,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   databaseMetadata = signal<DocumentDatabase | null>(null);
   databaseRow = signal<DatabaseRow | null>(null);
   isLoadingDatabaseProperties = signal(false);
-  propertiesExpanded = signal(true); // Accordion state
+  propertiesPanelOpen = signal(false); // Panel overlay state
 
   // Editable properties (Notion-style click-to-edit)
   editingPropertyId = signal<string | null>(null);
@@ -522,10 +522,10 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Toggle the properties accordion
+   * Toggle the properties panel overlay
    */
-  togglePropertiesExpanded() {
-    this.propertiesExpanded.update((expanded: boolean) => !expanded);
+  togglePropertiesPanel() {
+    this.propertiesPanelOpen.update((open: boolean) => !open);
   }
 
   /**
