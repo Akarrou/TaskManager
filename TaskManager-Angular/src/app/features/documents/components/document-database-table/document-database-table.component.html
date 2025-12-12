@@ -83,6 +83,33 @@
           </button>
         </div>
 
+        <!-- Column visibility menu -->
+        <button
+          mat-stroked-button
+          [matMenuTriggerFor]="columnVisibilityMenu"
+          matTooltip="Gérer les colonnes">
+          <mat-icon>view_column</mat-icon>
+          Colonnes
+        </button>
+
+        <mat-menu #columnVisibilityMenu="matMenu">
+          <div class="column-visibility-menu" (click)="$event.stopPropagation()">
+            <div class="menu-header">
+              <span>Colonnes visibles</span>
+            </div>
+            @for (column of databaseConfig().columns; track column.id) {
+              <button mat-menu-item (click)="onToggleColumnVisibility(column.id)">
+                <mat-checkbox
+                  [checked]="column.visible"
+                  (click)="$event.stopPropagation()"
+                  (change)="onToggleColumnVisibility(column.id)">
+                  {{ column.name }}
+                </mat-checkbox>
+              </button>
+            }
+          </div>
+        </mat-menu>
+
         <!-- Bulk Actions (shown when rows are selected) -->
         @if (selectedCount() > 0) {
           <div class="bulk-actions">
@@ -217,18 +244,28 @@
                               <mat-icon>more_vert</mat-icon>
                             </button>
                             <mat-menu #columnMenu="matMenu">
-                              <button mat-menu-item (click)="onEditColumn(column.id)">
-                                <mat-icon>edit</mat-icon>
-                                <span>Modifier</span>
-                              </button>
+                              @if (!isColumnReadonly(column.id)) {
+                                <button mat-menu-item (click)="onEditColumn(column.id)">
+                                  <mat-icon>edit</mat-icon>
+                                  <span>Modifier</span>
+                                </button>
+                              }
+                              @if (isColumnReadonly(column.id) && canManageOptions(column.id)) {
+                                <button mat-menu-item (click)="onManageOptions(column.id)">
+                                  <mat-icon>tune</mat-icon>
+                                  <span>Gérer les options</span>
+                                </button>
+                              }
                               <button mat-menu-item (click)="onToggleColumnVisibility(column.id)">
                                 <mat-icon>visibility_off</mat-icon>
                                 <span>Masquer</span>
                               </button>
-                              <button mat-menu-item (click)="onDeleteColumn(column.id)">
-                                <mat-icon>delete</mat-icon>
-                                <span>Supprimer</span>
-                              </button>
+                              @if (!isColumnReadonly(column.id)) {
+                                <button mat-menu-item (click)="onDeleteColumn(column.id)">
+                                  <mat-icon>delete</mat-icon>
+                                  <span>Supprimer</span>
+                                </button>
+                              }
                             </mat-menu>
                           </div>
                         </th>
@@ -331,12 +368,13 @@
                                 }
                                 <select
                                   class="add-choice-select"
-                                  (change)="addChoiceToCell(row.id, column.id, $any($event.target).value); $any($event.target).value = ''; $event.stopPropagation()"
+                                  (change)="$any($event.target).value === '__create_new__' ? onCreateNewOption(row.id, column.id) : addChoiceToCell(row.id, column.id, $any($event.target).value); $any($event.target).value = ''; $event.stopPropagation()"
                                   (click)="$event.stopPropagation()">
                                   <option value="">+ Ajouter</option>
                                   @for (choice of getAvailableChoices(row.cells[column.id], column); track choice.id) {
                                     <option [value]="choice.id">{{ choice.label }}</option>
                                   }
+                                  <option value="__create_new__">✨ Créer une nouvelle option</option>
                                 </select>
                               </div>
                             } @else {

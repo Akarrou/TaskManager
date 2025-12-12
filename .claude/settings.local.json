@@ -77,7 +77,8 @@
       "Bash(docker compose restart:*)",
       "Bash(docker compose logs:*)",
       "Bash(pnpm list:*)",
-      "Bash(pnpm exec ng build:*)"
+      "Bash(pnpm exec ng build:*)",
+      "Bash(psql:*)"
     ]
   },
   "enableAllProjectMcpServers": false

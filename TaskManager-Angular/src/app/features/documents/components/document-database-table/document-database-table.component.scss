@@ -671,6 +671,30 @@
   }
 }
 
+// Column Visibility Menu
+.column-visibility-menu {
+  max-height: 400px;
+  overflow-y: auto;
+  min-width: 250px;
+
+  .menu-header {
+    padding: 8px 16px;
+    font-weight: 500;
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.87);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    margin-bottom: 4px;
+  }
+
+  button {
+    width: 100%;
+  }
+
+  ::ng-deep mat-checkbox {
+    pointer-events: none; // Click is handled by parent button
+  }
+}
+
 // Responsive
 @media (max-width: 768px) {
   .database-header {

@@ -34,6 +34,11 @@ import {
 import {
   CsvImportDialogComponent,
 } from '../csv-import-dialog/csv-import-dialog.component';
+import {
+  ManageOptionsDialogComponent,
+  ManageOptionsDialogData,
+  ManageOptionsDialogResult,
+} from '../manage-options-dialog/manage-options-dialog.component';
 import { CsvImportDialogData, CsvImportResult } from '../../models/csv-import.model';
 import { DatabaseFiltersComponent } from '../database-filters/database-filters.component';
 import { DatabaseKanbanView } from '../database-kanban-view/database-kanban-view';
@@ -533,6 +538,12 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     const column = this.databaseConfig().columns.find((col) => col.id === columnId);
     if (!column) return;
 
+    // Block editing of readonly columns
+    if (column.readonly) {
+      console.warn('Cannot edit readonly column:', column.name);
+      return;
+    }
+
     const existingColumnIds = this.databaseConfig()
       .columns.filter((col) => col.id !== columnId)
       .map((col) => col.id);
@@ -583,11 +594,84 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Manage options for select/multi-select columns
+   */
+  onManageOptions(columnId: string) {
+    const column = this.databaseConfig().columns.find((col) => col.id === columnId);
+    if (!column) return;
+
+    // Only for select/multi-select columns
+    if (column.type !== 'select' && column.type !== 'multi-select') {
+      console.warn('Can only manage options for select/multi-select columns');
+      return;
+    }
+
+    const dialogData: ManageOptionsDialogData = {
+      column,
+    };
+
+    const dialogRef = this.dialog.open(ManageOptionsDialogComponent, {
+      width: '600px',
+      data: dialogData,
+      disableClose: true,
+    });
+
+    dialogRef.afterClosed().subscribe((result: ManageOptionsDialogResult | undefined) => {
+      if (!result) return;
+
+      // Update column with new choices
+      const updatedColumn = {
+        ...column,
+        options: {
+          ...column.options,
+          choices: result.choices,
+        },
+      };
+
+      // Update column configuration (metadata only)
+      this.databaseService
+        .updateColumn({
+          databaseId: this.databaseId,
+          columnId,
+          updates: updatedColumn,
+        })
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            // Update config
+            this.databaseConfig.update((config) => ({
+              ...config,
+              columns: config.columns.map((col) =>
+                col.id === columnId ? updatedColumn : col
+              ),
+            }));
+
+            this.changeSubject.next();
+
+            this.snackBar.open('Options mises à jour avec succès', 'Fermer', {
+              duration: 3000,
+            });
+          },
+          error: (err) => {
+            console.error('Failed to update column options:', err);
+            alert('Impossible de mettre à jour les options');
+          },
+        });
+    });
+  }
+
+  /**
    * Delete a column
    */
   onDeleteColumn(columnId: string) {
     const column = this.databaseConfig().columns.find((col) => col.id === columnId);
     if (!column) return;
+
+    // Block deletion of readonly columns
+    if (column.readonly) {
+      console.warn('Cannot delete readonly column:', column.name);
+      return;
+    }
 
     const confirmDelete = confirm(
       `Supprimer la colonne "${column.name}" ? Toutes les données de cette colonne seront perdues.`
@@ -731,6 +815,14 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Check if a column is readonly (cannot be edited or deleted)
+   */
+  isColumnReadonly(columnId: string): boolean {
+    const column = this.databaseConfig().columns.find(col => col.id === columnId);
+    return column?.readonly === true;
+  }
+
+  /**
    * Handle cell click (for future inline editing enhancements)
    */
   onCellClick(rowId: string, columnId: string, event: Event): void {
@@ -833,6 +925,79 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Create a new option and add it to the multi-select cell
+   * Opens the manage options dialog
+   */
+  onCreateNewOption(rowId: string, columnId: string): void {
+    const column = this.databaseConfig().columns.find((col: DatabaseColumn) => col.id === columnId);
+    if (!column) return;
+
+    const dialogData: ManageOptionsDialogData = {
+      column,
+    };
+
+    const dialogRef = this.dialog.open(ManageOptionsDialogComponent, {
+      width: '600px',
+      data: dialogData,
+      disableClose: true,
+    });
+
+    dialogRef.afterClosed().subscribe((result: ManageOptionsDialogResult | undefined) => {
+      if (!result) return;
+
+      // Get the newly added choices (compare with original)
+      const originalChoiceIds = column.options?.choices?.map((c: SelectChoice) => c.id) || [];
+      const newChoices = result.choices.filter((c: SelectChoice) => !originalChoiceIds.includes(c.id));
+
+      // Update column with new choices
+      const updatedColumn = {
+        ...column,
+        options: {
+          ...column.options,
+          choices: result.choices,
+        },
+      };
+
+      // Update column configuration
+      this.databaseService
+        .updateColumn({
+          databaseId: this.databaseId,
+          columnId,
+          updates: updatedColumn,
+        })
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            // Update local config
+            this.databaseConfig.update((config: DatabaseConfig) => ({
+              ...config,
+              columns: config.columns.map((col: DatabaseColumn) =>
+                col.id === columnId ? updatedColumn : col
+              ),
+            }));
+
+            // If a new choice was added, add it to the current cell
+            if (newChoices.length > 0) {
+              // Add the most recently created choice to the cell
+              const lastNewChoice = newChoices[newChoices.length - 1];
+              this.addChoiceToCell(rowId, columnId, lastNewChoice.id);
+            }
+
+            this.changeSubject.next();
+
+            this.snackBar.open('Options mises à jour avec succès', 'Fermer', {
+              duration: 3000,
+            });
+          },
+          error: (err: Error) => {
+            console.error('Failed to update column options:', err);
+            alert('Impossible de mettre à jour les options');
+          },
+        });
+    });
+  }
+
+  /**
    * Prevent TipTap from intercepting keyboard events inside the table
    * This prevents the database block from being deleted when typing in cells
    */
@@ -884,7 +1049,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
    * Delete selected rows
    */
   onDeleteSelectedRows(): void {
-    const selectedIds = Array.from(this.selectedRowIds());
+    const selectedIds = Array.from(this.selectedRowIds()) as string[];
     if (selectedIds.length === 0) return;
 
     const confirmMessage = `Voulez-vous vraiment supprimer ${selectedIds.length} ligne(s) ?`;
@@ -1311,6 +1476,15 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     }
 
     this.saveCurrentViewConfig();
+  }
+
+  /**
+   * Check if column can have its options managed
+   */
+  canManageOptions(columnId: string): boolean {
+    const column = this.databaseConfig().columns.find((col: DatabaseColumn) => col.id === columnId);
+    if (!column) return false;
+    return column.type === 'select' || column.type === 'multi-select';
   }
 
   ngOnDestroy() {

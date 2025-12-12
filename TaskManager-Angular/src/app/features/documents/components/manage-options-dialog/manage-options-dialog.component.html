@@ -1,0 +1,84 @@
+<div class="manage-options-dialog">
+  <h2 mat-dialog-title>Gérer les options - {{ columnName() }}</h2>
+
+  <mat-dialog-content>
+    <div class="dialog-info">
+      <mat-icon>info_outline</mat-icon>
+      <span>Type de colonne : {{ columnType() }}</span>
+    </div>
+
+    <div class="choices-section">
+      <div class="choices-header">
+        <h3>Options disponibles</h3>
+        <button mat-stroked-button color="primary" (click)="addChoice()">
+          <mat-icon>add</mat-icon>
+          Ajouter une option
+        </button>
+      </div>
+
+      @if (choices().length === 0) {
+        <div class="empty-choices">
+          <mat-icon>label_off</mat-icon>
+          <p>Aucune option disponible</p>
+          <p class="hint">Cliquez sur "Ajouter une option" pour commencer</p>
+        </div>
+      } @else {
+        <div class="choices-list">
+          @for (choice of choices(); track choice.id) {
+            <div class="choice-item">
+              <div class="choice-color-preview" [ngClass]="choice.color"></div>
+
+              <mat-form-field appearance="outline" class="choice-label-field">
+                <mat-label>Nom de l'option</mat-label>
+                <input
+                  matInput
+                  [value]="choice.label"
+                  (input)="updateChoiceLabel(choice.id, $any($event.target).value)"
+                  placeholder="Nom de l'option"
+                />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="choice-color-field">
+                <mat-label>Couleur</mat-label>
+                <mat-select
+                  [value]="choice.color"
+                  (selectionChange)="updateChoiceColor(choice.id, $event.value)">
+                  @for (color of availableColors; track color.value) {
+                    <mat-option [value]="color.value">
+                      <div class="color-option">
+                        <div class="color-preview" [ngClass]="color.value"></div>
+                        <span>{{ color.label }}</span>
+                      </div>
+                    </mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <button
+                mat-icon-button
+                color="warn"
+                (click)="removeChoice(choice.id)"
+                matTooltip="Supprimer cette option">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="warning-section">
+      <mat-icon>warning</mat-icon>
+      <span>
+        Attention : Supprimer une option la retirera de toutes les lignes qui l'utilisent.
+      </span>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="onCancel()">Annuler</button>
+    <button mat-raised-button color="primary" (click)="onSave()">
+      Enregistrer
+    </button>
+  </mat-dialog-actions>
+</div>

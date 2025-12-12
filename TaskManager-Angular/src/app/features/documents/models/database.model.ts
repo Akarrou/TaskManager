@@ -80,6 +80,7 @@ export interface DatabaseColumn {
   width?: number; // Column width in pixels
   visible: boolean;
   required?: boolean;
+  readonly?: boolean; // Prevents editing and deletion of column (for protected task columns)
   order: number;
   color?: PropertyColor; // Color for pinned properties display
 }
@@ -492,6 +493,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     type: 'text',
     visible: true,
     required: true,
+    readonly: true, // Protected column
     order: 0,
     width: DEFAULT_COLUMN_WIDTHS.text,
     color: 'blue',
@@ -501,6 +503,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     name: 'Description',
     type: 'text',
     visible: true,
+    readonly: true, // Protected column
     order: 1,
     width: 300,
     color: 'green',
@@ -510,6 +513,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     name: 'Status',
     type: 'select',
     visible: true,
+    readonly: true, // Protected column
     order: 2,
     width: DEFAULT_COLUMN_WIDTHS.select,
     color: 'yellow',
@@ -527,6 +531,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     name: 'Priority',
     type: 'select',
     visible: true,
+    readonly: true, // Protected column
     order: 3,
     width: DEFAULT_COLUMN_WIDTHS.select,
     color: 'red',
@@ -544,6 +549,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     name: 'Type',
     type: 'select',
     visible: true,
+    readonly: true, // Protected column
     order: 4,
     width: DEFAULT_COLUMN_WIDTHS.select,
     color: 'purple',
@@ -560,6 +566,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     name: 'Assigned To',
     type: 'text',
     visible: true,
+    readonly: true, // Protected column
     order: 5,
     width: DEFAULT_COLUMN_WIDTHS.text,
     color: 'pink',
@@ -569,6 +576,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     name: 'Due Date',
     type: 'date',
     visible: true,
+    readonly: true, // Protected column
     order: 6,
     width: DEFAULT_COLUMN_WIDTHS.date,
     color: 'orange',
@@ -581,6 +589,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     name: 'Tags',
     type: 'multi-select',
     visible: true,
+    readonly: true, // Protected column
     order: 7,
     width: DEFAULT_COLUMN_WIDTHS['multi-select'],
     color: 'gray',
@@ -599,6 +608,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     name: 'Estimated Hours',
     type: 'number',
     visible: true,
+    readonly: true, // Protected column
     order: 8,
     width: DEFAULT_COLUMN_WIDTHS.number,
     color: 'blue',
@@ -611,6 +621,7 @@ export const TASK_DATABASE_TEMPLATE_COLUMNS: DatabaseColumn[] = [
     name: 'Actual Hours',
     type: 'number',
     visible: true,
+    readonly: true, // Protected column
     order: 9,
     width: DEFAULT_COLUMN_WIDTHS.number,
     color: 'green',
