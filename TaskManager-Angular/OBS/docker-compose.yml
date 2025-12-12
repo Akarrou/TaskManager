@@ -59,6 +59,28 @@ services:
       start_period: 30s
 
   # ===================================================================
+  # Database Migrations (Auto-apply on startup)
+  # ===================================================================
+
+  migrations:
+    container_name: taskmanager-migrations
+    profiles: ["local", "production"]
+    image: postgres:15-alpine
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ../supabase/migrations:/migrations:ro
+      - ./migrate-on-startup.sh:/migrate.sh:ro
+    environment:
+      DB_HOST: db
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    command: ["/bin/sh", "/migrate.sh"]
+    networks:
+      - supabase_network
+
+  # ===================================================================
   # Supabase Infrastructure Services
   # ===================================================================
 
