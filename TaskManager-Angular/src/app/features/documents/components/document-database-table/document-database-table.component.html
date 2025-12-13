@@ -110,6 +110,15 @@
           </div>
         </mat-menu>
 
+        <!-- Delete Database Button -->
+        <button
+          mat-icon-button
+          (click)="onDeleteDatabase()"
+          matTooltip="Supprimer la base de données"
+          class="delete-database-btn">
+          <mat-icon>delete</mat-icon>
+        </button>
+
         <!-- Bulk Actions (shown when rows are selected) -->
         @if (selectedCount() > 0) {
           <div class="bulk-actions">

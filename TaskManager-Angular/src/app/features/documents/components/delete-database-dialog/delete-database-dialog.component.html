@@ -1,0 +1,50 @@
+<h2 mat-dialog-title class="dialog-title-danger">
+  <mat-icon>warning</mat-icon>
+  Confirmer la suppression
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <p>
+    Voulez-vous vraiment supprimer la base de données
+    <strong>"{{ data.databaseName }}"</strong> ?
+  </p>
+
+  @if (data.rowCount > 0) {
+    <div class="dialog-alert-warning">
+      <mat-icon>info</mat-icon>
+      <div class="dialog-alert-content">
+        <p class="dialog-alert-title">
+          Cette base de données contient {{ data.rowCount }}
+          ligne{{ data.rowCount > 1 ? 's' : '' }}
+        </p>
+        <p>
+          Toutes les lignes seront <strong>définitivement supprimées</strong>.
+        </p>
+      </div>
+    </div>
+  }
+
+  <p class="text-sm text-gray-600">
+    <mat-icon class="text-base align-middle">info</mat-icon>
+    Cette action est irréversible et supprimera la table PostgreSQL associée.
+  </p>
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
+  <button
+    mat-button
+    class="dialog-btn-secondary"
+    mat-dialog-close>
+    <mat-icon>cancel</mat-icon>
+    Annuler
+  </button>
+
+  <button
+    mat-raised-button
+    class="dialog-btn-danger"
+    [mat-dialog-close]="true"
+    cdkFocusInitial>
+    <mat-icon>delete</mat-icon>
+    Supprimer définitivement
+  </button>
+</mat-dialog-actions>

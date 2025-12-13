@@ -183,27 +183,58 @@ export class DatabaseService {
   }
 
   /**
-   * Delete database (drops table and metadata)
+   * Delete all documents linked to a database (for task-type databases)
+   * This removes all documents where database_id matches the given databaseId
    */
-  deleteDatabase(databaseId: string): Observable<boolean> {
+  deleteLinkedDocuments(databaseId: string): Observable<boolean> {
     return from(
-      this.client.rpc('delete_database_cascade', {
-        p_database_id: databaseId
-      })
+      this.client
+        .from('documents')
+        .delete()
+        .eq('database_id', databaseId)
     ).pipe(
-      map(({ data, error }: { data: any; error: any }) => {
+      map(({ error }: { error: any }) => {
         if (error) {
-          console.error('[deleteDatabase] Erreur RPC:', error);
+          console.error('[deleteLinkedDocuments] Erreur:', error);
           throw error;
         }
-
-        if (!data?.success) {
-          console.error('[deleteDatabase] Échec suppression:', data?.error);
-          throw new Error(data?.error || 'Échec de la suppression');
-        }
-
         return true;
       }),
+      catchError((err: any) => {
+        console.error('[deleteLinkedDocuments] Erreur lors de la suppression:', err);
+        return throwError(() => new Error(`Impossible de supprimer les documents liés: ${err.message}`));
+      })
+    );
+  }
+
+  /**
+   * Delete database (drops table and metadata)
+   * Also deletes all linked documents (for task-type databases)
+   */
+  deleteDatabase(databaseId: string): Observable<boolean> {
+    // First delete linked documents, then delete the database
+    return this.deleteLinkedDocuments(databaseId).pipe(
+      switchMap(() =>
+        from(
+          this.client.rpc('delete_database_cascade', {
+            p_database_id: databaseId
+          })
+        ).pipe(
+          map(({ data, error }: { data: any; error: any }) => {
+            if (error) {
+              console.error('[deleteDatabase] Erreur RPC:', error);
+              throw error;
+            }
+
+            if (!data?.success) {
+              console.error('[deleteDatabase] Échec suppression:', data?.error);
+              throw new Error(data?.error || 'Échec de la suppression');
+            }
+
+            return true;
+          })
+        )
+      ),
       catchError((err: any) => {
         console.error('[deleteDatabase] Erreur lors de la suppression:', err);
         return throwError(() => new Error(`Impossible de supprimer la base: ${err.message}`));

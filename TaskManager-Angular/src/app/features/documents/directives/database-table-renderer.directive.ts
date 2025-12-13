@@ -127,12 +127,11 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
       componentRef.setInput('config', config);
       componentRef.setInput('storageMode', storageMode);
 
-      // Set the data change callback if provided
-      if (this.onDataChange) {
-        componentRef.setInput('onDataChange', (attrs: DatabaseNodeAttributes) => {
-          this.updateNodeAttributes(block, attrs);
-        });
-      }
+      // Always set the data change callback to handle updates and deletions
+      componentRef.setInput('onDataChange', (attrs: DatabaseNodeAttributes) => {
+        console.log('🔗 Directive callback received', { deleted: attrs.deleted });
+        this.updateNodeAttributes(block, attrs);
+      });
 
       // Append component to the block
       this.renderer.appendChild(block, componentRef.location.nativeElement);
@@ -146,6 +145,15 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
    * Update TipTap node attributes when database changes
    */
   private updateNodeAttributes(element: HTMLElement, attrs: DatabaseNodeAttributes) {
+    console.log('📝 updateNodeAttributes called', { attrs, deleted: attrs.deleted });
+
+    // Handle database deletion: remove the node from TipTap
+    if (attrs.deleted) {
+      console.log('🚨 Deletion flag detected, calling deleteNode');
+      this.deleteNode(element);
+      return;
+    }
+
     // Update DOM attributes (for immediate visual update)
     element.setAttribute('data-database-id', attrs.databaseId);
     element.setAttribute('data-config', JSON.stringify(attrs.config));
@@ -177,17 +185,110 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
   }
 
   /**
+   * Delete a database node from the TipTap editor
+   */
+  private deleteNode(element: HTMLElement): void {
+    console.log('🗑️ Attempting to delete database node', element);
+
+    if (!this.editor) {
+      console.error('❌ Cannot delete node: editor not available');
+      return;
+    }
+
+    const pos = this.findNodePosition(element);
+    if (pos === null) {
+      console.error('❌ Cannot delete node: position not found');
+      return;
+    }
+
+    console.log('✅ Found node position:', pos);
+
+    // Delete the node at the found position using chain for better reliability
+    const success = this.editor
+      .chain()
+      .focus()
+      .command(({ tr, state, dispatch }) => {
+        const node = state.doc.nodeAt(pos);
+        if (!node) {
+          console.error('❌ Cannot delete node: node not found at position', pos);
+          return false;
+        }
+
+        console.log('✅ Found node to delete:', node.type.name, 'size:', node.nodeSize);
+
+        // Delete the entire node (from pos to pos + node.nodeSize)
+        if (dispatch) {
+          tr.delete(pos, pos + node.nodeSize);
+        }
+        return true;
+      })
+      .run();
+
+    if (success) {
+      console.log('✅ Database node deleted successfully');
+
+      // Also destroy the Angular component reference if it exists
+      this.destroyComponentForElement(element);
+
+      // Force editor update event to trigger auto-save
+      // The editor's update event listener will handle the save
+      console.log('💾 Editor transaction completed, auto-save should trigger');
+    } else {
+      console.error('❌ Failed to delete database node');
+    }
+  }
+
+  /**
+   * Destroy the Angular component associated with an element
+   */
+  private destroyComponentForElement(element: HTMLElement): void {
+    const index = this.componentRefs.findIndex(
+      ref => ref.location.nativeElement.closest('[data-type="database-table"]') === element
+    );
+
+    if (index !== -1) {
+      this.componentRefs[index].destroy();
+      this.componentRefs.splice(index, 1);
+      console.log('✅ Component destroyed');
+    }
+  }
+
+  /**
    * Find the position of a TipTap node from a DOM element
    */
   private findNodePosition(element: HTMLElement): number | null {
     if (!this.editor) return null;
 
-    const { view } = this.editor;
-    const domNode = element;
+    const { view, state } = this.editor;
 
     try {
-      const pos = view.posAtDOM(domNode, 0);
-      return pos;
+      // Get position at the start of the DOM element
+      let pos = view.posAtDOM(element, 0);
+
+      // For block nodes, posAtDOM might return the position inside the node
+      // We need to find the position just before the node
+      const $pos = state.doc.resolve(pos);
+
+      // Check if we're inside the node, if so, get the position before it
+      if ($pos.parent.type.name === 'databaseTable') {
+        // We're inside, return the start position of the parent
+        return $pos.before();
+      }
+
+      // Otherwise, check if the node at this position is our target
+      const node = state.doc.nodeAt(pos);
+      if (node && node.type.name === 'databaseTable') {
+        return pos;
+      }
+
+      // Try to find the node by looking before the current position
+      const nodeBefore = state.doc.nodeAt(pos - 1);
+      if (nodeBefore && nodeBefore.type.name === 'databaseTable') {
+        return pos - 1;
+      }
+
+      console.warn('Could not find databaseTable node at position', pos);
+      return pos; // Return the position anyway, let the delete command handle it
     } catch (error) {
       console.error('Failed to find node position:', error);
       return null;

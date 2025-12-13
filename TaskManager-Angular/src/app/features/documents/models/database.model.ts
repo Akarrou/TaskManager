@@ -210,6 +210,7 @@ export interface DatabaseNodeAttributes {
   databaseId: string;
   config: DatabaseConfig;
   storageMode: 'supabase'; // Always 'supabase' for dynamic tables
+  deleted?: boolean; // Flag to indicate database deletion for TipTap node removal
 }
 
 // =====================================================================

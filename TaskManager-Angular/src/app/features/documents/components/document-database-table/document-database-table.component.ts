@@ -39,6 +39,10 @@ import {
   ManageOptionsDialogData,
   ManageOptionsDialogResult,
 } from '../manage-options-dialog/manage-options-dialog.component';
+import {
+  DeleteDatabaseDialogComponent,
+  DeleteDatabaseDialogData,
+} from '../delete-database-dialog/delete-database-dialog.component';
 import { CsvImportDialogData, CsvImportResult } from '../../models/csv-import.model';
 import { DatabaseFiltersComponent } from '../database-filters/database-filters.component';
 import { DatabaseKanbanView } from '../database-kanban-view/database-kanban-view';
@@ -1072,6 +1076,72 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     this.onDeleteRows(selectedIds);
     // Clear selection after deletion
     this.selectedRowIds.set(new Set());
+  }
+
+  /**
+   * Delete entire database with confirmation
+   * Removes the PostgreSQL table, metadata, and TipTap node
+   */
+  onDeleteDatabase(): void {
+    const dialogRef = this.dialog.open<DeleteDatabaseDialogComponent, DeleteDatabaseDialogData, boolean>(
+      DeleteDatabaseDialogComponent,
+      {
+        width: '500px',
+        data: {
+          databaseName: this.databaseConfig().name,
+          rowCount: this.rowCount(),
+        },
+      }
+    );
+
+    dialogRef.afterClosed()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (confirmed: boolean | undefined) => {
+          if (confirmed) {
+            this.isLoading.set(true);
+            this.databaseService
+              .deleteDatabase(this.databaseId)
+              .pipe(takeUntil(this.destroy$))
+              .subscribe({
+                next: () => {
+                  this.isLoading.set(false);
+                  this.snackBar.open('Base de données supprimée avec succès', 'OK', {
+                    duration: 3000,
+                  });
+
+                  // Notify parent component (TipTap editor) to remove the node
+                  console.log('🔔 Notifying parent about database deletion', {
+                    databaseId: this.databaseId,
+                    hasCallback: !!this.onDataChange,
+                  });
+
+                  if (this.onDataChange) {
+                    this.onDataChange({
+                      databaseId: this.databaseId,
+                      config: this.databaseConfig(),
+                      storageMode: this.storageMode,
+                      deleted: true,
+                    });
+                    console.log('✅ onDataChange callback executed');
+                  } else {
+                    console.warn('⚠️ No onDataChange callback provided');
+                  }
+                },
+                error: (err: unknown) => {
+                  this.isLoading.set(false);
+                  console.error('Failed to delete database:', err);
+                  const errorMessage = err instanceof Error
+                    ? err.message
+                    : 'Erreur lors de la suppression de la base de données';
+                  this.snackBar.open(errorMessage, 'OK', {
+                    duration: 5000,
+                  });
+                },
+              });
+          }
+        },
+      });
   }
 
   /**
