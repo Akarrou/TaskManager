@@ -83,6 +83,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   private isComponentDestroying = false;
   private isInsertingDocumentFile = false;
   private isInsertingDocumentLink = false;
+  private isLoadingDocument = false;
 
   editor: Editor;
   showSlashMenu = signal(false);
@@ -432,8 +433,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
    * Detect deleted document files and prompt for removal from storage
    */
   private cleanupDeletedDocumentFiles(newContent: JSONContent) {
-    // Don't trigger cleanup when component is being destroyed or during insertion
-    if (this.isComponentDestroying || this.isInsertingDocumentFile) {
+    // Don't trigger cleanup when component is being destroyed, during insertion, or during document loading
+    if (this.isComponentDestroying || this.isInsertingDocumentFile || this.isLoadingDocument) {
       return;
     }
 
@@ -533,8 +534,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
    * Detect deleted document links and prompt for cascade deletion
    */
   private cleanupDeletedDocumentLinks(newContent: JSONContent) {
-    // Don't trigger cleanup when component is being destroyed or during insertion
-    if (this.isComponentDestroying || this.isInsertingDocumentLink) {
+    // Don't trigger cleanup when component is being destroyed, during insertion, or during document loading
+    if (this.isComponentDestroying || this.isInsertingDocumentLink || this.isLoadingDocument) {
       return;
     }
 
@@ -654,11 +655,19 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
           // Update editor content
           if (doc.content && Object.keys(doc.content).length > 0) {
+            // Set flag to prevent cleanup dialogs during document loading
+            this.isLoadingDocument = true;
             this.editor.commands.setContent(doc.content);
             // Initialize tracking of document file URLs for cleanup on deletion
             this.initializeDocumentFileTracking(doc.content as JSONContent);
             // Initialize tracking of internal document links for cleanup on deletion
             this.initializeDocumentLinkTracking(doc.content as JSONContent);
+            // Reset flag after initialization
+            this.isLoadingDocument = false;
+          } else {
+            // Clear tracking for empty documents
+            this.previousDocumentFileUrls.clear();
+            this.previousDocumentLinkIds.clear();
           }
 
           // Check if we need to insert task section after creating a task
