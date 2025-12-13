@@ -4,7 +4,7 @@
 </h2>
 
 <mat-dialog-content class="dialog-content">
-  <form [formGroup]="imageForm" class="image-form">
+  <form [formGroup]="imageForm" class="dialog-form image-form">
 
     <!-- Tabs pour la source de l'image -->
     <mat-tab-group [(selectedIndex)]="selectedTabIndex" class="source-tabs">
@@ -13,22 +13,26 @@
       <mat-tab label="URL">
         <div class="tab-content">
           <!-- URL de l'image -->
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>URL de l'image</mat-label>
-            <input
-              matInput
-              formControlName="src"
-              placeholder="https://exemple.com/image.jpg"
-              type="url"
-            />
-            <mat-icon matPrefix>link</mat-icon>
+          <div class="c-form-group">
+            <label class="c-label" for="imageUrl">URL de l'image</label>
+            <div class="c-input-wrapper">
+              <span class="material-icons-outlined c-input-icon">link</span>
+              <input
+                class="c-input"
+                [class.c-input--error]="imageForm.get('src')?.hasError('required') && imageForm.get('src')?.touched || imageForm.get('src')?.hasError('invalidUrl') && imageForm.get('src')?.touched"
+                id="imageUrl"
+                type="url"
+                formControlName="src"
+                placeholder="https://exemple.com/image.jpg"
+              />
+            </div>
             @if (imageForm.get('src')?.hasError('required') && imageForm.get('src')?.touched) {
-              <mat-error>L'URL est requise</mat-error>
+              <span class="c-error-text">L'URL est requise</span>
             }
             @if (imageForm.get('src')?.hasError('invalidUrl') && imageForm.get('src')?.touched) {
-              <mat-error>URL invalide</mat-error>
+              <span class="c-error-text">URL invalide</span>
             }
-          </mat-form-field>
+          </div>
 
           <!-- Preview de l'image -->
           <div class="image-preview-container">
@@ -86,48 +90,59 @@
     </mat-tab-group>
 
     <!-- Texte alternatif -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Texte alternatif (pour l'accessibilité)</mat-label>
-      <input
-        matInput
-        formControlName="alt"
-        placeholder="Décrivez l'image..."
-      />
-      <mat-icon matPrefix>accessibility</mat-icon>
+    <div class="c-form-group">
+      <label class="c-label" for="imageAlt">Texte alternatif (pour l'accessibilité)</label>
+      <div class="c-input-wrapper">
+        <span class="material-icons-outlined c-input-icon">accessibility</span>
+        <input
+          class="c-input"
+          [class.c-input--error]="imageForm.get('alt')?.hasError('required') && imageForm.get('alt')?.touched || imageForm.get('alt')?.hasError('minlength') && imageForm.get('alt')?.touched"
+          id="imageAlt"
+          type="text"
+          formControlName="alt"
+          placeholder="Décrivez l'image..."
+        />
+      </div>
       @if (imageForm.get('alt')?.hasError('required') && imageForm.get('alt')?.touched) {
-        <mat-error>Le texte alternatif est requis</mat-error>
+        <span class="c-error-text">Le texte alternatif est requis</span>
       }
       @if (imageForm.get('alt')?.hasError('minlength') && imageForm.get('alt')?.touched) {
-        <mat-error>Minimum 3 caractères</mat-error>
+        <span class="c-error-text">Minimum 3 caractères</span>
       }
-    </mat-form-field>
+    </div>
 
     <!-- Alignement -->
-    <div class="alignment-section">
-      <label class="section-label">Alignement</label>
+    <div class="c-form-group">
+      <span class="c-label">Alignement</span>
       <mat-radio-group formControlName="alignment" class="alignment-options">
         @for (option of alignmentOptions; track option.value) {
-          <mat-radio-button [value]="option.value" class="alignment-option">
-            <mat-icon>{{ option.icon }}</mat-icon>
-            <span>{{ option.label }}</span>
+          <mat-radio-button
+            [value]="option.value"
+            [matTooltip]="option.label">
+            <div class="alignment-option">
+              <span class="material-icons-outlined">{{ option.icon }}</span>
+            </div>
           </mat-radio-button>
         }
       </mat-radio-group>
     </div>
 
     <!-- Légende (optionnelle) -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Légende (optionnelle)</mat-label>
-      <textarea
-        matInput
-        formControlName="caption"
-        placeholder="Ajoutez une légende à votre image..."
-        rows="2"
-        maxlength="500"
-      ></textarea>
-      <mat-icon matPrefix>notes</mat-icon>
-      <mat-hint align="end">{{ imageForm.get('caption')?.value?.length || 0 }} / 500</mat-hint>
-    </mat-form-field>
+    <div class="c-form-group">
+      <label class="c-label" for="imageCaption">Légende (optionnelle)</label>
+      <div class="c-input-wrapper">
+        <span class="material-icons-outlined c-input-icon">notes</span>
+        <textarea
+          class="c-textarea"
+          id="imageCaption"
+          formControlName="caption"
+          placeholder="Ajoutez une légende à votre image..."
+          rows="2"
+          maxlength="500"
+        ></textarea>
+      </div>
+      <span class="c-hint">{{ imageForm.get('caption')?.value?.length || 0 }} / 500</span>
+    </div>
   </form>
 </mat-dialog-content>
 

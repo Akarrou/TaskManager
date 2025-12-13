@@ -1,44 +1,123 @@
-// Container principal
+@use "../../../../styles/variables" as v;
+
+// Le conteneur principal utilise déjà .dialog-form des styles globaux
+// On ajoute juste les ajustements spécifiques
 .image-form {
+  padding: 0.25rem;
+}
+
+// ============================================================================
+// FORM STYLES (inspiré du profil utilisateur)
+// ============================================================================
+
+.c-form-group {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  padding: 0.25rem;
+  gap: v.$space-2;
+}
 
-  // Amélioration des form fields Material
-  ::ng-deep {
-    .mat-mdc-form-field {
-      .mat-mdc-text-field-wrapper {
-        background-color: #f9fafb;
-        border-radius: 0.5rem;
-        transition: background-color 0.2s ease;
+.c-label {
+  font-size: v.$font-size-sm;
+  font-weight: v.$font-weight-semibold;
+  color: v.$text-color-dark;
+  margin-left: 2px;
+}
 
-        &:hover {
-          background-color: #f3f4f6;
-        }
-      }
+.c-hint {
+  font-size: v.$font-size-xs;
+  color: v.$text-color-light;
+  margin-left: 2px;
+}
 
-      &.mat-focused {
-        .mat-mdc-text-field-wrapper {
-          background-color: #ffffff;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-      }
+.c-error-text {
+  font-size: v.$font-size-xs;
+  color: v.$error-color;
+  margin-left: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 
-      .mat-mdc-form-field-icon-prefix {
-        color: #6b7280;
-        margin-right: 0.5rem;
-      }
+// Input wrapper avec icône
+.c-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
 
-      input, textarea {
-        font-size: 0.9375rem;
-        color: #1f2937;
+.c-input-icon {
+  position: absolute;
+  left: v.$space-4;
+  color: v.$text-color-light;
+  font-size: 20px;
+  pointer-events: none;
+  transition: color 0.2s ease;
+  z-index: 1;
+}
 
-        &::placeholder {
-          color: #9ca3af;
-          font-weight: 400;
-        }
-      }
+.c-input {
+  width: 100%;
+  padding: v.$space-3 v.$space-4 v.$space-3 44px;
+  background: v.$background-color-form;
+  border: 1px solid v.$border-color-medium;
+  border-radius: v.$border-radius-lg;
+  font-size: v.$font-size-sm;
+  color: v.$text-color-dark;
+  transition: all 0.2s ease;
+
+  &::placeholder {
+    color: v.$text-color-light;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: v.$primary-color;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+
+    ~ .c-input-icon {
+      color: v.$primary-color;
+    }
+  }
+
+  &:disabled {
+    background-color: v.$background-color-page;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  &--error {
+    border-color: v.$error-color;
+
+    &:focus {
+      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+    }
+  }
+}
+
+.c-textarea {
+  width: 100%;
+  padding: v.$space-3 v.$space-4 v.$space-3 44px;
+  background: v.$background-color-form;
+  border: 1px solid v.$border-color-medium;
+  border-radius: v.$border-radius-lg;
+  font-size: v.$font-size-sm;
+  color: v.$text-color-dark;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 60px;
+
+  &::placeholder {
+    color: v.$text-color-light;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: v.$primary-color;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+
+    ~ .c-input-icon {
+      color: v.$primary-color;
     }
   }
 }
@@ -47,23 +126,22 @@
 .source-tabs {
   margin-bottom: 1.5rem;
 
-  // Amélioration visuelle des tabs Material
   ::ng-deep {
     .mat-mdc-tab-labels {
-      border-bottom: 2px solid #e5e7eb;
+      border-bottom: 2px solid v.$border-color-light;
     }
 
     .mat-mdc-tab {
       min-width: 120px;
-      font-weight: 500;
-      color: #6b7280;
+      font-weight: v.$font-weight-medium;
+      color: v.$text-color-light;
 
       &.mat-mdc-tab-label-active {
-        color: #3b82f6;
+        color: v.$primary-color;
       }
 
       &:hover {
-        background-color: #f9fafb;
+        background-color: v.$background-color-light;
       }
     }
 
@@ -72,9 +150,8 @@
       overflow: visible;
     }
 
-    // Indicateur de tab actif
     .mat-mdc-tab-header-pagination-disabled .mat-mdc-tab-header-pagination-chevron {
-      border-color: #3b82f6;
+      border-color: v.$primary-color;
     }
   }
 }
@@ -98,10 +175,6 @@
   }
 }
 
-.full-width {
-  width: 100%;
-}
-
 // Container de preview
 .image-preview-container {
   width: 100%;
@@ -110,32 +183,32 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
-  border-radius: 0.75rem;
-  border: 2px dashed #d1d5db;
+  background: linear-gradient(135deg, v.$background-color-light 0%, v.$background-color-form 100%);
+  border-radius: v.$border-radius-lg;
+  border: 2px dashed v.$border-color-medium;
   overflow: hidden;
   margin: 0.5rem 0;
   position: relative;
-  transition: all 0.3s ease;
+  transition: all v.$transition-duration ease;
 
   &:hover {
-    border-color: #9ca3af;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-color: v.$secondary-color-light;
+    box-shadow: v.$shadow-md;
   }
 
   img {
     max-width: 100%;
     max-height: 400px;
     object-fit: contain;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: v.$border-radius-md;
+    box-shadow: v.$shadow-md;
     animation: zoomIn 0.4s ease-out;
   }
 
   .preview-placeholder,
   .preview-error,
   .preview-loading {
-    color: #9ca3af;
+    color: v.$text-color-light;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -147,39 +220,39 @@
       font-size: 64px;
       width: 64px;
       height: 64px;
-      color: #d1d5db;
+      color: v.$border-color-medium;
       opacity: 0.8;
       animation: pulse 2s ease-in-out infinite;
     }
 
     span {
-      font-size: 0.9375rem;
-      font-weight: 500;
-      color: #6b7280;
+      font-size: v.$font-size-base;
+      font-weight: v.$font-weight-medium;
+      color: v.$text-color-light;
     }
 
     small {
-      font-size: 0.8125rem;
-      color: #9ca3af;
+      font-size: v.$font-size-sm;
+      color: v.$text-color-light;
       margin-top: 0.25rem;
     }
   }
 
   .preview-loading {
     mat-icon {
-      color: #3b82f6;
+      color: v.$primary-color;
       animation: spin 1.5s linear infinite;
     }
   }
 
   .preview-error {
     mat-icon {
-      color: #ef4444;
+      color: v.$error-color;
       animation: shake 0.5s ease-in-out;
     }
 
     span {
-      color: #dc2626;
+      color: v.$error-color;
     }
   }
 }
@@ -228,97 +301,74 @@
   }
 }
 
-// Section d'alignement
-.alignment-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-top: 0.5rem;
-
-  .section-label {
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: #374151;
-    letter-spacing: -0.01em;
-  }
-}
-
+// Options d'alignement
 .alignment-options {
   display: flex;
   gap: 0.75rem;
+  justify-content: flex-start;
 
-  .alignment-option {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1rem 0.75rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 0.75rem;
-    background: #ffffff;
-    cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-      opacity: 0;
-      transition: opacity 0.25s ease;
-    }
-
-    &:hover {
-      border-color: #3b82f6;
-      background: #f0f9ff;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-
-      mat-icon {
-        color: #3b82f6;
-        transform: scale(1.1);
+  ::ng-deep {
+    .mat-mdc-radio-button {
+      // Cacher le bouton radio par défaut
+      .mdc-radio {
+        display: none;
       }
-    }
 
-    mat-icon {
-      font-size: 28px;
-      width: 28px;
-      height: 28px;
-      color: #6b7280;
-      transition: all 0.25s ease;
-      position: relative;
-      z-index: 1;
-    }
+      // Retirer les marges par défaut du label
+      .mdc-form-field {
+        margin: 0;
+        padding: 0;
+      }
 
-    span {
-      font-size: 0.8125rem;
-      font-weight: 600;
-      color: #4b5563;
-      transition: color 0.25s ease;
-      position: relative;
-      z-index: 1;
-    }
-  }
+      .mdc-label {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+      }
 
-  ::ng-deep .mat-radio-button.mat-accent.mat-radio-checked .alignment-option {
-    border-color: #3b82f6;
-    background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+      // Style par défaut du bouton
+      .alignment-option {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 56px;
+        height: 56px;
+        padding: 0;
+        border: 2px solid v.$border-color-light;
+        border-radius: v.$border-radius-lg;
+        background: v.$background-color-form;
+        cursor: pointer;
+        transition: all 0.2s ease;
 
-    mat-icon {
-      color: #2563eb;
-      transform: scale(1.15);
-    }
+        &:hover {
+          border-color: v.$primary-color;
+          background: v.$primary-color-lightest;
 
-    span {
-      color: #1e40af;
-      font-weight: 700;
+          .material-icons-outlined {
+            color: v.$primary-color;
+            transform: scale(1.1);
+          }
+        }
+
+        .material-icons-outlined {
+          font-size: 28px;
+          color: v.$text-color-light;
+          transition: all 0.2s ease;
+        }
+      }
+
+      // État checked - style discret
+      &.mat-mdc-radio-checked {
+        .alignment-option {
+          border-color: v.$primary-color !important;
+          background: v.$primary-color-lightest !important;
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
+
+          .material-icons-outlined {
+            color: v.$primary-color !important;
+          }
+        }
+      }
     }
   }
 }
@@ -335,11 +385,11 @@
     margin-bottom: 0.75rem;
     padding: 0.75rem 1rem;
     background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-    border-radius: 0.5rem;
-    border-left: 4px solid #10b981;
+    border-radius: v.$border-radius-md;
+    border-left: 4px solid v.$success-color;
 
     .success-icon {
-      color: #059669;
+      color: v.$success-color;
       font-size: 24px;
       width: 24px;
       height: 24px;
@@ -347,8 +397,8 @@
     }
 
     span {
-      font-size: 0.875rem;
-      font-weight: 600;
+      font-size: v.$font-size-sm;
+      font-weight: v.$font-weight-semibold;
       color: #047857;
     }
   }

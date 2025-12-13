@@ -21,7 +21,7 @@
     <!-- État: Idle ou Dragging -->
     @if (!isUploading() && !isSuccess() && !errorMessage()) {
       <div class="dropzone__idle">
-        <mat-icon class="dropzone__icon">cloud_upload</mat-icon>
+        <span class="material-icons-outlined dropzone__icon">cloud_upload</span>
         <p class="dropzone__instruction">{{ instructionMessage() }}</p>
         <p class="dropzone__hint">{{ acceptedTypes() }} - Max {{ (maxSize() / 1024 / 1024).toFixed(0) }}MB</p>
       </div>
@@ -38,7 +38,7 @@
     <!-- État: Upload en cours -->
     @if (isUploading()) {
       <div class="dropzone__uploading">
-        <mat-icon class="dropzone__icon dropzone__icon--spinning">cloud_upload</mat-icon>
+        <span class="material-icons-outlined dropzone__icon dropzone__icon--spinning">cloud_upload</span>
         <p class="dropzone__status">Upload en cours...</p>
         <mat-progress-bar mode="indeterminate" class="dropzone__progress"></mat-progress-bar>
       </div>
@@ -47,7 +47,7 @@
     <!-- État: Succès -->
     @if (isSuccess()) {
       <div class="dropzone__success">
-        <mat-icon class="dropzone__icon dropzone__icon--success">check_circle</mat-icon>
+        <span class="material-icons-outlined dropzone__icon dropzone__icon--success">check_circle</span>
         <p class="dropzone__status">Fichier uploadé avec succès !</p>
       </div>
     }
@@ -55,7 +55,7 @@
     <!-- État: Erreur -->
     @if (errorMessage() && !isUploading()) {
       <div class="dropzone__error">
-        <mat-icon class="dropzone__icon dropzone__icon--error">error</mat-icon>
+        <span class="material-icons-outlined dropzone__icon dropzone__icon--error">error</span>
         <p class="dropzone__status">{{ errorMessage() }}</p>
         <button
           type="button"

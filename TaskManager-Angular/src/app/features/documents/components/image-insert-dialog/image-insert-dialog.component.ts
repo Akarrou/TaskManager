@@ -17,6 +17,7 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { FileDropzoneComponent, FileUploadedEvent } from '../../../../shared/components/file-dropzone/file-dropzone.component';
 
 export interface ImageInsertDialogData {
@@ -48,6 +49,7 @@ export interface ImageInsertDialogResult {
     MatIconModule,
     MatProgressSpinnerModule,
     MatTabsModule,
+    MatTooltipModule,
     FileDropzoneComponent,
   ],
   templateUrl: './image-insert-dialog.component.html',
