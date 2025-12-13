@@ -1,0 +1,54 @@
+<h2 mat-dialog-title class="dialog-title-default">
+  <mat-icon>note_add</mat-icon>
+  Créer une nouvelle page
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <form [formGroup]="documentForm" class="dialog-form">
+
+    <!-- Titre du document -->
+    <div class="c-form-group">
+      <label class="c-label" for="documentTitle">Titre de la page</label>
+      <div class="c-input-wrapper">
+        <span class="material-icons-outlined c-input-icon">title</span>
+        <input
+          class="c-input"
+          [class.c-input--error]="documentForm.get('title')?.hasError('required') && documentForm.get('title')?.touched || documentForm.get('title')?.hasError('minlength') && documentForm.get('title')?.touched"
+          id="documentTitle"
+          type="text"
+          formControlName="title"
+          placeholder="Entrez le titre de la page..."
+          autofocus
+        />
+      </div>
+      @if (documentForm.get('title')?.hasError('required') && documentForm.get('title')?.touched) {
+        <span class="c-error-text">Le titre est requis</span>
+      }
+      @if (documentForm.get('title')?.hasError('minlength') && documentForm.get('title')?.touched) {
+        <span class="c-error-text">Le titre doit contenir au moins 1 caractère</span>
+      }
+      @if (documentForm.get('title')?.hasError('maxlength')) {
+        <span class="c-error-text">Le titre ne peut pas dépasser 200 caractères</span>
+      }
+      <span class="c-hint">{{ documentForm.get('title')?.value?.length || 0 }} / 200</span>
+    </div>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
+  <button mat-button class="dialog-btn-secondary" (click)="onCancel()">
+    <mat-icon>cancel</mat-icon>
+    Annuler
+  </button>
+  <button
+    mat-raised-button
+    class="dialog-btn-primary"
+    (click)="onConfirm()"
+    [disabled]="!isFormValid"
+    cdkFocusInitial
+  >
+    <mat-icon>add</mat-icon>
+    Créer
+  </button>
+</mat-dialog-actions>

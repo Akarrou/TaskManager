@@ -40,6 +40,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { TaskSearchModalComponent } from '../components/task-search-modal/task-search-modal.component';
 import { ImageInsertDialogComponent, ImageInsertDialogData, ImageInsertDialogResult } from '../components/image-insert-dialog/image-insert-dialog.component';
 import { ImageBubbleMenuComponent } from '../components/image-bubble-menu/image-bubble-menu.component';
+import { NewDocumentDialogComponent, NewDocumentDialogResult } from '../components/new-document-dialog/new-document-dialog';
 import { TaskMention, TaskMentionAttributes } from '../extensions/task-mention.extension';
 import { TaskSearchResult, TaskMentionData } from '../models/document-task-relation.model';
 import { DocumentTasksSectionComponent } from '../components/document-tasks-section/document-tasks-section';
@@ -966,62 +967,70 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   createLinkedDocument() {
-    // Demander le titre de la nouvelle page
-    const title = window.prompt('Titre de la nouvelle page:', 'Nouvelle page');
-    if (!title) return;
+    // Ouvrir le dialogue pour demander le titre
+    const dialogRef = this.dialog.open(NewDocumentDialogComponent, {
+      width: '500px',
+      disableClose: false,
+      autoFocus: true,
+    });
 
-    const currentDocId = this.documentState().id;
+    dialogRef.afterClosed().subscribe((result: NewDocumentDialogResult | undefined) => {
+      if (!result) return;
 
-    // Créer le nouveau document avec parent_id
-    const newDoc: Omit<Document, 'id' | 'created_at' | 'updated_at'> = {
-      title,
-      content: {},
-      parent_id: currentDocId, // Link to current document as parent
-      user_id: '' // Will be set by the service
-    };
+      const title = result.title;
+      const currentDocId = this.documentState().id;
 
-    // Sauvegarder d'abord le document actuel si nécessaire
-    if (this.isDirty()) {
-      this.saveDocument();
-    }
+      // Créer le nouveau document avec parent_id
+      const newDoc: Omit<Document, 'id' | 'created_at' | 'updated_at'> = {
+        title,
+        content: {},
+        parent_id: currentDocId, // Link to current document as parent
+        user_id: '' // Will be set by the service
+      };
 
-    // Créer le nouveau document
-    this.documentService.createDocument(newDoc).subscribe({
-      next: (createdDoc: Document) => {
-        // Insérer un lien vers le nouveau document dans l'éditeur actuel
-        const linkText = title;
-        const linkUrl = `/documents/${createdDoc.id}`;
-
-        this.editor
-          .chain()
-          .focus()
-          .insertContent([
-            {
-              type: 'paragraph',
-              content: [
-                {
-                  type: 'text',
-                  marks: [
-                    {
-                      type: 'link',
-                      attrs: {
-                        href: linkUrl,
-                        target: '_self',
-                        class: 'document-link'
-                      }
-                    }
-                  ],
-                  text: `📄 ${linkText}`
-                }
-              ]
-            }
-          ])
-          .run();
-      },
-      error: (err: Error) => {
-        console.error('Erreur lors de la création du document', err);
-        alert('Impossible de créer le nouveau document');
+      // Sauvegarder d'abord le document actuel si nécessaire
+      if (this.isDirty()) {
+        this.saveDocument();
       }
+
+      // Créer le nouveau document
+      this.documentService.createDocument(newDoc).subscribe({
+        next: (createdDoc: Document) => {
+          // Insérer un lien vers le nouveau document dans l'éditeur actuel
+          const linkText = title;
+          const linkUrl = `/documents/${createdDoc.id}`;
+
+          this.editor
+            .chain()
+            .focus()
+            .insertContent([
+              {
+                type: 'paragraph',
+                content: [
+                  {
+                    type: 'text',
+                    marks: [
+                      {
+                        type: 'link',
+                        attrs: {
+                          href: linkUrl,
+                          target: '_self',
+                          class: 'document-link'
+                        }
+                      }
+                    ],
+                    text: `📄 ${linkText}`
+                  }
+                ]
+              }
+            ])
+            .run();
+        },
+        error: (err: Error) => {
+          console.error('Erreur lors de la création du document', err);
+          alert('Impossible de créer le nouveau document');
+        }
+      });
     });
   }
 

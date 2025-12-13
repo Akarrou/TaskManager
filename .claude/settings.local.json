@@ -29,7 +29,8 @@
       "Bash(tree:*)",
       "Bash(mv:*)",
       "Bash(rm:*)",
-      "Bash(docker compose run:*)"
+      "Bash(docker compose run:*)",
+      "Bash(ng generate:*)"
     ],
     "deny": [],
     "ask": []
