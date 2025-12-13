@@ -27,6 +27,8 @@ export interface DocumentState {
   database_id?: string | null;
   /** Database row ID if this document represents a database row */
   database_row_id?: string | null;
+  /** Project ID this document belongs to */
+  project_id?: string | null;
 }
 
 /**

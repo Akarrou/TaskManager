@@ -395,7 +395,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
             isSaving: false,
             lastSaved: doc.updated_at ? new Date(doc.updated_at) : null,
             database_id: doc.database_id || null,
-            database_row_id: doc.database_row_id || null
+            database_row_id: doc.database_row_id || null,
+            project_id: doc.project_id || null
           });
 
           // Set original snapshot for dirty tracking
@@ -978,13 +979,15 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       if (!result) return;
 
       const title = result.title;
-      const currentDocId = this.documentState().id;
+      const currentState = this.documentState();
+      const currentDocId = currentState.id;
 
-      // Créer le nouveau document avec parent_id
+      // Créer le nouveau document avec parent_id et project_id hérité
       const newDoc: Omit<Document, 'id' | 'created_at' | 'updated_at'> = {
         title,
         content: {},
         parent_id: currentDocId, // Link to current document as parent
+        project_id: currentState.project_id || null, // Inherit project_id from parent
         user_id: '' // Will be set by the service
       };
 
@@ -1019,7 +1022,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
                         }
                       }
                     ],
-                    text: `📄 ${linkText}`
+                    text: linkText
                   }
                 ]
               }

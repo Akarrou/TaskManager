@@ -125,12 +125,11 @@ export class ProjectEffects implements OnInitEffects {
     selectProject$ = createEffect(() =>
         this.actions$.pipe(
             ofType(ProjectActions.selectProject),
-            tap(() => {
-                // Redirect to dashboard when project changes
-                // Only redirect if not already on dashboard
-                if (!this.router.url.includes('/dashboard')) {
-                    this.router.navigate(['/dashboard']);
-                }
+            tap((action) => {
+                // Store selected project ID in localStorage for persistence
+                localStorage.setItem('selectedProjectId', action.projectId);
+                // Note: We don't automatically redirect to dashboard anymore
+                // This was causing unwanted redirects when navigating to documents
             })
         ),
         { dispatch: false }
