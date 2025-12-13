@@ -41,6 +41,20 @@
           <mat-icon>delete</mat-icon>
         </button>
       </div>
+
+      <!-- Child Documents List -->
+      <div class="c-document-card__children" *ngIf="getChildDocuments(doc.id).length > 0">
+        <div class="c-document-card__children-title">Documents liés :</div>
+        <div class="c-document-card__children-list">
+          <button 
+            *ngFor="let child of getChildDocuments(doc.id)"
+            class="c-document-card__child-item"
+            (click)="$event.stopPropagation(); openDocument(child.id)">
+            <mat-icon class="child-icon">description</mat-icon>
+            <span class="child-title">{{ child.title || 'Sans titre' }}</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 

@@ -49,6 +49,7 @@ export class DocumentListComponent implements OnInit, OnDestroy {
   private loadingSignal = toSignal(this.store.select(selectDocumentsLoading), { initialValue: true });
 
   // Computed: filter documents by selected project
+  // Only show root documents (no parent_id) in the main grid
   documents = computed(() => {
     const project = this.selectedProjectSignal();
     const allDocs = this.allDocumentsSignal();
@@ -57,11 +58,22 @@ export class DocumentListComponent implements OnInit, OnDestroy {
       return [];
     }
 
-    return allDocs.filter(doc => doc.project_id === project.id);
+    // Filter by project AND ensure it's a root document (no parent_id)
+    return allDocs.filter(doc => 
+      doc.project_id === project.id && !doc.parent_id
+    );
   });
 
   loading = this.loadingSignal;
   currentProject = this.selectedProjectSignal;
+
+  /**
+   * Get child documents for a given parent document
+   */
+  getChildDocuments(parentId: string): Document[] {
+    const allDocs = this.allDocumentsSignal();
+    return allDocs.filter(doc => doc.parent_id === parentId);
+  }
 
   constructor() {
     // Effect: load documents when selected project changes
