@@ -132,19 +132,28 @@
     margin: 0;
   }
 
-  &__actions {
-    display: flex;
-    justify-content: flex-end;
-    padding-top: 0.5rem;
-    border-top: 1px solid var(--border-color);
-    margin-top: auto; // Push actions to bottom
-  }
+  // __actions style removed
+
 
   &__delete {
-    color: var(--text-tertiary);
+    color: #9ca3af !important; // Explicit gray color
+    width: 32px !important; // Smaller touch target
+    height: 32px !important;
+    padding: 0 !important; // Reset padding to prevent offset
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    
+    mat-icon {
+      font-size: 18px; // Smaller icon
+      width: 18px;
+      height: 18px;
+      line-height: 18px;
+      margin: 0; // Ensure no margin affects centering
+    }
 
     &:hover {
-      color: var(--error-color);
+      color: #000000 !important;
       background-color: rgba(239, 68, 68, 0.1);
     }
   }

@@ -45,6 +45,28 @@ body {
 }
 
 // ============================================================================
+// DOCUMENT LINKS STYLING
+// ============================================================================
+
+.document-link {
+  color: v.$primary-color;
+  text-decoration: none;
+  border-bottom: 1px solid v.$primary-color-light;
+  transition: all 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    color: v.$primary-color-dark;
+    border-bottom-color: v.$primary-color-dark;
+    background-color: rgba(59, 130, 246, 0.05);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
+
+// ============================================================================
 // TIPTAP - REMOVE ALL FOCUS BORDERS GLOBALLY (Override Tailwind)
 // ============================================================================
 

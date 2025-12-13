@@ -5,12 +5,6 @@
       <h1 class="c-main-content__title">Mes Documents</h1>
       <p class="c-main-content__subtitle">Gérez vos notes et documents.</p>
     </div>
-    <div class="c-document-list__actions">
-      <button mat-raised-button color="accent" (click)="openMarkdownImportDialog()">
-        <mat-icon>upload_file</mat-icon>
-        Importer Markdown
-      </button>
-    </div>
   </div>
 
   <!-- Document Grid -->
@@ -35,12 +29,11 @@
           <h3 class="c-document-card__title">{{ doc.title || 'Sans titre' }}</h3>
           <p class="c-document-card__date">Modifié le {{ doc.updated_at | date:'dd/MM/yyyy HH:mm' }}</p>
         </div>
-      </div>
-      <div class="c-document-card__actions">
         <button mat-icon-button (click)="deleteDocument($event, doc.id)" title="Supprimer" class="c-document-card__delete">
           <mat-icon>delete</mat-icon>
         </button>
       </div>
+      <!-- Actions bar removed -->
 
       <!-- Child Documents List -->
       <div class="c-document-card__children" *ngIf="getChildDocuments(doc.id).length > 0">

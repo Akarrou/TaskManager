@@ -52,6 +52,7 @@ import { DatabaseTableExtension } from '../extensions/database-table.extension';
 import { DatabaseTableRendererDirective } from '../directives/database-table-renderer.directive';
 import { DatabaseService } from '../services/database.service';
 import { DEFAULT_DATABASE_CONFIG } from '../models/database.model';
+import { StorageService } from '../../../core/services/storage.service';
 
 const lowlight = createLowlight(all);
 
@@ -70,7 +71,11 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   private fabStore = inject(FabStore);
   private dialog = inject(MatDialog);
   private databaseService = inject(DatabaseService);
+  private storageService = inject(StorageService);
   private pageId = crypto.randomUUID();
+
+  // Track document file URLs for cleanup when links are deleted
+  private previousDocumentFileUrls = new Set<string>();
 
   editor: Editor;
   showSlashMenu = signal(false);
@@ -362,11 +367,87 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
   // Handle content changes from editor
   private handleContentChange(content: JSONContent) {
+    // Detect and cleanup deleted document files
+    this.cleanupDeletedDocumentFiles(content);
+
     this.documentState.update(state => ({
       ...state,
       content
     }));
     this.changeSubject.next();
+  }
+
+  /**
+   * Extract all document file URLs from the editor content
+   * These are URLs pointing to the 'documents-files' bucket
+   */
+  private extractDocumentFileUrls(content: JSONContent): Set<string> {
+    const urls = new Set<string>();
+
+    const traverse = (node: JSONContent) => {
+      // Check if this node has a link mark pointing to documents-files bucket
+      if (node.marks) {
+        for (const mark of node.marks) {
+          if (mark.type === 'link' && mark.attrs?.['href']) {
+            const href = mark.attrs['href'] as string;
+            if (href.includes('/documents-files/')) {
+              urls.add(href);
+            }
+          }
+        }
+      }
+
+      // Recursively process children
+      if (node.content) {
+        for (const child of node.content) {
+          traverse(child);
+        }
+      }
+    };
+
+    traverse(content);
+    return urls;
+  }
+
+  /**
+   * Extract the storage path from a Supabase public URL
+   * Example: https://xxx.supabase.co/storage/v1/object/public/documents-files/documents/123/files/file.pdf
+   * Returns: documents/123/files/file.pdf
+   */
+  private extractStoragePathFromUrl(url: string): string | null {
+    const match = url.match(/\/documents-files\/(.+)$/);
+    return match ? match[1] : null;
+  }
+
+  /**
+   * Detect deleted document files and remove them from storage
+   */
+  private cleanupDeletedDocumentFiles(newContent: JSONContent) {
+    const currentUrls = this.extractDocumentFileUrls(newContent);
+
+    // Find URLs that were in previous content but not in current
+    const deletedUrls = [...this.previousDocumentFileUrls].filter(url => !currentUrls.has(url));
+
+    // Delete each removed file from storage
+    for (const url of deletedUrls) {
+      const path = this.extractStoragePathFromUrl(url);
+      if (path) {
+        console.log('Deleting document file from storage:', path);
+        this.storageService.deleteFile('documents-files', path)
+          .then(() => console.log('Successfully deleted:', path))
+          .catch(err => console.error('Failed to delete file:', path, err));
+      }
+    }
+
+    // Update the tracked URLs
+    this.previousDocumentFileUrls = currentUrls;
+  }
+
+  /**
+   * Initialize the document file URLs tracking when content is loaded
+   */
+  private initializeDocumentFileTracking(content: JSONContent) {
+    this.previousDocumentFileUrls = this.extractDocumentFileUrls(content);
   }
 
   // Handle title changes from input
@@ -421,6 +502,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
           // Update editor content
           if (doc.content && Object.keys(doc.content).length > 0) {
             this.editor.commands.setContent(doc.content);
+            // Initialize tracking of document file URLs for cleanup on deletion
+            this.initializeDocumentFileTracking(doc.content as JSONContent);
           }
 
           // Check if we need to insert task section after creating a task
@@ -1027,7 +1110,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
                 href: result.url,
                 target: '_blank',
                 rel: 'noopener noreferrer',
-                class: 'document-file-link'
+                class: 'document-link'
               }
             }],
             text: result.fileName
