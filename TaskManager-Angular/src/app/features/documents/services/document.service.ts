@@ -1,11 +1,17 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, Injector } from '@angular/core';
 import { SupabaseService } from '../../../core/services/supabase';
 import { StorageService } from '../../../core/services/storage.service';
-import { from, Observable, of } from 'rxjs';
+import { from, Observable, of, firstValueFrom } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
 import { JSONContent } from '@tiptap/core';
 import { DocumentTaskRelation, TaskMentionData, TaskSearchResult } from '../models/document-task-relation.model';
 import { Task } from '../../../core/models/task.model';
+import type { DatabaseService } from './database.service';
+
+export interface CascadeDeleteInfo {
+  childDocumentCount: number;
+  databaseCount: number;
+}
 
 export interface Document {
   id: string;
@@ -39,8 +45,17 @@ export interface DocumentStorageFile {
 export class DocumentService {
   private supabase = inject(SupabaseService);
   private storageService = inject(StorageService);
+  private injector = inject(Injector);
 
   private readonly DOCUMENTS_FILES_BUCKET = 'documents-files';
+
+  // Lazy getter to avoid circular dependency with DatabaseService
+  private get databaseService(): DatabaseService {
+    // Import dynamically to avoid circular dependency at initialization
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { DatabaseService } = require('./database.service');
+    return this.injector.get(DatabaseService);
+  }
 
   private get client() {
     return this.supabase.client;
@@ -179,6 +194,186 @@ export class DocumentService {
         return of(false);
       })
     );
+  }
+
+  /**
+   * Get all descendant document IDs recursively (children, grandchildren, etc.)
+   * @param documentId - The root document ID
+   * @returns Array of all descendant document IDs (not including the root)
+   */
+  async getAllDescendantIds(documentId: string): Promise<string[]> {
+    const descendants: string[] = [];
+    const queue: string[] = [documentId];
+
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+
+      // Get direct children
+      const { data, error } = await this.client
+        .from('documents')
+        .select('id')
+        .eq('parent_id', currentId);
+
+      if (error) {
+        console.error(`Error fetching children for document ${currentId}:`, error);
+        continue;
+      }
+
+      for (const child of data || []) {
+        descendants.push(child.id);
+        queue.push(child.id); // Add to queue for further traversal
+      }
+    }
+
+    return descendants;
+  }
+
+  /**
+   * Get cascade delete info for a document (counts of descendants and databases)
+   * @param documentId - The document ID to analyze
+   */
+  async getCascadeDeleteInfo(documentId: string): Promise<CascadeDeleteInfo> {
+    // Get all descendant IDs
+    const descendantIds = await this.getAllDescendantIds(documentId);
+
+    // Get the root document
+    const { data: rootDoc } = await this.client
+      .from('documents')
+      .select('content')
+      .eq('id', documentId)
+      .single();
+
+    // Count databases in root document
+    let databaseCount = rootDoc?.content ? this.extractDatabaseIds(rootDoc.content).length : 0;
+
+    // Count databases in all descendants
+    for (const descId of descendantIds) {
+      const { data: descDoc } = await this.client
+        .from('documents')
+        .select('content')
+        .eq('id', descId)
+        .single();
+
+      if (descDoc?.content) {
+        databaseCount += this.extractDatabaseIds(descDoc.content).length;
+      }
+    }
+
+    return {
+      childDocumentCount: descendantIds.length,
+      databaseCount
+    };
+  }
+
+  /**
+   * Delete a document and all its descendants in cascade
+   * Deletes: storage files, databases, and document records
+   * @param documentId - The root document ID to delete
+   */
+  async deleteDocumentCascade(documentId: string): Promise<boolean> {
+    try {
+      // 1. Get all descendant IDs
+      const descendantIds = await this.getAllDescendantIds(documentId);
+
+      // Add root document at the end (delete children first)
+      const allDocIds = [...descendantIds, documentId];
+
+      // 2. Delete each document (from leaves to root)
+      // We reverse to delete children before parents
+      for (const docId of allDocIds.reverse()) {
+        await this.deleteSingleDocumentWithContent(docId);
+      }
+
+      console.log(`Successfully deleted document ${documentId} and ${descendantIds.length} descendants`);
+      return true;
+    } catch (error) {
+      console.error('Error in cascade delete:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Delete a single document along with its storage files and databases
+   * @param documentId - The document ID to delete
+   */
+  private async deleteSingleDocumentWithContent(documentId: string): Promise<void> {
+    // 1. Get document content for database IDs
+    const { data: doc } = await this.client
+      .from('documents')
+      .select('content')
+      .eq('id', documentId)
+      .single();
+
+    // 2. Delete storage files
+    await this.deleteDocumentStorageFiles(documentId);
+
+    // 3. Delete databases if any
+    if (doc?.content) {
+      const databaseIds = this.extractDatabaseIds(doc.content);
+      for (const dbId of databaseIds) {
+        try {
+          await firstValueFrom(this.databaseService.deleteDatabase(dbId));
+        } catch (err) {
+          console.warn(`Failed to delete database ${dbId}:`, err);
+        }
+      }
+    }
+
+    // 4. Delete document_task_relations
+    await this.client
+      .from('document_task_relations')
+      .delete()
+      .eq('document_id', documentId);
+
+    // 5. Delete document record
+    const { error } = await this.client
+      .from('documents')
+      .delete()
+      .eq('id', documentId);
+
+    if (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Check if a document is a child of another document
+   * @param documentId - The potential child document ID
+   * @param parentId - The potential parent document ID
+   */
+  async isChildDocument(documentId: string, parentId: string): Promise<boolean> {
+    const { data, error } = await this.client
+      .from('documents')
+      .select('parent_id')
+      .eq('id', documentId)
+      .single();
+
+    if (error || !data) {
+      return false;
+    }
+
+    return data.parent_id === parentId;
+  }
+
+  /**
+   * Get basic document info (title and parent_id)
+   * @param documentId - The document ID
+   */
+  async getDocumentBasicInfo(documentId: string): Promise<{ title: string; parent_id: string | null } | null> {
+    const { data, error } = await this.client
+      .from('documents')
+      .select('title, parent_id')
+      .eq('id', documentId)
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return {
+      title: data.title,
+      parent_id: data.parent_id
+    };
   }
 
   /**

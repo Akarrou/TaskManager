@@ -1,0 +1,61 @@
+<h2 mat-dialog-title class="dialog-title-danger">
+  <mat-icon>warning</mat-icon>
+  Supprimer la page liée
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <p>
+    Voulez-vous supprimer la page
+    <strong>"{{ data.documentTitle }}"</strong> ?
+  </p>
+
+  @if (data.childDocumentCount > 0 || data.databaseCount > 0) {
+    <div class="dialog-alert-warning">
+      <mat-icon>info</mat-icon>
+      <div class="dialog-alert-content">
+        <p class="dialog-alert-title">
+          Cette suppression inclura :
+        </p>
+        <ul class="list-disc list-inside text-sm space-y-1">
+          @if (data.childDocumentCount > 0) {
+            <li>
+              <strong>{{ data.childDocumentCount }}</strong>
+              sous-page{{ data.childDocumentCount > 1 ? 's' : '' }} liée{{ data.childDocumentCount > 1 ? 's' : '' }}
+            </li>
+          }
+          @if (data.databaseCount > 0) {
+            <li>
+              <strong>{{ data.databaseCount }}</strong>
+              base{{ data.databaseCount > 1 ? 's' : '' }} de données
+            </li>
+          }
+          <li>Tous les fichiers associés</li>
+        </ul>
+      </div>
+    </div>
+  }
+
+  <p class="text-sm text-gray-600 mt-4">
+    <mat-icon class="text-base align-middle">info</mat-icon>
+    Cette action est irréversible.
+  </p>
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
+  <button
+    mat-button
+    class="dialog-btn-secondary"
+    mat-dialog-close>
+    <mat-icon>cancel</mat-icon>
+    Annuler
+  </button>
+
+  <button
+    mat-raised-button
+    class="dialog-btn-danger"
+    [mat-dialog-close]="true"
+    cdkFocusInitial>
+    <mat-icon>delete</mat-icon>
+    Supprimer définitivement
+  </button>
+</mat-dialog-actions>

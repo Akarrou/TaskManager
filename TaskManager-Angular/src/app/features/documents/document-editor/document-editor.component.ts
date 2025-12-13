@@ -54,6 +54,7 @@ import { DatabaseService } from '../services/database.service';
 import { DEFAULT_DATABASE_CONFIG } from '../models/database.model';
 import { StorageService } from '../../../core/services/storage.service';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { DeleteChildDocumentDialogComponent, DeleteChildDocumentDialogData } from '../components/delete-child-document-dialog/delete-child-document-dialog.component';
 
 const lowlight = createLowlight(all);
 
@@ -77,8 +78,11 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
   // Track document file URLs for cleanup when links are deleted
   private previousDocumentFileUrls = new Set<string>();
+  // Track internal document links for cleanup when links are deleted
+  private previousDocumentLinkIds = new Set<string>();
   private isComponentDestroying = false;
   private isInsertingDocumentFile = false;
+  private isInsertingDocumentLink = false;
 
   editor: Editor;
   showSlashMenu = signal(false);
@@ -372,6 +376,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   private handleContentChange(content: JSONContent) {
     // Detect and cleanup deleted document files
     this.cleanupDeletedDocumentFiles(content);
+    // Detect and cleanup deleted document links (child pages)
+    this.cleanupDeletedDocumentLinks(content);
 
     this.documentState.update(state => ({
       ...state,
@@ -482,6 +488,121 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.previousDocumentFileUrls = this.extractDocumentFileUrls(content);
   }
 
+  /**
+   * Extract all internal document link IDs from the editor content
+   * These are links in the format /documents/{id}
+   */
+  private extractDocumentLinkIds(content: JSONContent): Set<string> {
+    const ids = new Set<string>();
+
+    const traverse = (node: JSONContent) => {
+      // Check if this node has a link mark pointing to internal documents
+      if (node.marks) {
+        for (const mark of node.marks) {
+          if (mark.type === 'link' && mark.attrs?.['href']) {
+            const href = mark.attrs['href'] as string;
+            // Match internal document links: /documents/{uuid}
+            const match = href.match(/^\/documents\/([a-f0-9-]{36})$/i);
+            if (match) {
+              ids.add(match[1]);
+            }
+          }
+        }
+      }
+
+      // Recursively process children
+      if (node.content) {
+        for (const child of node.content) {
+          traverse(child);
+        }
+      }
+    };
+
+    traverse(content);
+    return ids;
+  }
+
+  /**
+   * Initialize the document link IDs tracking when content is loaded
+   */
+  private initializeDocumentLinkTracking(content: JSONContent) {
+    this.previousDocumentLinkIds = this.extractDocumentLinkIds(content);
+  }
+
+  /**
+   * Detect deleted document links and prompt for cascade deletion
+   */
+  private cleanupDeletedDocumentLinks(newContent: JSONContent) {
+    // Don't trigger cleanup when component is being destroyed or during insertion
+    if (this.isComponentDestroying || this.isInsertingDocumentLink) {
+      return;
+    }
+
+    const currentDocId = this.documentState().id;
+    if (!currentDocId) {
+      return;
+    }
+
+    const currentIds = this.extractDocumentLinkIds(newContent);
+
+    // Find IDs that were in previous content but not in current
+    const deletedIds = [...this.previousDocumentLinkIds].filter(id => !currentIds.has(id));
+
+    // Update the tracked IDs immediately
+    this.previousDocumentLinkIds = currentIds;
+
+    // Check each deleted link - only prompt for child documents
+    for (const deletedDocId of deletedIds) {
+      this.checkAndPromptChildDocumentDeletion(deletedDocId, currentDocId);
+    }
+  }
+
+  /**
+   * Check if a document is a child of current document and prompt for deletion
+   */
+  private async checkAndPromptChildDocumentDeletion(documentId: string, parentId: string) {
+    // Check if this document is a direct child of the current document
+    const isChild = await this.documentService.isChildDocument(documentId, parentId);
+
+    if (!isChild) {
+      // Not a child document, just a link - don't prompt for deletion
+      return;
+    }
+
+    // Get document info for the dialog
+    const docInfo = await this.documentService.getDocumentBasicInfo(documentId);
+    if (!docInfo) {
+      return;
+    }
+
+    // Get cascade delete info (count of descendants and databases)
+    const cascadeInfo = await this.documentService.getCascadeDeleteInfo(documentId);
+
+    // Open confirmation dialog
+    const dialogRef = this.dialog.open(DeleteChildDocumentDialogComponent, {
+      width: '500px',
+      data: {
+        documentTitle: docInfo.title || 'Sans titre',
+        childDocumentCount: cascadeInfo.childDocumentCount,
+        databaseCount: cascadeInfo.databaseCount
+      } as DeleteChildDocumentDialogData
+    });
+
+    dialogRef.afterClosed().subscribe(async (confirmed: boolean) => {
+      if (confirmed) {
+        console.log('Deleting child document cascade:', documentId);
+        const success = await this.documentService.deleteDocumentCascade(documentId);
+        if (success) {
+          console.log('Successfully deleted document and descendants:', documentId);
+        } else {
+          console.error('Failed to delete document cascade:', documentId);
+        }
+      } else {
+        console.log('Child document deletion cancelled:', documentId);
+      }
+    });
+  }
+
   // Handle title changes from input
   onTitleChange(newTitle: string) {
     this.documentState.update(state => ({
@@ -536,6 +657,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
             this.editor.commands.setContent(doc.content);
             // Initialize tracking of document file URLs for cleanup on deletion
             this.initializeDocumentFileTracking(doc.content as JSONContent);
+            // Initialize tracking of internal document links for cleanup on deletion
+            this.initializeDocumentLinkTracking(doc.content as JSONContent);
           }
 
           // Check if we need to insert task section after creating a task
