@@ -1,0 +1,149 @@
+<h2 mat-dialog-title class="dialog-title-default">
+  <mat-icon>{{ isEditMode() ? 'edit' : 'image' }}</mat-icon>
+  {{ isEditMode() ? 'Éditer l\'image' : 'Insérer une image' }}
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <form [formGroup]="imageForm" class="image-form">
+
+    <!-- Tabs pour la source de l'image -->
+    <mat-tab-group [(selectedIndex)]="selectedTabIndex" class="source-tabs">
+
+      <!-- Tab URL -->
+      <mat-tab label="URL">
+        <div class="tab-content">
+          <!-- URL de l'image -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>URL de l'image</mat-label>
+            <input
+              matInput
+              formControlName="src"
+              placeholder="https://exemple.com/image.jpg"
+              type="url"
+            />
+            <mat-icon matPrefix>link</mat-icon>
+            @if (imageForm.get('src')?.hasError('required') && imageForm.get('src')?.touched) {
+              <mat-error>L'URL est requise</mat-error>
+            }
+            @if (imageForm.get('src')?.hasError('invalidUrl') && imageForm.get('src')?.touched) {
+              <mat-error>URL invalide</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Preview de l'image -->
+          <div class="image-preview-container">
+            @if (isLoadingPreview()) {
+              <div class="preview-loading">
+                <mat-spinner diameter="40"></mat-spinner>
+                <span>Chargement de l'image...</span>
+              </div>
+            } @else if (imageLoadError()) {
+              <div class="preview-error">
+                <mat-icon>broken_image</mat-icon>
+                <span>Impossible de charger l'image</span>
+                <small>Vérifiez que l'URL est correcte et accessible</small>
+              </div>
+            } @else if (imagePreviewUrl()) {
+              <img [src]="imagePreviewUrl()" [alt]="imageForm.get('alt')?.value || 'Preview'" />
+            } @else {
+              <div class="preview-placeholder">
+                <mat-icon>image</mat-icon>
+                <span>La prévisualisation apparaîtra ici</span>
+              </div>
+            }
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Tab Upload -->
+      <mat-tab label="Upload">
+        <div class="tab-content">
+          <app-file-dropzone
+            [bucket]="'documents-assets'"
+            [path]="'documents/images/'"
+            [acceptedTypes]="'image/*'"
+            [maxSize]="10485760"
+            [instructionMessage]="'Glissez une image ici ou cliquez pour sélectionner'"
+            (fileUploaded)="onFileUploaded($event)"
+            (uploadError)="onUploadError($event)"
+          />
+
+          <!-- Preview de l'image uploadée -->
+          @if (uploadedFileUrl()) {
+            <div class="uploaded-preview">
+              <div class="preview-header">
+                <mat-icon class="success-icon">check_circle</mat-icon>
+                <span>Image uploadée avec succès</span>
+              </div>
+              <div class="image-preview-container">
+                <img [src]="uploadedFileUrl()" [alt]="imageForm.get('alt')?.value || 'Image uploadée'" />
+              </div>
+            </div>
+          }
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
+
+    <!-- Texte alternatif -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Texte alternatif (pour l'accessibilité)</mat-label>
+      <input
+        matInput
+        formControlName="alt"
+        placeholder="Décrivez l'image..."
+      />
+      <mat-icon matPrefix>accessibility</mat-icon>
+      @if (imageForm.get('alt')?.hasError('required') && imageForm.get('alt')?.touched) {
+        <mat-error>Le texte alternatif est requis</mat-error>
+      }
+      @if (imageForm.get('alt')?.hasError('minlength') && imageForm.get('alt')?.touched) {
+        <mat-error>Minimum 3 caractères</mat-error>
+      }
+    </mat-form-field>
+
+    <!-- Alignement -->
+    <div class="alignment-section">
+      <label class="section-label">Alignement</label>
+      <mat-radio-group formControlName="alignment" class="alignment-options">
+        @for (option of alignmentOptions; track option.value) {
+          <mat-radio-button [value]="option.value" class="alignment-option">
+            <mat-icon>{{ option.icon }}</mat-icon>
+            <span>{{ option.label }}</span>
+          </mat-radio-button>
+        }
+      </mat-radio-group>
+    </div>
+
+    <!-- Légende (optionnelle) -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Légende (optionnelle)</mat-label>
+      <textarea
+        matInput
+        formControlName="caption"
+        placeholder="Ajoutez une légende à votre image..."
+        rows="2"
+        maxlength="500"
+      ></textarea>
+      <mat-icon matPrefix>notes</mat-icon>
+      <mat-hint align="end">{{ imageForm.get('caption')?.value?.length || 0 }} / 500</mat-hint>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
+  <button mat-button class="dialog-btn-secondary" (click)="onCancel()">
+    <mat-icon>cancel</mat-icon>
+    Annuler
+  </button>
+  <button
+    mat-raised-button
+    class="dialog-btn-primary"
+    (click)="onConfirm()"
+    [disabled]="!isFormValid"
+    cdkFocusInitial
+  >
+    <mat-icon>{{ isEditMode() ? 'check' : 'add_photo_alternate' }}</mat-icon>
+    {{ isEditMode() ? 'Valider' : 'Insérer' }}
+  </button>
+</mat-dialog-actions>

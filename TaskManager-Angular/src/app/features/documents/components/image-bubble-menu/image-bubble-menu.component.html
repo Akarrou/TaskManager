@@ -1,0 +1,63 @@
+@if (isVisible()) {
+  <div class="image-bubble-menu" [style.top]="position().top" [style.left]="position().left">
+    <div class="menu-container">
+      <!-- Boutons d'alignement -->
+      <div class="alignment-group">
+        <button
+          mat-icon-button
+          class="menu-btn"
+          [class.active]="currentAlignment() === 'left'"
+          (mousedown)="$event.preventDefault()"
+          (click)="setAlignment('left'); $event.stopPropagation()"
+          matTooltip="Aligner à gauche"
+        >
+          <mat-icon>format_align_left</mat-icon>
+        </button>
+
+        <button
+          mat-icon-button
+          class="menu-btn"
+          [class.active]="currentAlignment() === 'center'"
+          (mousedown)="$event.preventDefault()"
+          (click)="setAlignment('center'); $event.stopPropagation()"
+          matTooltip="Centrer"
+        >
+          <mat-icon>format_align_center</mat-icon>
+        </button>
+
+        <button
+          mat-icon-button
+          class="menu-btn"
+          [class.active]="currentAlignment() === 'right'"
+          (mousedown)="$event.preventDefault()"
+          (click)="setAlignment('right'); $event.stopPropagation()"
+          matTooltip="Aligner à droite"
+        >
+          <mat-icon>format_align_right</mat-icon>
+        </button>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Bouton Éditer -->
+      <button
+        mat-icon-button
+        class="menu-btn"
+        (click)="editImage()"
+        matTooltip="Éditer l'image"
+      >
+        <mat-icon>edit</mat-icon>
+      </button>
+
+      <!-- Bouton Supprimer -->
+      <button
+        mat-icon-button
+        class="menu-btn danger"
+        (click)="deleteImage()"
+        matTooltip="Supprimer l'image"
+      >
+        <mat-icon>delete</mat-icon>
+      </button>
+    </div>
+  </div>
+}

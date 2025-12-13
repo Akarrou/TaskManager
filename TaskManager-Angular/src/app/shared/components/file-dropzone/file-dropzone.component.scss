@@ -1,0 +1,212 @@
+@import 'src/styles/variables';
+
+.dropzone {
+  @apply relative
+         border-2 border-dashed border-gray-300
+         rounded-lg
+         p-8
+         text-center
+         cursor-pointer
+         transition-all duration-200
+         bg-gray-50
+         hover:border-primary-500 hover:bg-primary-50;
+
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  // État: Dragging over
+  &--dragging {
+    @apply border-primary-600 bg-primary-100 scale-[1.02];
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  // État: Upload en cours
+  &--uploading {
+    @apply border-blue-400 bg-blue-50 cursor-wait;
+    pointer-events: none;
+  }
+
+  // État: Succès
+  &--success {
+    @apply border-green-500 bg-green-50;
+    animation: success-pulse 0.6s ease-in-out;
+  }
+
+  // État: Erreur
+  &--error {
+    @apply border-red-500 bg-red-50;
+  }
+
+  // Contenu principal
+  &__content {
+    @apply w-full flex flex-col items-center justify-center gap-4;
+  }
+
+  // Icône principale
+  &__icon {
+    @apply text-gray-400;
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+
+    &--spinning {
+      @apply text-blue-500;
+      animation: spin 2s linear infinite;
+    }
+
+    &--success {
+      @apply text-green-500;
+      animation: scale-in 0.3s ease-out;
+    }
+
+    &--error {
+      @apply text-red-500;
+      animation: shake 0.5s ease-in-out;
+    }
+  }
+
+  // Message d'instruction
+  &__instruction {
+    @apply text-base font-medium text-gray-700 mb-1;
+  }
+
+  // Texte hint (types acceptés, taille max)
+  &__hint {
+    @apply text-sm text-gray-500;
+  }
+
+  // Message de status (uploading, error, success)
+  &__status {
+    @apply text-base font-medium;
+  }
+
+  // Barre de progression
+  &__progress {
+    @apply w-full max-w-xs mt-2;
+  }
+
+  // Zone de preview
+  &__preview {
+    @apply flex flex-col items-center gap-3;
+
+    &-image {
+      @apply max-w-[200px] max-h-[200px] rounded-lg shadow-md object-contain;
+    }
+
+    &-name {
+      @apply text-sm text-gray-600 font-medium truncate max-w-[250px];
+    }
+  }
+
+  // Bouton retry
+  &__retry {
+    @apply mt-4 px-4 py-2
+           bg-red-500 text-white
+           rounded-md
+           hover:bg-red-600
+           transition-colors
+           font-medium text-sm;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    }
+  }
+
+  // État idle
+  &__idle {
+    @apply flex flex-col items-center gap-3;
+  }
+
+  // État uploading
+  &__uploading {
+    @apply flex flex-col items-center gap-3;
+  }
+
+  // État success
+  &__success {
+    @apply flex flex-col items-center gap-3;
+  }
+
+  // État error
+  &__error {
+    @apply flex flex-col items-center gap-3;
+  }
+}
+
+// Input file caché
+.hidden {
+  display: none !important;
+}
+
+// Animations
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-10px);
+  }
+  75% {
+    transform: translateX(10px);
+  }
+}
+
+@keyframes success-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+// Responsive
+@media (max-width: 640px) {
+  .dropzone {
+    @apply p-6;
+    min-height: 180px;
+
+    &__icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+    }
+
+    &__instruction {
+      @apply text-sm;
+    }
+
+    &__hint {
+      @apply text-xs;
+    }
+
+    &__preview-image {
+      @apply max-w-[150px] max-h-[150px];
+    }
+  }
+}

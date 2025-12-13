@@ -243,12 +243,115 @@ tiptap-editor,
   background-color: #dbeafe;
 }
 
-// Images
+// ============================================================================
+// TIPTAP ENHANCED IMAGES - RESIZE, ALIGNMENT, CAPTIONS
+// ============================================================================
+
+// Container NodeView personnalisé pour les images
+.ProseMirror [data-node-view-wrapper] {
+  margin: 1rem 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+
+  // Classes d'alignement appliquées par le NodeView
+  &.image-align-left {
+    align-items: flex-start;
+  }
+
+  &.image-align-center {
+    align-items: center;
+  }
+
+  &.image-align-right {
+    align-items: flex-end;
+  }
+}
+
+// Images avec resize handles
+.ProseMirror img.tiptap-image,
 .ProseMirror img {
   max-width: 100%;
   height: auto;
   border-radius: 0.5rem;
-  margin: 1rem 0;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.ProseMirror [data-node-view-wrapper].ProseMirror-selectednode {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+// Resize handles (générés par Tiptap avec data-resize-handle)
+// Par défaut, les poignées sont invisibles
+.ProseMirror [data-resize-handle] {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: all;
+  background: #3b82f6;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+  &[data-resize-handle="bottom"] {
+    cursor: ns-resize;
+    height: 8px;
+    width: 100%;
+  }
+
+  &[data-resize-handle="right"] {
+    cursor: ew-resize;
+    width: 8px;
+    height: 100%;
+  }
+
+  &[data-resize-handle="bottom-right"] {
+    cursor: nwse-resize;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+}
+
+// Les poignées deviennent visibles uniquement quand l'image est sélectionnée
+.ProseMirror [data-resize-container].ProseMirror-selectednode [data-resize-handle] {
+  opacity: 1;
+}
+
+// Alternative: les poignées apparaissent aussi au survol du conteneur
+.ProseMirror [data-resize-container]:hover [data-resize-handle] {
+  opacity: 0.6;
+}
+
+.ProseMirror [data-resize-container].ProseMirror-selectednode:hover [data-resize-handle] {
+  opacity: 1;
+}
+
+// Légendes d'images
+.ProseMirror .tiptap-image-caption {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-style: italic;
+  text-align: center;
+  padding: 0 1rem;
+
+  &:empty {
+    display: none;
+  }
+}
+
+// Clear floats après images flottantes
+.ProseMirror::after {
+  content: "";
+  display: table;
+  clear: both;
 }
 
 // Headings

@@ -7,7 +7,7 @@ import { EditorView } from '@tiptap/pm/view';
 import { TextSelection } from '@tiptap/pm/state';
 import StarterKit from '@tiptap/starter-kit';
 import { Placeholder } from '@tiptap/extension-placeholder';
-import { Image } from '@tiptap/extension-image';
+import { EnhancedImage } from '../extensions/enhanced-image.extension';
 import { TaskList } from '@tiptap/extension-task-list';
 import { TaskItem } from '@tiptap/extension-task-item';
 import { Table } from '@tiptap/extension-table';
@@ -38,6 +38,8 @@ import { Link } from '@tiptap/extension-link';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { TaskSearchModalComponent } from '../components/task-search-modal/task-search-modal.component';
+import { ImageInsertDialogComponent, ImageInsertDialogData, ImageInsertDialogResult } from '../components/image-insert-dialog/image-insert-dialog.component';
+import { ImageBubbleMenuComponent } from '../components/image-bubble-menu/image-bubble-menu.component';
 import { TaskMention, TaskMentionAttributes } from '../extensions/task-mention.extension';
 import { TaskSearchResult, TaskMentionData } from '../models/document-task-relation.model';
 import { DocumentTasksSectionComponent } from '../components/document-tasks-section/document-tasks-section';
@@ -53,7 +55,7 @@ const lowlight = createLowlight(all);
 @Component({
   selector: 'app-document-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, TaskSectionRendererDirective, DatabaseTableRendererDirective],
+  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, ImageBubbleMenuComponent, TaskSectionRendererDirective, DatabaseTableRendererDirective],
   templateUrl: './document-editor.component.html',
   styleUrl: './document-editor.component.scss',
   encapsulation: ViewEncapsulation.None
@@ -222,7 +224,20 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         GlobalDragHandle.configure({
           dragHandleWidth: 40,
         }),
-        Image,
+        EnhancedImage.configure({
+          inline: false,
+          allowBase64: false,
+          HTMLAttributes: {
+            class: 'tiptap-image',
+          },
+          resize: {
+            enabled: true,
+            directions: ['bottom', 'right', 'bottom-right'],
+            minWidth: 100,
+            minHeight: 100,
+            alwaysPreserveAspectRatio: true,
+          },
+        }),
         TaskList,
         TaskItem.configure({
           nested: true, // Enable nested task lists
@@ -931,10 +946,23 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   addImage() {
-    const url = window.prompt('URL');
-    if (url) {
-      this.editor.chain().focus().setImage({ src: url }).run();
-    }
+    const dialogRef = this.dialog.open(ImageInsertDialogComponent, {
+      width: '700px',
+      maxWidth: '90vw',
+      maxHeight: '90vh',
+      data: { mode: 'insert' } as ImageInsertDialogData
+    });
+
+    dialogRef.afterClosed().subscribe((result: ImageInsertDialogResult | null) => {
+      if (result) {
+        this.editor.chain().focus().setImage({
+          src: result.src,
+          alt: result.alt,
+          alignment: result.alignment,
+          caption: result.caption || '',
+        } as any).run();
+      }
+    });
   }
 
   createLinkedDocument() {

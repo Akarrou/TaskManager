@@ -1,0 +1,71 @@
+<div
+  [class]="dropzoneClasses()"
+  (dragover)="onDragOver($event)"
+  (dragleave)="onDragLeave($event)"
+  (drop)="onDrop($event)"
+  (click)="fileInput.click()"
+>
+  <!-- Input file caché -->
+  <input
+    #fileInput
+    type="file"
+    [accept]="acceptedTypes()"
+    [multiple]="multiple()"
+    (change)="onFileSelected($event)"
+    class="hidden"
+  />
+
+  <!-- Zone de drop principale -->
+  <div class="dropzone__content">
+
+    <!-- État: Idle ou Dragging -->
+    @if (!isUploading() && !isSuccess() && !errorMessage()) {
+      <div class="dropzone__idle">
+        <mat-icon class="dropzone__icon">cloud_upload</mat-icon>
+        <p class="dropzone__instruction">{{ instructionMessage() }}</p>
+        <p class="dropzone__hint">{{ acceptedTypes() }} - Max {{ (maxSize() / 1024 / 1024).toFixed(0) }}MB</p>
+      </div>
+    }
+
+    <!-- État: Preview (si image sélectionnée) -->
+    @if (previewUrl() && !isUploading() && !isSuccess()) {
+      <div class="dropzone__preview">
+        <img [src]="previewUrl()" alt="Preview" class="dropzone__preview-image" />
+        <p class="dropzone__preview-name">{{ selectedFile()?.name }}</p>
+      </div>
+    }
+
+    <!-- État: Upload en cours -->
+    @if (isUploading()) {
+      <div class="dropzone__uploading">
+        <mat-icon class="dropzone__icon dropzone__icon--spinning">cloud_upload</mat-icon>
+        <p class="dropzone__status">Upload en cours...</p>
+        <mat-progress-bar mode="indeterminate" class="dropzone__progress"></mat-progress-bar>
+      </div>
+    }
+
+    <!-- État: Succès -->
+    @if (isSuccess()) {
+      <div class="dropzone__success">
+        <mat-icon class="dropzone__icon dropzone__icon--success">check_circle</mat-icon>
+        <p class="dropzone__status">Fichier uploadé avec succès !</p>
+      </div>
+    }
+
+    <!-- État: Erreur -->
+    @if (errorMessage() && !isUploading()) {
+      <div class="dropzone__error">
+        <mat-icon class="dropzone__icon dropzone__icon--error">error</mat-icon>
+        <p class="dropzone__status">{{ errorMessage() }}</p>
+        <button
+          type="button"
+          class="dropzone__retry"
+          (click)="reset(); $event.stopPropagation()"
+        >
+          Réessayer
+        </button>
+      </div>
+    }
+
+  </div>
+</div>
