@@ -35,17 +35,43 @@
       </div>
       <!-- Actions bar removed -->
 
-      <!-- Child Documents List -->
-      <div class="c-document-card__children" *ngIf="getChildDocuments(doc.id).length > 0">
-        <div class="c-document-card__children-title">Documents liés :</div>
-        <div class="c-document-card__children-list">
-          <button 
-            *ngFor="let child of getChildDocuments(doc.id)"
-            class="c-document-card__child-item"
-            (click)="$event.stopPropagation(); openDocument(child.id)">
-            <mat-icon class="child-icon">description</mat-icon>
-            <span class="child-title">{{ child.title || 'Sans titre' }}</span>
-          </button>
+      <!-- Child Documents and Storage Files -->
+      <div class="c-document-card__attachments" *ngIf="getChildDocuments(doc.id).length > 0 || getStorageFiles(doc.id).length > 0">
+        <div class="c-document-card__columns">
+          <!-- Child Pages Column -->
+          <div class="c-document-card__column" *ngIf="getChildDocuments(doc.id).length > 0">
+            <div class="c-document-card__column-title">
+              <mat-icon class="column-icon">description</mat-icon>
+              Pages
+            </div>
+            <div class="c-document-card__column-list">
+              <button
+                *ngFor="let child of getChildDocuments(doc.id)"
+                class="c-document-card__item"
+                (click)="$event.stopPropagation(); openDocument(child.id)">
+                <mat-icon class="item-icon">article</mat-icon>
+                <span class="item-title">{{ child.title || 'Sans titre' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Storage Files Column -->
+          <div class="c-document-card__column" *ngIf="getStorageFiles(doc.id).length > 0">
+            <div class="c-document-card__column-title">
+              <mat-icon class="column-icon">folder</mat-icon>
+              Fichiers
+            </div>
+            <div class="c-document-card__column-list">
+              <button
+                *ngFor="let file of getStorageFiles(doc.id)"
+                class="c-document-card__item c-document-card__item--file"
+                (click)="openStorageFile($event, file.url)">
+                <mat-icon class="item-icon">attach_file</mat-icon>
+                <span class="item-title">{{ file.name }}</span>
+                <mat-icon class="item-external">open_in_new</mat-icon>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

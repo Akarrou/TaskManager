@@ -173,16 +173,8 @@ export class NavigationFabComponent implements OnInit {
     }
 
     // Actions spécifiques à la liste des documents
-    if (ctx.currentPage === 'document-list') {
-      actions.push({
-        id: 'new-document',
-        icon: 'post_add',
-        label: 'Nouveau document',
-        tooltip: 'Créer un nouveau document',
-        action: () => this.navigateTo('/documents/new'),
-        color: 'primary'
-      });
-    }
+    // Note: L'action 'new-document' est gérée par le composant document-list
+    // via customActions pour avoir accès au project_id sélectionné
 
     // Actions spécifiques à l'éditeur de document
     if (ctx.currentPage === 'document-editor') {

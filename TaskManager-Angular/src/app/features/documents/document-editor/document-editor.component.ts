@@ -53,6 +53,7 @@ import { DatabaseTableRendererDirective } from '../directives/database-table-ren
 import { DatabaseService } from '../services/database.service';
 import { DEFAULT_DATABASE_CONFIG } from '../models/database.model';
 import { StorageService } from '../../../core/services/storage.service';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 const lowlight = createLowlight(all);
 
@@ -76,6 +77,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
   // Track document file URLs for cleanup when links are deleted
   private previousDocumentFileUrls = new Set<string>();
+  private isComponentDestroying = false;
+  private isInsertingDocumentFile = false;
 
   editor: Editor;
   showSlashMenu = signal(false);
@@ -198,7 +201,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     // Éléments structurels
     { id: 'table', label: 'Tableau', icon: 'table_chart', action: () => this.addTable() },
     { id: 'image', label: 'Image', icon: 'image', action: () => this.addImage() },
-    { id: 'uploadDoc', label: 'Document', icon: 'upload_file', action: () => this.addDocumentFile() },
+    { id: 'uploadDoc', label: 'Upload document', icon: 'upload_file', action: () => this.addDocumentFile() },
     { id: 'link', label: 'Lien externe', icon: 'link', action: () => this.addExternalLink() },
     { id: 'columns2', label: '2 Colonnes', icon: 'view_column', action: () => this.editor.chain().focus().setColumns(2).run() },
     { id: 'columns3', label: '3 Colonnes', icon: 'view_week', action: () => this.editor.chain().focus().setColumns(3).run() },
@@ -420,27 +423,56 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Detect deleted document files and remove them from storage
+   * Detect deleted document files and prompt for removal from storage
    */
   private cleanupDeletedDocumentFiles(newContent: JSONContent) {
+    // Don't trigger cleanup when component is being destroyed or during insertion
+    if (this.isComponentDestroying || this.isInsertingDocumentFile) {
+      return;
+    }
+
     const currentUrls = this.extractDocumentFileUrls(newContent);
 
     // Find URLs that were in previous content but not in current
     const deletedUrls = [...this.previousDocumentFileUrls].filter(url => !currentUrls.has(url));
 
-    // Delete each removed file from storage
+    // Update the tracked URLs immediately
+    this.previousDocumentFileUrls = currentUrls;
+
+    // Prompt for deletion of each removed file
     for (const url of deletedUrls) {
       const path = this.extractStoragePathFromUrl(url);
       if (path) {
+        // Extract filename from path for the dialog message
+        const fileName = path.split('/').pop() || 'le fichier';
+
+        this.confirmAndDeleteFile(path, fileName);
+      }
+    }
+  }
+
+  /**
+   * Show confirmation dialog and delete file if confirmed
+   */
+  private confirmAndDeleteFile(path: string, fileName: string) {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Supprimer le document',
+        message: `Voulez-vous également supprimer le fichier "${fileName}" du stockage ?`
+      } as ConfirmDialogData
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
         console.log('Deleting document file from storage:', path);
         this.storageService.deleteFile('documents-files', path)
           .then(() => console.log('Successfully deleted:', path))
           .catch(err => console.error('Failed to delete file:', path, err));
+      } else {
+        console.log('File deletion cancelled, file remains in storage:', path);
       }
-    }
-
-    // Update the tracked URLs
-    this.previousDocumentFileUrls = currentUrls;
+    });
   }
 
   /**
@@ -1093,14 +1125,17 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(DocumentUploadDialogComponent, {
       width: '500px',
       maxWidth: '90vw',
-      data: { 
+      data: {
         documentId: currentDocId,
-        mode: 'insert' 
+        mode: 'insert'
       } as DocumentUploadDialogData
     });
 
     dialogRef.afterClosed().subscribe((result: DocumentUploadDialogResult | null) => {
       if (result) {
+        // Prevent cleanup dialog during insertion
+        this.isInsertingDocumentFile = true;
+
         this.editor.chain().focus().insertContent([
           {
             type: 'text',
@@ -1117,6 +1152,10 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
           },
           { type: 'text', text: ' ' }
         ]).run();
+
+        // Add the new URL to tracking and re-enable cleanup
+        this.previousDocumentFileUrls.add(result.url);
+        this.isInsertingDocumentFile = false;
       }
     });
   }
@@ -1622,6 +1661,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // Prevent document file cleanup dialog from showing when navigating away
+    this.isComponentDestroying = true;
+
     this.fabStore.unregisterPage(this.pageId);
     this.editor.destroy();
     this.destroy$.next();

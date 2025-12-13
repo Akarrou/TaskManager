@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../../../core/services/supabase';
+import { StorageService } from '../../../core/services/storage.service';
 import { from, Observable, of } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
 import { JSONContent } from '@tiptap/core';
@@ -26,11 +27,20 @@ export interface DocumentBreadcrumb {
   title: string;
 }
 
+export interface DocumentStorageFile {
+  name: string;
+  url: string;
+  path: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class DocumentService {
   private supabase = inject(SupabaseService);
+  private storageService = inject(StorageService);
+
+  private readonly DOCUMENTS_FILES_BUCKET = 'documents-files';
 
   private get client() {
     return this.supabase.client;
@@ -146,19 +156,89 @@ export class DocumentService {
     );
   }
 
+  /**
+   * Delete a document and all its associated files from storage
+   * Files are stored at: documents/{documentId}/files/
+   */
   deleteDocument(id: string): Observable<boolean> {
-    return from(
-      this.client
-        .from('documents')
-        .delete()
-        .eq('id', id)
-    ).pipe(
+    return from(this.deleteDocumentStorageFiles(id)).pipe(
+      switchMap(() =>
+        from(
+          this.client
+            .from('documents')
+            .delete()
+            .eq('id', id)
+        )
+      ),
       map(response => {
         if (response.error) throw response.error;
         return true;
       }),
-      catchError(() => of(false))
+      catchError((error) => {
+        console.error('Error deleting document:', error);
+        return of(false);
+      })
     );
+  }
+
+  /**
+   * Delete all files associated with a document from storage
+   * @param documentId - The document ID
+   */
+  private async deleteDocumentStorageFiles(documentId: string): Promise<void> {
+    const folderPath = `documents/${documentId}/files`;
+
+    try {
+      // List all files in the document's folder
+      const files = await this.storageService.listFiles(
+        this.DOCUMENTS_FILES_BUCKET,
+        folderPath
+      );
+
+      if (files.length === 0) {
+        return;
+      }
+
+      // Build full paths for deletion
+      const filePaths = files.map(file => `${folderPath}/${file.name}`);
+
+      // Delete all files
+      await this.storageService.deleteFiles(this.DOCUMENTS_FILES_BUCKET, filePaths);
+
+      console.log(`Deleted ${filePaths.length} files from storage for document ${documentId}`);
+    } catch (error) {
+      // Log error but don't fail the document deletion
+      console.warn(`Failed to delete storage files for document ${documentId}:`, error);
+    }
+  }
+
+  /**
+   * Get all storage files associated with a document
+   * Files are stored at: documents/{documentId}/files/
+   */
+  async getDocumentStorageFiles(documentId: string): Promise<DocumentStorageFile[]> {
+    const folderPath = `documents/${documentId}/files`;
+
+    try {
+      const files = await this.storageService.listFiles(
+        this.DOCUMENTS_FILES_BUCKET,
+        folderPath
+      );
+
+      return files
+        .filter(file => file.name !== '.emptyFolderPlaceholder') // Filter out placeholder files
+        .map(file => {
+          const filePath = `${folderPath}/${file.name}`;
+          return {
+            name: file.name,
+            path: filePath,
+            url: this.storageService.getPublicUrl(this.DOCUMENTS_FILES_BUCKET, filePath)
+          };
+        });
+    } catch (error) {
+      console.warn(`Failed to get storage files for document ${documentId}:`, error);
+      return [];
+    }
   }
 
   /**

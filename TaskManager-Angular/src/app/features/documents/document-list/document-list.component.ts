@@ -10,7 +10,7 @@ import { Store } from '@ngrx/store';
 import { forkJoin, of, Observable } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { DocumentService, Document } from '../services/document.service';
+import { DocumentService, Document, DocumentStorageFile } from '../services/document.service';
 import { DatabaseService } from '../services/database.service';
 import { DeleteDocumentDialogComponent } from '../components/delete-document-dialog/delete-document-dialog.component';
 import { MarkdownImportDialogComponent } from '../components/markdown-import-dialog/markdown-import-dialog.component';
@@ -67,12 +67,30 @@ export class DocumentListComponent implements OnInit, OnDestroy {
   loading = this.loadingSignal;
   currentProject = this.selectedProjectSignal;
 
+  // Map to store storage files for each document
+  documentStorageFiles = signal<Map<string, DocumentStorageFile[]>>(new Map());
+
   /**
    * Get child documents for a given parent document
    */
   getChildDocuments(parentId: string): Document[] {
     const allDocs = this.allDocumentsSignal();
     return allDocs.filter(doc => doc.parent_id === parentId);
+  }
+
+  /**
+   * Get storage files for a document
+   */
+  getStorageFiles(documentId: string): DocumentStorageFile[] {
+    return this.documentStorageFiles().get(documentId) || [];
+  }
+
+  /**
+   * Open a storage file in a new tab
+   */
+  openStorageFile(event: Event, url: string): void {
+    event.stopPropagation();
+    window.open(url, '_blank');
   }
 
   constructor() {
@@ -83,6 +101,30 @@ export class DocumentListComponent implements OnInit, OnDestroy {
         this.store.dispatch(DocumentActions.loadDocumentsByProject({ projectId: project.id }));
       }
     });
+
+    // Effect: load storage files when documents change
+    effect(() => {
+      const docs = this.documents();
+      if (docs.length > 0) {
+        this.loadStorageFilesForDocuments(docs);
+      }
+    });
+  }
+
+  /**
+   * Load storage files for all documents
+   */
+  private async loadStorageFilesForDocuments(docs: Document[]): Promise<void> {
+    const filesMap = new Map<string, DocumentStorageFile[]>();
+
+    for (const doc of docs) {
+      const files = await this.documentService.getDocumentStorageFiles(doc.id);
+      if (files.length > 0) {
+        filesMap.set(doc.id, files);
+      }
+    }
+
+    this.documentStorageFiles.set(filesMap);
   }
 
   ngOnInit() {
@@ -91,6 +133,14 @@ export class DocumentListComponent implements OnInit, OnDestroy {
       {
         context: { currentPage: 'document-list' },
         actions: [
+          {
+            id: 'new-document',
+            icon: 'post_add',
+            label: 'Nouveau document',
+            tooltip: 'Créer un nouveau document',
+            action: () => this.createNewDocument(),
+            color: 'primary'
+          },
           {
             id: 'import-markdown',
             icon: 'upload_file',
