@@ -41,6 +41,8 @@ import { TaskSearchModalComponent } from '../components/task-search-modal/task-s
 import { ImageInsertDialogComponent, ImageInsertDialogData, ImageInsertDialogResult } from '../components/image-insert-dialog/image-insert-dialog.component';
 import { ImageBubbleMenuComponent } from '../components/image-bubble-menu/image-bubble-menu.component';
 import { NewDocumentDialogComponent, NewDocumentDialogResult } from '../components/new-document-dialog/new-document-dialog';
+import { ExternalLinkDialogComponent, ExternalLinkDialogData, ExternalLinkDialogResult } from '../components/external-link-dialog/external-link-dialog.component';
+import { DocumentUploadDialogComponent, DocumentUploadDialogData, DocumentUploadDialogResult } from '../components/document-upload-dialog/document-upload-dialog.component';
 import { TaskMention, TaskMentionAttributes } from '../extensions/task-mention.extension';
 import { TaskSearchResult, TaskMentionData } from '../models/document-task-relation.model';
 import { DocumentTasksSectionComponent } from '../components/document-tasks-section/document-tasks-section';
@@ -191,6 +193,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     // Éléments structurels
     { id: 'table', label: 'Tableau', icon: 'table_chart', action: () => this.addTable() },
     { id: 'image', label: 'Image', icon: 'image', action: () => this.addImage() },
+    { id: 'uploadDoc', label: 'Document', icon: 'upload_file', action: () => this.addDocumentFile() },
+    { id: 'link', label: 'Lien externe', icon: 'link', action: () => this.addExternalLink() },
     { id: 'columns2', label: '2 Colonnes', icon: 'view_column', action: () => this.editor.chain().focus().setColumns(2).run() },
     { id: 'columns3', label: '3 Colonnes', icon: 'view_week', action: () => this.editor.chain().focus().setColumns(3).run() },
     { id: 'newDocument', label: 'Nouvelle page', icon: 'note_add', action: () => this.createLinkedDocument() },
@@ -963,6 +967,73 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
           alignment: result.alignment,
           caption: result.caption || '',
         } as any).run();
+      }
+    });
+  }
+
+  addExternalLink() {
+    const dialogRef = this.dialog.open(ExternalLinkDialogComponent, {
+      width: '500px',
+      maxWidth: '90vw',
+      data: { mode: 'insert' } as ExternalLinkDialogData
+    });
+
+    dialogRef.afterClosed().subscribe((result: ExternalLinkDialogResult | null) => {
+      if (result) {
+        this.editor.chain().focus().insertContent([
+          {
+            type: 'text',
+            marks: [{
+              type: 'link',
+              attrs: {
+                href: result.url,
+                target: '_blank',
+                rel: 'noopener noreferrer',
+                class: 'document-link'
+              }
+            }],
+            text: result.label
+          },
+          { type: 'text', text: ' ' }
+        ]).run();
+      }
+    });
+  }
+
+  addDocumentFile() {
+    const currentDocId = this.documentState().id;
+    if (!currentDocId) {
+      alert('Sauvegardez le document d\'abord');
+      return;
+    }
+
+    const dialogRef = this.dialog.open(DocumentUploadDialogComponent, {
+      width: '500px',
+      maxWidth: '90vw',
+      data: { 
+        documentId: currentDocId,
+        mode: 'insert' 
+      } as DocumentUploadDialogData
+    });
+
+    dialogRef.afterClosed().subscribe((result: DocumentUploadDialogResult | null) => {
+      if (result) {
+        this.editor.chain().focus().insertContent([
+          {
+            type: 'text',
+            marks: [{
+              type: 'link',
+              attrs: {
+                href: result.url,
+                target: '_blank',
+                rel: 'noopener noreferrer',
+                class: 'document-file-link'
+              }
+            }],
+            text: result.fileName
+          },
+          { type: 'text', text: ' ' }
+        ]).run();
       }
     });
   }

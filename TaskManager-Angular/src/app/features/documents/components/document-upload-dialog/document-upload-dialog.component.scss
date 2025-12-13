@@ -1,0 +1,86 @@
+@use "../../../../styles/variables" as v;
+
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-6;
+  padding: v.$space-2 0;
+}
+
+.upload-instructions {
+  padding: v.$space-4;
+  background: v.$background-color-light;
+  border-radius: v.$border-radius-lg;
+  margin-bottom: v.$space-4;
+  border-left: 4px solid v.$primary-color;
+
+  p {
+    margin: 0;
+    font-size: v.$font-size-sm;
+    color: v.$text-color-medium;
+    line-height: 1.6;
+
+    &.instruction-hint {
+      margin-top: v.$space-2;
+      font-size: v.$font-size-xs;
+      color: v.$text-color-light;
+    }
+  }
+}
+
+.uploaded-preview {
+  margin-top: v.$space-4;
+  padding: v.$space-4;
+  background: v.$background-color-form;
+  border-radius: v.$border-radius-lg;
+  border: 1px solid v.$border-color-light;
+
+  .preview-header {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    margin-bottom: v.$space-4;
+    color: #10b981; // Success green
+
+    .success-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  .file-info {
+    display: flex;
+    align-items: center;
+    gap: v.$space-4;
+    padding: v.$space-4;
+    background: white;
+    border-radius: v.$border-radius-md;
+
+    mat-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+      color: v.$primary-color;
+    }
+
+    .file-details {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: v.$space-1;
+
+      .file-name {
+        font-size: v.$font-size-sm;
+        font-weight: v.$font-weight-semibold;
+        color: v.$text-color-dark;
+        word-break: break-word;
+      }
+
+      .file-size {
+        font-size: v.$font-size-xs;
+        color: v.$text-color-light;
+      }
+    }
+  }
+}

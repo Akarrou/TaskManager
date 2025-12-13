@@ -1,0 +1,75 @@
+<h2 mat-dialog-title class="dialog-title-default">
+  <mat-icon>link</mat-icon>
+  {{ isEditMode() ? 'Éditer le lien' : 'Insérer un lien externe' }}
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <form [formGroup]="linkForm" class="dialog-form">
+    <!-- URL Field -->
+    <div class="c-form-group">
+      <label class="c-label" for="linkUrl">URL du lien</label>
+      <div class="c-input-wrapper">
+        <span class="material-icons-outlined c-input-icon">link</span>
+        <input
+          class="c-input"
+          [class.c-input--error]="linkForm.get('url')?.invalid && linkForm.get('url')?.touched"
+          id="linkUrl"
+          type="url"
+          formControlName="url"
+          placeholder="https://exemple.com"
+          autocomplete="url"
+        />
+      </div>
+      @if (linkForm.get('url')?.hasError('required') && linkForm.get('url')?.touched) {
+        <span class="c-error-text">L'URL est requise</span>
+      }
+      @if (linkForm.get('url')?.hasError('invalidUrl') && linkForm.get('url')?.touched) {
+        <span class="c-error-text">L'URL doit commencer par http:// ou https://</span>
+      }
+    </div>
+
+    <!-- Label Field -->
+    <div class="c-form-group">
+      <label class="c-label" for="linkLabel">Texte à afficher</label>
+      <div class="c-input-wrapper">
+        <span class="material-icons-outlined c-input-icon">text_fields</span>
+        <input
+          class="c-input"
+          [class.c-input--error]="linkForm.get('label')?.invalid && linkForm.get('label')?.touched"
+          id="linkLabel"
+          type="text"
+          formControlName="label"
+          placeholder="Texte du lien..."
+          maxlength="200"
+        />
+      </div>
+      @if (linkForm.get('label')?.hasError('required') && linkForm.get('label')?.touched) {
+        <span class="c-error-text">Le texte du lien est requis</span>
+      }
+      @if (linkForm.get('label')?.hasError('minLength') && linkForm.get('label')?.touched) {
+        <span class="c-error-text">Le texte doit contenir au moins 1 caractère</span>
+      }
+      @if (linkForm.get('label')?.hasError('maxLength') && linkForm.get('label')?.touched) {
+        <span class="c-error-text">Le texte ne peut pas dépasser 200 caractères</span>
+      }
+      <span class="c-hint">{{ labelCharCount }} / 200</span>
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
+  <button mat-button class="dialog-btn-secondary" (click)="onCancel()">
+    <mat-icon>cancel</mat-icon>
+    Annuler
+  </button>
+  <button
+    mat-raised-button
+    class="dialog-btn-primary"
+    (click)="onConfirm()"
+    [disabled]="!isFormValid"
+    cdkFocusInitial
+  >
+    <mat-icon>{{ isEditMode() ? 'check' : 'add_link' }}</mat-icon>
+    {{ isEditMode() ? 'Valider' : 'Insérer' }}
+  </button>
+</mat-dialog-actions>

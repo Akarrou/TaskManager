@@ -1,0 +1,59 @@
+<h2 mat-dialog-title class="dialog-title-default">
+  <mat-icon>upload_file</mat-icon>
+  Insérer un document
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <div class="dialog-form">
+    <!-- Instructions -->
+    <div class="upload-instructions">
+      <p>Téléversez un document (PDF, DOCX, XLSX, TXT) pour l'insérer dans votre page.</p>
+      <p class="instruction-hint">Taille maximale : 10 MB</p>
+    </div>
+
+    <!-- File Dropzone -->
+    <app-file-dropzone
+      [bucket]="'documents-files'"
+      [path]="'documents/' + documentId + '/files/'"
+      [acceptedTypes]="acceptedTypes"
+      [maxSize]="maxFileSize"
+      [instructionMessage]="'Glissez un document ici ou cliquez pour sélectionner'"
+      (fileUploaded)="onFileUploaded($event)"
+      (uploadError)="onUploadError($event)"
+    />
+
+    <!-- Success Preview -->
+    @if (uploadedFile()) {
+      <div class="uploaded-preview">
+        <div class="preview-header">
+          <mat-icon class="success-icon">check_circle</mat-icon>
+          <span>Document téléversé avec succès</span>
+        </div>
+        <div class="file-info">
+          <mat-icon>{{ getFileIcon(uploadedFile()!.file.type) }}</mat-icon>
+          <div class="file-details">
+            <span class="file-name">{{ uploadedFile()!.file.name }}</span>
+            <span class="file-size">{{ formatFileSize(uploadedFile()!.file.size) }}</span>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
+  <button mat-button class="dialog-btn-secondary" (click)="onCancel()">
+    <mat-icon>cancel</mat-icon>
+    Annuler
+  </button>
+  <button
+    mat-raised-button
+    class="dialog-btn-primary"
+    (click)="onConfirm()"
+    [disabled]="!uploadedFile()"
+    cdkFocusInitial
+  >
+    <mat-icon>insert_drive_file</mat-icon>
+    Insérer
+  </button>
+</mat-dialog-actions>

@@ -1,0 +1,11 @@
+@use "../../../../styles/variables" as v;
+
+// This component reuses the custom form styling pattern from image-insert-dialog
+// All form classes (.c-form-group, .c-label, .c-input, etc.) are defined globally
+
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-6;
+  padding: v.$space-2 0;
+}
