@@ -15,12 +15,10 @@ api.logicfractals.fr {
     reverse_proxy kong:8000
 }
 
-# Supabase Studio (Admin Dashboard)
+# Supabase Studio (Admin Dashboard) - Protégé par Basic Auth
 supabase.logicfractals.fr {
+    basicauth {
+        admin $2a$14$scqGDjAzIA8kXPszxFKfUulBa9hZG73QqJ/QvlN6pFK0EHZZIM9G6
+    }
     reverse_proxy studio:3000
-
-    # Protection par Basic Auth (optionnel - décommenter si souhaité)
-    # basicauth {
-    #     admin $2a$14$... # Générer avec: caddy hash-password
-    # }
 }

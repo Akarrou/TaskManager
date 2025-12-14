@@ -44,7 +44,9 @@
       "Bash(\"/Users/jeromevalette/Projects/Task manager/TaskManager-Angular/OBS/.env\" )",
       "Bash(\"/Users/jeromevalette/Projects/Task manager/TaskManager-Angular/OBS/Caddyfile\" )",
       "Bash(ubuntu@51.178.52.150:~/taskmanager/OBS/)",
-      "Bash(dig:*)"
+      "Bash(dig:*)",
+      "Bash(\"/Users/jeromevalette/Projects/Task manager/TaskManager-Angular/dist/TaskManager-Angular/browser/\" )",
+      "Bash(ubuntu@51.178.52.150:~/taskmanager/dist/TaskManager-Angular/browser/)"
     ],
     "deny": [],
     "ask": []
