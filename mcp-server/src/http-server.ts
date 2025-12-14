@@ -15,11 +15,32 @@ import { env } from './config.js';
 // Store active transports for session management
 const transports = new Map<string, SSEServerTransport>();
 
+// Basic Auth check
+function checkBasicAuth(req: IncomingMessage): boolean {
+  if (!env.AUTH_ENABLED) return true;
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Basic ')) return false;
+
+  const base64 = authHeader.slice(6);
+  const decoded = Buffer.from(base64, 'base64').toString('utf-8');
+  const [username, password] = decoded.split(':');
+
+  return username === env.AUTH_USERNAME && password === env.AUTH_PASSWORD;
+}
+
+// Send 401 Unauthorized response
+function sendUnauthorized(res: ServerResponse): void {
+  res.setHeader('WWW-Authenticate', 'Basic realm="MCP Server"');
+  res.writeHead(401, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: 'Unauthorized' }));
+}
+
 // CORS headers
 function setCorsHeaders(res: ServerResponse): void {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, X-Session-Id');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, X-Session-Id, Authorization');
 }
 
 // Parse URL
@@ -80,6 +101,12 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
 
   // SSE endpoint for establishing MCP connection
   if (url.pathname === '/sse' && method === 'GET') {
+    // Check authentication
+    if (!checkBasicAuth(req)) {
+      sendUnauthorized(res);
+      return;
+    }
+
     const server = createMcpServer();
     const transport = new SSEServerTransport('/messages', res);
 
@@ -100,6 +127,12 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
 
   // Messages endpoint for client requests
   if (url.pathname === '/messages' && method === 'POST') {
+    // Check authentication
+    if (!checkBasicAuth(req)) {
+      sendUnauthorized(res);
+      return;
+    }
+
     const sessionId = req.headers['x-session-id'] as string;
 
     if (!sessionId || !transports.has(sessionId)) {

@@ -2,44 +2,25 @@
 # TaskManager - Caddy Configuration
 # ===================================================================
 # Automatic HTTPS with Let's Encrypt
-# Only used in production VPS deployment with domain name
+# Caddy gère automatiquement les certificats SSL
 # ===================================================================
 
-# Replace with your actual domain names
-# Example configuration below - CUSTOMIZE before use!
+# Application Frontend
+kodo.logicfractals.fr {
+    reverse_proxy app:4010
+}
 
-# Main application
-# yourdomain.com {
-#     reverse_proxy app:4010
-# }
-
-# Supabase API
-# api.yourdomain.com {
-#     reverse_proxy kong:8000
-# }
+# Supabase API (pour les requêtes depuis l'app)
+api.logicfractals.fr {
+    reverse_proxy kong:8000
+}
 
 # Supabase Studio (Admin Dashboard)
-# studio.yourdomain.com {
-#     reverse_proxy studio:3000
-#     # Optional: Restrict access by IP
-#     # @notallowed {
-#     #     not remote_ip 192.168.1.0/24
-#     # }
-#     # respond @notallowed 403
-# }
+supabase.logicfractals.fr {
+    reverse_proxy studio:3000
 
-# ===================================================================
-# INSTRUCTIONS
-# ===================================================================
-#
-# 1. Uncomment the blocks above
-# 2. Replace 'yourdomain.com' with your actual domain
-# 3. Ensure DNS A records point to your VPS IP:
-#    - yourdomain.com → YOUR_VPS_IP
-#    - api.yourdomain.com → YOUR_VPS_IP
-#    - studio.yourdomain.com → YOUR_VPS_IP
-# 4. Start with: docker compose --profile production up -d
-#
-# Caddy will automatically obtain SSL certificates from Let's Encrypt
-#
-# ===================================================================
+    # Protection par Basic Auth (optionnel - décommenter si souhaité)
+    # basicauth {
+    #     admin $2a$14$... # Générer avec: caddy hash-password
+    # }
+}

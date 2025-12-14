@@ -35,7 +35,16 @@
       "Bash(pnpm run build:dev:*)",
       "Bash(pnpm build:*)",
       "Bash(pnpm install:*)",
-      "Bash(pnpm exec ng build:*)"
+      "Bash(pnpm exec ng build:*)",
+      "Bash(ssh -o ConnectTimeout=10 -o BatchMode=yes root@51.178.52.150 \"echo ''Connection successful'' && uname -a\")",
+      "Bash(ssh:*)",
+      "Bash(rsync:*)",
+      "Bash(\"/Users/jeromevalette/Projects/Task manager/TaskManager-Angular/supabase/\" )",
+      "Bash(ubuntu@51.178.52.150:~/taskmanager/supabase/)",
+      "Bash(\"/Users/jeromevalette/Projects/Task manager/TaskManager-Angular/OBS/.env\" )",
+      "Bash(\"/Users/jeromevalette/Projects/Task manager/TaskManager-Angular/OBS/Caddyfile\" )",
+      "Bash(ubuntu@51.178.52.150:~/taskmanager/OBS/)",
+      "Bash(dig:*)"
     ],
     "deny": [],
     "ask": []

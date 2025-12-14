@@ -9,6 +9,10 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
   STORAGE_BUCKET: z.string().default('documents-files'),
   HTTP_PORT: z.coerce.number().default(3100),
+  // Authentication for HTTP server (production)
+  AUTH_ENABLED: z.coerce.boolean().default(true),
+  AUTH_USERNAME: z.string().default('admin'),
+  AUTH_PASSWORD: z.string().default('changeme'),
 });
 
 function loadEnv() {
