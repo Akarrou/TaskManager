@@ -4,7 +4,7 @@
       <!-- Boutons d'alignement -->
       <div class="alignment-group">
         <button
-          mat-icon-button
+          type="button"
           class="menu-btn"
           [class.active]="currentAlignment() === 'left'"
           (mousedown)="$event.preventDefault()"
@@ -15,7 +15,7 @@
         </button>
 
         <button
-          mat-icon-button
+          type="button"
           class="menu-btn"
           [class.active]="currentAlignment() === 'center'"
           (mousedown)="$event.preventDefault()"
@@ -26,7 +26,7 @@
         </button>
 
         <button
-          mat-icon-button
+          type="button"
           class="menu-btn"
           [class.active]="currentAlignment() === 'right'"
           (mousedown)="$event.preventDefault()"
@@ -41,9 +41,10 @@
 
       <!-- Bouton Éditer -->
       <button
-        mat-icon-button
+        type="button"
         class="menu-btn"
-        (click)="editImage()"
+        (mousedown)="$event.preventDefault()"
+        (click)="editImage(); $event.stopPropagation()"
         matTooltip="Éditer l'image"
       >
         <mat-icon>edit</mat-icon>
@@ -51,9 +52,10 @@
 
       <!-- Bouton Supprimer -->
       <button
-        mat-icon-button
+        type="button"
         class="menu-btn danger"
-        (click)="deleteImage()"
+        (mousedown)="$event.preventDefault()"
+        (click)="deleteImage(); $event.stopPropagation()"
         matTooltip="Supprimer l'image"
       >
         <mat-icon>delete</mat-icon>

@@ -1,6 +1,5 @@
 import { Component, Input, OnInit, OnDestroy, signal, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Editor } from '@tiptap/core';
@@ -12,7 +11,6 @@ import { ImageInsertDialogComponent, ImageInsertDialogData, ImageInsertDialogRes
   standalone: true,
   imports: [
     CommonModule,
-    MatButtonModule,
     MatIconModule,
     MatTooltipModule,
   ],
@@ -107,7 +105,7 @@ export class ImageBubbleMenuComponent implements OnInit, OnDestroy {
   setAlignment(alignment: 'left' | 'center' | 'right') {
     if (!this.editor) return;
 
-    const { state } = this.editor;
+    const { state, view } = this.editor;
     const { selection } = state;
     const node = (selection as any).node;
 
@@ -125,7 +123,20 @@ export class ImageBubbleMenuComponent implements OnInit, OnDestroy {
     this.editor.view.dispatch(transaction);
     this.currentAlignment.set(alignment);
 
-    // Le NodeView se charge automatiquement de mettre à jour l'affichage
+    // Appliquer directement la classe d'alignement sur le conteneur
+    requestAnimationFrame(() => {
+      const dom = view.nodeDOM(from) as HTMLElement;
+      if (dom) {
+        const container = dom.closest('[data-resize-container]') as HTMLElement;
+        if (container) {
+          // Supprimer les anciennes classes d'alignement
+          container.classList.remove('align-left', 'align-center', 'align-right');
+          // Ajouter la nouvelle classe
+          container.classList.add(`align-${alignment}`);
+        }
+      }
+    });
+
     this.updateMenuState();
   }
 

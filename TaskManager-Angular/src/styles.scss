@@ -269,28 +269,7 @@ tiptap-editor,
 // TIPTAP ENHANCED IMAGES - RESIZE, ALIGNMENT, CAPTIONS
 // ============================================================================
 
-// Container NodeView personnalisé pour les images
-.ProseMirror [data-node-view-wrapper] {
-  margin: 1rem 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-
-  // Classes d'alignement appliquées par le NodeView
-  &.image-align-left {
-    align-items: flex-start;
-  }
-
-  &.image-align-center {
-    align-items: center;
-  }
-
-  &.image-align-right {
-    align-items: flex-end;
-  }
-}
-
-// Images avec resize handles
+// Images de base
 .ProseMirror img.tiptap-image,
 .ProseMirror img {
   max-width: 100%;
@@ -304,7 +283,41 @@ tiptap-editor,
   }
 }
 
-.ProseMirror [data-node-view-wrapper].ProseMirror-selectednode {
+// Conteneur resize de TipTap - utilise flex pour l'alignement
+// Structure: data-resize-container > data-resize-wrapper > img
+.ProseMirror [data-resize-container] {
+  display: flex !important;
+  width: 100%;
+
+  // Alignement via classes appliquées dynamiquement par JS
+  &.align-left {
+    justify-content: flex-start !important;
+  }
+
+  &.align-center {
+    justify-content: center !important;
+  }
+
+  &.align-right {
+    justify-content: flex-end !important;
+  }
+
+  // Fallback: alignement basé sur l'attribut data-alignment (pour le chargement initial)
+  &:has(img[data-alignment="left"]):not(.align-left):not(.align-center):not(.align-right) {
+    justify-content: flex-start !important;
+  }
+
+  &:has(img[data-alignment="center"]):not(.align-left):not(.align-center):not(.align-right) {
+    justify-content: center !important;
+  }
+
+  &:has(img[data-alignment="right"]):not(.align-left):not(.align-center):not(.align-right) {
+    justify-content: flex-end !important;
+  }
+}
+
+// Sélection du conteneur resize
+.ProseMirror [data-resize-container].ProseMirror-selectednode {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
   box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
@@ -352,21 +365,6 @@ tiptap-editor,
 
 .ProseMirror [data-resize-container].ProseMirror-selectednode:hover [data-resize-handle] {
   opacity: 1;
-}
-
-// Légendes d'images
-.ProseMirror .tiptap-image-caption {
-  display: block;
-  margin-top: 0.5rem;
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-style: italic;
-  text-align: center;
-  padding: 0 1rem;
-
-  &:empty {
-    display: none;
-  }
 }
 
 // Clear floats après images flottantes

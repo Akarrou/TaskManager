@@ -32,7 +32,8 @@
       "Bash(docker compose run:*)",
       "Bash(ng generate:*)",
       "Bash(pnpm run build:*)",
-      "Bash(pnpm run build:dev:*)"
+      "Bash(pnpm run build:dev:*)",
+      "Bash(pnpm build:*)"
     ],
     "deny": [],
     "ask": []

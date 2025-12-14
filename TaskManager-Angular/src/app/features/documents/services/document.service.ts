@@ -561,26 +561,42 @@ export class DocumentService {
 
   /**
    * Get all tasks linked to a document
+   * Uses separate queries to avoid PostgREST schema cache issues with foreign key joins
    */
   getTasksForDocument(documentId: string): Observable<TaskMentionData[]> {
+    // First get the task IDs from relations
     return from(
       this.client
         .from('document_task_relations')
-        .select(`task_id, tasks(id, title, status, priority, type, task_number, project_id)`)
+        .select('task_id, position_in_document')
         .eq('document_id', documentId)
         .order('position_in_document', { ascending: true })
     ).pipe(
-      map(response => {
-        if (response.error) throw response.error;
-        return (response.data || []).map((rel: any) => ({
-          id: rel.tasks.id,
-          title: rel.tasks.title,
-          status: rel.tasks.status,
-          priority: rel.tasks.priority,
-          type: rel.tasks.type,
-          task_number: rel.tasks.task_number,
-          project_id: rel.tasks.project_id,
-        }));
+      switchMap(relationsResponse => {
+        if (relationsResponse.error) throw relationsResponse.error;
+        const relations = relationsResponse.data || [];
+        if (relations.length === 0) return of([]);
+
+        const taskIds = relations.map((rel: { task_id: string }) => rel.task_id);
+
+        // Then fetch the tasks separately
+        return from(
+          this.client
+            .from('tasks')
+            .select('id, title, status, priority, type, task_number, project_id')
+            .in('id', taskIds)
+        ).pipe(
+          map(tasksResponse => {
+            if (tasksResponse.error) throw tasksResponse.error;
+            const tasksMap = new Map(
+              (tasksResponse.data || []).map((t: TaskMentionData) => [t.id, t])
+            );
+            // Return tasks in the order defined by position_in_document
+            return relations
+              .map((rel: { task_id: string }) => tasksMap.get(rel.task_id))
+              .filter((t): t is TaskMentionData => t !== undefined);
+          })
+        );
       })
     );
   }
@@ -629,52 +645,48 @@ export class DocumentService {
   /**
    * Get full task objects for all tasks linked to a document
    * Returns complete Task objects needed for table/kanban/calendar/timeline views
+   * Uses separate queries to avoid PostgREST schema cache issues with foreign key joins
    */
   getFullTasksForDocument(documentId: string): Observable<Task[]> {
+    // First get the task IDs from relations
     return from(
       this.client
         .from('document_task_relations')
-        .select(`
-          task_id,
-          tasks!inner(
-            id,
-            title,
-            description,
-            status,
-            priority,
-            assigned_to,
-            created_by,
-            due_date,
-            created_at,
-            updated_at,
-            completed_at,
-            tags,
-            slug,
-            prd_slug,
-            estimated_hours,
-            actual_hours,
-            task_number,
-            environment,
-            guideline_refs,
-            type,
-            parent_task_id,
-            project_id,
-            epic_id,
-            feature_id
-          )
-        `)
+        .select('task_id, position_in_document')
         .eq('document_id', documentId)
         .order('position_in_document', { ascending: true })
     ).pipe(
-      map(response => {
-        if (response.error) {
-          console.error('Error fetching tasks for document:', response.error);
-          throw response.error;
+      switchMap(relationsResponse => {
+        if (relationsResponse.error) {
+          console.error('Error fetching task relations:', relationsResponse.error);
+          throw relationsResponse.error;
         }
-        const tasks = (response.data || [])
-          .filter((rel: any) => rel.tasks) // Filter out any null tasks
-          .map((rel: any) => rel.tasks as Task);
-        return tasks;
+        const relations = relationsResponse.data || [];
+        if (relations.length === 0) return of([]);
+
+        const taskIds = relations.map((rel: { task_id: string }) => rel.task_id);
+
+        // Then fetch the full tasks separately
+        return from(
+          this.client
+            .from('tasks')
+            .select('*')
+            .in('id', taskIds)
+        ).pipe(
+          map(tasksResponse => {
+            if (tasksResponse.error) {
+              console.error('Error fetching tasks:', tasksResponse.error);
+              throw tasksResponse.error;
+            }
+            const tasksMap = new Map(
+              (tasksResponse.data || []).map((t: Task) => [t.id, t])
+            );
+            // Return tasks in the order defined by position_in_document
+            return relations
+              .map((rel: { task_id: string }) => tasksMap.get(rel.task_id))
+              .filter((t): t is Task => t !== undefined);
+          })
+        );
       })
     );
   }
