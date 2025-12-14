@@ -332,6 +332,20 @@ export class DatabaseService {
         };
       }),
       catchError(error => {
+        // Handle table not found (newly created, cache not refreshed yet)
+        // Check both error.code and error.message for PostgREST errors
+        const isTableNotFound =
+          error.code === 'PGRST116' ||
+          error.code === 'PGRST204' ||
+          error.code === 'PGRST205' ||
+          error.code === '42P01' ||
+          error.message?.includes('PGRST') ||
+          error.message?.includes('relation') && error.message?.includes('does not exist');
+
+        if (isTableNotFound) {
+          // Silently return empty result for newly created tables
+          return of({ rows: [], totalCount: 0 });
+        }
         console.error('Failed to fetch rows with count:', error);
         return throwError(() => error);
       })

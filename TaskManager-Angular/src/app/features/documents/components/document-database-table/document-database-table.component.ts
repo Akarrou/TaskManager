@@ -294,6 +294,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
 
   /**
    * Load rows with current filters and sort
+   * Uses RPC which bypasses PostgREST schema cache
    */
   loadRowsWithFilters() {
     this.isLoading.set(true);
@@ -321,18 +322,9 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
           this.isLoading.set(false);
         },
         error: (err: any) => {
-          // With lazy creation, table might not exist yet - this is normal for new databases
-          const isTableNotFound = err.code === 'PGRST116' || err.code === 'PGRST204' || err.code === 'PGRST205' || err.code === '42P01';
-
-          if (isTableNotFound) {
-            this.rows.set([]);
-            this.totalCount.set(0);
-            this.isLoading.set(false);
-          } else {
-            console.error('Failed to load rows:', err);
-            this.error.set('Erreur lors du chargement des données');
-            this.isLoading.set(false);
-          }
+          console.error('Failed to load rows:', err);
+          this.error.set('Erreur lors du chargement des données');
+          this.isLoading.set(false);
         },
       });
   }
