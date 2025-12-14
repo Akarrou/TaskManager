@@ -10,9 +10,7 @@ export interface SearchFilters {
   searchText: string;
   status: string;
   priority: string;
-  environment: string;
   type: string;
-  prd_slug: string;
   tag: string;
 }
 
@@ -26,10 +24,10 @@ export interface SearchFilters {
       <div style="margin-bottom: 1rem; margin-top: 1rem;">
           <input matInput
             type="text"
-            placeholder="Rechercher par titre, slug, PRD ou numéro (#123)..."
+            placeholder="Rechercher par titre, description ou numéro (ID-0001)..."
             [(ngModel)]="searchText"
             (input)="onSearchChange()"
-            aria-label="Rechercher des tâches par titre, slug, PRD ou numéro">
+            aria-label="Rechercher des tâches par titre, description ou numéro">
       </div>
 
       <!-- Filtres complets -->
@@ -77,24 +75,6 @@ export interface SearchFilters {
             <option value="critical">Critique</option>
           </select>
         </div>
-        <!-- Filtre par environnement -->
-        <div class="filter-group">
-          <label class="filter-label">Environnement</label>
-          <select 
-            class="filter-select env-select"
-            [(ngModel)]="environmentFilter"
-            (change)="onFilterChange()"
-            aria-label="Filtrer par environnement">
-            <option value="">Tous</option>
-            <option value="frontend">Frontend</option>
-            <option value="backend">Backend</option>
-          </select>
-        </div>
-        <!-- Filtre par PRD Slug -->
-        <div class="filter-group">
-          <label class="filter-label">PRD Slug</label>
-          <input class="filter-select" type="text" [(ngModel)]="prdSlugFilter" (input)="onFilterChange()" placeholder="ex: prd-gestion-roles">
-        </div>
         <!-- Filtre par tag -->
         <div class="filter-group">
           <label class="filter-label">Tag</label>
@@ -128,12 +108,6 @@ export interface SearchFilters {
           </span>
           <span *ngIf="priorityFilter" class="active-filter">
             Priorité: {{ getPriorityLabel(priorityFilter) }}
-          </span>
-          <span *ngIf="environmentFilter" class="active-filter">
-            Environnement: {{ environmentFilter }}
-          </span>
-          <span *ngIf="prdSlugFilter" class="active-filter">
-            PRD: {{ prdSlugFilter }}
           </span>
           <span *ngIf="tagFilter" class="active-filter">
             Tag: {{ tagFilter }}
@@ -270,9 +244,7 @@ export class TaskSearchComponent implements OnChanges {
   searchText = '';
   statusFilter = '';
   priorityFilter = '';
-  environmentFilter = '';
   typeFilter = '';
-  prdSlugFilter = '';
   tagFilter = '';
 
   // Output pour notifier les changements
@@ -285,9 +257,7 @@ export class TaskSearchComponent implements OnChanges {
       this.searchText = this.filters.searchText || '';
       this.statusFilter = this.filters.status || '';
       this.priorityFilter = this.filters.priority || '';
-      this.environmentFilter = this.filters.environment || '';
       this.typeFilter = this.filters.type || '';
-      this.prdSlugFilter = this.filters.prd_slug || '';
       this.tagFilter = this.filters.tag || '';
     }
   }
@@ -309,20 +279,16 @@ export class TaskSearchComponent implements OnChanges {
     this.searchText = '';
     this.statusFilter = '';
     this.priorityFilter = '';
-    this.environmentFilter = '';
     this.typeFilter = '';
-    this.prdSlugFilter = '';
     this.tagFilter = '';
     this.emitFilters();
   }
 
   hasActiveFilters(): boolean {
-    return this.searchText !== '' || 
-           this.statusFilter !== '' || 
+    return this.searchText !== '' ||
+           this.statusFilter !== '' ||
            this.priorityFilter !== '' ||
-           this.environmentFilter !== '' ||
            this.typeFilter !== '' ||
-           this.prdSlugFilter !== '' ||
            this.tagFilter !== '';
   }
 
@@ -335,13 +301,11 @@ export class TaskSearchComponent implements OnChanges {
   }
 
   private emitFilters() {
-    const filters = {
+    const filters: SearchFilters = {
       searchText: this.searchText,
       status: this.statusFilter,
       priority: this.priorityFilter,
-      environment: this.environmentFilter,
       type: this.typeFilter,
-      prd_slug: this.prdSlugFilter,
       tag: this.tagFilter
     };
     this.filtersChange.emit(filters);
@@ -358,14 +322,8 @@ export class TaskSearchComponent implements OnChanges {
     if (filters.priority !== undefined) {
       this.priorityFilter = filters.priority;
     }
-    if (filters.environment !== undefined) {
-      this.environmentFilter = filters.environment;
-    }
     if (filters.type !== undefined) {
       this.typeFilter = filters.type;
-    }
-    if (filters.prd_slug !== undefined) {
-      this.prdSlugFilter = filters.prd_slug;
     }
     if (filters.tag !== undefined) {
       this.tagFilter = filters.tag;
@@ -378,9 +336,7 @@ export class TaskSearchComponent implements OnChanges {
       searchText: this.searchText,
       status: this.statusFilter,
       priority: this.priorityFilter,
-      environment: this.environmentFilter,
       type: this.typeFilter,
-      prd_slug: this.prdSlugFilter,
       tag: this.tagFilter
     };
   }

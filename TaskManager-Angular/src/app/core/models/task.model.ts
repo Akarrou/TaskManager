@@ -26,7 +26,7 @@ export interface ISubtask {
   task_id?: string;
   title: string;
   description?: string;
-  status: 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled';
+  status: 'backlog' | 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled' | 'blocked' | 'awaiting_info';
   priority: 'low' | 'medium' | 'high' | 'urgent' | 'None';
   completed: boolean;
   created_at?: string;
@@ -44,7 +44,7 @@ export interface Task {
   id?: string;
   title: string;
   description?: string;
-  status: 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled';
+  status: 'backlog' | 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled' | 'blocked' | 'awaiting_info';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   assigned_to?: string;
   created_by?: string;

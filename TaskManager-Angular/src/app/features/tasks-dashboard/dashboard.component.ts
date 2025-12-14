@@ -105,9 +105,7 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
     searchText: '',
     status: '',
     priority: '',
-    environment: '',
     type: '',
-    prd_slug: '',
     tag: ''
   });
 
@@ -122,6 +120,7 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
       filtered = filtered.filter(entry =>
         entry.title.toLowerCase().includes(search) ||
         (entry.description && entry.description.toLowerCase().includes(search)) ||
+        (entry.task_number && entry.task_number.toLowerCase().includes(search)) ||
         (entry.databaseName && entry.databaseName.toLowerCase().includes(search))
       );
     }

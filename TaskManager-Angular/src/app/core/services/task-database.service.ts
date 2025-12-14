@@ -639,11 +639,12 @@ export class TaskDatabaseService {
 
   /**
    * Map TaskEntry status to legacy Task status
-   * Maps new status values to legacy format for backward compatibility
+   * Now preserves all status values since Task type supports them
    */
   private mapStatusToLegacy(status: TaskStatus): Task['status'] {
     switch (status) {
       case 'backlog':
+        return 'backlog';
       case 'pending':
         return 'pending';
       case 'in_progress':
@@ -651,10 +652,11 @@ export class TaskDatabaseService {
       case 'completed':
         return 'completed';
       case 'blocked':
+        return 'blocked';
       case 'cancelled':
         return 'cancelled';
       case 'awaiting_info':
-        return 'pending'; // Map awaiting_info to pending in legacy
+        return 'awaiting_info';
       default:
         return 'pending';
     }
