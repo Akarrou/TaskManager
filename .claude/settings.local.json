@@ -33,7 +33,8 @@
       "Bash(ng generate:*)",
       "Bash(pnpm run build:*)",
       "Bash(pnpm run build:dev:*)",
-      "Bash(pnpm build:*)"
+      "Bash(pnpm build:*)",
+      "Bash(pnpm install:*)"
     ],
     "deny": [],
     "ask": []
