@@ -116,6 +116,40 @@ export class DatabaseService {
   }
 
   /**
+   * Create a standalone database (without a parent document)
+   * Used for task databases created from CSV import
+   */
+  createStandaloneDatabase(config: DatabaseConfig): Observable<{ databaseId: string; tableName: string; name: string }> {
+    const databaseId = this.generateDatabaseId();
+    const tableName = this.generateTableName(databaseId);
+
+    return from(
+      this.client
+        .from('document_databases')
+        .insert({
+          document_id: null, // No parent document
+          database_id: databaseId,
+          table_name: tableName,
+          name: config.name,
+          config: config,
+        })
+        .select()
+        .single()
+    ).pipe(
+      switchMap(() => this.ensureTableExists(databaseId)),
+      map(() => ({
+        databaseId,
+        tableName,
+        name: config.name,
+      })),
+      catchError(error => {
+        console.error('[createStandaloneDatabase] Failed to create database:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
    * Get database metadata
    */
   getDatabaseMetadata(databaseId: string): Observable<DocumentDatabase> {
@@ -966,6 +1000,95 @@ export class DatabaseService {
     return this.getRows({ databaseId, limit: 1 }).pipe(
       map((rows: DatabaseRow[]) => rows.length === 0),
       catchError(() => of(true)) // En cas d'erreur, considérer comme vide
+    );
+  }
+
+  /**
+   * Import task rows with associated documents
+   * For Task Databases, each row needs a linked document
+   */
+  importTaskRowsWithDocuments(
+    databaseId: string,
+    rows: Array<Record<string, CellValue>>,
+    projectId: string | undefined,
+    onProgress?: (current: number, total: number) => void
+  ): Observable<CsvImportResult> {
+    console.log('[importTaskRowsWithDocuments] Starting import', { databaseId, rowCount: rows.length, projectId });
+    const errors: CsvImportError[] = [];
+    let imported = 0;
+
+    // Get database metadata first to find title column
+    return this.getDatabaseMetadata(databaseId).pipe(
+      switchMap((metadata: DocumentDatabase) => {
+        console.log('[importTaskRowsWithDocuments] Got metadata', { columns: metadata.config.columns.map(c => c.name) });
+        // Find title column
+        const titleColumn = metadata.config.columns.find(
+          (col: DatabaseColumn) => col.name === 'Title' || col.name.toLowerCase().includes('title')
+        );
+        console.log('[importTaskRowsWithDocuments] Title column:', titleColumn?.id);
+
+        // Create observables for each row (with document)
+        const rowImports$ = rows.map((cells, rowIndex) => {
+          const title = titleColumn
+            ? (cells[titleColumn.id] as string) || `Tâche ${rowIndex + 1}`
+            : `Tâche ${rowIndex + 1}`;
+
+          return this.addRow({
+            databaseId,
+            cells,
+            row_order: rowIndex,
+          }).pipe(
+            switchMap((row: DatabaseRow) => {
+              console.log(`[importTaskRowsWithDocuments] Row ${rowIndex + 1} created:`, row.id, 'creating document...');
+              // Create linked document for this task
+              return this.documentService.createDatabaseRowDocument({
+                title,
+                database_id: databaseId,
+                database_row_id: row.id,
+                project_id: projectId,
+              }).pipe(
+                map(() => {
+                  imported++;
+                  onProgress?.(imported, rows.length);
+                  return { success: true, rowIndex };
+                })
+              );
+            }),
+            catchError((err: unknown) => {
+              const error = err as Error;
+              errors.push({
+                row: rowIndex + 1,
+                message: error.message || 'Erreur lors de l\'insertion',
+              });
+              onProgress?.(imported, rows.length);
+              return of({ success: false, rowIndex });
+            })
+          );
+        });
+
+        // Execute all row imports (concurrently but with limit)
+        // Using concat for sequential to avoid overwhelming the server
+        return concat(...rowImports$).pipe(
+          toArray(),
+          map(() => {
+            console.log('[importTaskRowsWithDocuments] Import complete!', { imported, errorCount: errors.length });
+            return {
+              columnsCreated: 0,
+              rowsImported: imported,
+              errors,
+            };
+          })
+        );
+      }),
+      catchError((err: unknown) => {
+        const error = err as Error;
+        console.error('[importTaskRowsWithDocuments] Failed:', error);
+        return of({
+          columnsCreated: 0,
+          rowsImported: 0,
+          errors: [{ row: 0, message: error.message || 'Erreur lors de l\'import' }],
+        });
+      })
     );
   }
 

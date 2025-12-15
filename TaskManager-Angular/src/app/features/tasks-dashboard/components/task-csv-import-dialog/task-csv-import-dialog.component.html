@@ -1,0 +1,366 @@
+<h2 mat-dialog-title class="dialog-title-default">
+  <mat-icon>upload_file</mat-icon>
+  Importer des tâches depuis CSV
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <mat-stepper #stepper linear class="csv-stepper" (selectionChange)="currentStep.set($event.selectedIndex)">
+
+    <!-- Step 1: Sélection de la base de données -->
+    <mat-step [completed]="isStep1Complete()">
+      <ng-template matStepLabel>Base de données</ng-template>
+
+      <div class="step-content">
+        <p class="text-gray-600 mb-4">
+          Sélectionnez une base de données existante ou créez-en une nouvelle.
+        </p>
+
+        @if (isLoadingDatabases()) {
+          <div class="flex items-center justify-center py-12">
+            <mat-spinner diameter="40"></mat-spinner>
+            <span class="ml-4">Chargement des bases de données...</span>
+          </div>
+        } @else {
+          <!-- Option: Create new database -->
+          <button
+            type="button"
+            class="database-card database-card--create"
+            [class.selected]="createNewDatabase()"
+            (click)="toggleCreateNewDatabase()">
+            <div class="database-card__icon database-card__icon--create">
+              <mat-icon>add_circle</mat-icon>
+            </div>
+            <div class="database-card__content">
+              <p class="database-card__name">Créer une nouvelle base</p>
+              <p class="database-card__info">
+                Avec les colonnes standard des tâches
+              </p>
+            </div>
+            @if (createNewDatabase()) {
+              <mat-icon class="database-card__check text-green-600">check_circle</mat-icon>
+            }
+          </button>
+
+          <!-- New database name input -->
+          @if (createNewDatabase()) {
+            <div class="new-database-name">
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Nom de la base de données</mat-label>
+                <input
+                  matInput
+                  [value]="newDatabaseName()"
+                  (input)="newDatabaseName.set($any($event.target).value)"
+                  placeholder="Ex: Mes tâches importées">
+              </mat-form-field>
+            </div>
+          }
+
+          <!-- Divider if there are existing databases -->
+          @if (taskDatabases().length > 0) {
+            <div class="divider">
+              <span>ou sélectionnez une base existante</span>
+            </div>
+          }
+
+          <!-- Existing databases list -->
+          @if (taskDatabases().length > 0) {
+            <div class="database-list">
+              @for (db of taskDatabases(); track db.database_id) {
+                <button
+                  type="button"
+                  class="database-card"
+                  [class.selected]="selectedDatabaseId() === db.database_id && !createNewDatabase()"
+                  (click)="onDatabaseSelect(db.database_id)">
+                  <div class="database-card__icon">
+                    <mat-icon>task_alt</mat-icon>
+                  </div>
+                  <div class="database-card__content">
+                    <p class="database-card__name">{{ db.name }}</p>
+                    <p class="database-card__info">
+                      {{ db.config.columns.length || 0 }} colonnes
+                    </p>
+                  </div>
+                  @if (selectedDatabaseId() === db.database_id && !createNewDatabase()) {
+                    <mat-icon class="database-card__check text-green-600">check_circle</mat-icon>
+                  }
+                </button>
+              }
+            </div>
+          }
+        }
+      </div>
+    </mat-step>
+
+    <!-- Step 2: Upload fichier -->
+    <mat-step [completed]="selectedFile() !== null">
+      <ng-template matStepLabel>Upload fichier</ng-template>
+
+      <div class="step-content">
+        <p class="text-gray-600 mb-4">
+          Glissez-déposez un fichier CSV ou cliquez pour parcourir.
+        </p>
+
+        <div
+          class="upload-zone"
+          (drop)="onFileDrop($event)"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)">
+          @if (selectedFile()) {
+            <mat-icon class="upload-icon text-green-500">check_circle</mat-icon>
+            <p class="text-lg font-medium">{{ fileName() }}</p>
+            <p class="text-sm text-gray-500">{{ fileSize() }}</p>
+          } @else {
+            <mat-icon class="upload-icon">cloud_upload</mat-icon>
+            <p class="text-lg font-medium">Glissez-déposez un fichier CSV ici</p>
+            <p class="text-sm text-gray-500">ou</p>
+            <button mat-raised-button color="primary" type="button" (click)="fileInput.click()">
+              <mat-icon>folder_open</mat-icon>
+              Parcourir
+            </button>
+          }
+        </div>
+
+        <input
+          #fileInput
+          type="file"
+          accept=".csv"
+          (change)="onFileSelected($event)"
+          style="display: none;"
+        />
+
+        <div class="mt-4 p-4 bg-blue-50 rounded">
+          <p class="text-sm text-blue-900"><strong>Limites:</strong></p>
+          <ul class="text-sm text-blue-800 list-disc list-inside">
+            <li>Taille max: {{ MAX_FILE_SIZE_MB }} MB</li>
+            <li>Lignes max: {{ MAX_ROWS | number }}</li>
+            <li>Seuls fichiers .csv acceptés</li>
+            <li>Première ligne = en-têtes de colonnes</li>
+          </ul>
+        </div>
+      </div>
+    </mat-step>
+
+    <!-- Step 3: Mapping des colonnes -->
+    <mat-step [completed]="preview() !== null">
+      <ng-template matStepLabel>Mapping</ng-template>
+
+      <div class="step-content">
+        @if (isParsingFile()) {
+          <div class="flex flex-col items-center justify-center py-12">
+            <mat-spinner diameter="60"></mat-spinner>
+            <p class="mt-4 text-lg">Analyse du fichier CSV...</p>
+          </div>
+        } @else if (preview()) {
+          <p class="text-gray-600 mb-4">
+            Associez les colonnes de votre CSV aux champs de la base de données.
+            Le mapping automatique est basé sur les noms de colonnes.
+          </p>
+
+          <div class="mapping-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Colonne CSV</th>
+                  <th>Champ cible</th>
+                  <th>Aperçu</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (mapping of columnMappings(); track mapping.csvColumnIndex) {
+                  <tr>
+                    <td class="csv-column">
+                      <div class="flex items-center gap-2">
+                        <mat-icon
+                          [class]="getConfidenceColor(mapping.confidence)"
+                          [matTooltip]="'Confiance: ' + (mapping.confidence * 100 | number:'1.0-0') + '%'"
+                          class="text-base">
+                          {{ getConfidenceIcon(mapping.confidence) }}
+                        </mat-icon>
+                        <span class="font-medium">{{ mapping.csvColumnName }}</span>
+                      </div>
+                    </td>
+                    <td class="target-column">
+                      <select
+                        class="mapping-select"
+                        [value]="mapping.createNewColumn ? 'create_new' : (mapping.targetColumnId || 'none')"
+                        (change)="onMappingChange(mapping.csvColumnIndex, $any($event.target).value)">
+                        <option value="none">-- Ne pas importer --</option>
+                        <option value="create_new" class="create-new-option">➕ Créer nouvelle colonne "{{ mapping.csvColumnName }}"</option>
+                        @for (col of targetColumns(); track col.id) {
+                          <option [value]="col.id">{{ col.name }}</option>
+                        }
+                      </select>
+                      @if (mapping.createNewColumn) {
+                        <div class="mt-2 flex items-center gap-2">
+                          <span class="text-xs text-gray-500">Type:</span>
+                          <select
+                            class="mapping-select text-sm"
+                            [value]="mapping.newColumnType || 'text'"
+                            (change)="onNewColumnTypeChange(mapping.csvColumnIndex, $any($event.target).value)">
+                            @for (typeOption of columnTypeOptions; track typeOption.value) {
+                              <option [value]="typeOption.value">{{ typeOption.label }}</option>
+                            }
+                          </select>
+                        </div>
+                      }
+                    </td>
+                    <td class="preview-cell">
+                      @if (preview()!.sampleRows[0]) {
+                        <span class="text-gray-600 text-sm">
+                          {{ preview()!.sampleRows[0][mapping.csvColumnIndex] || '-' }}
+                        </span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <p class="text-xs text-gray-500 mt-4">
+            {{ preview()!.totalRows | number }} lignes seront importées.
+          </p>
+        }
+      </div>
+    </mat-step>
+
+    <!-- Step 4: Import en cours -->
+    <mat-step>
+      <ng-template matStepLabel>Import</ng-template>
+
+      <div class="step-content">
+        @if (isImporting()) {
+          <div class="import-progress">
+            <p class="text-lg font-medium mb-4">{{ importStatus() }}</p>
+            <mat-progress-bar
+              mode="determinate"
+              [value]="importProgress()"
+              class="mb-2">
+            </mat-progress-bar>
+            <p class="text-sm text-gray-600">{{ importProgress() }}% terminé</p>
+          </div>
+        } @else if (importResult()) {
+          <div class="import-complete">
+            @if (importResult()!.errors.length === 0) {
+              <!-- Succès total -->
+              <div class="success-card">
+                <mat-icon class="success-icon">check_circle</mat-icon>
+                <div>
+                  <p class="text-xl font-medium">Import réussi !</p>
+                  <p class="text-gray-600 mt-2">
+                    {{ importResult()!.rowsImported | number }} tâches importées dans
+                    "{{ importResult()!.databaseName }}"
+                  </p>
+                </div>
+              </div>
+            } @else if (importResult()!.rowsImported > 0) {
+              <!-- Succès partiel -->
+              <div class="warning-card">
+                <mat-icon class="warning-icon">warning</mat-icon>
+                <div>
+                  <p class="text-xl font-medium">Import partiel</p>
+                  <p class="text-gray-600 mt-2">
+                    {{ importResult()!.rowsImported | number }} tâches importées.
+                    {{ importResult()!.errors.length }} erreurs.
+                  </p>
+                </div>
+              </div>
+
+              <div class="errors-section mt-4">
+                <p class="font-medium mb-2">Erreurs rencontrées:</p>
+                <div class="error-list">
+                  @for (error of importResult()!.errors.slice(0, 50); track $index) {
+                    <div class="error-item">
+                      <span class="font-mono text-sm">Ligne {{ error.row }}:</span>
+                      <span class="text-sm">{{ error.message }}</span>
+                    </div>
+                  }
+                </div>
+
+                @if (importResult()!.errors.length > 50) {
+                  <p class="text-xs text-gray-500 mt-2">
+                    ... et {{ importResult()!.errors.length - 50 }} autres erreurs
+                  </p>
+                }
+
+                <button mat-stroked-button (click)="downloadErrorLog()" class="mt-4">
+                  <mat-icon>download</mat-icon>
+                  Télécharger le log d'erreurs (CSV)
+                </button>
+              </div>
+            } @else {
+              <!-- Échec total -->
+              <div class="error-card">
+                <mat-icon class="error-icon">error</mat-icon>
+                <div>
+                  <p class="text-xl font-medium">Échec de l'import</p>
+                  <p class="text-gray-600 mt-2">
+                    Aucune tâche n'a pu être importée. Vérifiez les données et réessayez.
+                  </p>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </mat-step>
+  </mat-stepper>
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
+  <!-- Step 0: Database selection -->
+  @if (currentStep() === 0) {
+    <button mat-button mat-dialog-close class="dialog-btn-secondary">
+      <mat-icon>close</mat-icon>
+      Annuler
+    </button>
+    <button
+      mat-raised-button
+      (click)="goToNextStep()"
+      [disabled]="!isStep1Complete()"
+      class="dialog-btn-primary">
+      <mat-icon>arrow_forward</mat-icon>
+      Suivant
+    </button>
+  }
+
+  <!-- Step 1: File upload -->
+  @if (currentStep() === 1) {
+    <button mat-button (click)="goToPreviousStep()" class="dialog-btn-secondary">
+      <mat-icon>arrow_back</mat-icon>
+      Précédent
+    </button>
+    <button
+      mat-raised-button
+      (click)="parseAndCreateMappings(); goToNextStep()"
+      [disabled]="!selectedFile()"
+      class="dialog-btn-primary">
+      <mat-icon>arrow_forward</mat-icon>
+      Suivant
+    </button>
+  }
+
+  <!-- Step 2: Mapping -->
+  @if (currentStep() === 2 && !isParsingFile()) {
+    <button mat-button (click)="goToPreviousStep()" class="dialog-btn-secondary">
+      <mat-icon>arrow_back</mat-icon>
+      Précédent
+    </button>
+    <button
+      mat-raised-button
+      (click)="startImport(); goToNextStep()"
+      class="dialog-btn-primary">
+      <mat-icon>play_arrow</mat-icon>
+      Lancer l'import
+    </button>
+  }
+
+  <!-- Step 3: Import done -->
+  @if (currentStep() === 3 && importResult()) {
+    <span></span>
+    <button mat-raised-button class="dialog-btn-primary" (click)="close()" cdkFocusInitial>
+      <mat-icon>check</mat-icon>
+      Fermer
+    </button>
+  }
+</mat-dialog-actions>

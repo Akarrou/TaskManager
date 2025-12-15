@@ -26,6 +26,10 @@ import { TimelineViewComponent } from '../../shared/components/timeline-view/tim
 import { FabStore } from '../../core/stores/fab.store';
 import { DashboardStatsStore } from '../../core/stores/dashboard-stats.store';
 import { getStatusLabel, getPriorityLabel } from '../../shared/models/task-constants';
+import { TaskCsvImportDialogComponent } from './components/task-csv-import-dialog/task-csv-import-dialog.component';
+import { TaskCsvImportResult } from './models/task-csv-import.model';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-tasks-dashboard',
@@ -38,6 +42,8 @@ import { getStatusLabel, getPriorityLabel } from '../../shared/models/task-const
     MatButtonModule,
     MatCardModule,
     MatPaginatorModule,
+    MatSnackBarModule,
+    MatTooltipModule,
     TaskSearchComponent,
     ViewToggleComponent,
     KanbanBoardComponent,
@@ -57,6 +63,7 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
   private store = inject(Store);
   private fabStore = inject(FabStore);
   private dashboardStatsStore = inject(DashboardStatsStore);
+  private snackBar = inject(MatSnackBar);
   private pageId = crypto.randomUUID();
 
   supabaseStatus = signal<'connecting' | 'connected' | 'error'>('connecting');
@@ -551,5 +558,37 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
   // TrackBy function for epic cards performance optimization
   trackEpic(index: number, epic: Task): string {
     return epic.id || index.toString();
+  }
+
+  /**
+   * Open CSV Import Dialog for tasks
+   */
+  openCsvImportDialog(): void {
+    const dialogRef = this.dialog.open(TaskCsvImportDialogComponent, {
+      width: '900px',
+      maxHeight: '90vh',
+      data: {},
+      disableClose: false,
+    });
+
+    dialogRef.afterClosed().subscribe((result: TaskCsvImportResult | null) => {
+      if (result && result.rowsImported > 0) {
+        // Reload task entries
+        this.loadTaskEntries();
+
+        // Refresh stats
+        this.dashboardStatsStore.loadTaskStats({});
+
+        // Show success message
+        const message =
+          result.errors.length === 0
+            ? `Import réussi ! ${result.rowsImported} tâches importées dans "${result.databaseName}".`
+            : `Import partiel : ${result.rowsImported} tâches importées. ${result.errors.length} erreurs.`;
+
+        this.snackBar.open(message, 'OK', {
+          duration: 5000,
+        });
+      }
+    });
   }
 }

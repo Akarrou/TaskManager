@@ -211,6 +211,19 @@
       box-shadow: 0 0 0 2px rgba(v.$primary-color, 0.25);
     }
   }
+
+  &__import-btn {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    white-space: nowrap;
+
+    mat-icon {
+      font-size: 1.125rem;
+      width: 18px;
+      height: 18px;
+    }
+  }
 }
 
 // ==========================================================================

@@ -25,10 +25,18 @@
         </div>
       </section>
 
-      <!-- Toolbar: Search + View Toggle -->
-      <!-- Toolbar: Search -->
-      <div>
+      <!-- Toolbar: Search + Actions -->
+      <div class="c-toolbar">
         <app-task-search class="c-toolbar__search" (filtersChange)="onSearchFiltersChange($event)"></app-task-search>
+
+        <button
+          mat-stroked-button
+          (click)="openCsvImportDialog()"
+          matTooltip="Importer des tâches depuis un fichier CSV"
+          class="c-toolbar__import-btn">
+          <mat-icon>upload_file</mat-icon>
+          Importer CSV
+        </button>
 
         <!-- Kanban Group By selector (only visible in Kanban view) -->
         @if (currentView() === 'kanban') {

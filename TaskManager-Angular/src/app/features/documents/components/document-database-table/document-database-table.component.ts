@@ -35,6 +35,10 @@ import {
   CsvImportDialogComponent,
 } from '../csv-import-dialog/csv-import-dialog.component';
 import {
+  TaskCsvImportDialogComponent,
+} from '../../../tasks-dashboard/components/task-csv-import-dialog/task-csv-import-dialog.component';
+import { TaskCsvImportResult } from '../../../tasks-dashboard/models/task-csv-import.model';
+import {
   ManageOptionsDialogComponent,
   ManageOptionsDialogData,
   ManageOptionsDialogResult,
@@ -128,6 +132,12 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   // Computed
   columnCount = computed(() => this.databaseConfig().columns.length);
   rowCount = computed(() => this.totalCount()); // Use totalCount for accurate row count with pagination
+
+  // Check if this is a task database
+  isTaskDatabase = computed(() => {
+    const config = this.databaseConfig() as { type?: string };
+    return config.type === 'task';
+  });
 
   // Sorted columns with Task Number first (for table display)
   sortedColumns = computed(() => {
@@ -735,8 +745,52 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
 
   /**
    * Ouvre le dialog d'import CSV
+   * Pour les Task Databases, ouvre le TaskCsvImportDialogComponent spécialisé
+   * Pour les autres databases, ouvre le CsvImportDialogComponent générique
    */
   openCsvImportDialog() {
+    if (this.isTaskDatabase()) {
+      this.openTaskCsvImportDialog();
+    } else {
+      this.openGenericCsvImportDialog();
+    }
+  }
+
+  /**
+   * Ouvre le dialog d'import CSV pour les Task Databases
+   */
+  private openTaskCsvImportDialog() {
+    const dialogRef = this.dialog.open(TaskCsvImportDialogComponent, {
+      width: '900px',
+      maxHeight: '90vh',
+      data: {
+        preselectedDatabaseId: this.databaseId,
+      },
+      disableClose: false,
+    });
+
+    dialogRef.afterClosed().subscribe((result: TaskCsvImportResult | null) => {
+      if (result && result.rowsImported > 0) {
+        // Recharger les métadonnées et les lignes
+        this.initializeDatabase();
+
+        // Afficher message de succès
+        const message =
+          result.errors.length === 0
+            ? `Import réussi ! ${result.rowsImported} tâches importées.`
+            : `Import partiel : ${result.rowsImported} tâches importées. ${result.errors.length} erreurs.`;
+
+        this.snackBar.open(message, 'OK', {
+          duration: 5000,
+        });
+      }
+    });
+  }
+
+  /**
+   * Ouvre le dialog d'import CSV générique
+   */
+  private openGenericCsvImportDialog() {
     const dialogData: CsvImportDialogData = {
       databaseId: this.databaseId,
       tableName: this.databaseConfig().name || 'Base de données',
