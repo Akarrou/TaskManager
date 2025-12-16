@@ -46,7 +46,9 @@
       "Bash(ubuntu@51.178.52.150:~/taskmanager/OBS/)",
       "Bash(dig:*)",
       "Bash(\"/Users/jeromevalette/Projects/Task manager/TaskManager-Angular/dist/TaskManager-Angular/browser/\" )",
-      "Bash(ubuntu@51.178.52.150:~/taskmanager/dist/TaskManager-Angular/browser/)"
+      "Bash(ubuntu@51.178.52.150:~/taskmanager/dist/TaskManager-Angular/browser/)",
+      "Bash(npx supabase db push:*)",
+      "Bash(npx supabase migration:*)"
     ],
     "deny": [],
     "ask": []

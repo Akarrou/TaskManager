@@ -937,23 +937,33 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Convert Tailwind color class to CSS color
+   * Convert Tailwind color class to CSS color, or return hex color directly
    */
-  getChoiceColor(colorClass: string): string {
+  getChoiceColor(color: string): string {
+    // If it's already a hex color, return it directly
+    if (color?.startsWith('#')) {
+      return color;
+    }
+
+    // Map Tailwind classes to hex colors
     const colorMap: Record<string, string> = {
+      'bg-gray-100': '#f3f4f6',
       'bg-gray-200': '#e5e7eb',
+      'bg-gray-300': '#d1d5db',
       'bg-red-200': '#fecaca',
+      'bg-red-300': '#fca5a5',
       'bg-orange-200': '#fed7aa',
       'bg-yellow-200': '#fef08a',
       'bg-green-200': '#bbf7d0',
       'bg-teal-200': '#99f6e4',
+      'bg-cyan-200': '#a5f3fc',
       'bg-blue-200': '#bfdbfe',
       'bg-indigo-200': '#c7d2fe',
       'bg-purple-200': '#e9d5ff',
       'bg-pink-200': '#fbcfe8',
     };
 
-    return colorMap[colorClass] || '#e5e7eb';
+    return colorMap[color] || '#e5e7eb';
   }
 
   /**

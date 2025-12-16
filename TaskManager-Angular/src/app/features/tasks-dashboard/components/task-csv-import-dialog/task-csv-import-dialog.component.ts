@@ -35,6 +35,8 @@ import {
   CsvPreviewData,
   NewColumnType,
   COLUMN_TYPE_LABELS,
+  SelectOptionPreview,
+  SELECT_OPTION_COLORS,
   findBestColumnMatch,
   normalizeStatus,
   normalizePriority,
@@ -133,6 +135,9 @@ export class TaskCsvImportDialogComponent {
   columnTypeOptions: { value: NewColumnType; label: string }[] = Object.entries(COLUMN_TYPE_LABELS).map(
     ([value, label]) => ({ value: value as NewColumnType, label })
   );
+
+  // Available colors for select options
+  selectOptionColors = SELECT_OPTION_COLORS;
 
   // Preselected database mode (when opened from document-database-table)
   isPreselectedMode = signal(false);
@@ -373,7 +378,57 @@ export class TaskCsvImportDialogComponent {
     const mapping = mappings.find(m => m.csvColumnIndex === csvColumnIndex);
     if (mapping) {
       mapping.newColumnType = columnType;
+
+      // If select type, generate options preview from CSV data
+      if (columnType === 'select') {
+        mapping.selectOptions = this.generateSelectOptionsPreview(csvColumnIndex);
+      } else {
+        mapping.selectOptions = undefined;
+      }
+
       this.columnMappings.set(mappings);
+    }
+  }
+
+  /**
+   * Generate select options preview from CSV column data
+   */
+  private generateSelectOptionsPreview(csvColumnIndex: number): SelectOptionPreview[] {
+    const data = this.parsedData();
+    if (!data || data.length < 2) return [];
+
+    // Extract unique values from CSV column (skip header)
+    const values: string[] = data.slice(1).map((row: string[]) => row[csvColumnIndex]);
+    const uniqueValues: string[] = [...new Set(
+      values
+        .filter((v: string) => v && v.trim())
+        .map((v: string) => v.trim())
+    )];
+
+    // Assign colors in alternating order
+    return uniqueValues.map((label: string, index: number) => ({
+      label,
+      color: SELECT_OPTION_COLORS[index % SELECT_OPTION_COLORS.length].value,
+    }));
+  }
+
+  /**
+   * Update select option color
+   */
+  onSelectOptionColorChange(csvColumnIndex: number, optionIndex: number, color: string): void {
+    const mappings = [...this.columnMappings()];
+    const mappingIndex = mappings.findIndex(m => m.csvColumnIndex === csvColumnIndex);
+    if (mappingIndex !== -1 && mappings[mappingIndex].selectOptions) {
+      // Create a deep copy of the mapping and its selectOptions
+      const updatedMapping = { ...mappings[mappingIndex] };
+      updatedMapping.selectOptions = [...(updatedMapping.selectOptions || [])];
+      updatedMapping.selectOptions[optionIndex] = {
+        ...updatedMapping.selectOptions[optionIndex],
+        color,
+      };
+      mappings[mappingIndex] = updatedMapping;
+      this.columnMappings.set(mappings);
+      console.log(`[CSV Import] Updated option color at index ${optionIndex} to ${color}`, updatedMapping.selectOptions);
     }
   }
 
@@ -443,7 +498,7 @@ export class TaskCsvImportDialogComponent {
               databaseId,
               mapping.csvColumnName,
               mapping.newColumnType || 'text',
-              rows.map(row => row[mapping.csvColumnIndex])
+              mapping.selectOptions
             );
 
             // Update the mapping with the new column ID
@@ -472,7 +527,14 @@ export class TaskCsvImportDialogComponent {
 
         // Reload target columns after creation
         await this.reloadTargetColumns(databaseId);
-        currentMappings = this.columnMappings();
+        // Don't override currentMappings from signal - we already have the updated mappings
+        // with the new column IDs set above
+        console.log('[CSV Import] After column creation, mappings:', currentMappings.map(m => ({
+          csv: m.csvColumnName,
+          targetId: m.targetColumnId,
+          createNew: m.createNewColumn
+        })));
+        console.log('[CSV Import] Target columns after reload:', this.targetColumns().map(c => ({ id: c.id, name: c.name })));
       }
 
       // Step 2: Prepare rows for import
@@ -499,8 +561,7 @@ export class TaskCsvImportDialogComponent {
           try {
             const formattedValue = this.formatCellValue(
               value,
-              targetColumn.name,
-              targetColumn.type
+              targetColumn
             ) as CellValue;
             cells[mapping.targetColumnId] = formattedValue;
           } catch (err: unknown) {
@@ -524,7 +585,8 @@ export class TaskCsvImportDialogComponent {
       console.log('[CSV Import] Current mappings:', currentMappings);
       console.log('[CSV Import] Target columns:', this.targetColumns());
       if (formattedRows.length > 0) {
-        console.log('[CSV Import] Sample row:', formattedRows[0]);
+        console.log('[CSV Import] Sample row:', JSON.stringify(formattedRows[0], null, 2));
+        console.log('[CSV Import] Sample row keys:', Object.keys(formattedRows[0]));
       }
 
       if (formattedRows.length === 0) {
@@ -600,10 +662,12 @@ export class TaskCsvImportDialogComponent {
    */
   private formatCellValue(
     value: string,
-    columnName: string,
-    columnType: string
+    column: DatabaseColumn
   ): unknown {
     if (!value || value.trim() === '') return null;
+
+    const columnName = column.name;
+    const columnType = column.type;
 
     // Special handling for task-specific columns
     switch (columnName) {
@@ -631,6 +695,35 @@ export class TaskCsvImportDialogComponent {
       case 'checkbox':
         const lower = value.toLowerCase().trim();
         return ['true', '1', 'yes', 'oui', 'vrai', 'x'].includes(lower);
+      case 'select':
+        // For select columns, convert label to choice ID
+        if (column.options?.choices) {
+          const trimmedValue = value.trim();
+          const choice = column.options.choices.find(
+            c => c.label.toLowerCase() === trimmedValue.toLowerCase()
+          );
+          if (choice) {
+            return choice.id;
+          }
+          // If no match found, return null (or could create new choice)
+          console.warn(`[formatCellValue] No matching choice found for "${value}" in column "${columnName}"`);
+        }
+        return null;
+      case 'multi-select':
+        // For multi-select, convert labels to choice IDs array
+        if (column.options?.choices) {
+          const labels = value.split(',').map(v => v.trim()).filter(v => v);
+          const ids = labels
+            .map(label => {
+              const choice = column.options?.choices?.find(
+                c => c.label.toLowerCase() === label.toLowerCase()
+              );
+              return choice?.id;
+            })
+            .filter((id): id is string => id !== undefined);
+          return ids;
+        }
+        return [];
       default:
         return value;
     }
@@ -697,15 +790,20 @@ export class TaskCsvImportDialogComponent {
 
   /**
    * Create a new column in the database
-   * For 'select' type, extracts unique values from CSV data to create options
+   * For 'select' type, uses the previewed options with user-selected colors
    */
   private async createNewColumn(
     databaseId: string,
     columnName: string,
     columnType: NewColumnType,
-    values: string[]
+    selectOptions?: SelectOptionPreview[]
   ): Promise<string> {
     const columnId = crypto.randomUUID();
+
+    console.log(`[CSV Import] Creating column "${columnName}" of type "${columnType}"`, {
+      selectOptions,
+      hasOptions: selectOptions && selectOptions.length > 0,
+    });
 
     // Build column configuration
     const column: DatabaseColumn = {
@@ -716,21 +814,16 @@ export class TaskCsvImportDialogComponent {
       visible: true,
     };
 
-    // For select type, extract unique values as options (choices/tags)
-    if (columnType === 'select') {
-      const uniqueValues = [...new Set(
-        values
-          .filter(v => v && v.trim())
-          .map(v => v.trim())
-      )];
-
+    // For select type, use the previewed options with colors
+    if (columnType === 'select' && selectOptions && selectOptions.length > 0) {
       column.options = {
-        choices: uniqueValues.map(value => ({
+        choices: selectOptions.map(option => ({
           id: crypto.randomUUID(),
-          label: value,
-          color: this.getRandomColor(),
+          label: option.label,
+          color: option.color,
         })),
       };
+      console.log(`[CSV Import] Column options with colors:`, column.options.choices);
     }
 
     return new Promise((resolve, reject) => {
@@ -757,25 +850,6 @@ export class TaskCsvImportDialogComponent {
         error: (err) => reject(err),
       });
     });
-  }
-
-  /**
-   * Get a random color for select options
-   */
-  private getRandomColor(): string {
-    const colors = [
-      '#3B82F6', // blue
-      '#10B981', // green
-      '#F59E0B', // amber
-      '#EF4444', // red
-      '#8B5CF6', // violet
-      '#EC4899', // pink
-      '#06B6D4', // cyan
-      '#84CC16', // lime
-      '#F97316', // orange
-      '#6366F1', // indigo
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
   }
 
   /**

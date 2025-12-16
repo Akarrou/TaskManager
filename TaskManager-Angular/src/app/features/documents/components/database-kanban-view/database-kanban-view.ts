@@ -128,9 +128,14 @@ export class DatabaseKanbanView {
   }
 
   /**
-   * Get color for a choice badge
+   * Get color for a choice badge - supports both Tailwind classes and hex colors
    */
   getChoiceColor(color: string): string {
+    // If it's already a hex color, return it directly
+    if (color?.startsWith('#')) {
+      return color;
+    }
+
     // Map Tailwind color classes to actual colors
     const colorMap: Record<string, string> = {
       'bg-gray-100': '#f3f4f6',
@@ -141,13 +146,15 @@ export class DatabaseKanbanView {
       'bg-orange-200': '#fed7aa',
       'bg-yellow-200': '#fef08a',
       'bg-green-200': '#bbf7d0',
+      'bg-teal-200': '#99f6e4',
+      'bg-cyan-200': '#a5f3fc',
       'bg-blue-200': '#bfdbfe',
       'bg-indigo-200': '#c7d2fe',
       'bg-purple-200': '#e9d5ff',
       'bg-pink-200': '#fbcfe8',
     };
 
-    return colorMap[color] || color;
+    return colorMap[color] || '#e5e7eb';
   }
 
   /**

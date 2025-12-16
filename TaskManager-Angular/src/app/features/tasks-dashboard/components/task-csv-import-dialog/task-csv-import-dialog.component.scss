@@ -238,6 +238,72 @@
   }
 }
 
+// Select options preview section
+.select-options-preview {
+  @apply mt-4 p-4 bg-white border border-gray-200 rounded-lg;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  &__title {
+    @apply flex items-center gap-2 text-xs font-medium text-gray-600 mb-3;
+
+    mat-icon {
+      @apply text-gray-400;
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  &__list {
+    @apply space-y-3;
+  }
+}
+
+// Individual select option item
+.select-option-item {
+  @apply flex items-center justify-between gap-3 p-2 bg-gray-50 rounded-lg;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    @apply bg-gray-100;
+  }
+
+  &__badge {
+    @apply px-3 py-1 rounded-full text-xs font-medium text-white;
+    min-width: 60px;
+    text-align: center;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  &__colors {
+    @apply flex items-center gap-1;
+  }
+}
+
+// Color dot button
+.color-dot {
+  @apply w-5 h-5 rounded-full border-2 border-transparent cursor-pointer;
+  padding: 0;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+
+  &:hover {
+    transform: scale(1.15);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px white, 0 0 0 4px v.$primary-color;
+  }
+
+  &--selected {
+    @apply border-white;
+    box-shadow: 0 0 0 2px v.$primary-color, 0 2px 4px rgba(0, 0, 0, 0.2);
+    transform: scale(1.1);
+  }
+}
+
 .hidden {
   display: none !important;
 }

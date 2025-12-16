@@ -53,6 +53,30 @@ export const COLUMN_TYPE_LABELS: Record<NewColumnType, string> = {
   'email': 'Email',
 };
 
+/**
+ * Color option for select choices preview
+ */
+export interface SelectOptionPreview {
+  label: string;
+  color: string;
+}
+
+/**
+ * Available colors for select options
+ */
+export const SELECT_OPTION_COLORS: { value: string; label: string }[] = [
+  { value: '#3B82F6', label: 'Bleu' },
+  { value: '#10B981', label: 'Vert' },
+  { value: '#F59E0B', label: 'Ambre' },
+  { value: '#EF4444', label: 'Rouge' },
+  { value: '#8B5CF6', label: 'Violet' },
+  { value: '#EC4899', label: 'Rose' },
+  { value: '#06B6D4', label: 'Cyan' },
+  { value: '#84CC16', label: 'Lime' },
+  { value: '#F97316', label: 'Orange' },
+  { value: '#6366F1', label: 'Indigo' },
+];
+
 export interface CsvColumnMapping {
   csvColumnIndex: number;
   csvColumnName: string;
@@ -61,6 +85,7 @@ export interface CsvColumnMapping {
   confidence: number; // 0-1 confidence score for auto-mapping
   createNewColumn?: boolean; // If true, create a new column with this name
   newColumnType?: NewColumnType; // Type for the new column
+  selectOptions?: SelectOptionPreview[]; // Preview of options for select type
 }
 
 /**

@@ -219,22 +219,31 @@ export class DatabaseCalendarView {
   }
 
   /**
-   * Get color for a choice
+   * Get color for a choice - supports both Tailwind classes and hex colors
    */
   private getChoiceColor(color: string): string {
+    // If it's already a hex color, return it directly
+    if (color?.startsWith('#')) {
+      return color;
+    }
+
     const colorMap: Record<string, string> = {
       'bg-gray-200': '#9ca3af',
+      'bg-gray-300': '#6b7280',
       'bg-red-200': '#ef4444',
+      'bg-red-300': '#dc2626',
       'bg-orange-200': '#f97316',
       'bg-yellow-200': '#eab308',
       'bg-green-200': '#22c55e',
+      'bg-teal-200': '#14b8a6',
+      'bg-cyan-200': '#06b6d4',
       'bg-blue-200': '#3b82f6',
       'bg-indigo-200': '#6366f1',
       'bg-purple-200': '#a855f7',
       'bg-pink-200': '#ec4899',
     };
 
-    return colorMap[color] || color;
+    return colorMap[color] || '#9ca3af';
   }
 
   /**

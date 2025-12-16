@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '../../../core/services/supabase';
-import { from, Observable, throwError, concat, of, delay } from 'rxjs';
-import { map, catchError, switchMap, toArray } from 'rxjs/operators';
+import { from, Observable, throwError, concat, of, delay, timer, defer } from 'rxjs';
+import { map, catchError, switchMap, toArray, retryWhen, take, mergeMap } from 'rxjs/operators';
 import {
   DatabaseConfig,
   DatabaseConfigExtended,
@@ -680,9 +680,26 @@ export class DatabaseService {
             return response.data;
           }),
           switchMap(() => {
+            // Notify PostgREST to reload schema cache
+            return from(this.client.rpc('reload_schema_cache')).pipe(
+              catchError(() => of(null)), // Ignore errors if function doesn't exist
+              map(() => null)
+            );
+          }),
+          switchMap(() => {
+            // Wait for PostgREST to see the new column (retry mechanism)
+            return this.waitForColumnInSchema(tableName, columnName);
+          }),
+          switchMap(() => {
             // Update config in metadata
             const updatedConfig = { ...metadata.config };
             updatedConfig.columns.push(request.column);
+
+            console.log('[addColumn] Saving column with options:', {
+              columnName: request.column.name,
+              columnType: request.column.type,
+              options: request.column.options,
+            });
 
             return this.updateDatabaseConfig(request.databaseId, updatedConfig);
           })
@@ -698,6 +715,54 @@ export class DatabaseService {
         });
         return throwError(() => error);
       })
+    );
+  }
+
+  /**
+   * Wait for PostgREST to see the new column in its schema cache
+   * Uses retry mechanism to poll until the column is visible
+   */
+  private waitForColumnInSchema(tableName: string, columnName: string): Observable<boolean> {
+    const maxRetries = 10;
+    const retryDelay = 200; // ms between retries
+
+    return defer(() => {
+      // Try to select the column - if it fails with PGRST204, column not in cache yet
+      return from(
+        this.client
+          .from(tableName)
+          .select(columnName)
+          .limit(0) // Don't fetch any rows, just check if column exists
+      ).pipe(
+        map((response: any) => {
+          if (response.error?.code === 'PGRST204') {
+            // Column not found in schema cache, throw to trigger retry
+            throw new Error('Column not in schema cache yet');
+          }
+          // Column is visible
+          console.log(`[waitForColumnInSchema] Column ${columnName} is now visible in schema cache`);
+          return true;
+        })
+      );
+    }).pipe(
+      retryWhen(errors =>
+        errors.pipe(
+          mergeMap((error, index) => {
+            if (index >= maxRetries) {
+              console.warn(`[waitForColumnInSchema] Max retries reached for column ${columnName}`);
+              return of(true); // Give up but don't fail the whole operation
+            }
+            console.log(`[waitForColumnInSchema] Retry ${index + 1}/${maxRetries} for column ${columnName}`);
+            // Reload schema cache before retry
+            return from(this.client.rpc('reload_schema_cache')).pipe(
+              catchError(() => of(null)),
+              switchMap(() => timer(retryDelay))
+            );
+          })
+        )
+      ),
+      take(1),
+      map(() => true)
     );
   }
 
@@ -1017,66 +1082,97 @@ export class DatabaseService {
     const errors: CsvImportError[] = [];
     let imported = 0;
 
-    // Get database metadata first to find title column
-    return this.getDatabaseMetadata(databaseId).pipe(
+    // Ensure the PostgreSQL table exists before importing
+    return this.ensureTableExists(databaseId).pipe(
+      switchMap(() => this.getDatabaseMetadata(databaseId)),
       switchMap((metadata: DocumentDatabase) => {
         console.log('[importTaskRowsWithDocuments] Got metadata', { columns: metadata.config.columns.map(c => c.name) });
-        // Find title column
-        const titleColumn = metadata.config.columns.find(
-          (col: DatabaseColumn) => col.name === 'Title' || col.name.toLowerCase().includes('title')
-        );
-        console.log('[importTaskRowsWithDocuments] Title column:', titleColumn?.id);
 
-        // Create observables for each row (with document)
-        const rowImports$ = rows.map((cells, rowIndex) => {
-          const title = titleColumn
-            ? (cells[titleColumn.id] as string) || `Tâche ${rowIndex + 1}`
-            : `Tâche ${rowIndex + 1}`;
-
-          return this.addRow({
-            databaseId,
-            cells,
-            row_order: rowIndex,
-          }).pipe(
-            switchMap((row: DatabaseRow) => {
-              console.log(`[importTaskRowsWithDocuments] Row ${rowIndex + 1} created:`, row.id, 'creating document...');
-              // Create linked document for this task
-              return this.documentService.createDatabaseRowDocument({
-                title,
-                database_id: databaseId,
-                database_row_id: row.id,
-                project_id: projectId,
-              }).pipe(
-                map(() => {
-                  imported++;
-                  onProgress?.(imported, rows.length);
-                  return { success: true, rowIndex };
-                })
-              );
-            }),
-            catchError((err: unknown) => {
-              const error = err as Error;
-              errors.push({
-                row: rowIndex + 1,
-                message: error.message || 'Erreur lors de l\'insertion',
-              });
-              onProgress?.(imported, rows.length);
-              return of({ success: false, rowIndex });
-            })
-          );
+        // Extract all column IDs used in the rows data and convert to PostgreSQL column names
+        const usedColumnNames = new Set<string>();
+        rows.forEach(row => {
+          Object.keys(row).forEach(key => {
+            // Column IDs in cells are UUIDs, PostgreSQL column names are col_<uuid_with_underscores>
+            usedColumnNames.add(`col_${key.replace(/-/g, '_')}`);
+          });
         });
 
-        // Execute all row imports (concurrently but with limit)
-        // Using concat for sequential to avoid overwhelming the server
-        return concat(...rowImports$).pipe(
-          toArray(),
-          map(() => {
-            console.log('[importTaskRowsWithDocuments] Import complete!', { imported, errorCount: errors.length });
-            return {
-              columnsCreated: 0,
-              rowsImported: imported,
-              errors,
-            };
+        // Get table name for schema cache waiting
+        const tableName = metadata.table_name;
+
+        // Wait for all dynamic columns to be visible in schema cache
+        const columnWaits$: Observable<boolean>[] = Array.from(usedColumnNames).map(columnName => {
+          console.log(`[importTaskRowsWithDocuments] Waiting for column ${columnName} in schema cache`);
+          return this.waitForColumnInSchema(tableName, columnName);
+        });
+
+        // If no dynamic columns, proceed immediately
+        const waitForColumns$ = columnWaits$.length > 0
+          ? concat(...columnWaits$).pipe(toArray(), map(() => true))
+          : of(true);
+
+        return waitForColumns$.pipe(
+          switchMap(() => {
+            console.log('[importTaskRowsWithDocuments] All columns visible in schema cache, starting import');
+
+            // Find title column
+            const titleColumn = metadata.config.columns.find(
+              (col: DatabaseColumn) => col.name === 'Title' || col.name.toLowerCase().includes('title')
+            );
+            console.log('[importTaskRowsWithDocuments] Title column:', titleColumn?.id);
+
+            // Create observables for each row (with document)
+            const rowImports$ = rows.map((cells, rowIndex) => {
+              const title = titleColumn
+                ? (cells[titleColumn.id] as string) || `Tâche ${rowIndex + 1}`
+                : `Tâche ${rowIndex + 1}`;
+
+              return this.addRow({
+                databaseId,
+                cells,
+                row_order: rowIndex,
+              }).pipe(
+                switchMap((row: DatabaseRow) => {
+                  console.log(`[importTaskRowsWithDocuments] Row ${rowIndex + 1} created:`, row.id, 'creating document...');
+                  // Create linked document for this task
+                  return this.documentService.createDatabaseRowDocument({
+                    title,
+                    database_id: databaseId,
+                    database_row_id: row.id,
+                    project_id: projectId,
+                  }).pipe(
+                    map(() => {
+                      imported++;
+                      onProgress?.(imported, rows.length);
+                      return { success: true, rowIndex };
+                    })
+                  );
+                }),
+                catchError((err: unknown) => {
+                  const error = err as Error;
+                  errors.push({
+                    row: rowIndex + 1,
+                    message: error.message || 'Erreur lors de l\'insertion',
+                  });
+                  onProgress?.(imported, rows.length);
+                  return of({ success: false, rowIndex });
+                })
+              );
+            });
+
+            // Execute all row imports (concurrently but with limit)
+            // Using concat for sequential to avoid overwhelming the server
+            return concat(...rowImports$).pipe(
+              toArray(),
+              map(() => {
+                console.log('[importTaskRowsWithDocuments] Import complete!', { imported, errorCount: errors.length });
+                return {
+                  columnsCreated: 0,
+                  rowsImported: imported,
+                  errors,
+                };
+              })
+            );
           })
         );
       }),

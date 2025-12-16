@@ -202,6 +202,37 @@
                             }
                           </select>
                         </div>
+                        <!-- Select options preview with color picker -->
+                        @if (mapping.newColumnType === 'select' && mapping.selectOptions && mapping.selectOptions.length > 0) {
+                          <div class="select-options-preview">
+                            <p class="select-options-preview__title">
+                              <mat-icon class="text-base">label</mat-icon>
+                              Options détectées ({{ mapping.selectOptions.length }})
+                            </p>
+                            <div class="select-options-preview__list">
+                              @for (option of mapping.selectOptions; track option.label; let i = $index) {
+                                <div class="select-option-item">
+                                  <span class="select-option-item__badge"
+                                        [style.background-color]="option.color">
+                                    {{ option.label }}
+                                  </span>
+                                  <div class="select-option-item__colors">
+                                    @for (color of selectOptionColors; track color.value) {
+                                      <button
+                                        type="button"
+                                        class="color-dot"
+                                        [class.color-dot--selected]="option.color === color.value"
+                                        [style.background-color]="color.value"
+                                        [title]="color.label"
+                                        (click)="onSelectOptionColorChange(mapping.csvColumnIndex, i, color.value)">
+                                      </button>
+                                    }
+                                  </div>
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        }
                       }
                     </td>
                     <td class="preview-cell">
