@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject, signal, computed, effect, ViewEncapsulation, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal, computed, effect, ViewEncapsulation, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -55,13 +55,18 @@ import { DEFAULT_DATABASE_CONFIG } from '../models/database.model';
 import { StorageService } from '../../../core/services/storage.service';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { DeleteChildDocumentDialogComponent, DeleteChildDocumentDialogData } from '../components/delete-child-document-dialog/delete-child-document-dialog.component';
+import { BlockIdExtension, extractBlockIdsFromContent, setCommentBadgeClickHandler } from '../extensions/block-id.extension';
+import { BlockCommentService } from '../services/block-comment.service';
+import { BlockComment, BlockCommentsMap } from '../models/block-comment.model';
+import { CommentThreadPanelComponent } from '../components/comment-thread-panel/comment-thread-panel.component';
+import { CommentIndicatorDirective } from '../directives/comment-indicator.directive';
 
 const lowlight = createLowlight(all);
 
 @Component({
   selector: 'app-document-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, ImageBubbleMenuComponent, TaskSectionRendererDirective, DatabaseTableRendererDirective],
+  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, ImageBubbleMenuComponent, TaskSectionRendererDirective, DatabaseTableRendererDirective, CommentThreadPanelComponent, CommentIndicatorDirective],
   templateUrl: './document-editor.component.html',
   styleUrl: './document-editor.component.scss',
   encapsulation: ViewEncapsulation.None
@@ -74,6 +79,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   private dialog = inject(MatDialog);
   private databaseService = inject(DatabaseService);
   private storageService = inject(StorageService);
+  private blockCommentService = inject(BlockCommentService);
   private pageId = crypto.randomUUID();
 
   // Track document file URLs for cleanup when links are deleted
@@ -122,6 +128,23 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   databaseRow = signal<DatabaseRow | null>(null);
   isLoadingDatabaseProperties = signal(false);
   propertiesPanelOpen = signal(false); // Panel overlay state
+
+  // Block comments state
+  commentPanelOpen = signal(false);
+  selectedBlockId = signal<string | null>(null);
+  blockComments = signal<BlockCommentsMap>({});
+  blocksWithComments = signal<Set<string>>(new Set());
+  currentUserId = signal<string | null>(null);
+
+  // Computed: comment counts per block for indicators
+  blockCommentCounts = computed(() => {
+    const comments = this.blockComments();
+    const counts = new Map<string, number>();
+    for (const [blockId, commentList] of Object.entries(comments)) {
+      counts.set(blockId, commentList.length);
+    }
+    return counts;
+  });
 
   // Editable properties (Notion-style click-to-edit)
   editingPropertyId = signal<string | null>(null);
@@ -286,6 +309,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         }),
         TaskSectionExtension,
         DatabaseTableExtension,
+        BlockIdExtension,
       ],
       editorProps: {
         attributes: {
@@ -614,11 +638,29 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    // Load current user ID for comment ownership
+    this.loadCurrentUser();
+
+    // Set up comment badge click handler
+    setCommentBadgeClickHandler((blockId: string) => {
+      this.openCommentPanel(blockId);
+    });
+
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
       if (params['id']) {
         this.loadDocument(params['id']);
       }
     });
+  }
+
+  /**
+   * Load current user ID for comment ownership checks
+   */
+  private async loadCurrentUser() {
+    const { data } = await this.blockCommentService.supabase.client.auth.getUser();
+    if (data.user) {
+      this.currentUserId.set(data.user.id);
+    }
   }
 
   async loadDocument(id: string) {
@@ -680,10 +722,43 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
           // Load and refresh task mentions (for existing ones)
           this.loadAndRefreshTaskMentions(id);
+
+          // Load block comments for this document
+          this.loadBlockComments(id);
         }
       },
       error: (err) => console.error('Error loading doc', err)
     });
+  }
+
+  /**
+   * Load all block comments for the document
+   */
+  private loadBlockComments(documentId: string) {
+    this.blockCommentService.getCommentsForDocument(documentId).subscribe({
+      next: (comments) => {
+        const grouped = this.blockCommentService.groupCommentsByBlock(comments);
+        this.blockComments.set(grouped);
+
+        const blockIds = new Set(Object.keys(grouped));
+        this.blocksWithComments.set(blockIds);
+
+        // Update editor decorations
+        this.updateCommentDecorations();
+      },
+      error: (err) => console.error('Error loading block comments:', err)
+    });
+  }
+
+  /**
+   * Update ProseMirror decorations for comment indicators
+   */
+  private updateCommentDecorations(): void {
+    if (this.editor) {
+      const blockIds = this.blocksWithComments();
+      const counts = this.blockCommentCounts();
+      this.editor.commands.setBlocksWithComments(blockIds, counts);
+    }
   }
 
   /**
@@ -1790,6 +1865,187 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
     // Final fallback to gray
     return PROPERTY_COLORS.gray;
+  }
+
+  // =====================================================================
+  // Block Comments Methods
+  // =====================================================================
+
+  /**
+   * Open comment panel for a block
+   * If block doesn't have an ID, one will be assigned
+   */
+  openCommentPanel(blockId: string | null): void {
+    if (!blockId) {
+      // Try to ensure the current block has an ID and get it
+      const currentBlockId = this.ensureAndGetBlockId();
+
+      if (currentBlockId) {
+        this.selectedBlockId.set(currentBlockId);
+        this.commentPanelOpen.set(true);
+      }
+    } else {
+      this.selectedBlockId.set(blockId);
+      this.commentPanelOpen.set(true);
+    }
+  }
+
+  /**
+   * Helper to ensure current block has a blockId and return it
+   */
+  private ensureAndGetBlockId(): string | null {
+    const { selection } = this.editor.state;
+    const { $from } = selection;
+
+    const blockTypes = [
+      'paragraph', 'heading', 'blockquote', 'codeBlock',
+      'bulletList', 'orderedList', 'taskList', 'listItem', 'taskItem',
+      'table', 'horizontalRule', 'image', 'columns', 'column',
+      'databaseTable', 'taskSection'
+    ];
+
+    let depth = $from.depth;
+    while (depth > 0) {
+      const node = $from.node(depth);
+
+      if (blockTypes.includes(node.type.name)) {
+        let blockId = node.attrs['blockId'];
+
+        if (!blockId) {
+          // Generate and assign new blockId
+          blockId = 'block-' + crypto.randomUUID();
+          const pos = $from.before(depth);
+
+          this.editor.view.dispatch(
+            this.editor.state.tr.setNodeMarkup(pos, undefined, {
+              ...node.attrs,
+              blockId: blockId,
+            })
+          );
+        }
+
+        return blockId;
+      }
+      depth--;
+    }
+
+    return null;
+  }
+
+  /**
+   * Close comment panel
+   */
+  closeCommentPanel(): void {
+    this.commentPanelOpen.set(false);
+    this.selectedBlockId.set(null);
+  }
+
+  /**
+   * Toggle comment panel for a specific block
+   */
+  toggleCommentPanel(blockId: string): void {
+    if (this.commentPanelOpen() && this.selectedBlockId() === blockId) {
+      this.closeCommentPanel();
+    } else {
+      this.openCommentPanel(blockId);
+    }
+  }
+
+  /**
+   * Handle comment added event
+   */
+  onCommentAdded(comment: BlockComment): void {
+    // Update local state
+    this.blockComments.update((map) => {
+      const updated = { ...map };
+      if (!updated[comment.block_id]) {
+        updated[comment.block_id] = [];
+      }
+      updated[comment.block_id] = [...updated[comment.block_id], comment];
+      return updated;
+    });
+    this.blocksWithComments.update((set) => new Set([...set, comment.block_id]));
+
+    // Update editor decorations
+    this.updateCommentDecorations();
+
+    // Save document to persist the blockId in the document content
+    // This ensures the blockId is stored for future comment indicator display
+    this.saveDocument();
+  }
+
+  /**
+   * Handle comment updated event
+   */
+  onCommentUpdated(comment: BlockComment): void {
+    this.blockComments.update((map) => {
+      const updated = { ...map };
+      if (updated[comment.block_id]) {
+        updated[comment.block_id] = updated[comment.block_id].map((c) =>
+          c.id === comment.id ? comment : c
+        );
+      }
+      return updated;
+    });
+  }
+
+  /**
+   * Handle comment deleted event
+   */
+  onCommentDeleted(commentId: string): void {
+    const blockId = this.selectedBlockId();
+    if (!blockId) return;
+
+    this.blockComments.update((map) => {
+      const updated = { ...map };
+      if (updated[blockId]) {
+        updated[blockId] = updated[blockId].filter((c) => c.id !== commentId);
+        // Remove block from map if no comments left
+        if (updated[blockId].length === 0) {
+          delete updated[blockId];
+        }
+      }
+      return updated;
+    });
+
+    // Update blocks with comments set
+    const comments = this.blockComments();
+    this.blocksWithComments.set(new Set(Object.keys(comments)));
+
+    // Update editor decorations
+    this.updateCommentDecorations();
+  }
+
+  /**
+   * Get comment count for a block
+   */
+  getBlockCommentCount(blockId: string): number {
+    const comments = this.blockComments();
+    return comments[blockId]?.length || 0;
+  }
+
+  /**
+   * Check if a block has comments
+   */
+  blockHasComments(blockId: string): boolean {
+    return this.blocksWithComments().has(blockId);
+  }
+
+  /**
+   * Handle click on editor to detect block selection for comments
+   * Called via click event on editor wrapper
+   */
+  onEditorClick(event: MouseEvent): void {
+    // Check if click was on a comment indicator button
+    const target = event.target as HTMLElement;
+    if (target.closest('.block-comment-indicator')) {
+      event.preventDefault();
+      event.stopPropagation();
+      const blockId = target.closest('.block-comment-indicator')?.getAttribute('data-block-id');
+      if (blockId) {
+        this.toggleCommentPanel(blockId);
+      }
+    }
   }
 
   ngOnDestroy(): void {

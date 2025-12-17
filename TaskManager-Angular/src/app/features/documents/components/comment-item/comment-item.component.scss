@@ -1,0 +1,142 @@
+.comment-item {
+  padding: 12px;
+  border-radius: 8px;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+
+    .comment-actions {
+      opacity: 1;
+    }
+  }
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.comment-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.comment-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.comment-author {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comment-time {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+
+  .action-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      line-height: 16px;
+      color: #6b7280;
+    }
+
+    &:hover mat-icon {
+      color: #3b82f6;
+    }
+
+    &.delete-btn:hover mat-icon {
+      color: #ef4444;
+    }
+  }
+}
+
+.comment-content {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #374151;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding-left: 38px; // Align with avatar
+}
+
+.comment-edit {
+  padding-left: 38px;
+}
+
+.edit-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #374151;
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+
+  .cancel-btn {
+    font-size: 12px;
+    color: #6b7280;
+  }
+
+  .save-btn {
+    font-size: 12px;
+  }
+}

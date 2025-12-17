@@ -1,0 +1,69 @@
+<div class="comment-item">
+  <!-- Header: Avatar + Name + Time + Actions -->
+  <div class="comment-header">
+    <div class="comment-avatar">
+      {{ userInitial }}
+    </div>
+    <div class="comment-meta">
+      <span class="comment-author">{{ displayName }}</span>
+      <span class="comment-time">{{ relativeTime }}</span>
+    </div>
+    @if (isOwner()) {
+      <div class="comment-actions">
+        <button
+          mat-icon-button
+          class="action-btn"
+          matTooltip="Modifier"
+          (click)="startEdit()"
+          [disabled]="isEditing()"
+        >
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          class="action-btn delete-btn"
+          matTooltip="Supprimer"
+          (click)="confirmDelete()"
+        >
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    }
+  </div>
+
+  <!-- Content -->
+  @if (isEditing()) {
+    <div class="comment-edit">
+      <textarea
+        class="edit-textarea"
+        [(ngModel)]="editContent"
+        rows="3"
+        placeholder="Modifier le commentaire..."
+        (keydown)="onEditKeydown($event)"
+        (keydown.escape)="cancelEdit()"
+      ></textarea>
+      <div class="edit-actions">
+        <button
+          mat-button
+          class="cancel-btn"
+          (click)="cancelEdit()"
+        >
+          Annuler
+        </button>
+        <button
+          mat-flat-button
+          color="primary"
+          class="save-btn"
+          (click)="saveEdit()"
+          [disabled]="!editContent().trim()"
+        >
+          Enregistrer
+        </button>
+      </div>
+    </div>
+  } @else {
+    <div class="comment-content">
+      {{ comment.content }}
+    </div>
+  }
+</div>

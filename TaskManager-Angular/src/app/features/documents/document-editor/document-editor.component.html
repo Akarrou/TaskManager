@@ -48,6 +48,16 @@
         <mat-icon>tune</mat-icon>
       </button>
     }
+
+    <!-- Comment toggle button -->
+    <button
+      class="comment-toggle-button"
+      (click)="openCommentPanel(null)"
+      [class.active]="commentPanelOpen()"
+      title="Ajouter un commentaire"
+    >
+      <mat-icon>add_comment</mat-icon>
+    </button>
   </div>
 
   <!-- Pinned Properties & Save Status Row -->
@@ -110,11 +120,14 @@
   <!-- Editor Content -->
   <div
     class="editor-wrapper"
-    (click)="focusEditor($event)"
+    (click)="focusEditor($event); onEditorClick($event)"
     appTaskSectionRenderer
     appDatabaseTableRenderer
+    appCommentIndicator
     [documentId]="documentState().id || ''"
-    [editor]="editor">
+    [editor]="editor"
+    [blocksWithComments]="blocksWithComments()"
+    [blockCommentCounts]="blockCommentCounts()">
     <tiptap-editor
       [editor]="editor"
       class="editor-content">
@@ -261,4 +274,16 @@
       </div>
     </div>
   }
+
+  <!-- Comment Thread Panel -->
+  <app-comment-thread-panel
+    [isOpen]="commentPanelOpen()"
+    [documentId]="documentState().id"
+    [blockId]="selectedBlockId()"
+    [currentUserId]="currentUserId()"
+    (close)="closeCommentPanel()"
+    (commentAdded)="onCommentAdded($event)"
+    (commentUpdated)="onCommentUpdated($event)"
+    (commentDeleted)="onCommentDeleted($event)"
+  />
 </div>

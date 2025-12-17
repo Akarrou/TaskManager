@@ -1,0 +1,83 @@
+@if (isOpen) {
+  <!-- Backdrop -->
+  <div class="panel-backdrop" (click)="onClose()"></div>
+
+  <!-- Panel -->
+  <div class="comment-panel">
+    <!-- Header -->
+    <div class="panel-header">
+      <div class="header-title">
+        <mat-icon>comment</mat-icon>
+        <span>Commentaires</span>
+        @if (comments().length > 0) {
+          <span class="comment-count">({{ comments().length }})</span>
+        }
+      </div>
+      <button mat-icon-button class="close-btn" (click)="onClose()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="panel-content">
+      @if (isLoading()) {
+        <div class="loading-state">
+          <mat-spinner diameter="24"></mat-spinner>
+          <span>Chargement...</span>
+        </div>
+      } @else if (comments().length === 0) {
+        <div class="empty-state">
+          <mat-icon>chat_bubble_outline</mat-icon>
+          <p>Aucun commentaire</p>
+          <span>Soyez le premier a commenter ce bloc</span>
+        </div>
+      } @else {
+        <div class="comments-list">
+          @for (comment of comments(); track comment.id) {
+            <app-comment-item
+              [comment]="comment"
+              [currentUserId]="currentUserId"
+              (edit)="onEditComment($event)"
+              (delete)="onDeleteComment($event)"
+            />
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Input -->
+    <div class="panel-footer">
+      <div class="input-wrapper">
+        <textarea
+          #commentInput
+          class="comment-input"
+          [ngModel]="newCommentContent()"
+          (ngModelChange)="newCommentContent.set($event)"
+          placeholder="Ajouter un commentaire..."
+          rows="2"
+          (keydown)="onKeyDown($event)"
+          [disabled]="isSubmitting()"
+        ></textarea>
+        <div class="input-actions">
+          <span class="hint">Ctrl+Entree pour envoyer</span>
+          <button
+            mat-flat-button
+            color="primary"
+            class="send-btn"
+            [disabled]="!newCommentContent().trim() || isSubmitting()"
+            (click)="submitComment()"
+          >
+            @if (isSubmitting()) {
+              <mat-spinner diameter="16"></mat-spinner>
+            } @else {
+              <ng-container>
+                <mat-icon>send</mat-icon>
+                Envoyer
+              </ng-container>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
