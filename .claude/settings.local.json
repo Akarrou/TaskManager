@@ -17,7 +17,6 @@
       "Bash(docker system prune:*)",
       "Bash(supabase status)",
       "Bash(psql:*)",
-      "Bash(docker exec -i supabase-db psql -U postgres -d postgres -c \"SELECT get_task_stats_aggregated();\")",
       "Bash(npx supabase:*)",
       "Bash(docker exec:*)",
       "Bash(docker logs:*)",
@@ -48,10 +47,24 @@
       "Bash(\"/Users/jeromevalette/Projects/Task manager/TaskManager-Angular/dist/TaskManager-Angular/browser/\" )",
       "Bash(ubuntu@51.178.52.150:~/taskmanager/dist/TaskManager-Angular/browser/)",
       "Bash(npx supabase db push:*)",
-      "Bash(npx supabase migration:*)"
+      "Bash(npx supabase migration:*)",
+      "Bash(claude mcp add:*)",
+      "Bash(zsh -c \"which claude\")",
+      "Bash(docker compose:*)",
+      "Bash(for img in \"supabase/realtime:v2.68.0\" \"supabase/storage-api:v1.33.0\" \"darthsim/imgproxy:v3.8.0\" \"supabase/postgres-meta:v0.93.1\")",
+      "Bash(do echo \"Pulling $img...\")",
+      "Bash(docker pull:*)",
+      "Bash(echo:*)",
+      "Bash(for img in \"supabase/edge-runtime:v1.69.28\" \"supabase/studio:2025.12.09-sha-434634f\" \"supabase/supavisor:2.7.4\")",
+      "Bash(pnpm ng serve:*)",
+      "Bash(nvm list:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(chmod:*)",
+      "Bash(./scripts/seed-user.sh:*)"
     ],
     "deny": [],
     "ask": []
   },
-  "enableAllProjectMcpServers": false
+  "enableAllProjectMcpServers": true
 }

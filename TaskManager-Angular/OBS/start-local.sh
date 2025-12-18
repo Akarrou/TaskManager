@@ -9,6 +9,12 @@ docker compose build app
 echo "🚀 Starting all services..."
 docker compose --profile local up -d
 
+echo "⏳ Waiting for services to be ready..."
+sleep 5
+
+echo "👤 Seeding default user..."
+./scripts/seed-user.sh
+
 echo "✅ All services started!"
 echo ""
 echo "📊 Service status:"
