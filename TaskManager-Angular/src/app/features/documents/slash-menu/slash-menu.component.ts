@@ -83,7 +83,7 @@ export class SlashMenuComponent implements OnChanges {
       {
         title: 'Contenu avancé',
         commands: items.filter(item =>
-          ['table', 'codeBlock', 'database', 'taskDatabase'].includes(item.id)
+          ['table', 'codeBlock', 'database', 'taskDatabase', 'mindmap'].includes(item.id)
         )
       },
       {

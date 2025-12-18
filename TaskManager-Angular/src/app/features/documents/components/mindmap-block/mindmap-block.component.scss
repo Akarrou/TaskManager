@@ -1,0 +1,149 @@
+.mindmap-container {
+  @apply relative border border-gray-200 rounded-lg bg-white overflow-hidden;
+  min-height: 500px;
+
+  &:focus {
+    @apply outline-none ring-2 ring-blue-500;
+  }
+}
+
+.mindmap-toolbar {
+  @apply flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200;
+
+  .toolbar-left {
+    @apply flex items-center gap-2;
+
+    .mindmap-title {
+      @apply font-semibold text-gray-700 text-sm;
+    }
+  }
+
+  .toolbar-center {
+    @apply flex items-center gap-1;
+  }
+
+  .toolbar-right {
+    @apply flex items-center gap-1;
+
+    .zoom-level {
+      @apply text-xs text-gray-600 min-w-10 text-center;
+    }
+
+    .delete-btn {
+      @apply ml-2;
+      color: #ef4444;
+    }
+  }
+}
+
+.svg-container {
+  @apply w-full;
+  height: 450px;
+  background: linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%);
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.help-text {
+  @apply absolute bottom-2 left-1/2 transform -translate-x-1/2;
+  @apply text-xs text-gray-400 bg-white/80 px-3 py-1 rounded-full;
+  @apply flex items-center gap-2;
+
+  .separator {
+    @apply text-gray-300;
+  }
+}
+
+// D3 generated styles
+:host ::ng-deep {
+  .mindmap-svg {
+    display: block;
+  }
+
+  .mindmap-node {
+    cursor: pointer;
+
+    &:hover .node-bg {
+      filter: brightness(1.1);
+    }
+
+    &.selected .node-bg {
+      stroke-width: 3px;
+      stroke: #3b82f6;
+    }
+
+    &.dragging {
+      opacity: 0.8;
+      cursor: grabbing;
+    }
+  }
+
+  .mindmap-link {
+    pointer-events: none;
+  }
+
+  .node-label {
+    user-select: none;
+    pointer-events: none;
+  }
+
+  .add-child-btn {
+    transition: opacity 0.2s;
+
+    &:hover {
+      fill: #16a34a;
+    }
+  }
+}
+
+.editing-overlay {
+  @apply absolute inset-0 bg-black/30 flex items-center justify-center z-50;
+}
+
+.editing-input-container {
+  @apply bg-white rounded-lg shadow-xl p-4 flex items-center gap-3;
+
+  .editing-input {
+    @apply px-4 py-2 border border-gray-300 rounded-md;
+    @apply focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+    @apply text-base;
+    min-width: 280px;
+  }
+
+  .editing-actions {
+    @apply flex items-center gap-1;
+  }
+}
+
+.node-actions-bar {
+  @apply absolute bottom-12 left-1/2 transform -translate-x-1/2;
+  @apply bg-white rounded-lg shadow-lg px-4 py-2;
+}
+
+// Theme dots for menu
+.theme-dot {
+  @apply inline-block w-3 h-3 rounded-full mr-2;
+
+  &.theme-default {
+    background-color: #3b82f6;
+  }
+
+  &.theme-ocean {
+    background-color: #06b6d4;
+  }
+
+  &.theme-forest {
+    background-color: #22c55e;
+  }
+
+  &.theme-sunset {
+    background-color: #f97316;
+  }
+
+  &.theme-monochrome {
+    background-color: #6b7280;
+  }
+}

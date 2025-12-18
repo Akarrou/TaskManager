@@ -61,7 +61,8 @@
       "Bash(lsof:*)",
       "Bash(xargs kill:*)",
       "Bash(chmod:*)",
-      "Bash(./scripts/seed-user.sh:*)"
+      "Bash(./scripts/seed-user.sh:*)",
+      "Bash(pnpm add:*)"
     ],
     "deny": [],
     "ask": []

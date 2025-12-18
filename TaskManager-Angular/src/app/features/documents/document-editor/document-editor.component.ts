@@ -60,13 +60,15 @@ import { BlockCommentService } from '../services/block-comment.service';
 import { BlockComment, BlockCommentsMap } from '../models/block-comment.model';
 import { CommentThreadPanelComponent } from '../components/comment-thread-panel/comment-thread-panel.component';
 import { CommentIndicatorDirective } from '../directives/comment-indicator.directive';
+import { MindmapExtension } from '../extensions/mindmap.extension';
+import { MindmapRendererDirective } from '../directives/mindmap-renderer.directive';
 
 const lowlight = createLowlight(all);
 
 @Component({
   selector: 'app-document-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, ImageBubbleMenuComponent, TaskSectionRendererDirective, DatabaseTableRendererDirective, CommentThreadPanelComponent, CommentIndicatorDirective],
+  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, ImageBubbleMenuComponent, TaskSectionRendererDirective, DatabaseTableRendererDirective, CommentThreadPanelComponent, CommentIndicatorDirective, MindmapRendererDirective],
   templateUrl: './document-editor.component.html',
   styleUrl: './document-editor.component.scss',
   encapsulation: ViewEncapsulation.None
@@ -239,6 +241,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     { id: 'database', label: 'Base de données', icon: 'table_view', action: () => this.insertDatabase() },
     { id: 'taskDatabase', label: 'Base de données de tâches', icon: 'task_alt', action: () => this.insertTaskDatabase() },
 
+    // Mind Map
+    { id: 'mindmap', label: 'Mind Map', icon: 'hub', action: () => this.insertMindmap() },
+
     // Utilitaires
     { id: 'break', label: 'Saut de ligne', icon: 'keyboard_return', action: () => this.editor.chain().focus().setHardBreak().run() },
     { id: 'clear', label: 'Effacer format', icon: 'format_clear', action: () => this.editor.chain().focus().clearNodes().unsetAllMarks().run() },
@@ -310,6 +315,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         TaskSectionExtension,
         DatabaseTableExtension,
         BlockIdExtension,
+        MindmapExtension,
       ],
       editorProps: {
         attributes: {
@@ -1737,6 +1743,14 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         alert('Impossible de créer la base de données de tâches. Veuillez réessayer.');
       }
     });
+  }
+
+  /**
+   * Insert a mind map block
+   */
+  insertMindmap() {
+    this.editor.chain().focus().insertMindmap().run();
+    this.showSlashMenu.set(false);
   }
 
   /**

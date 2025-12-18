@@ -1,0 +1,139 @@
+<div class="mindmap-container" tabindex="0">
+  <!-- Toolbar -->
+  <div class="mindmap-toolbar">
+    <div class="toolbar-left">
+      <span class="mindmap-title">{{ config().name }}</span>
+    </div>
+
+    <div class="toolbar-center">
+      <!-- Layout selector -->
+      <button
+        mat-icon-button
+        [matMenuTriggerFor]="layoutMenu"
+        matTooltip="Layout"
+      >
+        <mat-icon>account_tree</mat-icon>
+      </button>
+      <mat-menu #layoutMenu="matMenu">
+        <button mat-menu-item (click)="setLayout('horizontal')">
+          <mat-icon>arrow_forward</mat-icon>
+          <span>Horizontal</span>
+        </button>
+        <button mat-menu-item (click)="setLayout('tree')">
+          <mat-icon>arrow_downward</mat-icon>
+          <span>Vertical</span>
+        </button>
+        <button mat-menu-item (click)="setLayout('radial')">
+          <mat-icon>radio_button_unchecked</mat-icon>
+          <span>Radial</span>
+        </button>
+      </mat-menu>
+
+      <!-- Theme selector -->
+      <button
+        mat-icon-button
+        [matMenuTriggerFor]="themeMenu"
+        matTooltip="Theme"
+      >
+        <mat-icon>palette</mat-icon>
+      </button>
+      <mat-menu #themeMenu="matMenu">
+        <button mat-menu-item (click)="setTheme('default')">
+          <span class="theme-dot theme-default"></span>
+          <span>Default (Blue)</span>
+        </button>
+        <button mat-menu-item (click)="setTheme('ocean')">
+          <span class="theme-dot theme-ocean"></span>
+          <span>Ocean</span>
+        </button>
+        <button mat-menu-item (click)="setTheme('forest')">
+          <span class="theme-dot theme-forest"></span>
+          <span>Forest</span>
+        </button>
+        <button mat-menu-item (click)="setTheme('sunset')">
+          <span class="theme-dot theme-sunset"></span>
+          <span>Sunset</span>
+        </button>
+        <button mat-menu-item (click)="setTheme('monochrome')">
+          <span class="theme-dot theme-monochrome"></span>
+          <span>Monochrome</span>
+        </button>
+      </mat-menu>
+    </div>
+
+    <div class="toolbar-right">
+      <!-- Zoom controls -->
+      <button mat-icon-button (click)="zoomOut()" matTooltip="Zoom -">
+        <mat-icon>remove</mat-icon>
+      </button>
+      <span class="zoom-level">{{ (currentZoom() * 100).toFixed(0) }}%</span>
+      <button mat-icon-button (click)="zoomIn()" matTooltip="Zoom +">
+        <mat-icon>add</mat-icon>
+      </button>
+      <button mat-icon-button (click)="resetZoom()" matTooltip="Recentrer">
+        <mat-icon>center_focus_strong</mat-icon>
+      </button>
+      <button mat-icon-button (click)="fitToContent()" matTooltip="Ajuster">
+        <mat-icon>fit_screen</mat-icon>
+      </button>
+
+      <!-- Delete mindmap -->
+      <button
+        mat-icon-button
+        (click)="deleteMindmap()"
+        matTooltip="Supprimer"
+        class="delete-btn"
+      >
+        <mat-icon>delete</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- SVG Container -->
+  <div #svgContainer class="svg-container"></div>
+
+  <!-- Help text -->
+  <div class="help-text">
+    <span>Double-clic pour editer</span>
+    <span class="separator">|</span>
+    <span>Tab pour ajouter un enfant</span>
+    <span class="separator">|</span>
+    <span>Suppr pour effacer</span>
+  </div>
+
+  <!-- Inline editing overlay -->
+  @if (editingNodeId()) {
+  <div class="editing-overlay" (click)="cancelEditing()">
+    <div class="editing-input-container" (click)="$event.stopPropagation()">
+      <input
+        type="text"
+        [(ngModel)]="editingLabel"
+        (keydown.enter)="saveLabel()"
+        (keydown.escape)="cancelEditing()"
+        class="editing-input"
+        placeholder="Entrez le texte..."
+        autofocus
+        #editInput
+      />
+      <div class="editing-actions">
+        <button mat-icon-button (click)="saveLabel()" color="primary">
+          <mat-icon>check</mat-icon>
+        </button>
+        <button mat-icon-button (click)="cancelEditing()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Selected node actions -->
+  @if (selectedNodeId() && selectedNodeId() !== mindmapData().rootId) {
+  <div class="node-actions-bar">
+    <button mat-stroked-button (click)="deleteSelectedNode()" color="warn">
+      <mat-icon>delete</mat-icon>
+      Supprimer le noeud
+    </button>
+  </div>
+  }
+</div>
