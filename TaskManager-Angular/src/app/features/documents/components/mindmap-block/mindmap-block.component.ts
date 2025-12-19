@@ -20,21 +20,35 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import * as d3 from 'd3';
+import { MatDividerModule } from '@angular/material/divider';
+import cytoscape from 'cytoscape';
+import dagre from 'cytoscape-dagre';
+import undoRedo from 'cytoscape-undo-redo';
+import expandCollapse from 'cytoscape-expand-collapse';
+import contextMenus from 'cytoscape-context-menus';
+import navigator from 'cytoscape-navigator';
+
+// Type for Cytoscape stylesheet
+type CytoscapeStylesheet = {
+  selector: string;
+  style: Record<string, unknown>;
+};
 import { Subject, debounceTime, takeUntil } from 'rxjs';
 import {
   MindmapData,
   MindmapNode,
-  MindmapConfig,
   MindmapLayoutType,
   MindmapTheme,
   createDefaultMindmapData,
   getNodeColorByDepth,
 } from '../../models/mindmap.model';
 
-// D3 Hierarchy types
-type HierarchyNode = d3.HierarchyPointNode<MindmapNode>;
-type HierarchyLink = d3.HierarchyPointLink<MindmapNode>;
+// Register extensions
+cytoscape.use(dagre);
+cytoscape.use(undoRedo);
+cytoscape.use(expandCollapse);
+cytoscape.use(contextMenus);
+cytoscape.use(navigator);
 
 @Component({
   selector: 'app-mindmap-block',
@@ -46,6 +60,7 @@ type HierarchyLink = d3.HierarchyPointLink<MindmapNode>;
     MatIconModule,
     MatMenuModule,
     MatTooltipModule,
+    MatDividerModule,
   ],
   templateUrl: './mindmap-block.component.html',
   styleUrl: './mindmap-block.component.scss',
@@ -61,33 +76,42 @@ export class MindmapBlockComponent
   @Input() onDataChange?: (data: MindmapData) => void;
   @Input() onDelete?: () => void;
 
-  // SVG container reference
-  @ViewChild('svgContainer', { static: true })
-  svgContainer!: ElementRef<HTMLDivElement>;
+  // Container references
+  @ViewChild('cyContainer', { static: true })
+  cyContainer!: ElementRef<HTMLDivElement>;
+
+  @ViewChild('navigatorContainer', { static: false })
+  navigatorContainer!: ElementRef<HTMLDivElement>;
 
   // State signals
   mindmapData = signal<MindmapData>(createDefaultMindmapData());
   selectedNodeId = signal<string | null>(null);
   editingNodeId = signal<string | null>(null);
-  editingLabel = signal<string>('');
+  editingLabel = '';
+
+  // Flag to prevent re-render when we emit our own changes
+  private isEmittingChange = false;
 
   // View state
   currentZoom = signal(1);
+  canUndo = signal(false);
+  canRedo = signal(false);
+  showNavigator = signal(false);
 
   // Computed
   config = computed(() => this.mindmapData().config);
   nodes = computed(() => this.mindmapData().nodes);
 
-  // D3 elements
-  private svg!: d3.Selection<SVGSVGElement, unknown, null, undefined>;
-  private g!: d3.Selection<SVGGElement, unknown, null, undefined>;
-  private zoom!: d3.ZoomBehavior<SVGSVGElement, unknown>;
+  // Cytoscape instance and extensions
+  private cy!: cytoscape.Core;
+  private ur!: cytoscape.UndoRedoInstance;
+  private ec!: cytoscape.ExpandCollapseInstance;
+  private cm!: cytoscape.ContextMenuInstance;
+  private nav!: cytoscape.NavigatorInstance;
 
-  // Dimensions
-  private width = 800;
-  private height = 500;
-  private nodeWidth = 140;
-  private nodeHeight = 36;
+  // Drag state for reparenting
+  private draggedNode: cytoscape.NodeSingular | null = null;
+  private dropTarget: cytoscape.NodeSingular | null = null;
 
   // Cleanup
   private destroy$ = new Subject<void>();
@@ -107,19 +131,37 @@ export class MindmapBlockComponent
   }
 
   ngAfterViewInit() {
-    // Run D3 operations outside Angular zone for performance
+    // Run Cytoscape operations outside Angular zone for performance
     this.ngZone.runOutsideAngular(() => {
-      this.initializeSvg();
-      this.initializeZoom();
+      this.initializeCytoscape();
+      this.initializeExtensions();
+      this.setupEventHandlers();
+      this.setupContextMenu();
       this.renderMindmap();
     });
   }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['data'] && !changes['data'].firstChange) {
-      this.mindmapData.set(this.data);
+      // Skip if this change came from our own emit
+      if (this.isEmittingChange) {
+        this.isEmittingChange = false;
+        return;
+      }
+
+      // Compare data to see if we really need to re-render
+      const currentData = this.mindmapData();
+      const newData = this.data;
+
+      // If data is structurally the same, don't re-render
+      if (JSON.stringify(currentData) === JSON.stringify(newData)) {
+        return;
+      }
+
+      // Only re-render if external data changed
+      this.mindmapData.set(newData);
       this.ngZone.runOutsideAngular(() => {
-        this.renderMindmap();
+        this.renderMindmap(true); // Preserve viewport for external updates
       });
     }
   }
@@ -127,299 +169,821 @@ export class MindmapBlockComponent
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+
+    // Cleanup extensions
+    if (this.nav) {
+      this.nav.destroy();
+    }
+    if (this.cm) {
+      this.cm.destroy();
+    }
+    if (this.cy) {
+      this.cy.destroy();
+    }
   }
 
   // =====================================================================
-  // SVG Initialization
+  // Cytoscape Initialization
   // =====================================================================
 
-  private initializeSvg() {
-    const container = this.svgContainer.nativeElement;
-    this.width = container.clientWidth || 800;
-    this.height = 500;
+  private initializeCytoscape() {
+    const container = this.cyContainer.nativeElement;
 
-    // Clear existing SVG
-    d3.select(container).selectAll('svg').remove();
+    this.cy = cytoscape({
+      container,
+      style: this.getCytoscapeStyle(),
+      layout: { name: 'preset' },
+      minZoom: 0.2,
+      maxZoom: 3,
+      wheelSensitivity: 0.3,
+      boxSelectionEnabled: true,
+      autounselectify: false,
+      userZoomingEnabled: true,
+      userPanningEnabled: true,
+    });
 
-    // Create SVG
-    this.svg = d3
-      .select(container)
-      .append('svg')
-      .attr('width', '100%')
-      .attr('height', this.height)
-      .attr('class', 'mindmap-svg');
-
-    // Create main group for zoom/pan
-    this.g = this.svg.append('g').attr('class', 'mindmap-canvas');
-
-    // Add links group (rendered behind nodes)
-    this.g.append('g').attr('class', 'links-group');
-
-    // Add nodes group
-    this.g.append('g').attr('class', 'nodes-group');
-  }
-
-  private initializeZoom() {
-    const config = this.config();
-
-    this.zoom = d3
-      .zoom<SVGSVGElement, unknown>()
-      .scaleExtent([config.minZoom, config.maxZoom])
-      .on('zoom', (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
-        this.g.attr('transform', event.transform.toString());
-        this.ngZone.run(() => {
-          this.currentZoom.set(event.transform.k);
-        });
+    // Track zoom level
+    this.cy.on('zoom', () => {
+      this.ngZone.run(() => {
+        this.currentZoom.set(this.cy.zoom());
       });
+    });
+  }
 
-    if (config.enableZoom) {
-      this.svg.call(this.zoom);
+  private initializeExtensions() {
+    // Initialize Undo/Redo
+    this.ur = this.cy.undoRedo({
+      isDebug: false,
+      undoableDrag: true,
+      stackSizeLimit: 50,
+    });
+
+    // Initialize Expand/Collapse
+    this.ec = this.cy.expandCollapse({
+      layoutBy: null, // We'll run layout manually
+      fisheye: false,
+      animate: true,
+      animationDuration: 300,
+      undoable: true,
+      cueEnabled: true,
+      expandCollapseCuePosition: 'top-left',
+      expandCollapseCueSize: 12,
+      expandCollapseCueLineSize: 8,
+      expandCollapseCueSensitivity: 1,
+    });
+
+    // Update undo/redo state
+    this.cy.on('afterUndo afterRedo', () => {
+      this.updateUndoRedoState();
+    });
+  }
+
+  private setupContextMenu() {
+    // Store reference to component for use in callbacks
+    const component = this;
+
+    this.cm = this.cy.contextMenus({
+      evtType: 'cxttap',
+      menuItems: [
+        {
+          id: 'add-child',
+          content: 'Ajouter un enfant',
+          tooltipText: 'Ajouter un noeud enfant',
+          selector: 'node',
+          onClickFunction: function(event: cytoscape.EventObject) {
+            const node = event.target as cytoscape.NodeSingular;
+            const nodeId = node.id();
+            component.ngZone.run(() => {
+              component.addChildNode(nodeId);
+            });
+          },
+        },
+        {
+          id: 'edit-node',
+          content: 'Modifier',
+          tooltipText: 'Modifier le texte',
+          selector: 'node',
+          onClickFunction: function(event: cytoscape.EventObject) {
+            const node = event.target as cytoscape.NodeSingular;
+            const nodeId = node.id();
+            const label = node.data('label');
+            component.ngZone.run(() => {
+              component.startEditing(nodeId, label);
+            });
+          },
+        },
+        {
+          id: 'collapse-node',
+          content: 'Replier',
+          tooltipText: 'Replier les enfants',
+          selector: 'node',
+          onClickFunction: function(event: cytoscape.EventObject) {
+            const node = event.target as cytoscape.NodeSingular;
+            const nodeId = node.id();
+            component.ngZone.run(() => {
+              if (component.canCollapseNode(nodeId)) {
+                component.collapseNode(nodeId);
+              }
+            });
+          },
+        },
+        {
+          id: 'expand-node',
+          content: 'Déplier',
+          tooltipText: 'Déplier les enfants',
+          selector: 'node',
+          onClickFunction: function(event: cytoscape.EventObject) {
+            const node = event.target as cytoscape.NodeSingular;
+            const nodeId = node.id();
+            component.ngZone.run(() => {
+              if (component.canExpandNode(nodeId)) {
+                component.expandNode(nodeId);
+              }
+            });
+          },
+        },
+        {
+          id: 'delete-node',
+          content: 'Supprimer',
+          tooltipText: 'Supprimer le noeud et ses enfants',
+          selector: 'node',
+          onClickFunction: function(event: cytoscape.EventObject) {
+            const node = event.target as cytoscape.NodeSingular;
+            const nodeId = node.id();
+            const data = component.mindmapData();
+            if (nodeId !== data.rootId) {
+              component.ngZone.run(() => {
+                component.deleteNode(nodeId);
+              });
+            }
+          },
+        },
+        {
+          id: 'add-sibling',
+          content: 'Ajouter un frère',
+          tooltipText: 'Ajouter un noeud au même niveau',
+          selector: 'node',
+          onClickFunction: function(event: cytoscape.EventObject) {
+            const node = event.target as cytoscape.NodeSingular;
+            const parentId = node.data('parentNodeId');
+            if (parentId) {
+              component.ngZone.run(() => {
+                component.addChildNode(parentId);
+              });
+            }
+          },
+        },
+      ],
+    });
+  }
+
+  private getCytoscapeStyle(): CytoscapeStylesheet[] {
+    return [
+      {
+        selector: 'node',
+        style: {
+          'background-color': 'data(color)',
+          'border-color': 'data(borderColor)',
+          'border-width': 2,
+          'label': 'data(label)',
+          'text-valign': 'center',
+          'text-halign': 'center',
+          'color': '#ffffff',
+          'font-size': '13px',
+          'text-wrap': 'ellipsis',
+          'text-max-width': '120px',
+          'width': 140,
+          'height': 36,
+          'shape': 'round-rectangle',
+          'text-outline-color': 'data(color)',
+          'text-outline-width': 1,
+          'transition-property': 'background-color, border-color, width, height',
+          'transition-duration': 200,
+        },
+      },
+      {
+        selector: 'node:selected',
+        style: {
+          'border-color': '#3b82f6',
+          'border-width': 3,
+          'background-color': 'data(selectedColor)',
+        },
+      },
+      {
+        selector: 'node.drop-target',
+        style: {
+          'border-color': '#22c55e',
+          'border-width': 4,
+          'border-style': 'dashed',
+        },
+      },
+      {
+        selector: 'node.dragging',
+        style: {
+          'opacity': 0.7,
+        },
+      },
+      {
+        selector: 'node.cy-expand-collapse-collapsed-node',
+        style: {
+          'border-style': 'double',
+          'border-width': 4,
+        },
+      },
+      {
+        selector: 'edge',
+        style: {
+          'width': 2,
+          'line-color': '#94a3b8',
+          'target-arrow-color': '#94a3b8',
+          'target-arrow-shape': 'triangle',
+          'curve-style': 'bezier',
+          'arrow-scale': 0.8,
+        },
+      },
+      {
+        selector: 'edge.highlighted',
+        style: {
+          'line-color': '#3b82f6',
+          'target-arrow-color': '#3b82f6',
+          'width': 3,
+        },
+      },
+      {
+        selector: '.hidden',
+        style: {
+          'display': 'none',
+        },
+      },
+    ];
+  }
+
+  private setupEventHandlers() {
+    // Node click - select
+    this.cy.on('tap', 'node', (event: cytoscape.EventObject) => {
+      const node = event.target as cytoscape.NodeSingular;
+      this.ngZone.run(() => {
+        this.onNodeClick(node.id());
+      });
+    });
+
+    // Double click - edit
+    this.cy.on('dbltap', 'node', (event: cytoscape.EventObject) => {
+      const node = event.target as cytoscape.NodeSingular;
+      this.ngZone.run(() => {
+        this.startEditing(node.id(), node.data('label'));
+      });
+    });
+
+    // Click on background - deselect
+    this.cy.on('tap', (event: cytoscape.EventObject) => {
+      if (event.target === this.cy) {
+        this.ngZone.run(() => {
+          this.selectedNodeId.set(null);
+        });
+      }
+    });
+
+    // Drag start
+    this.cy.on('grab', 'node', (event: cytoscape.EventObject) => {
+      const node = event.target as cytoscape.NodeSingular;
+      this.draggedNode = node;
+      node.addClass('dragging');
+    });
+
+    // Drag over nodes - highlight potential drop targets
+    this.cy.on('drag', 'node', (event: cytoscape.EventObject) => {
+      if (!this.draggedNode) return;
+
+      const draggedNode = event.target as cytoscape.NodeSingular;
+      const pos = draggedNode.position();
+
+      // Find potential drop target
+      const potentialTarget = this.findDropTarget(draggedNode, pos);
+
+      // Update visual feedback
+      this.cy.nodes().removeClass('drop-target');
+      if (potentialTarget && potentialTarget.id() !== draggedNode.id()) {
+        potentialTarget.addClass('drop-target');
+        this.dropTarget = potentialTarget;
+      } else {
+        this.dropTarget = null;
+      }
+    });
+
+    // Drag end - potentially reparent
+    this.cy.on('free', 'node', (event: cytoscape.EventObject) => {
+      const node = event.target as cytoscape.NodeSingular;
+      node.removeClass('dragging');
+      this.cy.nodes().removeClass('drop-target');
+
+      const hadDropTarget = this.draggedNode && this.dropTarget;
+      const draggedId = this.draggedNode?.id();
+      const newParentId = this.dropTarget?.id();
+
+      this.draggedNode = null;
+      this.dropTarget = null;
+
+      if (hadDropTarget && draggedId && newParentId) {
+        // Don't allow dropping on self or own descendants
+        if (!this.isDescendantOf(newParentId, draggedId)) {
+          this.ngZone.run(() => {
+            this.reparentNode(draggedId, newParentId);
+          });
+        } else {
+          // Invalid drop - re-run layout to reset position
+          this.runLayout();
+        }
+      } else {
+        // No reparenting - re-run layout to reset position
+        this.runLayout();
+      }
+
+      this.updateUndoRedoState();
+    });
+  }
+
+  private findDropTarget(draggedNode: cytoscape.NodeSingular, pos: { x: number; y: number }): cytoscape.NodeSingular | null {
+    const threshold = 80;
+    let closest: cytoscape.NodeSingular | null = null;
+    let minDist = threshold;
+
+    this.cy.nodes().forEach((node) => {
+      if (node.id() === draggedNode.id()) return;
+
+      const nodePos = node.position();
+      const dist = Math.sqrt(
+        Math.pow(pos.x - nodePos.x, 2) + Math.pow(pos.y - nodePos.y, 2)
+      );
+
+      if (dist < minDist) {
+        minDist = dist;
+        closest = node;
+      }
+    });
+
+    return closest;
+  }
+
+  private isDescendantOf(potentialDescendant: string, ancestorId: string): boolean {
+    const data = this.mindmapData();
+    let currentId: string | null = potentialDescendant;
+
+    while (currentId) {
+      if (currentId === ancestorId) return true;
+      const node = data.nodes.find((n) => n.id === currentId);
+      currentId = node?.parentId || null;
     }
 
-    // Initial transform (center the root)
-    const initialX = this.width / 4;
-    const initialY = this.height / 2;
-    this.svg.call(
-      this.zoom.transform,
-      d3.zoomIdentity.translate(initialX, initialY)
-    );
+    return false;
   }
 
   // =====================================================================
   // Rendering
   // =====================================================================
 
-  private renderMindmap() {
-    if (!this.g) return;
+  private renderMindmap(preserveViewport = false) {
+    if (!this.cy) return;
+
+    // Save viewport state if needed
+    const savedZoom = preserveViewport ? this.cy.zoom() : null;
+    const savedPan = preserveViewport ? { ...this.cy.pan() } : null;
 
     const data = this.mindmapData();
-    const config = data.config;
 
-    // Build hierarchy from flat nodes
-    const hierarchyData = this.buildHierarchy(data);
-    if (!hierarchyData) return;
+    // Build Cytoscape elements
+    const elements = this.buildCytoscapeElements(data);
 
-    // Create tree layout based on layout type
-    const treeLayout = this.createTreeLayout(config);
+    // Clear and add elements
+    this.cy.elements().remove();
+    this.cy.add(elements);
 
-    // Apply layout
-    const root = d3.hierarchy(hierarchyData, (d) => {
-      if (d.collapsed) return undefined;
-      return d.children
-        ?.map((childId) => data.nodes.find((n) => n.id === childId))
-        .filter(Boolean) as MindmapNode[];
+    // Run layout with viewport restoration callback
+    this.runLayout(preserveViewport, savedZoom, savedPan);
+
+    // Reset undo/redo stack on new render
+    if (this.ur) {
+      this.ur.reset();
+      this.updateUndoRedoState();
+    }
+  }
+
+  private buildCytoscapeElements(data: MindmapData): cytoscape.ElementDefinition[] {
+    const elements: cytoscape.ElementDefinition[] = [];
+    const nodeDepths = this.calculateNodeDepths(data);
+
+    // Add nodes
+    data.nodes.forEach((node) => {
+      const depth = nodeDepths.get(node.id) || 0;
+      const color = node.style?.backgroundColor || getNodeColorByDepth(depth, data.config.theme);
+      const darkerColor = this.darkenColor(color, 0.2);
+
+      elements.push({
+        data: {
+          id: node.id,
+          label: node.label,
+          color,
+          borderColor: darkerColor,
+          selectedColor: this.darkenColor(color, 0.1),
+          depth,
+          parentNodeId: node.parentId,
+        },
+      });
     });
 
-    treeLayout(root);
-
-    // Get nodes and links
-    const nodes = root.descendants() as HierarchyNode[];
-    const links = root.links() as HierarchyLink[];
-
-    // Render
-    this.renderLinks(links, config);
-    this.renderNodes(nodes, config);
-  }
-
-  private createTreeLayout(
-    config: MindmapConfig
-  ): d3.TreeLayout<MindmapNode> {
-    const layout = d3
-      .tree<MindmapNode>()
-      .nodeSize([config.nodeSpacing + this.nodeHeight, config.levelSpacing]);
-
-    return layout;
-  }
-
-  private buildHierarchy(data: MindmapData): MindmapNode | null {
-    const root = data.nodes.find((n) => n.id === data.rootId);
-    if (!root) return null;
-
-    // Build children arrays
-    const nodeMap = new Map(data.nodes.map((n) => [n.id, { ...n }]));
-
+    // Add edges
     data.nodes.forEach((node) => {
       if (node.parentId) {
-        const parent = nodeMap.get(node.parentId);
-        if (parent) {
-          if (!parent.children) parent.children = [];
-          if (!parent.children.includes(node.id)) {
-            parent.children.push(node.id);
-          }
+        elements.push({
+          data: {
+            id: `edge-${node.parentId}-${node.id}`,
+            source: node.parentId,
+            target: node.id,
+          },
+        });
+      }
+    });
+
+    return elements;
+  }
+
+  private calculateNodeDepths(data: MindmapData): Map<string, number> {
+    const depths = new Map<string, number>();
+
+    const calculateDepth = (nodeId: string, depth: number) => {
+      depths.set(nodeId, depth);
+      data.nodes
+        .filter((n) => n.parentId === nodeId)
+        .forEach((child) => calculateDepth(child.id, depth + 1));
+    };
+
+    calculateDepth(data.rootId, 0);
+    return depths;
+  }
+
+  private runLayout(
+    preserveViewport = false,
+    savedZoom: number | null = null,
+    savedPan: { x: number; y: number } | null = null
+  ) {
+    const config = this.config();
+    const layoutOptions = this.getLayoutOptions(config.layout);
+
+    // If preserving viewport, disable animation to avoid zoom effect
+    if (preserveViewport && savedZoom !== null && savedPan !== null) {
+      const noAnimOptions = {
+        ...layoutOptions,
+        animate: false,
+      };
+
+      const layout = this.cy.layout(noAnimOptions);
+      layout.run();
+
+      // Restore viewport immediately after layout
+      this.cy.zoom(savedZoom);
+      this.cy.pan(savedPan);
+    } else {
+      this.cy.layout(layoutOptions).run();
+    }
+  }
+
+  private getLayoutOptions(layoutType: MindmapLayoutType): cytoscape.LayoutOptions {
+    const config = this.config();
+
+    switch (layoutType) {
+      case 'horizontal':
+        return {
+          name: 'dagre',
+          rankDir: 'LR',
+          nodeSep: config.nodeSpacing,
+          rankSep: config.levelSpacing,
+          animate: true,
+          animationDuration: config.animationDuration,
+        } as unknown as cytoscape.LayoutOptions;
+
+      case 'tree':
+        return {
+          name: 'dagre',
+          rankDir: 'TB',
+          nodeSep: config.nodeSpacing,
+          rankSep: config.levelSpacing,
+          animate: true,
+          animationDuration: config.animationDuration,
+        } as unknown as cytoscape.LayoutOptions;
+
+      case 'radial':
+        return {
+          name: 'concentric',
+          concentric: (node: cytoscape.NodeSingular) => {
+            const maxDepth = Math.max(...this.cy.nodes().map((n) => n.data('depth') || 0));
+            return maxDepth - (node.data('depth') || 0);
+          },
+          levelWidth: () => 1,
+          animate: true,
+          animationDuration: config.animationDuration,
+          minNodeSpacing: config.nodeSpacing,
+        } as unknown as cytoscape.LayoutOptions;
+
+      default:
+        return {
+          name: 'dagre',
+          rankDir: 'LR',
+          nodeSep: config.nodeSpacing,
+          rankSep: config.levelSpacing,
+          animate: true,
+          animationDuration: config.animationDuration,
+        } as unknown as cytoscape.LayoutOptions;
+    }
+  }
+
+  // =====================================================================
+  // Undo/Redo
+  // =====================================================================
+
+  private updateUndoRedoState() {
+    this.ngZone.run(() => {
+      this.canUndo.set(!this.ur.isUndoStackEmpty());
+      this.canRedo.set(!this.ur.isRedoStackEmpty());
+    });
+  }
+
+  undo() {
+    if (!this.ur.isUndoStackEmpty()) {
+      this.ngZone.runOutsideAngular(() => {
+        this.ur.undo();
+        this.updateUndoRedoState();
+      });
+    }
+  }
+
+  redo() {
+    if (!this.ur.isRedoStackEmpty()) {
+      this.ngZone.runOutsideAngular(() => {
+        this.ur.redo();
+        this.updateUndoRedoState();
+      });
+    }
+  }
+
+  // =====================================================================
+  // Collapse/Expand (Manual implementation since cytoscape-expand-collapse
+  // requires compound nodes which we don't use)
+  // =====================================================================
+
+  collapseNode(nodeId: string) {
+    const data = this.mindmapData();
+    const updatedNodes = data.nodes.map((n) =>
+      n.id === nodeId ? { ...n, collapsed: true } : n
+    );
+
+    this.mindmapData.set({
+      ...data,
+      nodes: updatedNodes,
+    });
+
+    this.ngZone.runOutsideAngular(() => {
+      // Hide all descendants
+      this.hideDescendants(nodeId);
+      this.runLayout();
+    });
+
+    this.changeSubject.next();
+  }
+
+  expandNode(nodeId: string) {
+    const data = this.mindmapData();
+    const updatedNodes = data.nodes.map((n) =>
+      n.id === nodeId ? { ...n, collapsed: false } : n
+    );
+
+    this.mindmapData.set({
+      ...data,
+      nodes: updatedNodes,
+    });
+
+    this.ngZone.runOutsideAngular(() => {
+      // Show direct children (respecting their collapsed state)
+      this.showChildren(nodeId);
+      this.runLayout();
+    });
+
+    this.changeSubject.next();
+  }
+
+  private hideDescendants(nodeId: string) {
+    const data = this.mindmapData();
+
+    // Find all descendants
+    const getDescendants = (parentId: string): string[] => {
+      const children = data.nodes.filter((n) => n.parentId === parentId);
+      const descendants: string[] = [];
+      children.forEach((child) => {
+        descendants.push(child.id);
+        descendants.push(...getDescendants(child.id));
+      });
+      return descendants;
+    };
+
+    const descendants = getDescendants(nodeId);
+
+    // Hide nodes and their edges
+    descendants.forEach((id) => {
+      const node = this.cy.getElementById(id);
+      if (node.length) {
+        node.addClass('hidden');
+        node.connectedEdges().addClass('hidden');
+      }
+    });
+
+    // Mark parent node as collapsed visually
+    const parentNode = this.cy.getElementById(nodeId);
+    if (parentNode.length) {
+      parentNode.addClass('cy-expand-collapse-collapsed-node');
+    }
+  }
+
+  private showChildren(nodeId: string) {
+    const data = this.mindmapData();
+
+    // Find direct children
+    const children = data.nodes.filter((n) => n.parentId === nodeId);
+
+    // Show direct children and their incoming edges
+    children.forEach((child) => {
+      const node = this.cy.getElementById(child.id);
+      if (node.length) {
+        node.removeClass('hidden');
+        // Show edge from parent
+        const edge = this.cy.getElementById(`edge-${nodeId}-${child.id}`);
+        if (edge.length) {
+          edge.removeClass('hidden');
+        }
+
+        // If this child is not collapsed, recursively show its children
+        if (!child.collapsed) {
+          this.showChildren(child.id);
         }
       }
     });
 
-    return nodeMap.get(data.rootId) || null;
+    // Remove collapsed visual from parent
+    const parentNode = this.cy.getElementById(nodeId);
+    if (parentNode.length) {
+      parentNode.removeClass('cy-expand-collapse-collapsed-node');
+    }
   }
 
-  private renderLinks(links: HierarchyLink[], config: MindmapConfig) {
-    const linksGroup = this.g.select('.links-group');
-    const duration = config.animationDuration;
+  collapseAll() {
+    const data = this.mindmapData();
+    // Collapse all nodes that have children
+    const nodesWithChildren = data.nodes.filter((node) =>
+      data.nodes.some((n) => n.parentId === node.id)
+    );
 
-    // Link generator (curved paths for horizontal layout)
-    const linkGenerator = d3
-      .linkHorizontal<HierarchyLink, HierarchyNode>()
-      .x((d) => d.y)
-      .y((d) => d.x);
+    const updatedNodes = data.nodes.map((n) => {
+      if (nodesWithChildren.some((nc) => nc.id === n.id)) {
+        return { ...n, collapsed: true };
+      }
+      return n;
+    });
 
-    // Bind data
-    const linkSelection = linksGroup
-      .selectAll<SVGPathElement, HierarchyLink>('.mindmap-link')
-      .data(links, (d) => `${d.source.data.id}-${d.target.data.id}`);
+    this.mindmapData.set({
+      ...data,
+      nodes: updatedNodes,
+    });
 
-    // Enter
-    linkSelection
-      .enter()
-      .append('path')
-      .attr('class', 'mindmap-link')
-      .attr('fill', 'none')
-      .attr('stroke', '#94a3b8')
-      .attr('stroke-width', 2)
-      .attr('d', linkGenerator as unknown as string)
-      .attr('opacity', 0)
-      .transition()
-      .duration(duration)
-      .attr('opacity', 1);
+    this.ngZone.runOutsideAngular(() => {
+      // Hide all non-root nodes
+      data.nodes.forEach((node) => {
+        if (node.id !== data.rootId) {
+          const cyNode = this.cy.getElementById(node.id);
+          if (cyNode.length) {
+            cyNode.addClass('hidden');
+            cyNode.connectedEdges().addClass('hidden');
+          }
+        }
+      });
 
-    // Update
-    linkSelection
-      .transition()
-      .duration(duration)
-      .attr('d', linkGenerator as unknown as string);
+      // Mark root as collapsed if it has children
+      const rootNode = this.cy.getElementById(data.rootId);
+      if (rootNode.length && nodesWithChildren.some((n) => n.id === data.rootId)) {
+        rootNode.addClass('cy-expand-collapse-collapsed-node');
+      }
 
-    // Exit
-    linkSelection
-      .exit()
-      .transition()
-      .duration(duration)
-      .attr('opacity', 0)
-      .remove();
+      this.runLayout();
+    });
+
+    this.changeSubject.next();
   }
 
-  private renderNodes(nodes: HierarchyNode[], config: MindmapConfig) {
-    const nodesGroup = this.g.select('.nodes-group');
-    const duration = config.animationDuration;
-    const self = this;
+  expandAll() {
+    const data = this.mindmapData();
 
-    // Bind data
-    const nodeSelection = nodesGroup
-      .selectAll<SVGGElement, HierarchyNode>('.mindmap-node')
-      .data(nodes, (d) => d.data.id);
+    // Expand all nodes
+    const updatedNodes = data.nodes.map((n) => ({ ...n, collapsed: false }));
 
-    // Enter
-    const nodeEnter = nodeSelection
-      .enter()
-      .append('g')
-      .attr('class', 'mindmap-node')
-      .attr('transform', (d) => `translate(${d.y},${d.x})`)
-      .attr('opacity', 0)
-      .on('click', function (event: MouseEvent, d: HierarchyNode) {
-        event.stopPropagation();
-        self.ngZone.run(() => {
-          self.onNodeClick(d.data.id);
-        });
-      })
-      .on('dblclick', function (event: MouseEvent, d: HierarchyNode) {
-        event.stopPropagation();
-        self.ngZone.run(() => {
-          self.startEditing(d.data.id, d.data.label);
-        });
-      });
+    this.mindmapData.set({
+      ...data,
+      nodes: updatedNodes,
+    });
 
-    // Node rectangle
-    nodeEnter
-      .append('rect')
-      .attr('class', 'node-bg')
-      .attr('x', -this.nodeWidth / 2)
-      .attr('y', -this.nodeHeight / 2)
-      .attr('width', this.nodeWidth)
-      .attr('height', this.nodeHeight)
-      .attr('rx', 8)
-      .attr('ry', 8)
-      .attr('fill', (d) => this.getNodeColor(d))
-      .attr('stroke', (d) => this.getNodeBorderColor(d))
-      .attr('stroke-width', 2)
-      .attr('cursor', 'pointer');
+    this.ngZone.runOutsideAngular(() => {
+      // Show all nodes and edges
+      this.cy.nodes().removeClass('hidden');
+      this.cy.edges().removeClass('hidden');
+      this.cy.nodes().removeClass('cy-expand-collapse-collapsed-node');
+      this.runLayout();
+    });
 
-    // Node label
-    nodeEnter
-      .append('text')
-      .attr('class', 'node-label')
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'central')
-      .attr('fill', '#ffffff')
-      .attr('font-size', '13px')
-      .attr('pointer-events', 'none')
-      .text((d) => this.truncateLabel(d.data.label, 18));
+    this.changeSubject.next();
+  }
 
-    // Add button (appears on hover)
-    nodeEnter
-      .append('circle')
-      .attr('class', 'add-child-btn')
-      .attr('cx', this.nodeWidth / 2 + 12)
-      .attr('cy', 0)
-      .attr('r', 10)
-      .attr('fill', '#22c55e')
-      .attr('cursor', 'pointer')
-      .attr('opacity', 0)
-      .on('click', function (event: MouseEvent, d: HierarchyNode) {
-        event.stopPropagation();
-        self.ngZone.run(() => {
-          self.addChildNode(d.data.id);
-        });
-      });
+  // Check if a node can be collapsed (has visible children)
+  canCollapseNode(nodeId: string): boolean {
+    const data = this.mindmapData();
+    const node = data.nodes.find((n) => n.id === nodeId);
+    if (!node || node.collapsed) return false;
 
-    nodeEnter
-      .append('text')
-      .attr('class', 'add-child-icon')
-      .attr('x', this.nodeWidth / 2 + 12)
-      .attr('y', 1)
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'central')
-      .attr('fill', '#ffffff')
-      .attr('font-size', '14px')
-      .attr('font-weight', 'bold')
-      .attr('pointer-events', 'none')
-      .attr('opacity', 0)
-      .text('+');
+    // Check if it has children
+    return data.nodes.some((n) => n.parentId === nodeId);
+  }
 
-    // Show add button on hover
-    nodeEnter
-      .on('mouseenter', function () {
-        d3.select(this).select('.add-child-btn').attr('opacity', 1);
-        d3.select(this).select('.add-child-icon').attr('opacity', 1);
-      })
-      .on('mouseleave', function () {
-        d3.select(this).select('.add-child-btn').attr('opacity', 0);
-        d3.select(this).select('.add-child-icon').attr('opacity', 0);
-      });
+  // Check if a node can be expanded (is collapsed and has children)
+  canExpandNode(nodeId: string): boolean {
+    const data = this.mindmapData();
+    const node = data.nodes.find((n) => n.id === nodeId);
+    if (!node || !node.collapsed) return false;
 
-    // Animate entrance
-    nodeEnter.transition().duration(duration).attr('opacity', 1);
+    // Check if it has children
+    return data.nodes.some((n) => n.parentId === nodeId);
+  }
 
-    // Update
-    nodeSelection
-      .transition()
-      .duration(duration)
-      .attr('transform', (d) => `translate(${d.y},${d.x})`);
+  // =====================================================================
+  // Export
+  // =====================================================================
 
-    nodeSelection
-      .select('.node-bg')
-      .attr('fill', (d) => this.getNodeColor(d))
-      .attr('stroke', (d) => this.getNodeBorderColor(d));
+  exportPng() {
+    const pngData = this.cy.png({
+      output: 'base64uri',
+      bg: '#ffffff',
+      full: true,
+      scale: 2,
+    });
 
-    nodeSelection
-      .select('.node-label')
-      .text((d) => this.truncateLabel(d.data.label, 18));
+    const link = document.createElement('a');
+    link.download = `mindmap-${this.mindmapId}.png`;
+    link.href = pngData;
+    link.click();
+  }
 
-    // Exit
-    nodeSelection
-      .exit()
-      .transition()
-      .duration(duration)
-      .attr('opacity', 0)
-      .remove();
+  exportSvg() {
+    const svgData = this.cy.svg({
+      output: 'string',
+      bg: '#ffffff',
+      full: true,
+      scale: 1,
+    });
+
+    const blob = new Blob([svgData], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.download = `mindmap-${this.mindmapId}.svg`;
+    link.href = url;
+    link.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+  // =====================================================================
+  // Navigator (Minimap)
+  // =====================================================================
+
+  toggleNavigator() {
+    this.showNavigator.update((v) => !v);
+
+    if (this.showNavigator()) {
+      // Initialize navigator after view updates
+      setTimeout(() => {
+        if (this.navigatorContainer?.nativeElement) {
+          this.ngZone.runOutsideAngular(() => {
+            this.nav = this.cy.navigator({
+              container: this.navigatorContainer.nativeElement,
+              viewLiveFramerate: 0,
+              thumbnailEventFramerate: 30,
+              thumbnailLiveFramerate: 0,
+              dblClickDelay: 200,
+              removeCustomContainer: false,
+              rerenderDelay: 100,
+            });
+          });
+        }
+      }, 0);
+    } else {
+      if (this.nav) {
+        this.nav.destroy();
+      }
+    }
   }
 
   // =====================================================================
@@ -427,31 +991,44 @@ export class MindmapBlockComponent
   // =====================================================================
 
   onNodeClick(nodeId: string) {
-    this.selectedNodeId.set(
-      nodeId === this.selectedNodeId() ? null : nodeId
-    );
+    this.selectedNodeId.set(nodeId === this.selectedNodeId() ? null : nodeId);
   }
 
   startEditing(nodeId: string, currentLabel: string) {
     this.editingNodeId.set(nodeId);
-    this.editingLabel.set(currentLabel);
+    this.editingLabel = currentLabel;
   }
 
   saveLabel() {
     const nodeId = this.editingNodeId();
-    const newLabel = this.editingLabel().trim();
+    const newLabel = this.editingLabel.trim();
 
     if (nodeId && newLabel) {
       this.updateNode(nodeId, { label: newLabel });
     }
 
     this.editingNodeId.set(null);
-    this.editingLabel.set('');
+    this.editingLabel = '';
   }
 
   cancelEditing() {
     this.editingNodeId.set(null);
-    this.editingLabel.set('');
+    this.editingLabel = '';
+  }
+
+  /**
+   * Handle blur event on edit input
+   * Save if the blur wasn't caused by clicking the action buttons
+   */
+  onEditInputBlur(event: FocusEvent) {
+    // Check if the new focus target is within the editing container (buttons)
+    const relatedTarget = event.relatedTarget as HTMLElement;
+    if (relatedTarget?.closest('.editing-input-container')) {
+      // Focus moved to buttons, don't auto-save yet
+      return;
+    }
+    // Focus left the editing area, save the label
+    this.saveLabel();
   }
 
   addChildNode(parentId: string) {
@@ -479,7 +1056,7 @@ export class MindmapBlockComponent
     });
 
     this.ngZone.runOutsideAngular(() => {
-      this.renderMindmap();
+      this.renderMindmap(true); // Preserve viewport
     });
     this.changeSubject.next();
 
@@ -487,10 +1064,71 @@ export class MindmapBlockComponent
     setTimeout(() => this.startEditing(newNode.id, newNode.label), 100);
   }
 
+  reparentNode(nodeId: string, newParentId: string) {
+    const data = this.mindmapData();
+
+    // Cannot reparent root
+    if (nodeId === data.rootId) return;
+
+    const node = data.nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+
+    // Don't reparent to the same parent
+    if (node.parentId === newParentId) {
+      this.ngZone.runOutsideAngular(() => {
+        this.runLayout();
+      });
+      return;
+    }
+
+    const oldParentId = node.parentId;
+
+    // Update nodes
+    const updatedNodes = data.nodes.map((n) => {
+      // Update the moved node's parent
+      if (n.id === nodeId) {
+        return { ...n, parentId: newParentId };
+      }
+
+      // Remove from old parent's children
+      if (n.id === oldParentId) {
+        return {
+          ...n,
+          children: (n.children || []).filter((cid) => cid !== nodeId),
+        };
+      }
+
+      // Add to new parent's children
+      if (n.id === newParentId) {
+        return {
+          ...n,
+          children: [...(n.children || []), nodeId],
+        };
+      }
+
+      return n;
+    });
+
+    this.mindmapData.set({
+      ...data,
+      nodes: updatedNodes,
+    });
+
+    // Re-render the mindmap with new structure
+    this.ngZone.runOutsideAngular(() => {
+      this.renderMindmap(true); // Preserve viewport
+    });
+
+    this.changeSubject.next();
+  }
+
   deleteSelectedNode() {
     const nodeId = this.selectedNodeId();
     if (!nodeId) return;
+    this.deleteNode(nodeId);
+  }
 
+  deleteNode(nodeId: string) {
     const data = this.mindmapData();
 
     // Cannot delete root
@@ -527,7 +1165,7 @@ export class MindmapBlockComponent
 
     this.selectedNodeId.set(null);
     this.ngZone.runOutsideAngular(() => {
-      this.renderMindmap();
+      this.renderMindmap(true); // Preserve viewport
     });
     this.changeSubject.next();
   }
@@ -543,10 +1181,31 @@ export class MindmapBlockComponent
       nodes: updatedNodes,
     });
 
+    // Update only the specific node in Cytoscape (no full re-render)
     this.ngZone.runOutsideAngular(() => {
-      this.renderMindmap();
+      this.updateCytoscapeNode(nodeId, updates);
     });
     this.changeSubject.next();
+  }
+
+  /**
+   * Update a single node in Cytoscape without re-rendering the whole graph
+   */
+  private updateCytoscapeNode(nodeId: string, updates: Partial<MindmapNode>) {
+    if (!this.cy) return;
+
+    const cyNode = this.cy.getElementById(nodeId);
+    if (cyNode.length === 0) return;
+
+    // Update node data in Cytoscape
+    if (updates.label !== undefined) {
+      cyNode.data('label', updates.label);
+    }
+    if (updates.style?.backgroundColor) {
+      cyNode.data('color', updates.style.backgroundColor);
+      cyNode.data('borderColor', this.darkenColor(updates.style.backgroundColor, 0.2));
+      cyNode.data('selectedColor', this.darkenColor(updates.style.backgroundColor, 0.1));
+    }
   }
 
   // =====================================================================
@@ -555,53 +1214,32 @@ export class MindmapBlockComponent
 
   zoomIn() {
     this.ngZone.runOutsideAngular(() => {
-      this.svg.transition().duration(300).call(this.zoom.scaleBy, 1.3);
+      this.cy.zoom({
+        level: this.cy.zoom() * 1.3,
+        renderedPosition: { x: this.cy.width() / 2, y: this.cy.height() / 2 },
+      });
     });
   }
 
   zoomOut() {
     this.ngZone.runOutsideAngular(() => {
-      this.svg.transition().duration(300).call(this.zoom.scaleBy, 0.7);
+      this.cy.zoom({
+        level: this.cy.zoom() * 0.7,
+        renderedPosition: { x: this.cy.width() / 2, y: this.cy.height() / 2 },
+      });
     });
   }
 
   resetZoom() {
     this.ngZone.runOutsideAngular(() => {
-      const initialX = this.width / 4;
-      const initialY = this.height / 2;
-      this.svg
-        .transition()
-        .duration(300)
-        .call(this.zoom.transform, d3.zoomIdentity.translate(initialX, initialY));
+      this.cy.reset();
+      this.runLayout();
     });
   }
 
   fitToContent() {
     this.ngZone.runOutsideAngular(() => {
-      const bounds = this.g.node()?.getBBox();
-      if (!bounds) return;
-
-      const fullWidth = bounds.width + 100;
-      const fullHeight = bounds.height + 100;
-      const midX = bounds.x + bounds.width / 2;
-      const midY = bounds.y + bounds.height / 2;
-
-      const scale = Math.min(
-        this.width / fullWidth,
-        this.height / fullHeight,
-        1
-      );
-
-      this.svg
-        .transition()
-        .duration(500)
-        .call(
-          this.zoom.transform,
-          d3.zoomIdentity
-            .translate(this.width / 2, this.height / 2)
-            .scale(scale)
-            .translate(-midX, -midY)
-        );
+      this.cy.fit(undefined, 50);
     });
   }
 
@@ -616,7 +1254,7 @@ export class MindmapBlockComponent
       config: { ...data.config, layout },
     });
     this.ngZone.runOutsideAngular(() => {
-      this.renderMindmap();
+      this.runLayout();
     });
     this.changeSubject.next();
   }
@@ -628,7 +1266,7 @@ export class MindmapBlockComponent
       config: { ...data.config, theme },
     });
     this.ngZone.runOutsideAngular(() => {
-      this.renderMindmap();
+      this.renderMindmap(true); // Preserve viewport
     });
     this.changeSubject.next();
   }
@@ -640,30 +1278,33 @@ export class MindmapBlockComponent
   }
 
   // =====================================================================
+  // Context Menu - Add Child
+  // =====================================================================
+
+  addChildToSelected() {
+    const selectedId = this.selectedNodeId();
+    if (selectedId) {
+      this.addChildNode(selectedId);
+    }
+  }
+
+  // =====================================================================
   // Helpers
   // =====================================================================
 
-  private getNodeColor(d: HierarchyNode): string {
-    const nodeStyle = d.data.style;
-    if (nodeStyle?.backgroundColor) {
-      return nodeStyle.backgroundColor;
-    }
-    return getNodeColorByDepth(d.depth, this.config().theme);
-  }
-
-  private getNodeBorderColor(d: HierarchyNode): string {
-    const color = this.getNodeColor(d);
-    const darkerColor = d3.color(color)?.darker(0.5);
-    return darkerColor?.toString() || color;
-  }
-
-  private truncateLabel(label: string, maxLength: number): string {
-    if (label.length <= maxLength) return label;
-    return label.substring(0, maxLength - 3) + '...';
+  private darkenColor(color: string, amount: number): string {
+    // Simple color darkening
+    const hex = color.replace('#', '');
+    const r = Math.max(0, parseInt(hex.slice(0, 2), 16) - Math.round(255 * amount));
+    const g = Math.max(0, parseInt(hex.slice(2, 4), 16) - Math.round(255 * amount));
+    const b = Math.max(0, parseInt(hex.slice(4, 6), 16) - Math.round(255 * amount));
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
   }
 
   private emitChange() {
     if (this.onDataChange) {
+      // Set flag to prevent ngOnChanges from re-rendering
+      this.isEmittingChange = true;
       this.onDataChange(this.mindmapData());
     }
   }
@@ -675,6 +1316,17 @@ export class MindmapBlockComponent
   @HostListener('keydown', ['$event'])
   onKeyDown(event: KeyboardEvent) {
     event.stopPropagation();
+
+    // Undo/Redo shortcuts
+    if ((event.metaKey || event.ctrlKey) && event.key === 'z') {
+      event.preventDefault();
+      if (event.shiftKey) {
+        this.redo();
+      } else {
+        this.undo();
+      }
+      return;
+    }
 
     if (this.editingNodeId()) {
       if (event.key === 'Enter') {
@@ -703,6 +1355,15 @@ export class MindmapBlockComponent
         const node = this.nodes().find((n) => n.id === selectedId);
         if (node) {
           this.startEditing(selectedId, node.label);
+        }
+        break;
+      case ' ':
+        // Space to toggle collapse/expand
+        event.preventDefault();
+        if (this.canExpandNode(selectedId)) {
+          this.expandNode(selectedId);
+        } else if (this.canCollapseNode(selectedId)) {
+          this.collapseNode(selectedId);
         }
         break;
     }

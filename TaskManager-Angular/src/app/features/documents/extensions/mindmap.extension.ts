@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from '@tiptap/core';
+import { NodeView } from '@tiptap/pm/view';
 import {
   MindmapNodeAttributes,
   MindmapData,
@@ -196,6 +197,80 @@ export const MindmapExtension = Node.create<MindmapOptions>({
     return {
       // Cmd/Ctrl + Shift + M to insert mind map
       'Mod-Shift-m': () => this.editor.commands.insertMindmap(),
+    };
+  },
+
+  /**
+   * Custom NodeView to prevent DOM re-rendering on attribute updates
+   * This is crucial for keeping the Angular component alive when data changes
+   */
+  addNodeView() {
+    return ({ node, getPos, editor }): NodeView => {
+      // Create the DOM element
+      const dom = document.createElement('div');
+      dom.setAttribute('data-type', 'mindmap');
+      dom.classList.add('mindmap-block');
+      dom.setAttribute('data-mindmap-id', node.attrs['mindmapId'] || '');
+      dom.setAttribute(
+        'data-mindmap-data',
+        JSON.stringify(node.attrs['data'] || createDefaultMindmapData())
+      );
+      dom.textContent = 'Mind Map';
+
+      return {
+        dom,
+
+        // Update only DOM attributes without recreating the element
+        update(updatedNode) {
+          // Only handle mindmap nodes
+          if (updatedNode.type.name !== 'mindmap') {
+            return false;
+          }
+
+          // Update DOM attributes without destroying the element
+          dom.setAttribute('data-mindmap-id', updatedNode.attrs['mindmapId'] || '');
+          dom.setAttribute(
+            'data-mindmap-data',
+            JSON.stringify(updatedNode.attrs['data'] || createDefaultMindmapData())
+          );
+
+          // Return true to indicate we handled the update
+          // This prevents ProseMirror from recreating the DOM
+          return true;
+        },
+
+        // Don't let ProseMirror manage content inside
+        contentDOM: null,
+
+        // Cleanup when node is destroyed
+        destroy() {
+          // Angular directive will handle component cleanup
+        },
+
+        // Ignore mutations inside the mindmap block
+        ignoreMutation(mutation) {
+          // Ignore all mutations except attribute changes on the dom element itself
+          if (mutation.type === 'attributes' && mutation.target === dom) {
+            return false; // Don't ignore, let it through
+          }
+          return true; // Ignore all other mutations
+        },
+
+        // Stop events from propagating to ProseMirror
+        stopEvent(event) {
+          // Allow context menu and keyboard events to be handled by the component
+          if (
+            event.type === 'contextmenu' ||
+            event.type === 'keydown' ||
+            event.type === 'keyup' ||
+            event.type === 'keypress'
+          ) {
+            return true;
+          }
+          // Let mouse events through for selection
+          return false;
+        },
+      };
     };
   },
 });

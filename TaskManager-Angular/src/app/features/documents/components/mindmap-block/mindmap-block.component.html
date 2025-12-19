@@ -6,6 +6,26 @@
     </div>
 
     <div class="toolbar-center">
+      <!-- Undo/Redo -->
+      <button
+        mat-icon-button
+        (click)="undo()"
+        [disabled]="!canUndo()"
+        matTooltip="Annuler (Ctrl+Z)"
+      >
+        <mat-icon>undo</mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        (click)="redo()"
+        [disabled]="!canRedo()"
+        matTooltip="Refaire (Ctrl+Shift+Z)"
+      >
+        <mat-icon>redo</mat-icon>
+      </button>
+
+      <mat-divider vertical class="toolbar-divider"></mat-divider>
+
       <!-- Layout selector -->
       <button
         mat-icon-button
@@ -59,9 +79,70 @@
           <span>Monochrome</span>
         </button>
       </mat-menu>
+
+      <mat-divider vertical class="toolbar-divider"></mat-divider>
+
+      <!-- Collapse/Expand -->
+      <button
+        mat-icon-button
+        (click)="collapseAll()"
+        matTooltip="Tout replier"
+      >
+        <mat-icon>unfold_less</mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        (click)="expandAll()"
+        matTooltip="Tout déplier"
+      >
+        <mat-icon>unfold_more</mat-icon>
+      </button>
+
+      <mat-divider vertical class="toolbar-divider"></mat-divider>
+
+      <!-- Add child button -->
+      <button
+        mat-icon-button
+        (click)="addChildToSelected()"
+        [disabled]="!selectedNodeId()"
+        matTooltip="Ajouter un enfant (Tab)"
+      >
+        <mat-icon>add_circle</mat-icon>
+      </button>
     </div>
 
     <div class="toolbar-right">
+      <!-- Export menu -->
+      <button
+        mat-icon-button
+        [matMenuTriggerFor]="exportMenu"
+        matTooltip="Exporter"
+      >
+        <mat-icon>download</mat-icon>
+      </button>
+      <mat-menu #exportMenu="matMenu">
+        <button mat-menu-item (click)="exportPng()">
+          <mat-icon>image</mat-icon>
+          <span>Exporter PNG</span>
+        </button>
+        <button mat-menu-item (click)="exportSvg()">
+          <mat-icon>code</mat-icon>
+          <span>Exporter SVG</span>
+        </button>
+      </mat-menu>
+
+      <!-- Navigator toggle -->
+      <button
+        mat-icon-button
+        (click)="toggleNavigator()"
+        [class.active]="showNavigator()"
+        matTooltip="Minimap"
+      >
+        <mat-icon>map</mat-icon>
+      </button>
+
+      <mat-divider vertical class="toolbar-divider"></mat-divider>
+
       <!-- Zoom controls -->
       <button mat-icon-button (click)="zoomOut()" matTooltip="Zoom -">
         <mat-icon>remove</mat-icon>
@@ -77,6 +158,8 @@
         <mat-icon>fit_screen</mat-icon>
       </button>
 
+      <mat-divider vertical class="toolbar-divider"></mat-divider>
+
       <!-- Delete mindmap -->
       <button
         mat-icon-button
@@ -89,27 +172,40 @@
     </div>
   </div>
 
-  <!-- SVG Container -->
-  <div #svgContainer class="svg-container"></div>
+  <!-- Main content area -->
+  <div class="mindmap-content">
+    <!-- Cytoscape Container -->
+    <div #cyContainer class="cy-container"></div>
+
+    <!-- Navigator (Minimap) -->
+    @if (showNavigator()) {
+    <div #navigatorContainer class="navigator-container"></div>
+    }
+  </div>
 
   <!-- Help text -->
   <div class="help-text">
-    <span>Double-clic pour editer</span>
+    <span>Double-clic: editer</span>
     <span class="separator">|</span>
-    <span>Tab pour ajouter un enfant</span>
+    <span>Tab: ajouter enfant</span>
     <span class="separator">|</span>
-    <span>Suppr pour effacer</span>
+    <span>Espace: replier/déplier</span>
+    <span class="separator">|</span>
+    <span>Glisser: reparenter</span>
+    <span class="separator">|</span>
+    <span>Clic droit: menu</span>
   </div>
 
   <!-- Inline editing overlay -->
   @if (editingNodeId()) {
-  <div class="editing-overlay" (click)="cancelEditing()">
+  <div class="editing-overlay" (click)="saveLabel()">
     <div class="editing-input-container" (click)="$event.stopPropagation()">
       <input
         type="text"
         [(ngModel)]="editingLabel"
         (keydown.enter)="saveLabel()"
         (keydown.escape)="cancelEditing()"
+        (blur)="onEditInputBlur($event)"
         class="editing-input"
         placeholder="Entrez le texte..."
         autofocus

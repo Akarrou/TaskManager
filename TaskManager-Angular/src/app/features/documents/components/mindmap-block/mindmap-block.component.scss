@@ -34,73 +34,72 @@
       color: #ef4444;
     }
   }
+
+  .toolbar-divider {
+    @apply h-6 mx-1;
+  }
+
+  button.active {
+    @apply bg-blue-100;
+    color: #3b82f6;
+  }
 }
 
-.svg-container {
-  @apply w-full;
+.mindmap-content {
+  @apply relative;
   height: 450px;
-  background: linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%);
-  cursor: grab;
+}
 
-  &:active {
-    cursor: grabbing;
+.cy-container {
+  @apply w-full h-full;
+  background: linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.navigator-container {
+  @apply absolute bottom-4 right-4;
+  width: 200px;
+  height: 150px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  z-index: 10;
+
+  // Cytoscape navigator styles
+  :host ::ng-deep {
+    .cytoscape-navigator {
+      width: 100%;
+      height: 100%;
+      background: #f8fafc;
+    }
+
+    .cytoscape-navigatorView {
+      background: rgba(59, 130, 246, 0.2);
+      border: 2px solid #3b82f6;
+    }
+
+    .cytoscape-navigatorOverlay {
+      cursor: move;
+    }
   }
 }
 
 .help-text {
   @apply absolute bottom-2 left-1/2 transform -translate-x-1/2;
   @apply text-xs text-gray-400 bg-white/80 px-3 py-1 rounded-full;
-  @apply flex items-center gap-2;
+  @apply flex items-center gap-2 flex-wrap justify-center;
+  max-width: 90%;
 
   .separator {
     @apply text-gray-300;
   }
 }
 
-// D3 generated styles
-:host ::ng-deep {
-  .mindmap-svg {
-    display: block;
-  }
-
-  .mindmap-node {
-    cursor: pointer;
-
-    &:hover .node-bg {
-      filter: brightness(1.1);
-    }
-
-    &.selected .node-bg {
-      stroke-width: 3px;
-      stroke: #3b82f6;
-    }
-
-    &.dragging {
-      opacity: 0.8;
-      cursor: grabbing;
-    }
-  }
-
-  .mindmap-link {
-    pointer-events: none;
-  }
-
-  .node-label {
-    user-select: none;
-    pointer-events: none;
-  }
-
-  .add-child-btn {
-    transition: opacity 0.2s;
-
-    &:hover {
-      fill: #16a34a;
-    }
-  }
-}
-
 .editing-overlay {
-  @apply absolute inset-0 bg-black/30 flex items-center justify-center z-50;
+  @apply fixed inset-0 bg-black/30 flex items-center justify-center;
+  z-index: 9999;
+  cursor: default;
 }
 
 .editing-input-container {
@@ -121,6 +120,7 @@
 .node-actions-bar {
   @apply absolute bottom-12 left-1/2 transform -translate-x-1/2;
   @apply bg-white rounded-lg shadow-lg px-4 py-2;
+  z-index: 5;
 }
 
 // Theme dots for menu
@@ -145,5 +145,40 @@
 
   &.theme-monochrome {
     background-color: #6b7280;
+  }
+}
+
+// Context menu styles
+:host ::ng-deep {
+  .cy-context-menus-cxt-menu {
+    @apply bg-white rounded-lg shadow-lg border border-gray-200 py-1;
+    min-width: 180px;
+
+    .cy-context-menus-cxt-menuitem {
+      @apply px-3 py-2 text-sm text-gray-700 cursor-pointer;
+      @apply hover:bg-gray-100;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      &:first-child {
+        border-radius: 8px 8px 0 0;
+      }
+
+      &:last-child {
+        border-radius: 0 0 8px 8px;
+      }
+    }
+  }
+
+  // Expand/Collapse cue styles
+  .cy-expand-collapse-collapsed-cue {
+    background-color: #3b82f6;
+    border-radius: 50%;
+  }
+
+  .cy-expand-collapse-expanded-cue {
+    background-color: #6b7280;
+    border-radius: 50%;
   }
 }

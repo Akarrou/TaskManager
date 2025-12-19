@@ -46,9 +46,14 @@ export class MindmapRendererDirective implements OnInit, OnDestroy {
   @Input() documentId?: string;
 
   /**
-   * Track created component references for cleanup
+   * Track created component references for cleanup, keyed by mindmapId
    */
   private componentRefs: ComponentRef<MindmapBlockComponent>[] = [];
+
+  /**
+   * Track which mindmap IDs have been rendered to prevent re-creation
+   */
+  private renderedMindmapIds = new Set<string>();
 
   /**
    * MutationObserver for detecting new mindmap blocks
@@ -63,6 +68,7 @@ export class MindmapRendererDirective implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.componentRefs.forEach((ref) => ref.destroy());
     this.componentRefs = [];
+    this.renderedMindmapIds.clear();
 
     if (this.observer) {
       this.observer.disconnect();
@@ -78,11 +84,30 @@ export class MindmapRendererDirective implements OnInit, OnDestroy {
     );
 
     mindmapBlocks.forEach((block: HTMLElement) => {
+      const mindmapId = block.getAttribute('data-mindmap-id') || '';
+
+      // Skip if this mindmap ID already has a rendered component
+      // (This prevents re-creation when TipTap re-renders the DOM)
+      if (this.renderedMindmapIds.has(mindmapId) && mindmapId !== '') {
+        // Just re-mark the block as rendered and re-attach existing component
+        if (!block.classList.contains('mindmap-rendered')) {
+          this.renderer.addClass(block, 'mindmap-rendered');
+          // Find existing component and re-attach if needed
+          const existingRef = this.componentRefs.find(
+            (ref) => ref.instance.mindmapId === mindmapId
+          );
+          if (existingRef && !block.contains(existingRef.location.nativeElement)) {
+            block.innerHTML = '';
+            this.renderer.appendChild(block, existingRef.location.nativeElement);
+          }
+        }
+        return;
+      }
+
       if (block.classList.contains('mindmap-rendered')) {
         return;
       }
 
-      const mindmapId = block.getAttribute('data-mindmap-id') || '';
       const dataAttr = block.getAttribute('data-mindmap-data');
 
       let data: MindmapData;
@@ -97,6 +122,9 @@ export class MindmapRendererDirective implements OnInit, OnDestroy {
 
       // Mark as rendered
       this.renderer.addClass(block, 'mindmap-rendered');
+      if (mindmapId) {
+        this.renderedMindmapIds.add(mindmapId);
+      }
 
       // Create the Angular component
       const componentRef = this.viewContainerRef.createComponent(
@@ -123,29 +151,52 @@ export class MindmapRendererDirective implements OnInit, OnDestroy {
 
   /**
    * Update TipTap node attributes when mindmap changes
+   * The NodeView in the extension prevents DOM re-creation, so we just update the ProseMirror doc
    */
   private updateNodeAttributes(
-    element: HTMLElement,
+    _element: HTMLElement,
     mindmapId: string,
     data: MindmapData
   ) {
-    // Update DOM attributes
-    element.setAttribute('data-mindmap-data', JSON.stringify(data));
-
-    // Update TipTap node
+    // Update TipTap node by finding it by mindmapId (not by DOM element)
     if (this.editor) {
-      const pos = this.findNodePosition(element);
+      const pos = this.findNodePositionById(mindmapId);
       if (pos !== null) {
-        this.editor.commands.command(({ tr }) => {
-          const attrs: MindmapNodeAttributes = {
-            mindmapId,
-            data,
-          };
-          tr.setNodeMarkup(pos, undefined, attrs);
+        this.editor.commands.command(({ tr, state }) => {
+          const node = state.doc.nodeAt(pos);
+          if (node && node.type.name === 'mindmap') {
+            const newAttrs = {
+              ...node.attrs,
+              data,
+            };
+            tr.setNodeMarkup(pos, undefined, newAttrs);
+            tr.setMeta('addToHistory', true);
+            tr.setMeta('mindmapUpdate', true);
+          }
           return true;
         });
       }
     }
+  }
+
+  /**
+   * Find TipTap node position by mindmapId
+   */
+  private findNodePositionById(mindmapId: string): number | null {
+    if (!this.editor) return null;
+
+    const { state } = this.editor;
+    let foundPos: number | null = null;
+
+    state.doc.descendants((node, pos) => {
+      if (node.type.name === 'mindmap' && node.attrs['mindmapId'] === mindmapId) {
+        foundPos = pos;
+        return false; // Stop iteration
+      }
+      return true;
+    });
+
+    return foundPos;
   }
 
   /**
@@ -192,6 +243,12 @@ export class MindmapRendererDirective implements OnInit, OnDestroy {
     );
 
     if (index !== -1) {
+      // Remove from renderedMindmapIds
+      const mindmapId = this.componentRefs[index].instance.mindmapId;
+      if (mindmapId) {
+        this.renderedMindmapIds.delete(mindmapId);
+      }
+
       this.componentRefs[index].destroy();
       this.componentRefs.splice(index, 1);
     }

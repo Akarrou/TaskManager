@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject, signal, computed, effect, ViewEncapsulation, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal, computed, ViewEncapsulation, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -191,25 +191,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     this.saveDocument();
   };
 
-  // Effect to sync FAB state with isDirty - must be in injection context
-  private syncFabEffect = effect(() => {
-    const dirty = this.isDirty();
-    console.log('[DocumentEditor] Effect triggered - Updating FAB with isDirty:', dirty);
-    this.fabStore.registerPage(
-      {
-        context: {
-          currentPage: 'document-editor',
-          isDirty: dirty,
-          hasUnsavedChanges: dirty
-        },
-        actions: [],
-        onSave: () => this.saveDocument()
-      },
-      this.pageId
-    );
-  }, { allowSignalWrites: true });
-
-
   menuItems: SlashCommand[] = [
     // Texte et titres
     { id: 'text', label: 'Texte', icon: 'text_fields', action: () => this.editor.chain().focus().setParagraph().run() },
@@ -401,6 +382,21 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     ).subscribe(() => {
       this.saveDocument();
     });
+
+    // Register FAB once - isDirty is passed as a signal for reactive updates
+    this.fabStore.registerPage(
+      {
+        context: {
+          currentPage: 'document-editor',
+          isDirty: false,
+          hasUnsavedChanges: false
+        },
+        actions: [],
+        onSave: () => this.saveDocument(),
+        isDirtySignal: this.isDirty
+      },
+      this.pageId
+    );
   }
 
   // Handle content changes from editor

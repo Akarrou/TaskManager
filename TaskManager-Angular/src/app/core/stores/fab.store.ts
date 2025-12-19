@@ -1,4 +1,5 @@
-import { signalStore, withState, withMethods, patchState } from '@ngrx/signals';
+import { Signal, computed } from '@angular/core';
+import { signalStore, withState, withMethods, withComputed, patchState } from '@ngrx/signals';
 import { NavigationContext, NavigationAction } from '../../shared/components/navigation-fab/navigation-fab.component';
 
 /**
@@ -9,6 +10,11 @@ export interface PageFabConfig {
   actions?: NavigationAction[];
   onSave?: () => void | Promise<void>;
   onNavigateAway?: (route: string) => boolean | Promise<boolean>;
+  /**
+   * Optional: Pass a signal for isDirty to enable reactive updates
+   * without requiring repeated registerPage calls
+   */
+  isDirtySignal?: Signal<boolean>;
 }
 
 /**
@@ -20,6 +26,7 @@ interface FabState {
   currentPageId: string | null;
   saveCallback: (() => void | Promise<void>) | null;
   navigateCallback: ((route: string) => boolean | Promise<boolean>) | null;
+  isDirtySignal: Signal<boolean> | null;
 }
 
 /**
@@ -57,8 +64,24 @@ export const FabStore = signalStore(
     actions: [],
     currentPageId: null,
     saveCallback: null,
-    navigateCallback: null
+    navigateCallback: null,
+    isDirtySignal: null
   }),
+
+  // Computed for reactive isDirty (reads from signal if provided, else from context)
+  withComputed((store) => ({
+    /**
+     * Reactive isDirty: reads from isDirtySignal if available,
+     * otherwise falls back to context.isDirty
+     */
+    isDirty: computed(() => {
+      const signal = store.isDirtySignal();
+      if (signal) {
+        return signal();
+      }
+      return store.context().isDirty ?? false;
+    })
+  })),
 
   // Méthodes publiques
   withMethods((store) => ({
@@ -74,7 +97,8 @@ export const FabStore = signalStore(
         actions: config.actions ?? [],
         currentPageId: pageId,
         saveCallback: config.onSave ?? null,
-        navigateCallback: config.onNavigateAway ?? null
+        navigateCallback: config.onNavigateAway ?? null,
+        isDirtySignal: config.isDirtySignal ?? null
       });
     },
 
@@ -93,7 +117,8 @@ export const FabStore = signalStore(
           actions: [],
           currentPageId: null,
           saveCallback: null,
-          navigateCallback: null
+          navigateCallback: null,
+          isDirtySignal: null
         });
       }
     },
