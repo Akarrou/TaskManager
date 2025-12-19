@@ -1,5 +1,21 @@
 // Formatting Toolbar Styles
 
+// Fx button (Insert Function)
+.fx-button {
+  .fx-icon {
+    @apply font-bold text-blue-600;
+    font-family: 'Times New Roman', serif;
+    font-size: 16px;
+    font-style: italic;
+  }
+
+  &:hover {
+    .fx-icon {
+      @apply text-blue-700;
+    }
+  }
+}
+
 .formatting-toolbar {
   @apply flex items-center gap-0.5 px-2 py-1 bg-gray-50 border-b border-gray-200;
   min-height: 40px;

@@ -1,0 +1,269 @@
+:host {
+  display: block;
+}
+
+.formula-dialog {
+  display: flex;
+  flex-direction: column;
+  min-height: 500px;
+  max-height: 70vh;
+}
+
+// Header
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fafafa;
+  flex-shrink: 0;
+
+  h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+  }
+
+  .close-btn {
+    color: #666;
+    margin: -8px;
+  }
+}
+
+// Content
+.dialog-content {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+}
+
+// Search section
+.search-section {
+  flex-shrink: 0;
+
+  .search-field {
+    width: 100%;
+  }
+}
+
+// Category section
+.category-section {
+  flex-shrink: 0;
+
+  .category-field {
+    width: 100%;
+  }
+}
+
+// Function list
+.function-list-section {
+  flex: 1;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+}
+
+.function-list {
+  flex: 1;
+  min-height: 150px;
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.function-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.15s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background-color: #f5f5f5;
+  }
+
+  &.selected {
+    background-color: #e3f2fd;
+    border-left: 3px solid #1976d2;
+    padding-left: 9px;
+  }
+
+  .fn-name {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1976d2;
+  }
+
+  .fn-category {
+    font-size: 10px;
+    color: #666;
+    background: #f0f0f0;
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+}
+
+.no-results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: #999;
+
+  mat-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    margin-bottom: 8px;
+    opacity: 0.5;
+  }
+
+  span {
+    font-size: 13px;
+  }
+}
+
+// Function details
+.function-details {
+  flex-shrink: 0;
+  min-height: 100px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.details-content {
+  padding: 12px;
+
+  .syntax {
+    margin-bottom: 8px;
+
+    .syntax-label {
+      font-size: 11px;
+      color: #666;
+      margin-right: 6px;
+    }
+
+    code {
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-size: 13px;
+      color: #0d47a1;
+      background: #e3f2fd;
+      padding: 3px 6px;
+      border-radius: 3px;
+    }
+  }
+
+  .description {
+    font-size: 12px;
+    line-height: 1.4;
+    color: #333;
+    margin-bottom: 8px;
+  }
+
+  .examples {
+    .examples-label {
+      display: block;
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .examples-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .example {
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-size: 11px;
+      color: #2e7d32;
+      background: #e8f5e9;
+      padding: 3px 6px;
+      border-radius: 3px;
+    }
+  }
+}
+
+.details-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 100px;
+  color: #999;
+
+  mat-icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    margin-bottom: 6px;
+    opacity: 0.5;
+  }
+
+  span {
+    font-size: 12px;
+  }
+}
+
+// Actions
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #e0e0e0;
+  background: #fafafa;
+  flex-shrink: 0;
+}
+
+// Material form field overrides
+::ng-deep {
+  .formula-dialog {
+    .mat-mdc-form-field {
+      .mat-mdc-form-field-subscript-wrapper {
+        display: none;
+      }
+
+      .mat-mdc-text-field-wrapper {
+        background-color: #fff;
+      }
+
+      .mdc-text-field--outlined {
+        --mdc-outlined-text-field-container-shape: 4px;
+      }
+    }
+
+    .mat-mdc-form-field-infix {
+      min-height: 40px;
+      padding-top: 8px !important;
+      padding-bottom: 8px !important;
+    }
+  }
+}

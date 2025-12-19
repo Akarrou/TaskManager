@@ -1,0 +1,112 @@
+<div class="formula-dialog">
+  <!-- Header -->
+  <div class="dialog-header">
+    <h2>Insérer une fonction</h2>
+    <button mat-icon-button (click)="cancel()" class="close-btn">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Content -->
+  <div class="dialog-content">
+    <!-- Search -->
+    <div class="search-section">
+      <label class="section-label">Rechercher une fonction :</label>
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-icon matPrefix>search</mat-icon>
+        <input
+          matInput
+          placeholder="Tapez un nom ou une description..."
+          [value]="searchQuery()"
+          (input)="onSearchChange($any($event.target).value)"
+        />
+        @if (searchQuery()) {
+          <button matSuffix mat-icon-button (click)="onSearchChange('')">
+            <mat-icon>clear</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+    </div>
+
+    <!-- Category Filter -->
+    <div class="category-section">
+      <label class="section-label">Catégorie :</label>
+      <mat-form-field appearance="outline" class="category-field">
+        <mat-select
+          [value]="selectedCategory()"
+          (selectionChange)="onCategoryChange($event.value)"
+        >
+          @for (cat of categories(); track cat) {
+            <mat-option [value]="cat">{{ getCategoryLabel(cat) }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <!-- Function List -->
+    <div class="function-list-section">
+      <label class="section-label">Sélectionner une fonction :</label>
+      <div class="function-list">
+        @for (fn of filteredFunctions(); track fn.name) {
+          <div
+            class="function-item"
+            [class.selected]="selectedFunction()?.name === fn.name"
+            (click)="selectFunction(fn)"
+            (dblclick)="onFunctionDoubleClick(fn)"
+          >
+            <span class="fn-name">{{ fn.name }}</span>
+            <span class="fn-category">{{ getCategoryLabel(fn.category) }}</span>
+          </div>
+        } @empty {
+          <div class="no-results">
+            <mat-icon>search_off</mat-icon>
+            <span>Aucune fonction trouvée</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Function Details -->
+    <div class="function-details">
+      @if (selectedFunction()) {
+        <div class="details-content">
+          <div class="syntax">
+            <span class="syntax-label">Syntaxe :</span>
+            <code>{{ selectedFunction()!.syntax }}</code>
+          </div>
+          <div class="description">
+            {{ selectedFunction()!.description }}
+          </div>
+          @if (selectedFunction()!.examples.length > 0) {
+            <div class="examples">
+              <span class="examples-label">Exemples :</span>
+              <div class="examples-list">
+                @for (example of selectedFunction()!.examples; track example) {
+                  <code class="example">{{ example }}</code>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="details-placeholder">
+          <mat-icon>info_outline</mat-icon>
+          <span>Sélectionnez une fonction pour voir ses détails</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="dialog-actions">
+    <button mat-button (click)="cancel()">Annuler</button>
+    <button
+      mat-raised-button
+      color="primary"
+      [disabled]="!selectedFunction()"
+      (click)="insertSelected()"
+    >
+      Insérer
+    </button>
+  </div>
+</div>

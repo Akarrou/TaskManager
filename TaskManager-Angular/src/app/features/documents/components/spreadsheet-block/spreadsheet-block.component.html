@@ -26,6 +26,7 @@
       [hasSelection]="hasMultiCellSelection()"
       [isMerged]="isActiveCellMerged()"
       (formatChange)="onFormatChange($event)"
+      (insertFunction)="openFormulaDialog()"
     ></app-formatting-toolbar>
 
     <!-- Toolbar -->

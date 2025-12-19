@@ -90,6 +90,7 @@ export class FormattingToolbarComponent {
   @Input() isMerged = false;
 
   @Output() formatChange = new EventEmitter<FormatAction>();
+  @Output() insertFunction = new EventEmitter<void>();
 
   readonly colors = COLORS;
   readonly fontSizes = FONT_SIZES;
@@ -215,5 +216,9 @@ export class FormattingToolbarComponent {
 
   toggleWrapText(): void {
     this.formatChange.emit({ type: 'wrapText' });
+  }
+
+  onInsertFunction(): void {
+    this.insertFunction.emit();
   }
 }

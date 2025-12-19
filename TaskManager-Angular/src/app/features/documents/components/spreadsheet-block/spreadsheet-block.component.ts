@@ -50,6 +50,7 @@ import {
 } from '../../models/spreadsheet.model';
 import { FormattingToolbarComponent, FormatAction } from './formatting-toolbar/formatting-toolbar.component';
 import { SpreadsheetImportDialogComponent } from './import-dialog/import-dialog.component';
+import { FormulaDialogComponent, FormulaDialogResult } from './formula-dialog/formula-dialog.component';
 import { SpreadsheetImportResult } from '../../models/spreadsheet.model';
 
 /**
@@ -2388,6 +2389,47 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
 
     const fileName = `${sheet.name || 'sheet'}.csv`;
     this.ioService.downloadCSV(sheet.id, this.cells(), this.config, fileName);
+  }
+
+  /**
+   * Open formula dialog (Insert Function)
+   */
+  openFormulaDialog(): void {
+    const dialogRef = this.dialog.open(FormulaDialogComponent, {
+      width: '550px',
+      maxHeight: '80vh',
+      disableClose: false,
+      panelClass: 'formula-dialog-panel',
+    });
+
+    dialogRef.afterClosed().subscribe((result: FormulaDialogResult | null) => {
+      if (result) {
+        this.insertFormula(result.formula);
+      }
+    });
+  }
+
+  /**
+   * Insert a formula into the active cell and enter edit mode
+   */
+  private insertFormula(formula: string): void {
+    let cell = this.activeCell();
+    if (!cell) {
+      // If no cell is active, select A1
+      this.activeCell.set({ row: 0, col: 0 });
+      cell = { row: 0, col: 0 };
+    }
+
+    // Enter edit mode with the formula
+    this.editingCell.set({
+      cell: { row: cell.row, col: cell.col },
+      value: formula,
+      mode: 'formula',
+    });
+
+    // Trigger focus on the input
+    this.shouldFocusInput = true;
+    this.cdr.markForCheck();
   }
 
   /**
