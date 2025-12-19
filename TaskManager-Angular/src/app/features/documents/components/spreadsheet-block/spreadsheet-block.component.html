@@ -43,11 +43,14 @@
         <div class="formula-bar">
           <span class="fx-label">fx</span>
           <input
+            #formulaBarInput
             type="text"
             class="formula-input"
-            [value]="formulaBarValue()"
-            (input)="formulaBarValue.set($any($event.target).value)"
-            (keydown.enter)="exitEditMode(true)"
+            [class.editing]="editingCell()"
+            [value]="editingCell() ? editingCell()!.value : formulaBarValue()"
+            (focus)="onFormulaBarFocus()"
+            (input)="onFormulaBarInput($any($event.target).value)"
+            (keydown)="onFormulaBarKeyDown($event)"
             placeholder="Entrez une valeur ou formule"
           />
         </div>

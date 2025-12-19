@@ -129,6 +129,12 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
   readonly formulaSuggestions = signal<FormulaFunction[]>([]);
   readonly selectedSuggestionIndex = signal(0);
 
+  // Formula cell reference selection state
+  // When true, clicking on cells inserts their reference into the formula
+  readonly isSelectingFormulaReference = signal(false);
+  // Track the selection start for range references
+  private formulaReferenceStart = signal<CellAddress | null>(null);
+
   // Sheet state
   readonly activeSheetId = signal('');
   readonly sheets = signal<SpreadsheetSheet[]>([]);
@@ -606,23 +612,32 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
 
   /**
    * Update cells that depend on the changed cell
-   * Uses the optimized dirty cell tracking system
+   * Recalculates all formula cells that might reference the changed cell
    */
   private updateDependentCells(
     sheetId: string,
     row: number,
     col: number,
-    cellsMap: Map<string, SpreadsheetCell>
+    cellsMap: Map<string, SpreadsheetCell>,
+    visited: Set<string> = new Set()
   ): void {
-    // Get cells that depend on this cell
+    // Prevent infinite recursion
+    const currentKey = getCellKey({ row, col, sheet: sheetId });
+    if (visited.has(currentKey)) return;
+    visited.add(currentKey);
+
+    // First try using HyperFormula's dependency tracking
     const dependents = this.formulaEngine.getCellDependents(sheetId, row, col);
 
+    // Track which cells we've already updated in this pass
+    const updatedKeys = new Set<string>();
+
+    // Update dependents from HyperFormula
     dependents.forEach(dep => {
       const depKey = getCellKey({ row: dep.row, col: dep.col, sheet: dep.sheet || sheetId });
       const depCell = cellsMap.get(depKey);
 
-      if (depCell && depCell.formula) {
-        // Get recalculated value from formula engine
+      if (depCell && depCell.formula && !visited.has(depKey)) {
         const newValue = this.formulaEngine.getCellValue(dep.sheet || sheetId, dep.row, dep.col);
 
         cellsMap.set(depKey, {
@@ -631,8 +646,32 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
           updated_at: new Date().toISOString(),
         });
 
-        // Mark dependent for further recalculation (catches nested dependencies)
-        this.markCellDirty(dep.sheet || sheetId, dep.row, dep.col);
+        updatedKeys.add(depKey);
+
+        // Recursively update dependents of this cell
+        this.updateDependentCells(dep.sheet || sheetId, dep.row, dep.col, cellsMap, visited);
+      }
+    });
+
+    // Fallback: Also scan all cells with formulas to ensure they're updated
+    // This handles cases where HyperFormula dependency tracking might miss cells
+    const changedCellRef = this.getCellReference(row, col);
+
+    cellsMap.forEach((cell, key) => {
+      // Skip if already updated, visited, or no formula
+      if (updatedKeys.has(key) || visited.has(key) || !cell.formula) return;
+
+      // Check if this formula references the changed cell
+      if (cell.formula.toUpperCase().includes(changedCellRef.toUpperCase())) {
+        const newValue = this.formulaEngine.getCellValue(cell.sheet_id, cell.row, cell.col);
+
+        cellsMap.set(key, {
+          ...cell,
+          computed_value: newValue,
+          updated_at: new Date().toISOString(),
+        });
+
+        visited.add(key);
       }
     });
   }
@@ -695,8 +734,17 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
     // Ignore right-click
     if (event.button !== 0) return;
 
-    // Exit editing mode if clicking different cell
-    if (this.editingCell()) {
+    const editing = this.editingCell();
+
+    // Check if we're editing a formula (value starts with '=')
+    if (editing && editing.value.startsWith('=')) {
+      // We're in formula editing mode - insert cell reference instead of exiting
+      this.handleFormulaCellSelection(row, col, event);
+      return;
+    }
+
+    // Exit editing mode if clicking different cell (normal editing, not formula)
+    if (editing) {
       this.exitEditMode();
     }
 
@@ -742,6 +790,167 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
 
     // Prevent text selection during drag
     event.preventDefault();
+  }
+
+  /**
+   * Handle cell selection when editing a formula
+   * Inserts cell reference (A1) or range reference (A1:B5) into the formula
+   */
+  private handleFormulaCellSelection(row: number, col: number, event: MouseEvent) {
+    const editing = this.editingCell();
+    if (!editing) return;
+
+    // Get cell reference string (e.g., "A1")
+    const cellRef = this.getCellReference(row, col);
+
+    // Check if we should start a range selection or insert single cell
+    this.isSelectingFormulaReference.set(true);
+    this.formulaReferenceStart.set({ row, col });
+
+    // Insert the cell reference at current position in formula
+    const newValue = this.insertReferenceInFormula(editing.value, cellRef);
+
+    // Update editing state
+    this.editingCell.set({
+      ...editing,
+      value: newValue,
+    });
+
+    // Also update formula bar
+    this.formulaBarValue.set(newValue);
+
+    // Setup drag for range selection
+    const onMouseMove = (e: MouseEvent) => this.onFormulaDragMove(e);
+    const onMouseUp = () => {
+      this.onFormulaDragEnd();
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+
+    // Prevent default and stop propagation
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Force change detection
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Handle mouse move during formula range selection
+   */
+  private onFormulaDragMove(event: MouseEvent) {
+    if (!this.isSelectingFormulaReference()) return;
+
+    const startCell = this.formulaReferenceStart();
+    if (!startCell) return;
+
+    const wrapper = this.gridWrapperRef?.nativeElement;
+    if (!wrapper) return;
+
+    // Get mouse position relative to grid
+    const rect = wrapper.getBoundingClientRect();
+    const x = event.clientX - rect.left + wrapper.scrollLeft - this.ROW_HEADER_WIDTH;
+    const y = event.clientY - rect.top + wrapper.scrollTop - this.COL_HEADER_HEIGHT;
+
+    // Calculate cell under cursor
+    const colWidth = this.activeSheet()?.defaultColWidth || this.DEFAULT_COL_WIDTH;
+    const rowHeight = this.activeSheet()?.defaultRowHeight || this.DEFAULT_ROW_HEIGHT;
+
+    const col = Math.max(0, Math.floor(x / colWidth));
+    const row = Math.max(0, Math.floor(y / rowHeight));
+
+    // Only update if position changed
+    const editing = this.editingCell();
+    if (!editing) return;
+
+    // Build range reference
+    let ref: string;
+    if (startCell.row === row && startCell.col === col) {
+      // Single cell
+      ref = this.getCellReference(row, col);
+    } else {
+      // Range
+      ref = this.getRangeReference(startCell, { row, col });
+    }
+
+    // Replace the last reference in the formula
+    const newValue = this.replaceLastReferenceInFormula(editing.value, ref);
+
+    this.editingCell.set({
+      ...editing,
+      value: newValue,
+    });
+
+    this.formulaBarValue.set(newValue);
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Handle mouse up after formula range selection
+   */
+  private onFormulaDragEnd() {
+    this.isSelectingFormulaReference.set(false);
+    this.formulaReferenceStart.set(null);
+
+    // Refocus the input
+    this.shouldFocusInput = true;
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Get cell reference string (e.g., "A1", "B2")
+   */
+  getCellReference(row: number, col: number): string {
+    return `${this.getColumnLabel(col)}${row + 1}`;
+  }
+
+  /**
+   * Get range reference string (e.g., "A1:B5")
+   */
+  private getRangeReference(start: CellAddress, end: CellAddress): string {
+    // Normalize so start is top-left and end is bottom-right
+    const minRow = Math.min(start.row, end.row);
+    const maxRow = Math.max(start.row, end.row);
+    const minCol = Math.min(start.col, end.col);
+    const maxCol = Math.max(start.col, end.col);
+
+    return `${this.getColumnLabel(minCol)}${minRow + 1}:${this.getColumnLabel(maxCol)}${maxRow + 1}`;
+  }
+
+  /**
+   * Insert a cell reference into the formula at the appropriate position
+   */
+  private insertReferenceInFormula(formula: string, ref: string): string {
+    // Check if we need to add the reference after an operator or at the end
+    // Common formula operators: + - * / , ; ( = < > & ^
+    const lastChar = formula.slice(-1);
+    const needsSeparator = !['+', '-', '*', '/', ',', ';', '(', '=', '<', '>', '&', '^', ' '].includes(lastChar);
+
+    if (needsSeparator && formula.length > 1) {
+      // If formula doesn't end with an operator, we might be replacing
+      // Check if we're after a complete reference that needs replacing
+      return formula + ref;
+    }
+
+    return formula + ref;
+  }
+
+  /**
+   * Replace the last cell reference in the formula (used during drag)
+   */
+  private replaceLastReferenceInFormula(formula: string, newRef: string): string {
+    // Pattern to match cell references at the end of formula
+    // Matches: A1, AB12, A1:B5, etc.
+    const refPattern = /(\$?[A-Z]+\$?\d+)(:\$?[A-Z]+\$?\d+)?$/i;
+
+    if (refPattern.test(formula)) {
+      return formula.replace(refPattern, newRef);
+    }
+
+    return formula + newRef;
   }
 
   /**
@@ -842,6 +1051,62 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
    */
   private updateFormulaBar() {
     this.formulaBarValue.set(this.activeCellDisplayValue());
+  }
+
+  // =====================================================================
+  // Formula Bar Handling
+  // =====================================================================
+
+  /**
+   * Handle focus on formula bar - enter edit mode if not already editing
+   */
+  onFormulaBarFocus(): void {
+    const active = this.activeCell();
+    if (!active) return;
+
+    // If not already editing, enter edit mode
+    if (!this.editingCell()) {
+      this.enterEditMode(active.row, active.col, 'formula');
+    }
+  }
+
+  /**
+   * Handle input in formula bar - sync with editing cell
+   */
+  onFormulaBarInput(value: string): void {
+    const editing = this.editingCell();
+    if (editing) {
+      // Update editing state
+      this.editingCell.set({
+        ...editing,
+        value,
+      });
+    } else {
+      // Just update the formula bar value
+      this.formulaBarValue.set(value);
+    }
+  }
+
+  /**
+   * Handle keydown in formula bar
+   */
+  onFormulaBarKeyDown(event: KeyboardEvent): void {
+    switch (event.key) {
+      case 'Enter':
+        this.exitEditMode(true);
+        this.moveActiveCell(1, 0);
+        event.preventDefault();
+        break;
+      case 'Escape':
+        this.exitEditMode(false);
+        event.preventDefault();
+        break;
+      case 'Tab':
+        this.exitEditMode(true);
+        this.moveActiveCell(0, event.shiftKey ? -1 : 1);
+        event.preventDefault();
+        break;
+    }
   }
 
   // =====================================================================
