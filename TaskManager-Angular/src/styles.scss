@@ -788,3 +788,19 @@ body.dragging .bubble-menu-wrapper {
     color: v.$text-color-light;
   }
 }
+
+// ============================================================================
+// CDK OVERLAY Z-INDEX FIX FOR STICKY NOTES
+// ============================================================================
+
+// Ensure Material menus appear above sticky notes in mindmap
+.cdk-overlay-container {
+  z-index: 10000 !important;
+}
+
+// Style for sticky note color menu
+.color-menu {
+  .mat-mdc-menu-content {
+    padding: 0 !important;
+  }
+}

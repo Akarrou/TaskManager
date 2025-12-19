@@ -14,7 +14,7 @@ import { FormsModule } from '@angular/forms';
 import { CdkDrag, CdkDragEnd, CdkDragStart } from '@angular/cdk/drag-drop';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatMenuModule } from '@angular/material/menu';
+import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
 import {
   StickyNote,
   StickyNoteColor,
@@ -49,6 +49,7 @@ export class StickyNoteComponent implements AfterViewInit {
   @Output() deleteNote = new EventEmitter<void>();
 
   @ViewChild('textarea') textareaRef!: ElementRef<HTMLTextAreaElement>;
+  @ViewChild('colorMenuTrigger') colorMenuTrigger!: MatMenuTrigger;
 
   editing = signal(false);
   readonly colors = Object.keys(STICKY_NOTE_COLORS) as StickyNoteColor[];
@@ -102,6 +103,8 @@ export class StickyNoteComponent implements AfterViewInit {
 
   selectColor(color: StickyNoteColor): void {
     this.colorChange.emit(color);
+    // Close the menu after selection
+    this.colorMenuTrigger?.closeMenu();
   }
 
   getColorHex(color: StickyNoteColor): string {

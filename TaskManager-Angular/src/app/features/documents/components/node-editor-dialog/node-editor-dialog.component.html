@@ -1,0 +1,220 @@
+<h2 mat-dialog-title class="dialog-title">
+  <mat-icon>edit</mat-icon>
+  <span>Modifier le nœud</span>
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <mat-tab-group
+    [(selectedIndex)]="activeTabIndex"
+    animationDuration="200ms"
+    class="editor-tabs"
+  >
+    <!-- Content Tab -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon>text_fields</mat-icon>
+        <span>Contenu</span>
+      </ng-template>
+
+      <div class="tab-content">
+        <!-- Title -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Titre</mat-label>
+          <input
+            matInput
+            [ngModel]="title()"
+            (ngModelChange)="title.set($event)"
+            placeholder="Titre du nœud"
+            autofocus
+          />
+        </mat-form-field>
+
+        <!-- Description -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Description (sous-titre)</mat-label>
+          <textarea
+            matInput
+            [ngModel]="description()"
+            (ngModelChange)="description.set($event)"
+            placeholder="Description courte affichée sous le titre"
+            rows="2"
+          ></textarea>
+          <mat-hint>Affiché sous le titre dans le nœud</mat-hint>
+        </mat-form-field>
+
+        <!-- Formatted Content -->
+        <div class="formatted-section">
+          <label class="section-label">Notes additionnelles</label>
+
+          <div class="formatting-toolbar">
+            <button
+              type="button"
+              mat-icon-button
+              matTooltip="Gras (**texte**)"
+              (click)="applyBold()"
+            >
+              <mat-icon>format_bold</mat-icon>
+            </button>
+            <button
+              type="button"
+              mat-icon-button
+              matTooltip="Italique (*texte*)"
+              (click)="applyItalic()"
+            >
+              <mat-icon>format_italic</mat-icon>
+            </button>
+            <button
+              type="button"
+              mat-icon-button
+              matTooltip="Liste à puces"
+              (click)="addBullet()"
+            >
+              <mat-icon>format_list_bulleted</mat-icon>
+            </button>
+          </div>
+
+          <div class="formatted-content-wrapper">
+            <textarea
+              class="formatted-content-textarea"
+              [ngModel]="formattedContent()"
+              (ngModelChange)="formattedContent.set($event)"
+              placeholder="Notes, listes, informations complémentaires...&#10;&#10;• Point 1&#10;• Point 2"
+            ></textarea>
+          </div>
+          <mat-hint class="hint-text">
+            Contenu additionnel visible au survol du nœud
+          </mat-hint>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Style Tab -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon>palette</mat-icon>
+        <span>Style</span>
+      </ng-template>
+
+      <div class="tab-content">
+        <!-- Shape selector -->
+        <div class="style-section">
+          <label class="section-label">Forme du nœud</label>
+          <app-shape-selector
+            [selectedShape]="shape()"
+            (shapeChange)="onShapeChange($event)"
+          />
+        </div>
+
+        <!-- Background color -->
+        <div class="style-section">
+          <label class="section-label">Couleur de fond</label>
+          <app-color-picker
+            [selectedColor]="backgroundColor()"
+            [showTrigger]="false"
+            (colorChange)="onBackgroundColorChange($event)"
+          />
+        </div>
+
+        <!-- Text color -->
+        <div class="style-section">
+          <label class="section-label">Couleur du texte</label>
+          <div class="text-color-options">
+            <button
+              type="button"
+              class="text-color-btn"
+              [class.selected]="textColor() === '#ffffff'"
+              (click)="onTextColorChange('#ffffff')"
+            >
+              <span class="color-swatch light"></span>
+              Clair
+            </button>
+            <button
+              type="button"
+              class="text-color-btn"
+              [class.selected]="textColor() === '#1f2937'"
+              (click)="onTextColorChange('#1f2937')"
+            >
+              <span class="color-swatch dark"></span>
+              Sombre
+            </button>
+          </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="style-section">
+          <label class="section-label">Aperçu</label>
+          <div
+            class="node-preview"
+            [style.backgroundColor]="backgroundColor()"
+            [style.color]="textColor()"
+            [class]="'shape-' + shape()"
+          >
+            <div class="preview-title">{{ title() || 'Titre' }}</div>
+            @if (description()) {
+              <div class="preview-description">{{ description() }}</div>
+            }
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Size Tab -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon>aspect_ratio</mat-icon>
+        <span>Taille</span>
+      </ng-template>
+
+      <div class="tab-content">
+        <div class="style-section">
+          <mat-slide-toggle
+            [ngModel]="autoSize()"
+            (ngModelChange)="autoSize.set($event)"
+            color="primary"
+          >
+            Taille automatique selon le contenu
+          </mat-slide-toggle>
+          <p class="hint-text">
+            Ajuste automatiquement la taille du nœud en fonction du texte
+          </p>
+        </div>
+
+        @if (!autoSize()) {
+          <div class="size-inputs">
+            <mat-form-field appearance="outline">
+              <mat-label>Largeur (px)</mat-label>
+              <input
+                matInput
+                type="number"
+                [ngModel]="customWidth()"
+                (ngModelChange)="customWidth.set($event)"
+                min="80"
+                max="400"
+              />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Hauteur (px)</mat-label>
+              <input
+                matInput
+                type="number"
+                [ngModel]="customHeight()"
+                (ngModelChange)="customHeight.set($event)"
+                min="30"
+                max="300"
+              />
+            </mat-form-field>
+          </div>
+        }
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Annuler</button>
+  <button mat-flat-button color="primary" (click)="save()">
+    <mat-icon>check</mat-icon>
+    Enregistrer
+  </button>
+</mat-dialog-actions>

@@ -21,6 +21,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import cytoscape from 'cytoscape';
 import dagre from 'cytoscape-dagre';
 import undoRedo from 'cytoscape-undo-redo';
@@ -50,6 +51,11 @@ import {
 import { StickyNoteComponent } from '../sticky-note/sticky-note.component';
 import { ShapeSelectorComponent } from '../shape-selector/shape-selector.component';
 import { ColorPickerComponent } from '../color-picker/color-picker.component';
+import {
+  NodeEditorDialogComponent,
+  NodeEditorDialogData,
+  NodeEditorDialogResult,
+} from '../node-editor-dialog/node-editor-dialog.component';
 
 // Register extensions
 cytoscape.use(dagre);
@@ -69,6 +75,7 @@ cytoscape.use(navigator);
     MatMenuModule,
     MatTooltipModule,
     MatDividerModule,
+    MatDialogModule,
     StickyNoteComponent,
     ShapeSelectorComponent,
     ColorPickerComponent,
@@ -80,6 +87,7 @@ export class MindmapBlockComponent
   implements OnInit, OnDestroy, OnChanges, AfterViewInit
 {
   private ngZone = inject(NgZone);
+  private dialog = inject(MatDialog);
 
   // Inputs
   @Input() mindmapId!: string;
@@ -108,6 +116,11 @@ export class MindmapBlockComponent
   canUndo = signal(false);
   canRedo = signal(false);
   showNavigator = signal(false);
+
+  // Tooltip state for rich content
+  tooltipVisible = signal(false);
+  tooltipContent = signal('');
+  tooltipPosition = signal({ x: 0, y: 0 });
 
   // Computed
   config = computed(() => this.mindmapData().config);
@@ -285,14 +298,13 @@ export class MindmapBlockComponent
         {
           id: 'edit-node',
           content: 'Modifier',
-          tooltipText: 'Modifier le texte',
+          tooltipText: 'Modifier le contenu et le style',
           selector: 'node',
           onClickFunction: function(event: cytoscape.EventObject) {
             const node = event.target as cytoscape.NodeSingular;
             const nodeId = node.id();
-            const label = node.data('label');
             component.ngZone.run(() => {
-              component.startEditing(nodeId, label);
+              component.openNodeEditor(nodeId);
             });
           },
         },
@@ -453,11 +465,11 @@ export class MindmapBlockComponent
       });
     });
 
-    // Double click - edit
+    // Double click - open rich editor dialog
     this.cy.on('dbltap', 'node', (event: cytoscape.EventObject) => {
       const node = event.target as cytoscape.NodeSingular;
       this.ngZone.run(() => {
-        this.startEditing(node.id(), node.data('label'));
+        this.openNodeEditor(node.id());
       });
     });
 
@@ -526,6 +538,32 @@ export class MindmapBlockComponent
       }
 
       this.updateUndoRedoState();
+    });
+
+    // Mouse over/out for tooltip
+    this.cy.on('mouseover', 'node', (event: cytoscape.EventObject) => {
+      const node = event.target as cytoscape.NodeSingular;
+      const content = node.data('tooltipContent');
+      if (content) {
+        const renderedPos = node.renderedPosition();
+        const nodeWidth = node.renderedWidth();
+        // Account for toolbar height (48px)
+        const toolbarHeight = 48;
+        this.ngZone.run(() => {
+          this.tooltipContent.set(content);
+          this.tooltipPosition.set({
+            x: renderedPos.x + nodeWidth / 2 + 10,
+            y: renderedPos.y + toolbarHeight,
+          });
+          this.tooltipVisible.set(true);
+        });
+      }
+    });
+
+    this.cy.on('mouseout', 'node', () => {
+      this.ngZone.run(() => {
+        this.tooltipVisible.set(false);
+      });
     });
   }
 
@@ -609,6 +647,9 @@ export class MindmapBlockComponent
       const dimensions = this.calculateNodeDimensions(node);
       const displayLabel = this.getNodeDisplayLabel(node);
 
+      // Build tooltip content from formatted content
+      const tooltipContent = this.buildTooltipContent(node);
+
       elements.push({
         data: {
           id: node.id,
@@ -627,7 +668,8 @@ export class MindmapBlockComponent
           textMaxWidth: dimensions.width - 20,
           depth,
           parentNodeId: node.parentId,
-          hasRichContent: !!node.content?.description,
+          hasRichContent: !!node.content?.formattedContent,
+          tooltipContent,
         },
       });
     });
@@ -662,6 +704,57 @@ export class MindmapBlockComponent
       return title;
     }
     return node.label;
+  }
+
+  /**
+   * Build tooltip content from node's formatted content
+   */
+  private buildTooltipContent(node: MindmapNode): string | null {
+    if (!node.content?.formattedContent) {
+      return null;
+    }
+
+    // Convert markdown-like formatting to HTML for display
+    let content = node.content.formattedContent;
+
+    // Convert **bold** to <strong>
+    content = content.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+    // Convert *italic* to <em>
+    content = content.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+    // Convert bullet points
+    content = content.replace(/^• /gm, '<li>');
+    content = content.replace(/<li>(.*)$/gm, '<li>$1</li>');
+
+    // Wrap consecutive <li> elements in <ul>
+    const lines = content.split('\n');
+    let inList = false;
+    const processedLines: string[] = [];
+
+    for (const line of lines) {
+      if (line.startsWith('<li>')) {
+        if (!inList) {
+          processedLines.push('<ul>');
+          inList = true;
+        }
+        processedLines.push(line);
+      } else {
+        if (inList) {
+          processedLines.push('</ul>');
+          inList = false;
+        }
+        if (line.trim()) {
+          processedLines.push(`<p>${line}</p>`);
+        }
+      }
+    }
+
+    if (inList) {
+      processedLines.push('</ul>');
+    }
+
+    return processedLines.join('');
   }
 
   /**
@@ -1105,6 +1198,65 @@ export class MindmapBlockComponent
   }
 
   /**
+   * Open node editor dialog for rich content editing
+   */
+  openNodeEditor(nodeId: string): void {
+    const data = this.mindmapData();
+    const node = data.nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+
+    const dialogData: NodeEditorDialogData = {
+      node,
+      isRoot: nodeId === data.rootId,
+    };
+
+    const dialogRef = this.dialog.open(NodeEditorDialogComponent, {
+      data: dialogData,
+      width: '600px',
+      maxHeight: '90vh',
+      panelClass: 'node-editor-dialog',
+    });
+
+    dialogRef.afterClosed().subscribe((result: NodeEditorDialogResult | undefined) => {
+      if (result) {
+        this.applyNodeEditorResult(nodeId, result);
+      }
+    });
+  }
+
+  /**
+   * Apply results from node editor dialog
+   */
+  private applyNodeEditorResult(nodeId: string, result: NodeEditorDialogResult): void {
+    const data = this.mindmapData();
+    const updatedNodes = data.nodes.map((n) => {
+      if (n.id !== nodeId) return n;
+
+      return {
+        ...n,
+        label: result.label,
+        content: result.content,
+        style: { ...n.style, ...result.style },
+        autoSize: result.autoSize,
+        customWidth: result.customWidth,
+        customHeight: result.customHeight,
+      };
+    });
+
+    this.mindmapData.set({
+      ...data,
+      nodes: updatedNodes,
+    });
+
+    // Re-render to apply changes
+    this.ngZone.runOutsideAngular(() => {
+      this.renderMindmap(true);
+    });
+
+    this.changeSubject.next();
+  }
+
+  /**
    * Handle blur event on edit input
    * Save if the blur wasn't caused by clicking the action buttons
    */
@@ -1440,9 +1592,17 @@ export class MindmapBlockComponent
         break;
       case 'Enter':
         event.preventDefault();
-        const node = this.nodes().find((n) => n.id === selectedId);
-        if (node) {
-          this.startEditing(selectedId, node.label);
+        this.openNodeEditor(selectedId);
+        break;
+      case 'e':
+      case 'E':
+        // E for quick inline edit (title only)
+        if (!event.ctrlKey && !event.metaKey) {
+          event.preventDefault();
+          const node = this.nodes().find((n) => n.id === selectedId);
+          if (node) {
+            this.startEditing(selectedId, node.label);
+          }
         }
         break;
       case ' ':

@@ -111,7 +111,11 @@
   }
 }
 
-// Color menu styles
+// Color menu styles - need ::ng-deep for CDK overlay
+::ng-deep .cdk-overlay-container {
+  z-index: 10000 !important;
+}
+
 .color-grid {
   @apply grid grid-cols-3 gap-2 p-2;
 }

@@ -1,0 +1,246 @@
+.dialog-title {
+  @apply flex items-center gap-2;
+  @apply text-gray-800;
+  margin: 0;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e5e7eb;
+
+  mat-icon {
+    @apply text-blue-600;
+  }
+}
+
+.dialog-content {
+  padding: 0 !important;
+  min-width: 500px;
+  max-width: 600px;
+}
+
+.editor-tabs {
+  ::ng-deep {
+    .mat-mdc-tab-header {
+      background-color: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .mat-mdc-tab-labels {
+      padding: 0 16px;
+    }
+
+    .mat-mdc-tab {
+      min-width: 120px;
+
+      .mdc-tab__content {
+        @apply flex items-center gap-2;
+
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
+      }
+    }
+
+    .mat-mdc-tab-body-wrapper {
+      padding: 24px;
+    }
+  }
+}
+
+.tab-content {
+  @apply flex flex-col gap-4;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.section-label {
+  @apply block text-sm font-medium text-gray-700 mb-2;
+}
+
+.formatted-section {
+  @apply flex flex-col gap-2;
+}
+
+.formatting-toolbar {
+  @apply flex gap-1 p-2;
+  @apply bg-gray-100 rounded-t-lg border border-b-0 border-gray-300;
+
+  button.mat-mdc-icon-button {
+    @apply w-9 h-9;
+    @apply flex items-center justify-center;
+
+    .mat-mdc-button-touch-target {
+      width: 36px;
+      height: 36px;
+    }
+
+    mat-icon {
+      @apply flex items-center justify-center;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
+    }
+
+    &:hover {
+      @apply bg-gray-200 rounded;
+    }
+  }
+}
+
+// Wrapper for formatted content with Material styling
+.formatted-content-wrapper {
+  @apply border border-gray-300 rounded-b-lg;
+  @apply bg-white;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus-within {
+    @apply border-blue-500;
+    box-shadow: 0 0 0 1px #3b82f6;
+  }
+}
+
+.formatted-content-textarea {
+  @apply w-full p-3;
+  @apply text-sm text-gray-800;
+  @apply resize-none border-none;
+  @apply bg-transparent;
+  font-family: inherit;
+  line-height: 1.5;
+  min-height: 120px;
+
+  &:focus {
+    @apply outline-none;
+  }
+
+  &::placeholder {
+    @apply text-gray-400;
+  }
+}
+
+.hint-text {
+  @apply text-xs text-gray-500 mt-1;
+  margin: 0;
+}
+
+.style-section {
+  @apply flex flex-col gap-2 mb-4;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.text-color-options {
+  @apply flex gap-3;
+}
+
+.text-color-btn {
+  @apply flex items-center gap-2;
+  @apply px-4 py-2 rounded-lg;
+  @apply border-2 border-gray-200;
+  @apply bg-white cursor-pointer;
+  @apply text-sm font-medium text-gray-700;
+  @apply transition-all;
+
+  &:hover {
+    @apply border-gray-300 bg-gray-50;
+  }
+
+  &.selected {
+    @apply border-blue-500 bg-blue-50;
+  }
+
+  .color-swatch {
+    @apply w-5 h-5 rounded-full;
+    @apply border border-gray-300;
+
+    &.light {
+      background-color: #ffffff;
+    }
+
+    &.dark {
+      background-color: #1f2937;
+    }
+  }
+}
+
+.node-preview {
+  @apply flex flex-col items-center justify-center;
+  @apply p-4 rounded-lg;
+  @apply border-2;
+  min-height: 60px;
+  max-width: 200px;
+  margin: 0 auto;
+  text-align: center;
+  transition: all 0.2s ease;
+
+  &.shape-round-rectangle {
+    border-radius: 12px;
+  }
+
+  &.shape-rectangle {
+    border-radius: 4px;
+  }
+
+  &.shape-ellipse {
+    border-radius: 50%;
+    min-width: 150px;
+  }
+
+  &.shape-diamond {
+    transform: rotate(45deg);
+    min-width: 100px;
+    min-height: 100px;
+
+    .preview-title,
+    .preview-description {
+      transform: rotate(-45deg);
+    }
+  }
+
+  &.shape-hexagon {
+    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+    min-width: 150px;
+  }
+
+  &.shape-round-tag {
+    border-radius: 999px;
+    min-width: 150px;
+  }
+
+  .preview-title {
+    @apply font-semibold text-sm;
+  }
+
+  .preview-description {
+    @apply text-xs opacity-80 mt-1;
+  }
+}
+
+.size-inputs {
+  @apply flex gap-4;
+
+  mat-form-field {
+    flex: 1;
+  }
+}
+
+mat-dialog-actions {
+  @apply px-6 py-4;
+  @apply border-t border-gray-200;
+  margin: 0 !important;
+
+  button {
+    @apply ml-2;
+
+    mat-icon {
+      @apply mr-1;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+}

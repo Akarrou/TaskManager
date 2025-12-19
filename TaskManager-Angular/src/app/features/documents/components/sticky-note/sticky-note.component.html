@@ -15,12 +15,13 @@
       type="button"
       class="action-btn"
       [matMenuTriggerFor]="colorMenu"
-      (click)="$event.stopPropagation()"
+      #colorMenuTrigger="matMenuTrigger"
+      (mousedown)="$event.stopPropagation()"
     >
       <mat-icon>palette</mat-icon>
     </button>
 
-    <mat-menu #colorMenu="matMenu" class="color-menu">
+    <mat-menu #colorMenu="matMenu" class="color-menu" xPosition="after" yPosition="below">
       <div class="color-grid" (click)="$event.stopPropagation()">
         @for (color of colors; track color) {
           <button
@@ -28,7 +29,7 @@
             class="color-option"
             [style.backgroundColor]="getColorHex(color)"
             [class.selected]="note.color === color"
-            (click)="selectColor(color)"
+            (click)="selectColor(color); $event.stopPropagation()"
           >
             @if (note.color === color) {
               <mat-icon class="check">check</mat-icon>
@@ -42,7 +43,8 @@
     <button
       type="button"
       class="action-btn delete-btn"
-      (click)="deleteNote.emit(); $event.stopPropagation()"
+      (click)="deleteNote.emit()"
+      (mousedown)="$event.stopPropagation()"
     >
       <mat-icon>close</mat-icon>
     </button>

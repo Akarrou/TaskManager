@@ -246,15 +246,15 @@
 
   <!-- Help text -->
   <div class="help-text">
-    <span>Double-clic: editer</span>
+    <span>Double-clic: éditer contenu</span>
+    <span class="separator">|</span>
+    <span>E: édition rapide</span>
     <span class="separator">|</span>
     <span>Tab: ajouter enfant</span>
     <span class="separator">|</span>
     <span>Espace: replier/déplier</span>
     <span class="separator">|</span>
     <span>Glisser: reparenter</span>
-    <span class="separator">|</span>
-    <span>Clic droit: menu</span>
   </div>
 
   <!-- Inline editing overlay -->
@@ -292,5 +292,15 @@
       Supprimer le noeud
     </button>
   </div>
+  }
+
+  <!-- Rich content tooltip -->
+  @if (tooltipVisible() && tooltipContent()) {
+  <div
+    class="node-tooltip"
+    [style.left.px]="tooltipPosition().x"
+    [style.top.px]="tooltipPosition().y"
+    [innerHTML]="tooltipContent()"
+  ></div>
   }
 </div>

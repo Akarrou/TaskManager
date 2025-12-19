@@ -230,3 +230,73 @@
 .style-label {
   @apply block text-xs font-medium text-gray-600 mb-2;
 }
+
+// Node tooltip for rich content
+.node-tooltip {
+  position: absolute;
+  z-index: 1000;
+  max-width: 300px;
+  padding: 12px 16px;
+  background-color: #1f2937;
+  color: #f9fafb;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  font-size: 13px;
+  line-height: 1.5;
+  pointer-events: none;
+  transform: translateY(-50%);
+  animation: tooltipFadeIn 0.15s ease-out;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-right-color: #1f2937;
+    border-left: none;
+  }
+
+  p {
+    margin: 0 0 8px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 20px;
+
+    li {
+      margin-bottom: 4px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  strong {
+    font-weight: 600;
+    color: #fff;
+  }
+
+  em {
+    font-style: italic;
+    color: #d1d5db;
+  }
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
