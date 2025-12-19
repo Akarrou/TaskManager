@@ -181,57 +181,109 @@
               @for (col of visibleCols(); track col) {
                 <div
                   class="cell"
-                  [class.active]="isActiveCell(row, col)"
-                  [class.selected]="isCellSelected(row, col)"
+                  [class.active]="isActiveCell(row, col) && !isCellHiddenByMerge(row, col)"
+                  [class.selected]="isCellSelected(row, col) && !isCellHiddenByMerge(row, col)"
                   [class.editing]="isEditingCell(row, col)"
                   [class.has-formula]="cellHasFormula(row, col)"
                   [class.has-error]="isCellError(row, col)"
                   [class.frozen-row]="isRowFrozen(row)"
                   [class.frozen-col]="isColumnFrozen(col)"
+                  [class.hidden-by-merge]="isCellHiddenByMerge(row, col)"
+                  [class.wrap-text]="hasCellWrapText(row, col)"
                   [style.width.px]="getColumnWidth(col)"
                   [style.min-width.px]="getColumnWidth(col)"
                   [style.height.px]="getRowHeight(row)"
-                  [style.border-top]="getCellBorderTop(row, col)"
-                  [style.border-right]="getCellBorderRight(row, col)"
-                  [style.border-bottom]="getCellBorderBottom(row, col)"
-                  [style.border-left]="getCellBorderLeft(row, col)"
-                  [style.background-color]="getCellBackgroundColor(row, col)"
+                  [style.border-top]="isCellHiddenByMerge(row, col) ? null : getCellBorderTop(row, col)"
+                  [style.border-right]="isCellHiddenByMerge(row, col) ? null : getCellBorderRight(row, col)"
+                  [style.border-bottom]="isCellHiddenByMerge(row, col) ? null : getCellBorderBottom(row, col)"
+                  [style.border-left]="isCellHiddenByMerge(row, col) ? null : getCellBorderLeft(row, col)"
+                  [style.background-color]="isCellHiddenByMerge(row, col) ? null : getCellBackgroundColor(row, col)"
                   [style.color]="getCellTextColor(row, col)"
+                  [style.justify-content]="getCellTextAlign(row, col)"
+                  [style.font-weight]="getCellFontWeight(row, col)"
+                  [style.font-style]="getCellFontStyle(row, col)"
+                  [style.text-decoration]="getCellTextDecoration(row, col)"
+                  [style.font-size]="getCellFontSize(row, col)"
                   (mousedown)="onCellMouseDown(row, col, $event)"
                   (dblclick)="onCellDoubleClick(row, col)"
                 >
-                  @if (isEditingCell(row, col)) {
-                    <input
-                      #cellInput
-                      type="text"
-                      class="cell-input"
-                      [class.formula-input]="editingCell()?.value?.startsWith('=')"
-                      [value]="editingCell()?.value || ''"
-                      (input)="onFormulaInput($any($event.target).value)"
-                      (keydown)="onCellInputKeyDown($event)"
-                      (blur)="exitEditMode(true)"
-                    />
+                  @if (!isCellHiddenByMerge(row, col) && !getCellMergeInfo(row, col)) {
+                    @if (isEditingCell(row, col)) {
+                      <input
+                        #cellInput
+                        type="text"
+                        class="cell-input"
+                        [class.formula-input]="editingCell()?.value?.startsWith('=')"
+                        [value]="editingCell()?.value || ''"
+                        (input)="onFormulaInput($any($event.target).value)"
+                        (keydown)="onCellInputKeyDown($event)"
+                        (blur)="exitEditMode(true)"
+                      />
 
-                    <!-- Formula Autocomplete Dropdown -->
-                    @if (showFormulaAutocomplete() && isActiveCell(row, col)) {
-                      <div class="formula-autocomplete">
-                        @for (fn of formulaSuggestions(); track fn.name; let i = $index) {
-                          <div
-                            class="autocomplete-item"
-                            [class.selected]="i === selectedSuggestionIndex()"
-                            (click)="selectFormulaSuggestion(fn)"
-                            (mouseenter)="selectedSuggestionIndex.set(i)"
-                          >
-                            <span class="fn-name">{{ fn.name }}</span>
-                            <span class="fn-desc">{{ fn.description }}</span>
-                          </div>
-                        }
-                      </div>
+                      <!-- Formula Autocomplete Dropdown -->
+                      @if (showFormulaAutocomplete() && isActiveCell(row, col)) {
+                        <div class="formula-autocomplete">
+                          @for (fn of formulaSuggestions(); track fn.name; let i = $index) {
+                            <div
+                              class="autocomplete-item"
+                              [class.selected]="i === selectedSuggestionIndex()"
+                              (click)="selectFormulaSuggestion(fn)"
+                              (mouseenter)="selectedSuggestionIndex.set(i)"
+                            >
+                              <span class="fn-name">{{ fn.name }}</span>
+                              <span class="fn-desc">{{ fn.description }}</span>
+                            </div>
+                          }
+                        </div>
+                      }
+                    } @else {
+                      <span class="cell-value">{{ getCellValue(row, col) }}</span>
                     }
-                  } @else {
-                    <span class="cell-value">{{ getCellValue(row, col) }}</span>
                   }
                 </div>
+              }
+            </div>
+          }
+
+          <!-- Merged Cells Overlay -->
+          @for (mergedCell of getVisibleMergedCells(); track mergedCell.key) {
+            <div
+              class="cell merged-cell-overlay"
+              [class.active]="isActiveCell(mergedCell.row, mergedCell.col)"
+              [class.selected]="isCellSelected(mergedCell.row, mergedCell.col)"
+              [class.editing]="isEditingCell(mergedCell.row, mergedCell.col)"
+              [class.wrap-text]="hasCellWrapText(mergedCell.row, mergedCell.col)"
+              [style.left.px]="getCellLeftPosition(mergedCell.col) + 50"
+              [style.top.px]="getCellTopPosition(mergedCell.row)"
+              [style.width.px]="getMergedCellWidth(mergedCell.row, mergedCell.col)"
+              [style.height.px]="getMergedCellHeight(mergedCell.row, mergedCell.col)"
+              [style.border-top]="getCellBorderTop(mergedCell.row, mergedCell.col)"
+              [style.border-right]="getCellBorderRight(mergedCell.row, mergedCell.col)"
+              [style.border-bottom]="getCellBorderBottom(mergedCell.row, mergedCell.col)"
+              [style.border-left]="getCellBorderLeft(mergedCell.row, mergedCell.col)"
+              [style.background-color]="getCellBackgroundColor(mergedCell.row, mergedCell.col) || 'white'"
+              [style.color]="getCellTextColor(mergedCell.row, mergedCell.col)"
+              [style.justify-content]="getCellTextAlign(mergedCell.row, mergedCell.col)"
+              [style.font-weight]="getCellFontWeight(mergedCell.row, mergedCell.col)"
+              [style.font-style]="getCellFontStyle(mergedCell.row, mergedCell.col)"
+              [style.text-decoration]="getCellTextDecoration(mergedCell.row, mergedCell.col)"
+              [style.font-size]="getCellFontSize(mergedCell.row, mergedCell.col)"
+              (mousedown)="onCellMouseDown(mergedCell.row, mergedCell.col, $event)"
+              (dblclick)="onCellDoubleClick(mergedCell.row, mergedCell.col)"
+            >
+              @if (isEditingCell(mergedCell.row, mergedCell.col)) {
+                <input
+                  #cellInput
+                  type="text"
+                  class="cell-input"
+                  [class.formula-input]="editingCell()?.value?.startsWith('=')"
+                  [value]="editingCell()?.value || ''"
+                  (input)="onFormulaInput($any($event.target).value)"
+                  (keydown)="onCellInputKeyDown($event)"
+                  (blur)="exitEditMode(true)"
+                />
+              } @else {
+                <span class="cell-value">{{ getCellValue(mergedCell.row, mergedCell.col) }}</span>
               }
             </div>
           }

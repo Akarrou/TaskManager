@@ -528,7 +528,7 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
   // =====================================================================
 
   /**
-   * Get cell value for display
+   * Get cell value for display (with formatting applied)
    */
   getCellValue(row: number, col: number): string {
     const key = getCellKey({ row, col, sheet: this.activeSheetId() });
@@ -536,12 +536,18 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
 
     if (!cell) return '';
 
+    // Determine the value to display
+    let value: SpreadsheetCellValue;
+
     // Show computed value if formula exists
     if (cell.formula && cell.computed_value !== undefined) {
-      return cell.computed_value?.toString() || '';
+      value = cell.computed_value as SpreadsheetCellValue;
+    } else {
+      value = cell.raw_value;
     }
 
-    return cell.raw_value?.toString() || '';
+    // Apply number formatting
+    return this.formatCellValue(value, cell.format);
   }
 
   /**
@@ -579,6 +585,7 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
       formula: update.formula ?? existingCell?.formula,
       computed_value: isFormula ? computedValue : value,
       format: existingCell?.format,
+      merge: existingCell?.merge, // Preserve merge property
       created_at: existingCell?.created_at || new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -1233,6 +1240,7 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
         formula: existingCell?.formula,
         computed_value: existingCell?.computed_value,
         format: updatedFormat,
+        merge: existingCell?.merge, // Preserve merge property
         created_at: existingCell?.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -1333,6 +1341,7 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
         formula: existingCell?.formula,
         computed_value: existingCell?.computed_value,
         format: newFormat,
+        merge: existingCell?.merge, // Preserve merge property
         created_at: existingCell?.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -1397,6 +1406,7 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
         formula: existingCell?.formula,
         computed_value: existingCell?.computed_value,
         format: newFormat,
+        merge: existingCell?.merge, // Preserve merge property
         created_at: existingCell?.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -1476,6 +1486,152 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
     });
 
     this.cells.set(newCells);
+  }
+
+  /**
+   * Check if a cell is hidden because it's covered by a merged cell
+   * A cell is hidden if it's within the range of a merged cell but is not the top-left anchor
+   */
+  isCellHiddenByMerge(row: number, col: number): boolean {
+    const sheetId = this.activeSheetId();
+    const cells = this.cells();
+
+    // Check all cells that could potentially merge over this position
+    // We need to check cells above and to the left that might extend here
+    for (let r = Math.max(0, row - 100); r <= row; r++) {
+      for (let c = Math.max(0, col - 100); c <= col; c++) {
+        // Skip checking the current cell itself
+        if (r === row && c === col) continue;
+
+        const key = getCellKey({ row: r, col: c, sheet: sheetId });
+        const cell = cells.get(key);
+
+        if (cell?.merge) {
+          const { rowSpan, colSpan } = cell.merge;
+          // Check if current position is within this merged range
+          if (
+            row >= r && row < r + rowSpan &&
+            col >= c && col < c + colSpan
+          ) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Get the merge info for a cell (if it's the anchor of a merged region)
+   */
+  getCellMergeInfo(row: number, col: number): { rowSpan: number; colSpan: number } | null {
+    const key = getCellKey({ row, col, sheet: this.activeSheetId() });
+    const cell = this.cells().get(key);
+
+    if (cell?.merge && (cell.merge.rowSpan > 1 || cell.merge.colSpan > 1)) {
+      return cell.merge;
+    }
+    return null;
+  }
+
+  /**
+   * Get merged cell dimensions (width and height) for rendering
+   */
+  getMergedCellWidth(row: number, col: number): number | null {
+    const merge = this.getCellMergeInfo(row, col);
+    if (!merge) return null;
+
+    let totalWidth = 0;
+    for (let c = col; c < col + merge.colSpan; c++) {
+      totalWidth += this.getColumnWidth(c);
+    }
+    return totalWidth;
+  }
+
+  getMergedCellHeight(row: number, col: number): number | null {
+    const merge = this.getCellMergeInfo(row, col);
+    if (!merge) return null;
+
+    let totalHeight = 0;
+    for (let r = row; r < row + merge.rowSpan; r++) {
+      totalHeight += this.getRowHeight(r);
+    }
+    return totalHeight;
+  }
+
+  /**
+   * Get the absolute X position of a cell (for merged cell positioning)
+   * This calculates the left offset from the start of the grid
+   */
+  getCellLeftPosition(col: number): number {
+    let left = 0;
+    for (let c = 0; c < col; c++) {
+      left += this.getColumnWidth(c);
+    }
+    return left;
+  }
+
+  /**
+   * Get the absolute Y position of a cell (for merged cell positioning)
+   * This calculates the top offset from the start of the grid
+   */
+  getCellTopPosition(row: number): number {
+    let top = 0;
+    for (let r = 0; r < row; r++) {
+      top += this.getRowHeight(r);
+    }
+    return top;
+  }
+
+  /**
+   * Get all visible merged cells for overlay rendering
+   * Returns an array of merged cell info for cells that are visible in the current viewport
+   */
+  getVisibleMergedCells(): Array<{ key: string; row: number; col: number }> {
+    const sheetId = this.activeSheetId();
+    const cells = this.cells();
+    const mergedCells: Array<{ key: string; row: number; col: number }> = [];
+
+    // Get visible range with some buffer
+    const rowStart = Math.max(0, this.visibleRowStart() - 10);
+    const rowEnd = this.visibleRowEnd() + 10;
+    const colStart = Math.max(0, this.visibleColStart() - 5);
+    const colEnd = this.visibleColEnd() + 5;
+
+    // Scan all cells for merged ones that are visible
+    cells.forEach((cell, key) => {
+      if (cell.sheet_id === sheetId && cell.merge) {
+        const { rowSpan, colSpan } = cell.merge;
+        if (rowSpan > 1 || colSpan > 1) {
+          // Check if this merged cell overlaps with visible area
+          const mergeRowEnd = cell.row + rowSpan;
+          const mergeColEnd = cell.col + colSpan;
+
+          if (
+            cell.row < rowEnd && mergeRowEnd > rowStart &&
+            cell.col < colEnd && mergeColEnd > colStart
+          ) {
+            mergedCells.push({
+              key,
+              row: cell.row,
+              col: cell.col,
+            });
+          }
+        }
+      }
+    });
+
+    return mergedCells;
+  }
+
+  /**
+   * Check if cell has wrap text enabled
+   */
+  hasCellWrapText(row: number, col: number): boolean {
+    const key = getCellKey({ row, col, sheet: this.activeSheetId() });
+    const cell = this.cells().get(key);
+    return !!cell?.format?.wrapText;
   }
 
   /**
@@ -1580,6 +1736,60 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
     const key = getCellKey({ row, col, sheet: this.activeSheetId() });
     const cell = this.cells().get(key);
     return cell?.format?.textColor || null;
+  }
+
+  /**
+   * Get cell text alignment (justify-content for flex)
+   */
+  getCellTextAlign(row: number, col: number): string | null {
+    const key = getCellKey({ row, col, sheet: this.activeSheetId() });
+    const cell = this.cells().get(key);
+    const align = cell?.format?.textAlign;
+    if (!align) return null;
+    // Convert text-align to justify-content for flex container
+    switch (align) {
+      case 'left': return 'flex-start';
+      case 'center': return 'center';
+      case 'right': return 'flex-end';
+      default: return null;
+    }
+  }
+
+  /**
+   * Get cell font weight (bold)
+   */
+  getCellFontWeight(row: number, col: number): string | null {
+    const key = getCellKey({ row, col, sheet: this.activeSheetId() });
+    const cell = this.cells().get(key);
+    return cell?.format?.fontWeight || null;
+  }
+
+  /**
+   * Get cell font style (italic)
+   */
+  getCellFontStyle(row: number, col: number): string | null {
+    const key = getCellKey({ row, col, sheet: this.activeSheetId() });
+    const cell = this.cells().get(key);
+    return cell?.format?.fontStyle || null;
+  }
+
+  /**
+   * Get cell text decoration (underline, strikethrough)
+   */
+  getCellTextDecoration(row: number, col: number): string | null {
+    const key = getCellKey({ row, col, sheet: this.activeSheetId() });
+    const cell = this.cells().get(key);
+    return cell?.format?.textDecoration || null;
+  }
+
+  /**
+   * Get cell font size
+   */
+  getCellFontSize(row: number, col: number): string | null {
+    const key = getCellKey({ row, col, sheet: this.activeSheetId() });
+    const cell = this.cells().get(key);
+    const size = cell?.format?.fontSize;
+    return size ? `${size}px` : null;
   }
 
   /**

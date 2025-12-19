@@ -240,7 +240,7 @@
   <div class="toolbar-divider"></div>
 
   <!-- Merge Cells -->
-  @if (hasSelection) {
+  @if (hasSelection || isMerged) {
     <button
       mat-icon-button
       matTooltip="{{ isMerged ? 'Annuler la fusion' : 'Fusionner les cellules' }}"
