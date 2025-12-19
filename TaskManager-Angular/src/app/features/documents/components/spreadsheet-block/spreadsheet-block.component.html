@@ -197,7 +197,7 @@
                   [style.border-left]="getCellBorderLeft(row, col)"
                   [style.background-color]="getCellBackgroundColor(row, col)"
                   [style.color]="getCellTextColor(row, col)"
-                  (click)="onCellClick(row, col, $event)"
+                  (mousedown)="onCellMouseDown(row, col, $event)"
                   (dblclick)="onCellDoubleClick(row, col)"
                 >
                   @if (isEditingCell(row, col)) {

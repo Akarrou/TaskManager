@@ -681,16 +681,19 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
   // =====================================================================
 
   /**
-   * Handle cell click
+   * Handle cell mousedown - start selection or drag
    */
-  onCellClick(row: number, col: number, event?: MouseEvent) {
+  onCellMouseDown(row: number, col: number, event: MouseEvent) {
+    // Ignore right-click
+    if (event.button !== 0) return;
+
     // Exit editing mode if clicking different cell
     if (this.editingCell()) {
       this.exitEditMode();
     }
 
-    // Update selection
-    if (event?.shiftKey) {
+    // Update selection based on modifier keys
+    if (event.shiftKey) {
       // Extend selection from current anchor (or active cell if no selection)
       const currentSelection = this.selection();
       const anchor = currentSelection?.anchor || this.activeCell() || { row, col };
@@ -700,7 +703,7 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
         focus: { row, col },
       });
     } else {
-      // Single cell selection - set new anchor
+      // Start new selection - set new anchor
       this.selection.set({
         type: 'cell',
         anchor: { row, col },
@@ -711,7 +714,83 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
     // Update active cell AFTER handling selection
     this.activeCell.set({ row, col });
 
+    // Start drag selection
+    this.isDragging.set(true);
+    this.dragStartCell.set({ row, col });
+
+    // Setup global mouse listeners for drag
+    const onMouseMove = (e: MouseEvent) => this.onCellDragMove(e);
+    const onMouseUp = () => {
+      this.onCellDragEnd();
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+
     // Update formula bar
+    this.updateFormulaBar();
+
+    // Prevent text selection during drag
+    event.preventDefault();
+  }
+
+  /**
+   * Handle cell drag move - extend selection
+   */
+  private onCellDragMove(event: MouseEvent) {
+    if (!this.isDragging()) return;
+
+    const wrapper = this.gridWrapperRef?.nativeElement;
+    if (!wrapper) return;
+
+    // Get mouse position relative to grid
+    const rect = wrapper.getBoundingClientRect();
+    const x = event.clientX - rect.left + wrapper.scrollLeft - this.ROW_HEADER_WIDTH;
+    const y = event.clientY - rect.top + wrapper.scrollTop - this.COL_HEADER_HEIGHT;
+
+    // Calculate cell under cursor
+    const colWidth = this.activeSheet()?.defaultColWidth || this.DEFAULT_COL_WIDTH;
+    const rowHeight = this.activeSheet()?.defaultRowHeight || this.DEFAULT_ROW_HEIGHT;
+
+    const col = Math.max(0, Math.floor(x / colWidth));
+    const row = Math.max(0, Math.floor(y / rowHeight));
+
+    // Update selection focus
+    const startCell = this.dragStartCell();
+    if (startCell) {
+      this.selection.set({
+        type: 'range',
+        anchor: startCell,
+        focus: { row, col },
+      });
+
+      // Update active cell to current position
+      this.activeCell.set({ row, col });
+
+      // Force change detection
+      this.cdr.detectChanges();
+    }
+  }
+
+  /**
+   * Handle cell drag end
+   */
+  private onCellDragEnd() {
+    this.isDragging.set(false);
+    this.dragStartCell.set(null);
+
+    // Update formula bar with active cell
+    this.updateFormulaBar();
+  }
+
+  /**
+   * Handle cell click (for backward compatibility and simple clicks)
+   */
+  onCellClick(row: number, col: number, event?: MouseEvent) {
+    // This is now handled by onCellMouseDown, but keep for double-click handling
+    // The click event fires after mousedown/mouseup, so we only update formula bar
     this.updateFormulaBar();
   }
 
@@ -1021,19 +1100,15 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
    * Handle format action from toolbar
    */
   onFormatChange(action: FormatAction): void {
-    console.log('[onFormatChange] Called with action:', action.type);
     const active = this.activeCell();
     if (!active) {
-      console.log('[onFormatChange] No active cell - aborting');
       return;
     }
 
     const sel = this.selection();
-    console.log('[onFormatChange] Active cell:', active, 'Selection:', sel);
 
     // Get all cells to format (single cell or range)
     const cellsToFormat = this.getSelectedCellAddresses(sel);
-    console.log('[onFormatChange] Cells to format:', cellsToFormat);
 
     switch (action.type) {
       case 'bold':
@@ -1175,9 +1250,7 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
    * Apply borders to selected cells
    */
   private applyBorders(cells: CellAddress[], style: 'all' | 'outer' | 'none' | 'top' | 'bottom' | 'left' | 'right'): void {
-    console.log('[applyBorders] Called with', cells.length, 'cells, style:', style);
     if (cells.length === 0) {
-      console.log('[applyBorders] No cells - returning');
       return;
     }
 
@@ -1206,10 +1279,15 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
 
       switch (style) {
         case 'all':
-          newFormat.borderTop = border;
-          newFormat.borderRight = border;
+          // Apply borders smartly to avoid doubling at cell intersections
+          // Top border: only for first row of selection
+          if (addr.row === range.start.row) newFormat.borderTop = border;
+          // Left border: only for first column of selection
+          if (addr.col === range.start.col) newFormat.borderLeft = border;
+          // Bottom border: always (each cell has its bottom)
           newFormat.borderBottom = border;
-          newFormat.borderLeft = border;
+          // Right border: always (each cell has its right)
+          newFormat.borderRight = border;
           break;
         case 'outer':
           // Top row
@@ -1222,16 +1300,20 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
           if (addr.col === range.end.col) newFormat.borderRight = border;
           break;
         case 'top':
-          newFormat.borderTop = border;
+          // Only apply to cells in the top row of selection
+          if (addr.row === range.start.row) newFormat.borderTop = border;
           break;
         case 'bottom':
-          newFormat.borderBottom = border;
+          // Only apply to cells in the bottom row of selection
+          if (addr.row === range.end.row) newFormat.borderBottom = border;
           break;
         case 'left':
-          newFormat.borderLeft = border;
+          // Only apply to cells in the left column of selection
+          if (addr.col === range.start.col) newFormat.borderLeft = border;
           break;
         case 'right':
-          newFormat.borderRight = border;
+          // Only apply to cells in the right column of selection
+          if (addr.col === range.end.col) newFormat.borderRight = border;
           break;
         case 'none':
           delete newFormat.borderTop;
@@ -1256,14 +1338,12 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
       };
 
       newCells.set(key, updatedCell);
-      console.log('[applyBorders] Stored cell with format:', key, newFormat);
       this.queueCellUpdate(sheetId, addr.row, addr.col, { format: newFormat });
     });
 
     this.cells.set(newCells);
     // Increment version to force template re-render
     this.cellsVersion.update(v => v + 1);
-    console.log('[applyBorders] Done. Cells signal updated, version:', this.cellsVersion());
     // Force immediate change detection since we use OnPush
     this.cdr.detectChanges();
   }
@@ -1450,11 +1530,7 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
       parts.push('word-wrap: break-word');
     }
 
-    const result = parts.join('; ');
-    if (format.borderTop || format.borderRight || format.borderBottom || format.borderLeft) {
-      console.log('[getCellStyleString] Style for', row, col, ':', result);
-    }
-    return result;
+    return parts.join('; ');
   }
 
   /**
@@ -1465,9 +1541,7 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
     const cell = this.cells().get(key);
     const border = cell?.format?.borderTop;
     if (!border) return null;
-    const style = `${border.width}px ${border.style} ${border.color}`;
-    console.log('[getCellBorderTop]', row, col, style);
-    return style;
+    return `${border.width}px ${border.style} ${border.color}`;
   }
 
   getCellBorderRight(row: number, col: number): string | null {
@@ -1541,7 +1615,6 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
     // Borders - override CSS defaults
     if (format.borderTop) {
       styles['border-top'] = `${format.borderTop.width}px ${format.borderTop.style} ${format.borderTop.color}`;
-      console.log('[getCellStyles] Adding border-top:', styles['border-top']);
     }
     if (format.borderRight) {
       styles['border-right'] = `${format.borderRight.width}px ${format.borderRight.style} ${format.borderRight.color}`;
@@ -1551,10 +1624,6 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
     }
     if (format.borderLeft) {
       styles['border-left'] = `${format.borderLeft.width}px ${format.borderLeft.style} ${format.borderLeft.color}`;
-    }
-
-    if (format.borderTop || format.borderRight || format.borderBottom || format.borderLeft) {
-      console.log('[getCellStyles] Final styles with borders:', styles);
     }
 
     // Wrap text
@@ -1793,6 +1862,10 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
   // =====================================================================
   // Column/Row Resizing
   // =====================================================================
+
+  // Drag selection state
+  private isDragging = signal(false);
+  private dragStartCell = signal<CellAddress | null>(null);
 
   // Resize state
   private resizing = signal<{
