@@ -72,15 +72,15 @@ body {
 
 // Force remove all borders and outlines from TipTap editor
 // This overrides Tailwind's default focus styles
-// EXCEPTIONS (handled via override rules below):
+// EXCEPTIONS (handled via :not() selectors):
 // - .has-comments blocks which need border-left for comment indicators
-// - spreadsheet components which need their grid borders
+// - .spreadsheet-container elements which need their grid borders
 .ProseMirror,
-.ProseMirror *:not(.has-comments):not(.block-comment-indicator),
+.ProseMirror *:not(.has-comments):not(.block-comment-indicator):not(.spreadsheet-container):not(.spreadsheet-container *),
 tiptap-editor,
-tiptap-editor *:not(.has-comments):not(.block-comment-indicator),
+tiptap-editor *:not(.has-comments):not(.block-comment-indicator):not(.spreadsheet-container):not(.spreadsheet-container *),
 .editor-wrapper,
-.editor-wrapper *:not(.has-comments):not(.block-comment-indicator),
+.editor-wrapper *:not(.has-comments):not(.block-comment-indicator):not(.spreadsheet-container):not(.spreadsheet-container *),
 [contenteditable],
 [contenteditable="true"] {
   outline: 0 !important;
@@ -105,6 +105,16 @@ tiptap-editor *:not(.has-comments):not(.block-comment-indicator),
   }
 }
 
+// Restore borders for spreadsheet cells (override the nuclear option above)
+.spreadsheet-container,
+.spreadsheet-container .cell,
+.spreadsheet-container .column-header,
+.spreadsheet-container .row-header,
+.spreadsheet-container .corner-cell {
+  border: initial;
+  border-width: initial;
+}
+
 // Additional nuclear option - override any Tailwind ring utilities
 .editor-wrapper,
 tiptap-editor,
@@ -122,6 +132,7 @@ tiptap-editor,
 // ============================================================================
 // The global TipTap reset removes all borders. We need to forcefully re-enable
 // them for the spreadsheet component with higher specificity.
+// NOTE: We do NOT use !important on .cell borders to allow inline styles to override them.
 
 .ProseMirror .spreadsheet-container,
 tiptap-editor .spreadsheet-container,
@@ -129,17 +140,17 @@ tiptap-editor .spreadsheet-container,
   // Allow borders on the container
   border: 1px solid #e5e7eb !important;
 
-  // Force all spreadsheet elements to have their borders
-  .cell,
+  // Force headers to have their borders (these don't need inline overrides)
   .column-header,
   .row-header,
   .corner-cell {
     border: 1px solid #d1d5db !important;
   }
 
+  // Cell borders - NO !important so inline styles can override
   .cell {
-    border-top: none !important;
-    border-left: none !important;
+    border-right: 1px solid #d1d5db;
+    border-bottom: 1px solid #d1d5db;
   }
 
   .grid-wrapper {

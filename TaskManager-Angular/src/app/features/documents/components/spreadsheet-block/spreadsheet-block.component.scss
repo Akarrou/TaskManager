@@ -228,9 +228,9 @@ $frozen-bg: #f0f9ff; // blue-50
   min-width: 100px;
   height: 24px;
   padding: 0 4px;
-  border: 1px solid $border-color;
-  border-top: none;
-  border-left: none;
+  // Default grid borders (light gray, will be overridden by inline styles if present)
+  border-right: 1px solid $border-color;
+  border-bottom: 1px solid $border-color;
   background: white;
   overflow: hidden;
   cursor: cell;

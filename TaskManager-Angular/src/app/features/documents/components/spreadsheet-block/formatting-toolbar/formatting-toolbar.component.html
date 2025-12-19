@@ -124,8 +124,10 @@
     mat-icon-button
     [matMenuTriggerFor]="bordersMenu"
     matTooltip="Bordures"
+    class="color-btn"
   >
     <mat-icon>border_all</mat-icon>
+    <div class="color-indicator border-color-indicator" [style.background-color]="currentBorderColor"></div>
   </button>
   <mat-menu #bordersMenu="matMenu">
     <button mat-menu-item (click)="setBorders('all')">
@@ -153,10 +155,31 @@
       <span>Bordure droite</span>
     </button>
     <mat-divider></mat-divider>
+    <button mat-menu-item [matMenuTriggerFor]="borderColorMenu">
+      <mat-icon>palette</mat-icon>
+      <span>Couleur de bordure</span>
+      <div class="border-color-preview" [style.background-color]="currentBorderColor"></div>
+    </button>
+    <mat-divider></mat-divider>
     <button mat-menu-item (click)="setBorders('none')">
       <mat-icon>border_clear</mat-icon>
       <span>Effacer les bordures</span>
     </button>
+  </mat-menu>
+
+  <!-- Border Color Submenu -->
+  <mat-menu #borderColorMenu="matMenu" class="color-picker-menu">
+    <div class="color-grid" (click)="$event.stopPropagation()">
+      @for (color of borderColors; track color) {
+        <button
+          class="color-swatch"
+          [style.background-color]="color"
+          [class.selected]="color === currentBorderColor"
+          (click)="setBorderColor(color)"
+          [matTooltip]="color"
+        ></button>
+      }
+    </div>
   </mat-menu>
 
   <div class="toolbar-divider"></div>

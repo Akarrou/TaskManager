@@ -144,3 +144,13 @@
 ::ng-deep .mat-mdc-menu-item.active {
   @apply bg-blue-50;
 }
+
+// Border color preview in menu item
+.border-color-preview {
+  @apply w-4 h-4 rounded border border-gray-300 ml-auto;
+}
+
+// Border color indicator (bottom of button)
+.border-color-indicator {
+  @apply border border-gray-400;
+}

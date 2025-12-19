@@ -610,9 +610,10 @@ export const NUMBER_FORMATS: Record<NumberFormatPattern, string> = {
 
 /**
  * Default border style
+ * Using 2px width to distinguish from grid lines (which are 1px gray)
  */
 export const DEFAULT_BORDER_STYLE: BorderStyle = {
-  width: 1,
+  width: 2,
   style: 'solid',
   color: '#000000',
 };

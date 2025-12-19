@@ -9,6 +9,7 @@ import {
   signal,
   computed,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   ViewEncapsulation,
   ElementRef,
   ViewChildren,
@@ -82,6 +83,7 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
   private ioService = inject(SpreadsheetIOService);
   private dialog = inject(MatDialog);
   private ngZone = inject(NgZone);
+  private cdr = inject(ChangeDetectorRef);
   private destroy$ = new Subject<void>();
 
   // Reference to cell input for focus management
@@ -110,6 +112,8 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
 
   // Cell data
   readonly cells = signal<Map<string, SpreadsheetCell>>(new Map());
+  // Version signal to force re-render when cells change
+  readonly cellsVersion = signal(0);
 
   // Selection state
   readonly activeCell = signal<CellAddress | null>(null);
@@ -685,26 +689,27 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
       this.exitEditMode();
     }
 
-    // Update active cell
-    this.activeCell.set({ row, col });
-
     // Update selection
-    if (event?.shiftKey && this.activeCell()) {
-      // Extend selection
-      const anchor = this.selection()?.anchor || this.activeCell()!;
+    if (event?.shiftKey) {
+      // Extend selection from current anchor (or active cell if no selection)
+      const currentSelection = this.selection();
+      const anchor = currentSelection?.anchor || this.activeCell() || { row, col };
       this.selection.set({
         type: 'range',
         anchor,
         focus: { row, col },
       });
     } else {
-      // Single cell selection
+      // Single cell selection - set new anchor
       this.selection.set({
         type: 'cell',
         anchor: { row, col },
         focus: { row, col },
       });
     }
+
+    // Update active cell AFTER handling selection
+    this.activeCell.set({ row, col });
 
     // Update formula bar
     this.updateFormulaBar();
@@ -1016,13 +1021,19 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
    * Handle format action from toolbar
    */
   onFormatChange(action: FormatAction): void {
+    console.log('[onFormatChange] Called with action:', action.type);
     const active = this.activeCell();
-    if (!active) return;
+    if (!active) {
+      console.log('[onFormatChange] No active cell - aborting');
+      return;
+    }
 
     const sel = this.selection();
+    console.log('[onFormatChange] Active cell:', active, 'Selection:', sel);
 
     // Get all cells to format (single cell or range)
     const cellsToFormat = this.getSelectedCellAddresses(sel);
+    console.log('[onFormatChange] Cells to format:', cellsToFormat);
 
     switch (action.type) {
       case 'bold':
@@ -1057,6 +1068,9 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
         break;
       case 'borders':
         this.applyBorders(cellsToFormat, action.style);
+        break;
+      case 'borderColor':
+        this.applyBorderColor(cellsToFormat, action.color);
         break;
       case 'merge':
         this.mergeCells(sel);
@@ -1161,13 +1175,25 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
    * Apply borders to selected cells
    */
   private applyBorders(cells: CellAddress[], style: 'all' | 'outer' | 'none' | 'top' | 'bottom' | 'left' | 'right'): void {
+    console.log('[applyBorders] Called with', cells.length, 'cells, style:', style);
+    if (cells.length === 0) {
+      console.log('[applyBorders] No cells - returning');
+      return;
+    }
+
     const sheetId = this.activeSheetId();
     const newCells = new Map(this.cells());
-    const sel = this.selection();
 
-    if (!sel) return;
+    // Calculate range from cells array (works even without selection)
+    const minRow = Math.min(...cells.map(c => c.row));
+    const maxRow = Math.max(...cells.map(c => c.row));
+    const minCol = Math.min(...cells.map(c => c.col));
+    const maxCol = Math.max(...cells.map(c => c.col));
 
-    const range = normalizeRange({ start: sel.anchor, end: sel.focus });
+    const range = {
+      start: { row: minRow, col: minCol },
+      end: { row: maxRow, col: maxCol },
+    };
 
     cells.forEach(addr => {
       const key = getCellKey({ ...addr, sheet: sheetId });
@@ -1230,10 +1256,78 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
       };
 
       newCells.set(key, updatedCell);
+      console.log('[applyBorders] Stored cell with format:', key, newFormat);
       this.queueCellUpdate(sheetId, addr.row, addr.col, { format: newFormat });
     });
 
     this.cells.set(newCells);
+    // Increment version to force template re-render
+    this.cellsVersion.update(v => v + 1);
+    console.log('[applyBorders] Done. Cells signal updated, version:', this.cellsVersion());
+    // Force immediate change detection since we use OnPush
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Apply border color to existing borders on selected cells
+   */
+  private applyBorderColor(cells: CellAddress[], color: string): void {
+    if (cells.length === 0) return;
+
+    const sheetId = this.activeSheetId();
+    const newCells = new Map(this.cells());
+
+    cells.forEach(addr => {
+      const key = getCellKey({ ...addr, sheet: sheetId });
+      const existingCell = newCells.get(key);
+      const existingFormat = existingCell?.format || {};
+
+      const newFormat: CellFormat = { ...existingFormat };
+
+      // Update color on existing borders, or create new borders with the color
+      if (newFormat.borderTop) {
+        newFormat.borderTop = { ...newFormat.borderTop, color };
+      }
+      if (newFormat.borderRight) {
+        newFormat.borderRight = { ...newFormat.borderRight, color };
+      }
+      if (newFormat.borderBottom) {
+        newFormat.borderBottom = { ...newFormat.borderBottom, color };
+      }
+      if (newFormat.borderLeft) {
+        newFormat.borderLeft = { ...newFormat.borderLeft, color };
+      }
+
+      // If no borders exist, create all borders with the selected color
+      if (!newFormat.borderTop && !newFormat.borderRight && !newFormat.borderBottom && !newFormat.borderLeft) {
+        const border = { ...DEFAULT_BORDER_STYLE, color };
+        newFormat.borderTop = border;
+        newFormat.borderRight = border;
+        newFormat.borderBottom = border;
+        newFormat.borderLeft = border;
+      }
+
+      const updatedCell: SpreadsheetCell = {
+        id: existingCell?.id || crypto.randomUUID(),
+        spreadsheet_id: this.spreadsheetId,
+        sheet_id: sheetId,
+        row: addr.row,
+        col: addr.col,
+        raw_value: existingCell?.raw_value ?? null,
+        formula: existingCell?.formula,
+        computed_value: existingCell?.computed_value,
+        format: newFormat,
+        created_at: existingCell?.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      newCells.set(key, updatedCell);
+      this.queueCellUpdate(sheetId, addr.row, addr.col, { format: newFormat });
+    });
+
+    this.cells.set(newCells);
+    this.cellsVersion.update(v => v + 1);
+    this.cdr.detectChanges();
   }
 
   /**
@@ -1305,9 +1399,122 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
   }
 
   /**
+   * Get cell inline styles based on format as a style string
+   * Returns a CSS string like "border-top: 2px solid red; color: blue;"
+   */
+  getCellStyleString(row: number, col: number): string {
+    const key = getCellKey({ row, col, sheet: this.activeSheetId() });
+    const cell = this.cells().get(key);
+    const format = cell?.format;
+
+    if (!format) return '';
+
+    const parts: string[] = [];
+
+    // Text styling
+    if (format.fontFamily) parts.push(`font-family: ${format.fontFamily}`);
+    if (format.fontSize) parts.push(`font-size: ${format.fontSize}px`);
+    if (format.fontWeight) parts.push(`font-weight: ${format.fontWeight}`);
+    if (format.fontStyle) parts.push(`font-style: ${format.fontStyle}`);
+    if (format.textDecoration) parts.push(`text-decoration: ${format.textDecoration}`);
+    if (format.textColor) parts.push(`color: ${format.textColor}`);
+
+    // Cell styling
+    if (format.backgroundColor && format.backgroundColor !== 'transparent') {
+      parts.push(`background-color: ${format.backgroundColor}`);
+    }
+    if (format.textAlign) {
+      parts.push(`justify-content: ${format.textAlign === 'left' ? 'flex-start' : format.textAlign === 'right' ? 'flex-end' : 'center'}`);
+    }
+    if (format.verticalAlign) {
+      parts.push(`align-items: ${format.verticalAlign === 'top' ? 'flex-start' : format.verticalAlign === 'bottom' ? 'flex-end' : 'center'}`);
+    }
+
+    // Borders
+    if (format.borderTop) {
+      parts.push(`border-top: ${format.borderTop.width}px ${format.borderTop.style} ${format.borderTop.color}`);
+    }
+    if (format.borderRight) {
+      parts.push(`border-right: ${format.borderRight.width}px ${format.borderRight.style} ${format.borderRight.color}`);
+    }
+    if (format.borderBottom) {
+      parts.push(`border-bottom: ${format.borderBottom.width}px ${format.borderBottom.style} ${format.borderBottom.color}`);
+    }
+    if (format.borderLeft) {
+      parts.push(`border-left: ${format.borderLeft.width}px ${format.borderLeft.style} ${format.borderLeft.color}`);
+    }
+
+    // Wrap text
+    if (format.wrapText) {
+      parts.push('white-space: normal');
+      parts.push('word-wrap: break-word');
+    }
+
+    const result = parts.join('; ');
+    if (format.borderTop || format.borderRight || format.borderBottom || format.borderLeft) {
+      console.log('[getCellStyleString] Style for', row, col, ':', result);
+    }
+    return result;
+  }
+
+  /**
+   * Get individual border styles for direct binding
+   */
+  getCellBorderTop(row: number, col: number): string | null {
+    const key = getCellKey({ row, col, sheet: this.activeSheetId() });
+    const cell = this.cells().get(key);
+    const border = cell?.format?.borderTop;
+    if (!border) return null;
+    const style = `${border.width}px ${border.style} ${border.color}`;
+    console.log('[getCellBorderTop]', row, col, style);
+    return style;
+  }
+
+  getCellBorderRight(row: number, col: number): string | null {
+    const key = getCellKey({ row, col, sheet: this.activeSheetId() });
+    const cell = this.cells().get(key);
+    const border = cell?.format?.borderRight;
+    if (!border) return null;
+    return `${border.width}px ${border.style} ${border.color}`;
+  }
+
+  getCellBorderBottom(row: number, col: number): string | null {
+    const key = getCellKey({ row, col, sheet: this.activeSheetId() });
+    const cell = this.cells().get(key);
+    const border = cell?.format?.borderBottom;
+    if (!border) return null;
+    return `${border.width}px ${border.style} ${border.color}`;
+  }
+
+  getCellBorderLeft(row: number, col: number): string | null {
+    const key = getCellKey({ row, col, sheet: this.activeSheetId() });
+    const cell = this.cells().get(key);
+    const border = cell?.format?.borderLeft;
+    if (!border) return null;
+    return `${border.width}px ${border.style} ${border.color}`;
+  }
+
+  getCellBackgroundColor(row: number, col: number): string | null {
+    const key = getCellKey({ row, col, sheet: this.activeSheetId() });
+    const cell = this.cells().get(key);
+    const bg = cell?.format?.backgroundColor;
+    if (!bg || bg === 'transparent') return null;
+    return bg;
+  }
+
+  getCellTextColor(row: number, col: number): string | null {
+    const key = getCellKey({ row, col, sheet: this.activeSheetId() });
+    const cell = this.cells().get(key);
+    return cell?.format?.textColor || null;
+  }
+
+  /**
    * Get cell inline styles based on format
+   * Note: reading cellsVersion() to ensure this is re-evaluated when cells change
    */
   getCellStyles(row: number, col: number): Record<string, string> {
+    // Read version signal to trigger re-evaluation when cells change
+    const _version = this.cellsVersion();
     const key = getCellKey({ row, col, sheet: this.activeSheetId() });
     const cell = this.cells().get(key);
     const format = cell?.format;
@@ -1331,11 +1538,24 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
     if (format.textAlign) styles['justify-content'] = format.textAlign === 'left' ? 'flex-start' : format.textAlign === 'right' ? 'flex-end' : 'center';
     if (format.verticalAlign) styles['align-items'] = format.verticalAlign === 'top' ? 'flex-start' : format.verticalAlign === 'bottom' ? 'flex-end' : 'center';
 
-    // Borders
-    if (format.borderTop) styles['border-top'] = `${format.borderTop.width}px ${format.borderTop.style} ${format.borderTop.color}`;
-    if (format.borderRight) styles['border-right'] = `${format.borderRight.width}px ${format.borderRight.style} ${format.borderRight.color}`;
-    if (format.borderBottom) styles['border-bottom'] = `${format.borderBottom.width}px ${format.borderBottom.style} ${format.borderBottom.color}`;
-    if (format.borderLeft) styles['border-left'] = `${format.borderLeft.width}px ${format.borderLeft.style} ${format.borderLeft.color}`;
+    // Borders - override CSS defaults
+    if (format.borderTop) {
+      styles['border-top'] = `${format.borderTop.width}px ${format.borderTop.style} ${format.borderTop.color}`;
+      console.log('[getCellStyles] Adding border-top:', styles['border-top']);
+    }
+    if (format.borderRight) {
+      styles['border-right'] = `${format.borderRight.width}px ${format.borderRight.style} ${format.borderRight.color}`;
+    }
+    if (format.borderBottom) {
+      styles['border-bottom'] = `${format.borderBottom.width}px ${format.borderBottom.style} ${format.borderBottom.color}`;
+    }
+    if (format.borderLeft) {
+      styles['border-left'] = `${format.borderLeft.width}px ${format.borderLeft.style} ${format.borderLeft.color}`;
+    }
+
+    if (format.borderTop || format.borderRight || format.borderBottom || format.borderLeft) {
+      console.log('[getCellStyles] Final styles with borders:', styles);
+    }
 
     // Wrap text
     if (format.wrapText) {

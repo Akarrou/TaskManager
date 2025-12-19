@@ -191,7 +191,12 @@
                   [style.width.px]="getColumnWidth(col)"
                   [style.min-width.px]="getColumnWidth(col)"
                   [style.height.px]="getRowHeight(row)"
-                  [ngStyle]="getCellStyles(row, col)"
+                  [style.border-top]="getCellBorderTop(row, col)"
+                  [style.border-right]="getCellBorderRight(row, col)"
+                  [style.border-bottom]="getCellBorderBottom(row, col)"
+                  [style.border-left]="getCellBorderLeft(row, col)"
+                  [style.background-color]="getCellBackgroundColor(row, col)"
+                  [style.color]="getCellTextColor(row, col)"
                   (click)="onCellClick(row, col, $event)"
                   (dblclick)="onCellDoubleClick(row, col)"
                 >

@@ -34,6 +34,7 @@ export type FormatAction =
   | { type: 'numberFormat'; format: NumberFormatPattern }
   | { type: 'fontSize'; size: number }
   | { type: 'borders'; style: 'all' | 'outer' | 'none' | 'top' | 'bottom' | 'left' | 'right' }
+  | { type: 'borderColor'; color: string }
   | { type: 'merge' }
   | { type: 'unmerge' }
   | { type: 'wrapText' };
@@ -53,6 +54,15 @@ const COLORS = [
  * Font sizes available
  */
 const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72];
+
+/**
+ * Border colors - common colors for border styling
+ */
+const BORDER_COLORS = [
+  '#000000', '#434343', '#666666', '#999999', '#b7b7b7',
+  '#980000', '#ff0000', '#ff9900', '#ffff00', '#00ff00',
+  '#00ffff', '#4a86e8', '#0000ff', '#9900ff', '#ff00ff',
+];
 
 /**
  * FormattingToolbarComponent
@@ -83,6 +93,7 @@ export class FormattingToolbarComponent {
 
   readonly colors = COLORS;
   readonly fontSizes = FONT_SIZES;
+  readonly borderColors = BORDER_COLORS;
 
   readonly numberFormats: { label: string; value: NumberFormatPattern; example: string }[] = [
     { label: 'Automatique', value: 'general', example: '1234.5' },
@@ -134,6 +145,17 @@ export class FormattingToolbarComponent {
     return this.currentFormat?.numberFormat || 'general';
   }
 
+  get currentBorderColor(): string {
+    // Get border color from any border (prefer top, then right, bottom, left)
+    return (
+      this.currentFormat?.borderTop?.color ||
+      this.currentFormat?.borderRight?.color ||
+      this.currentFormat?.borderBottom?.color ||
+      this.currentFormat?.borderLeft?.color ||
+      '#000000'
+    );
+  }
+
   // Format actions
   toggleBold(): void {
     this.formatChange.emit({ type: 'bold' });
@@ -177,6 +199,10 @@ export class FormattingToolbarComponent {
 
   setBorders(style: 'all' | 'outer' | 'none' | 'top' | 'bottom' | 'left' | 'right'): void {
     this.formatChange.emit({ type: 'borders', style });
+  }
+
+  setBorderColor(color: string): void {
+    this.formatChange.emit({ type: 'borderColor', color });
   }
 
   toggleMerge(): void {
