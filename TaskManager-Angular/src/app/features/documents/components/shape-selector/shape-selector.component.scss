@@ -1,0 +1,42 @@
+.shape-selector {
+  @apply grid grid-cols-3 gap-2 p-2;
+}
+
+.shape-option {
+  @apply flex items-center justify-center p-2 rounded-lg;
+  @apply border-2 border-gray-200 bg-white;
+  @apply hover:border-blue-300 hover:bg-blue-50;
+  @apply transition-all duration-150 cursor-pointer;
+  width: 56px;
+  height: 44px;
+
+  &.selected {
+    @apply border-blue-500 bg-blue-50;
+
+    .shape-preview path {
+      fill: #3b82f6;
+      stroke: #1e40af;
+    }
+  }
+
+  &:focus {
+    @apply outline-none ring-2 ring-blue-500 ring-offset-1;
+  }
+}
+
+.shape-preview {
+  width: 40px;
+  height: 30px;
+
+  path {
+    fill: #e2e8f0;
+    stroke: #94a3b8;
+    stroke-width: 1.5;
+    transition: fill 0.15s, stroke 0.15s;
+  }
+
+  .shape-option:hover & path {
+    fill: #bfdbfe;
+    stroke: #3b82f6;
+  }
+}

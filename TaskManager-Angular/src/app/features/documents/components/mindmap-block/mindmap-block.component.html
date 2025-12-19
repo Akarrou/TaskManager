@@ -109,6 +109,48 @@
       >
         <mat-icon>add_circle</mat-icon>
       </button>
+
+      <mat-divider vertical class="toolbar-divider"></mat-divider>
+
+      <!-- Add sticky note button -->
+      <button
+        mat-icon-button
+        (click)="addStickyNote()"
+        matTooltip="Ajouter une note (N)"
+      >
+        <mat-icon>sticky_note_2</mat-icon>
+      </button>
+
+      <!-- Node style (when node selected) -->
+      @if (selectedNodeId()) {
+        <button
+          mat-icon-button
+          [matMenuTriggerFor]="styleMenu"
+          matTooltip="Style du noeud"
+        >
+          <mat-icon>format_paint</mat-icon>
+        </button>
+        <mat-menu #styleMenu="matMenu" class="style-menu">
+          <div class="style-menu-content" (click)="$event.stopPropagation()">
+            <div class="style-section">
+              <label class="style-label">Forme</label>
+              <app-shape-selector
+                [selectedShape]="getSelectedNodeShape()"
+                (shapeChange)="setNodeShape($event)"
+              />
+            </div>
+            <mat-divider></mat-divider>
+            <div class="style-section">
+              <label class="style-label">Couleur</label>
+              <app-color-picker
+                [selectedColor]="getSelectedNodeColor()"
+                [showTrigger]="false"
+                (colorChange)="setNodeColor($event)"
+              />
+            </div>
+          </div>
+        </mat-menu>
+      }
     </div>
 
     <div class="toolbar-right">
@@ -173,13 +215,32 @@
   </div>
 
   <!-- Main content area -->
-  <div class="mindmap-content">
+  <div class="mindmap-content" #mindmapContent>
     <!-- Cytoscape Container -->
     <div #cyContainer class="cy-container"></div>
 
     <!-- Navigator (Minimap) -->
     @if (showNavigator()) {
     <div #navigatorContainer class="navigator-container"></div>
+    }
+  </div>
+
+  <!-- Sticky Notes Layer - Outside cy-container to avoid event capture -->
+  <div class="sticky-notes-layer" #stickyNotesLayer>
+    @for (note of stickyNotes(); track note.id) {
+      <app-sticky-note
+        [note]="note"
+        [scale]="currentZoom()"
+        [style.left.px]="getScreenPosition(note.position).x"
+        [style.top.px]="getScreenPosition(note.position).y"
+        [style.z-index]="note.zIndex + 1000"
+        [style.transform]="'scale(' + currentZoom() + ')'"
+        [style.transform-origin]="'top left'"
+        (positionChange)="onStickyNotePositionChange(note.id, $event)"
+        (contentChange)="updateStickyNote(note.id, { content: $event })"
+        (colorChange)="updateStickyNote(note.id, { color: $event })"
+        (deleteNote)="deleteStickyNote(note.id)"
+      />
     }
   </div>
 

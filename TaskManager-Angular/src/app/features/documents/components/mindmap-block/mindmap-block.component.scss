@@ -48,11 +48,35 @@
 .mindmap-content {
   @apply relative;
   height: 450px;
+  overflow: hidden;
 }
 
 .cy-container {
   @apply w-full h-full;
   background: linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%);
+}
+
+// Sticky Notes Layer - positioned relative to mindmap-container
+.sticky-notes-layer {
+  position: absolute;
+  top: 48px; // After toolbar
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+
+  // Enable pointer events only on sticky notes
+  app-sticky-note {
+    pointer-events: auto;
+    position: absolute;
+    display: block;
+    cursor: grab;
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
 }
 
 .navigator-container {
@@ -181,4 +205,28 @@
     background-color: #6b7280;
     border-radius: 50%;
   }
+}
+
+// Style menu styles
+::ng-deep .style-menu {
+  .mat-mdc-menu-content {
+    padding: 0;
+  }
+}
+
+.style-menu-content {
+  @apply p-3;
+  min-width: 240px;
+}
+
+.style-section {
+  @apply mb-3;
+
+  &:last-child {
+    @apply mb-0;
+  }
+}
+
+.style-label {
+  @apply block text-xs font-medium text-gray-600 mb-2;
 }

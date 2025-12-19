@@ -62,7 +62,9 @@
       "Bash(xargs kill:*)",
       "Bash(chmod:*)",
       "Bash(./scripts/seed-user.sh:*)",
-      "Bash(pnpm add:*)"
+      "Bash(pnpm add:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs"
     ],
     "deny": [],
     "ask": []

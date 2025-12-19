@@ -1,0 +1,44 @@
+<div class="color-picker">
+  @if (showTrigger) {
+    <button
+      type="button"
+      class="color-trigger"
+      [style.backgroundColor]="selectedColor"
+      (click)="togglePicker()"
+      aria-label="Choisir une couleur"
+    >
+      <mat-icon class="trigger-icon">palette</mat-icon>
+    </button>
+  }
+
+  @if (showPicker() || !showTrigger) {
+    <div class="color-palette" [class.inline]="!showTrigger">
+      <div class="preset-colors">
+        @for (color of presetColors; track color) {
+          <button
+            type="button"
+            class="color-swatch"
+            [style.backgroundColor]="color"
+            [class.selected]="selectedColor === color"
+            (click)="selectColor(color)"
+            [attr.aria-label]="'Couleur ' + color"
+          >
+            @if (selectedColor === color) {
+              <mat-icon class="check-icon">check</mat-icon>
+            }
+          </button>
+        }
+      </div>
+
+      <div class="custom-color">
+        <input
+          type="color"
+          [value]="selectedColor"
+          (change)="onCustomColorChange($event)"
+          class="color-input"
+        />
+        <span class="custom-label">Couleur personnalisee</span>
+      </div>
+    </div>
+  }
+</div>

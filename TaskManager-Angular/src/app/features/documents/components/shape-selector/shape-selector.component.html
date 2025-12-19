@@ -1,0 +1,15 @@
+<div class="shape-selector">
+  @for (shape of shapes; track shape.value) {
+    <button
+      type="button"
+      class="shape-option"
+      [class.selected]="selectedShape === shape.value"
+      (click)="selectShape(shape.value)"
+      [matTooltip]="shape.label"
+    >
+      <svg viewBox="0 0 40 30" class="shape-preview">
+        <path [attr.d]="getShapePath(shape.value)" />
+      </svg>
+    </button>
+  }
+</div>

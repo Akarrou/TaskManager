@@ -39,9 +39,17 @@ import {
   MindmapNode,
   MindmapLayoutType,
   MindmapTheme,
+  MindmapNodeShape,
+  StickyNote,
+  StickyNoteColor,
   createDefaultMindmapData,
+  createDefaultStickyNote,
   getNodeColorByDepth,
+  NODE_PRESET_COLORS,
 } from '../../models/mindmap.model';
+import { StickyNoteComponent } from '../sticky-note/sticky-note.component';
+import { ShapeSelectorComponent } from '../shape-selector/shape-selector.component';
+import { ColorPickerComponent } from '../color-picker/color-picker.component';
 
 // Register extensions
 cytoscape.use(dagre);
@@ -61,6 +69,9 @@ cytoscape.use(navigator);
     MatMenuModule,
     MatTooltipModule,
     MatDividerModule,
+    StickyNoteComponent,
+    ShapeSelectorComponent,
+    ColorPickerComponent,
   ],
   templateUrl: './mindmap-block.component.html',
   styleUrl: './mindmap-block.component.scss',
@@ -101,6 +112,13 @@ export class MindmapBlockComponent
   // Computed
   config = computed(() => this.mindmapData().config);
   nodes = computed(() => this.mindmapData().nodes);
+  stickyNotes = computed(() => this.mindmapData().stickyNotes || []);
+
+  // Viewport transform for sticky notes positioning
+  viewportPan = signal({ x: 0, y: 0 });
+
+  // Expose preset colors for template
+  readonly nodePresetColors = NODE_PRESET_COLORS;
 
   // Cytoscape instance and extensions
   private cy!: cytoscape.Core;
@@ -202,10 +220,16 @@ export class MindmapBlockComponent
       userPanningEnabled: true,
     });
 
-    // Track zoom level
+    // Track zoom level and pan for sticky notes positioning
     this.cy.on('zoom', () => {
       this.ngZone.run(() => {
         this.currentZoom.set(this.cy.zoom());
+      });
+    });
+
+    this.cy.on('pan', () => {
+      this.ngZone.run(() => {
+        this.viewportPan.set(this.cy.pan());
       });
     });
   }
@@ -344,20 +368,22 @@ export class MindmapBlockComponent
         style: {
           'background-color': 'data(color)',
           'border-color': 'data(borderColor)',
-          'border-width': 2,
+          'border-width': 'data(borderWidth)',
+          'border-style': 'data(borderStyle)',
           'label': 'data(label)',
           'text-valign': 'center',
           'text-halign': 'center',
-          'color': '#ffffff',
-          'font-size': '13px',
-          'text-wrap': 'ellipsis',
-          'text-max-width': '120px',
-          'width': 140,
-          'height': 36,
-          'shape': 'round-rectangle',
+          'color': 'data(textColor)',
+          'font-size': 'data(fontSize)',
+          'font-weight': 'data(fontWeight)',
+          'text-wrap': 'wrap',
+          'text-max-width': 'data(textMaxWidth)',
+          'width': 'data(width)',
+          'height': 'data(height)',
+          'shape': 'data(shape)',
           'text-outline-color': 'data(color)',
           'text-outline-width': 1,
-          'transition-property': 'background-color, border-color, width, height',
+          'transition-property': 'background-color, border-color, width, height, shape',
           'transition-duration': 200,
         },
       },
@@ -575,18 +601,33 @@ export class MindmapBlockComponent
     // Add nodes
     data.nodes.forEach((node) => {
       const depth = nodeDepths.get(node.id) || 0;
-      const color = node.style?.backgroundColor || getNodeColorByDepth(depth, data.config.theme);
-      const darkerColor = this.darkenColor(color, 0.2);
+      const nodeStyle = node.style || {};
+      const color = nodeStyle.backgroundColor || getNodeColorByDepth(depth, data.config.theme);
+      const darkerColor = nodeStyle.borderColor || this.darkenColor(color, 0.2);
+
+      // Calculate dimensions based on content
+      const dimensions = this.calculateNodeDimensions(node);
+      const displayLabel = this.getNodeDisplayLabel(node);
 
       elements.push({
         data: {
           id: node.id,
-          label: node.label,
+          label: displayLabel,
           color,
           borderColor: darkerColor,
+          borderWidth: nodeStyle.borderWidth || 2,
+          borderStyle: nodeStyle.borderStyle || 'solid',
+          textColor: nodeStyle.textColor || '#ffffff',
+          fontSize: nodeStyle.fontSize || 13,
+          fontWeight: nodeStyle.fontWeight || 'normal',
           selectedColor: this.darkenColor(color, 0.1),
+          shape: nodeStyle.shape || 'round-rectangle',
+          width: dimensions.width,
+          height: dimensions.height,
+          textMaxWidth: dimensions.width - 20,
           depth,
           parentNodeId: node.parentId,
+          hasRichContent: !!node.content?.description,
         },
       });
     });
@@ -605,6 +646,53 @@ export class MindmapBlockComponent
     });
 
     return elements;
+  }
+
+  /**
+   * Get display label for a node (title + truncated description if present)
+   */
+  private getNodeDisplayLabel(node: MindmapNode): string {
+    if (node.content) {
+      const title = node.content.title || node.label;
+      const desc = node.content.description;
+      if (desc) {
+        const truncated = desc.length > 40 ? desc.slice(0, 37) + '...' : desc;
+        return `${title}\n${truncated}`;
+      }
+      return title;
+    }
+    return node.label;
+  }
+
+  /**
+   * Calculate node dimensions based on content
+   */
+  private calculateNodeDimensions(node: MindmapNode): { width: number; height: number } {
+    // Use custom dimensions if set
+    if (node.customWidth && node.customHeight) {
+      return { width: node.customWidth, height: node.customHeight };
+    }
+
+    const baseWidth = 140;
+    const baseHeight = 36;
+
+    // If autoSize is enabled, calculate based on content
+    if (node.autoSize) {
+      const label = this.getNodeDisplayLabel(node);
+      const lines = label.split('\n');
+      const maxLineLength = Math.max(...lines.map((l) => l.length));
+
+      const charWidth = 7;
+      const lineHeight = 18;
+
+      const width = Math.min(300, Math.max(baseWidth, maxLineLength * charWidth + 40));
+      const height = Math.max(baseHeight, lines.length * lineHeight + 16);
+
+      return { width, height };
+    }
+
+    // Default dimensions
+    return { width: baseWidth, height: baseHeight };
   }
 
   private calculateNodeDepths(data: MindmapData): Map<string, number> {
@@ -1366,6 +1454,239 @@ export class MindmapBlockComponent
           this.collapseNode(selectedId);
         }
         break;
+      case 'n':
+      case 'N':
+        // N to add sticky note
+        if (!event.ctrlKey && !event.metaKey) {
+          event.preventDefault();
+          this.addStickyNote();
+        }
+        break;
+    }
+  }
+
+  // =====================================================================
+  // Sticky Notes Management
+  // =====================================================================
+
+  /**
+   * Add a new sticky note at the center of the viewport
+   */
+  addStickyNote(position?: { x: number; y: number }): void {
+    const data = this.mindmapData();
+    const existingNotes = data.stickyNotes || [];
+
+    // Calculate position at center of viewport if not provided
+    const notePosition = position || this.getCenterPosition();
+
+    const newNote = createDefaultStickyNote(notePosition);
+    newNote.zIndex = existingNotes.length + 1;
+
+    this.mindmapData.set({
+      ...data,
+      stickyNotes: [...existingNotes, newNote],
+    });
+
+    this.changeSubject.next();
+  }
+
+  /**
+   * Get the center position of the current viewport
+   */
+  private getCenterPosition(): { x: number; y: number } {
+    if (!this.cy) {
+      return { x: 100, y: 100 };
+    }
+
+    const pan = this.cy.pan();
+    const zoom = this.cy.zoom();
+    const containerWidth = this.cyContainer.nativeElement.offsetWidth;
+    const containerHeight = this.cyContainer.nativeElement.offsetHeight;
+
+    return {
+      x: (containerWidth / 2 - pan.x) / zoom,
+      y: (containerHeight / 2 - pan.y) / zoom,
+    };
+  }
+
+  /**
+   * Update a sticky note
+   */
+  updateStickyNote(noteId: string, updates: Partial<StickyNote>): void {
+    const data = this.mindmapData();
+    const updatedNotes = (data.stickyNotes || []).map((note) =>
+      note.id === noteId
+        ? { ...note, ...updates, updatedAt: new Date().toISOString() }
+        : note
+    );
+
+    this.mindmapData.set({
+      ...data,
+      stickyNotes: updatedNotes,
+    });
+
+    this.changeSubject.next();
+  }
+
+  /**
+   * Delete a sticky note
+   */
+  deleteStickyNote(noteId: string): void {
+    const data = this.mindmapData();
+    const updatedNotes = (data.stickyNotes || []).filter(
+      (note) => note.id !== noteId
+    );
+
+    this.mindmapData.set({
+      ...data,
+      stickyNotes: updatedNotes,
+    });
+
+    this.changeSubject.next();
+  }
+
+  /**
+   * Convert model position to screen position
+   */
+  getScreenPosition(modelPos: { x: number; y: number }): { x: number; y: number } {
+    const zoom = this.currentZoom();
+    const pan = this.viewportPan();
+    return {
+      x: modelPos.x * zoom + pan.x,
+      y: modelPos.y * zoom + pan.y,
+    };
+  }
+
+  /**
+   * Convert screen position to model position
+   */
+  private screenToModelPosition(screenPos: { x: number; y: number }): { x: number; y: number } {
+    const zoom = this.currentZoom();
+    const pan = this.viewportPan();
+    return {
+      x: (screenPos.x - pan.x) / zoom,
+      y: (screenPos.y - pan.y) / zoom,
+    };
+  }
+
+  /**
+   * Handle sticky note position change from drag
+   */
+  onStickyNotePositionChange(noteId: string, screenDelta: { x: number; y: number }): void {
+    // The delta is already in screen coordinates, convert to model coordinates
+    const zoom = this.currentZoom();
+    const data = this.mindmapData();
+    const note = (data.stickyNotes || []).find((n) => n.id === noteId);
+    if (!note) return;
+
+    const newPosition = {
+      x: note.position.x + screenDelta.x / zoom,
+      y: note.position.y + screenDelta.y / zoom,
+    };
+
+    this.updateStickyNote(noteId, { position: newPosition });
+  }
+
+  // =====================================================================
+  // Node Style Management
+  // =====================================================================
+
+  /**
+   * Get selected node's current shape
+   */
+  getSelectedNodeShape(): MindmapNodeShape {
+    const selectedId = this.selectedNodeId();
+    if (!selectedId) return 'round-rectangle';
+
+    const node = this.nodes().find((n) => n.id === selectedId);
+    return node?.style?.shape || 'round-rectangle';
+  }
+
+  /**
+   * Get selected node's current color
+   */
+  getSelectedNodeColor(): string {
+    const selectedId = this.selectedNodeId();
+    if (!selectedId) return '#3b82f6';
+
+    const node = this.nodes().find((n) => n.id === selectedId);
+    return node?.style?.backgroundColor || '#3b82f6';
+  }
+
+  /**
+   * Set shape for selected node
+   */
+  setNodeShape(shape: MindmapNodeShape): void {
+    const selectedId = this.selectedNodeId();
+    if (!selectedId) return;
+
+    this.updateNodeStyle(selectedId, { shape });
+  }
+
+  /**
+   * Set color for selected node
+   */
+  setNodeColor(color: string): void {
+    const selectedId = this.selectedNodeId();
+    if (!selectedId) return;
+
+    this.updateNodeStyle(selectedId, {
+      backgroundColor: color,
+      borderColor: this.darkenColor(color, 0.2),
+    });
+  }
+
+  /**
+   * Update node style
+   */
+  private updateNodeStyle(
+    nodeId: string,
+    styleUpdates: Partial<MindmapNode['style']>
+  ): void {
+    const data = this.mindmapData();
+    const updatedNodes = data.nodes.map((n) =>
+      n.id === nodeId
+        ? { ...n, style: { ...n.style, ...styleUpdates } }
+        : n
+    );
+
+    this.mindmapData.set({
+      ...data,
+      nodes: updatedNodes,
+    });
+
+    // Update Cytoscape node visually
+    this.ngZone.runOutsideAngular(() => {
+      this.updateCytoscapeNodeStyle(nodeId, styleUpdates);
+    });
+
+    this.changeSubject.next();
+  }
+
+  /**
+   * Update Cytoscape node style without full re-render
+   */
+  private updateCytoscapeNodeStyle(
+    nodeId: string,
+    styleUpdates: Partial<MindmapNode['style']>
+  ): void {
+    if (!this.cy || !styleUpdates) return;
+
+    const cyNode = this.cy.getElementById(nodeId);
+    if (cyNode.length === 0) return;
+
+    if (styleUpdates.backgroundColor) {
+      cyNode.data('color', styleUpdates.backgroundColor);
+      cyNode.data(
+        'selectedColor',
+        this.darkenColor(styleUpdates.backgroundColor, 0.1)
+      );
+    }
+    if (styleUpdates.borderColor) {
+      cyNode.data('borderColor', styleUpdates.borderColor);
+    }
+    if (styleUpdates.shape) {
+      cyNode.data('shape', styleUpdates.shape);
     }
   }
 }

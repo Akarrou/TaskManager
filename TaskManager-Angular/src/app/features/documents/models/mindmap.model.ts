@@ -2,12 +2,28 @@
  * Mind Map Data Models
  *
  * Type definitions for the mind map block integrated in TipTap editor.
- * Uses D3.js tree layout for visualization.
+ * Uses Cytoscape.js for visualization with Miro-like features.
  */
 
 // =====================================================================
-// Node Style Types
+// Node Shape & Style Types
 // =====================================================================
+
+/**
+ * Available node shapes (compatible with Cytoscape.js)
+ */
+export type MindmapNodeShape =
+  | 'round-rectangle' // Default rounded rectangle
+  | 'ellipse' // Oval/circle
+  | 'diamond' // Diamond/rhombus
+  | 'hexagon' // Hexagon
+  | 'round-tag' // Pill/tag shape
+  | 'rectangle'; // Sharp rectangle
+
+/**
+ * Border style options
+ */
+export type BorderStyle = 'solid' | 'dashed' | 'dotted' | 'double';
 
 /**
  * Style configuration for a mind map node
@@ -18,9 +34,23 @@ export interface MindmapNodeStyle {
   borderColor: string;
   borderWidth: number;
   borderRadius: number;
+  borderStyle: BorderStyle;
   fontSize: number;
   fontWeight: 'normal' | 'bold';
-  shape: 'rectangle' | 'rounded' | 'ellipse' | 'pill';
+  shape: MindmapNodeShape;
+}
+
+// =====================================================================
+// Rich Content Types
+// =====================================================================
+
+/**
+ * Rich content for a node (title + description + formatted content)
+ */
+export interface MindmapNodeContent {
+  title: string; // Primary label (required)
+  description?: string; // Optional subtitle/description
+  formattedContent?: string; // HTML content for rich text (bullet points, bold, etc.)
 }
 
 // =====================================================================
@@ -32,12 +62,17 @@ export interface MindmapNodeStyle {
  */
 export interface MindmapNode {
   id: string;
-  label: string;
+  label: string; // Kept for backwards compatibility
+  content?: MindmapNodeContent; // Rich content (title + description)
   parentId: string | null;
   children?: string[];
   style?: Partial<MindmapNodeStyle>;
   collapsed?: boolean;
   metadata?: Record<string, unknown>;
+  // Sizing options
+  autoSize?: boolean; // Auto-size based on content
+  customWidth?: number; // Custom width override
+  customHeight?: number; // Custom height override
 }
 
 /**
@@ -46,6 +81,35 @@ export interface MindmapNode {
 export interface MindmapLink {
   source: string;
   target: string;
+}
+
+// =====================================================================
+// Sticky Notes Types
+// =====================================================================
+
+/**
+ * Available sticky note colors (Miro-style)
+ */
+export type StickyNoteColor =
+  | 'yellow'
+  | 'pink'
+  | 'blue'
+  | 'green'
+  | 'purple'
+  | 'orange';
+
+/**
+ * Sticky note - free-positioned note on the canvas
+ */
+export interface StickyNote {
+  id: string;
+  content: string;
+  color: StickyNoteColor;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  zIndex: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // =====================================================================
@@ -107,6 +171,7 @@ export interface MindmapViewState {
  */
 export interface MindmapData {
   nodes: MindmapNode[];
+  stickyNotes?: StickyNote[]; // Free-positioned sticky notes
   rootId: string;
   config: MindmapConfig;
   viewState?: MindmapViewState;
@@ -151,9 +216,10 @@ export const DEFAULT_NODE_STYLE: MindmapNodeStyle = {
   borderColor: '#2563eb',
   borderWidth: 2,
   borderRadius: 8,
+  borderStyle: 'solid',
   fontSize: 14,
   fontWeight: 'normal',
-  shape: 'rounded',
+  shape: 'round-rectangle',
 };
 
 export const DEFAULT_ROOT_STYLE: Partial<MindmapNodeStyle> = {
@@ -227,4 +293,68 @@ export function getNodeColorByDepth(
  */
 export function generateMindmapId(): string {
   return 'mm-' + crypto.randomUUID();
+}
+
+// =====================================================================
+// Sticky Note & Node Color Constants
+// =====================================================================
+
+/**
+ * Sticky note color hex values (Miro-style)
+ */
+export const STICKY_NOTE_COLORS: Record<StickyNoteColor, string> = {
+  yellow: '#fef08a',
+  pink: '#fda4af',
+  blue: '#93c5fd',
+  green: '#86efac',
+  purple: '#c4b5fd',
+  orange: '#fed7aa',
+};
+
+/**
+ * Preset colors for node customization
+ */
+export const NODE_PRESET_COLORS = [
+  '#1e40af',
+  '#3b82f6',
+  '#8b5cf6',
+  '#ec4899',
+  '#f97316',
+  '#22c55e',
+  '#0284c7',
+  '#0891b2',
+  '#059669',
+  '#dc2626',
+  '#f59e0b',
+  '#6366f1',
+];
+
+/**
+ * Shape options with labels for UI
+ */
+export const SHAPE_OPTIONS: { value: MindmapNodeShape; label: string }[] = [
+  { value: 'round-rectangle', label: 'Rectangle arrondi' },
+  { value: 'rectangle', label: 'Rectangle' },
+  { value: 'ellipse', label: 'Ellipse' },
+  { value: 'diamond', label: 'Losange' },
+  { value: 'hexagon', label: 'Hexagone' },
+  { value: 'round-tag', label: 'Etiquette' },
+];
+
+/**
+ * Create a default sticky note
+ */
+export function createDefaultStickyNote(
+  position: { x: number; y: number } = { x: 100, y: 100 }
+): StickyNote {
+  return {
+    id: crypto.randomUUID(),
+    content: '',
+    color: 'yellow',
+    position,
+    size: { width: 200, height: 150 },
+    zIndex: 1,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
 }

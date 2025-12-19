@@ -1,0 +1,72 @@
+<div
+  class="sticky-note"
+  [class]="'sticky-note--' + note.color"
+  [style.width.px]="note.size.width"
+  [style.height.px]="note.size.height"
+  cdkDrag
+  [cdkDragDisabled]="editing()"
+  (cdkDragStarted)="onDragStarted($event)"
+  (cdkDragEnded)="onDragEnded($event)"
+>
+  <!-- Header with actions -->
+  <div class="sticky-note__header" cdkDragHandle>
+    <!-- Color picker -->
+    <button
+      type="button"
+      class="action-btn"
+      [matMenuTriggerFor]="colorMenu"
+      (click)="$event.stopPropagation()"
+    >
+      <mat-icon>palette</mat-icon>
+    </button>
+
+    <mat-menu #colorMenu="matMenu" class="color-menu">
+      <div class="color-grid" (click)="$event.stopPropagation()">
+        @for (color of colors; track color) {
+          <button
+            type="button"
+            class="color-option"
+            [style.backgroundColor]="getColorHex(color)"
+            [class.selected]="note.color === color"
+            (click)="selectColor(color)"
+          >
+            @if (note.color === color) {
+              <mat-icon class="check">check</mat-icon>
+            }
+          </button>
+        }
+      </div>
+    </mat-menu>
+
+    <!-- Delete button -->
+    <button
+      type="button"
+      class="action-btn delete-btn"
+      (click)="deleteNote.emit(); $event.stopPropagation()"
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Content -->
+  <div class="sticky-note__content" (click)="startEditing()">
+    @if (editing()) {
+      <textarea
+        #textarea
+        class="note-textarea"
+        [(ngModel)]="note.content"
+        (blur)="onContentBlur()"
+        (input)="onContentChange()"
+        placeholder="Ecrivez ici..."
+      ></textarea>
+    } @else {
+      <div class="note-text">
+        @if (note.content) {
+          {{ note.content }}
+        } @else {
+          <span class="placeholder">Cliquez pour ecrire...</span>
+        }
+      </div>
+    }
+  </div>
+</div>
