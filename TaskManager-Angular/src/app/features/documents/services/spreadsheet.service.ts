@@ -493,6 +493,68 @@ export class SpreadsheetService {
   }
 
   // =====================================================================
+  // Lazy Loading / Viewport-Based Cell Loading
+  // =====================================================================
+
+  /**
+   * Load cells for a specific viewport (for lazy loading with virtual scrolling)
+   * Loads cells within the visible range plus a buffer zone
+   */
+  loadCellsForViewport(
+    spreadsheetId: string,
+    sheetId: string,
+    rowStart: number,
+    rowEnd: number,
+    colStart: number,
+    colEnd: number,
+    buffer: number = 10
+  ): Observable<Map<string, SpreadsheetCell>> {
+    // Expand range with buffer for smooth scrolling
+    const bufferedRange = {
+      start: {
+        row: Math.max(0, rowStart - buffer),
+        col: Math.max(0, colStart - buffer),
+      },
+      end: {
+        row: rowEnd + buffer,
+        col: colEnd + buffer,
+      },
+    };
+
+    return this.loadCells(spreadsheetId, sheetId, bufferedRange);
+  }
+
+  /**
+   * Check if cells exist in a specific range (for determining if lazy load is needed)
+   */
+  cellsExistInRange(
+    currentCells: Map<string, SpreadsheetCell>,
+    sheetId: string,
+    rowStart: number,
+    rowEnd: number,
+    colStart: number,
+    colEnd: number
+  ): boolean {
+    // Check corners and center to determine if range is loaded
+    const checkPoints = [
+      { row: rowStart, col: colStart },
+      { row: rowStart, col: colEnd },
+      { row: rowEnd, col: colStart },
+      { row: rowEnd, col: colEnd },
+      { row: Math.floor((rowStart + rowEnd) / 2), col: Math.floor((colStart + colEnd) / 2) },
+    ];
+
+    // If all check points have been loaded (even if empty), consider the range loaded
+    // We track loaded ranges separately to avoid this approximation
+    return checkPoints.every(point => {
+      const key = getCellKey({ row: point.row, col: point.col, sheet: sheetId });
+      // Check if we've ever tried to load this cell (including null values)
+      // For a more accurate check, the component should track loaded ranges
+      return currentCells.has(key);
+    });
+  }
+
+  // =====================================================================
   // Computed Values (Formula Results Caching)
   // =====================================================================
 

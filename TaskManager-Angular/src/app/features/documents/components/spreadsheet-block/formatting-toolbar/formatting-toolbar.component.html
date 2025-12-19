@@ -1,0 +1,239 @@
+<div class="formatting-toolbar">
+  <!-- Font Size -->
+  <button
+    mat-icon-button
+    [matMenuTriggerFor]="fontSizeMenu"
+    matTooltip="Taille de police"
+    class="font-size-btn"
+  >
+    <span class="font-size-label">{{ currentFontSize }}</span>
+    <mat-icon class="dropdown-icon">arrow_drop_down</mat-icon>
+  </button>
+  <mat-menu #fontSizeMenu="matMenu" class="font-size-menu">
+    @for (size of fontSizes; track size) {
+      <button
+        mat-menu-item
+        (click)="setFontSize(size)"
+        [class.active]="size === currentFontSize"
+      >
+        {{ size }}
+      </button>
+    }
+  </mat-menu>
+
+  <div class="toolbar-divider"></div>
+
+  <!-- Text Formatting -->
+  <button
+    mat-icon-button
+    matTooltip="Gras (Ctrl+B)"
+    [class.active]="isBold"
+    (click)="toggleBold()"
+  >
+    <mat-icon>format_bold</mat-icon>
+  </button>
+
+  <button
+    mat-icon-button
+    matTooltip="Italique (Ctrl+I)"
+    [class.active]="isItalic"
+    (click)="toggleItalic()"
+  >
+    <mat-icon>format_italic</mat-icon>
+  </button>
+
+  <button
+    mat-icon-button
+    matTooltip="Souligné (Ctrl+U)"
+    [class.active]="isUnderline"
+    (click)="toggleUnderline()"
+  >
+    <mat-icon>format_underlined</mat-icon>
+  </button>
+
+  <button
+    mat-icon-button
+    matTooltip="Barré"
+    [class.active]="isStrikethrough"
+    (click)="toggleStrikethrough()"
+  >
+    <mat-icon>strikethrough_s</mat-icon>
+  </button>
+
+  <div class="toolbar-divider"></div>
+
+  <!-- Text Color -->
+  <button
+    mat-icon-button
+    [matMenuTriggerFor]="textColorMenu"
+    matTooltip="Couleur du texte"
+    class="color-btn"
+  >
+    <mat-icon>format_color_text</mat-icon>
+    <div class="color-indicator" [style.background-color]="currentTextColor"></div>
+  </button>
+  <mat-menu #textColorMenu="matMenu" class="color-picker-menu">
+    <div class="color-grid" (click)="$event.stopPropagation()">
+      @for (color of colors; track color) {
+        <button
+          class="color-swatch"
+          [style.background-color]="color"
+          [class.selected]="color === currentTextColor"
+          (click)="setTextColor(color)"
+          [matTooltip]="color"
+        ></button>
+      }
+    </div>
+  </mat-menu>
+
+  <!-- Background Color -->
+  <button
+    mat-icon-button
+    [matMenuTriggerFor]="bgColorMenu"
+    matTooltip="Couleur de remplissage"
+    class="color-btn"
+  >
+    <mat-icon>format_color_fill</mat-icon>
+    <div class="color-indicator" [style.background-color]="currentBackgroundColor"></div>
+  </button>
+  <mat-menu #bgColorMenu="matMenu" class="color-picker-menu">
+    <div class="color-grid" (click)="$event.stopPropagation()">
+      <button
+        class="color-swatch no-color"
+        (click)="setBackgroundColor('transparent')"
+        matTooltip="Aucune couleur"
+      >
+        <mat-icon>format_color_reset</mat-icon>
+      </button>
+      @for (color of colors; track color) {
+        <button
+          class="color-swatch"
+          [style.background-color]="color"
+          [class.selected]="color === currentBackgroundColor"
+          (click)="setBackgroundColor(color)"
+          [matTooltip]="color"
+        ></button>
+      }
+    </div>
+  </mat-menu>
+
+  <div class="toolbar-divider"></div>
+
+  <!-- Borders -->
+  <button
+    mat-icon-button
+    [matMenuTriggerFor]="bordersMenu"
+    matTooltip="Bordures"
+  >
+    <mat-icon>border_all</mat-icon>
+  </button>
+  <mat-menu #bordersMenu="matMenu">
+    <button mat-menu-item (click)="setBorders('all')">
+      <mat-icon>border_all</mat-icon>
+      <span>Toutes les bordures</span>
+    </button>
+    <button mat-menu-item (click)="setBorders('outer')">
+      <mat-icon>border_outer</mat-icon>
+      <span>Bordures extérieures</span>
+    </button>
+    <button mat-menu-item (click)="setBorders('top')">
+      <mat-icon>border_top</mat-icon>
+      <span>Bordure supérieure</span>
+    </button>
+    <button mat-menu-item (click)="setBorders('bottom')">
+      <mat-icon>border_bottom</mat-icon>
+      <span>Bordure inférieure</span>
+    </button>
+    <button mat-menu-item (click)="setBorders('left')">
+      <mat-icon>border_left</mat-icon>
+      <span>Bordure gauche</span>
+    </button>
+    <button mat-menu-item (click)="setBorders('right')">
+      <mat-icon>border_right</mat-icon>
+      <span>Bordure droite</span>
+    </button>
+    <mat-divider></mat-divider>
+    <button mat-menu-item (click)="setBorders('none')">
+      <mat-icon>border_clear</mat-icon>
+      <span>Effacer les bordures</span>
+    </button>
+  </mat-menu>
+
+  <div class="toolbar-divider"></div>
+
+  <!-- Text Alignment -->
+  <button
+    mat-icon-button
+    matTooltip="Aligner à gauche"
+    [class.active]="currentTextAlign === 'left'"
+    (click)="setTextAlign('left')"
+  >
+    <mat-icon>format_align_left</mat-icon>
+  </button>
+
+  <button
+    mat-icon-button
+    matTooltip="Centrer"
+    [class.active]="currentTextAlign === 'center'"
+    (click)="setTextAlign('center')"
+  >
+    <mat-icon>format_align_center</mat-icon>
+  </button>
+
+  <button
+    mat-icon-button
+    matTooltip="Aligner à droite"
+    [class.active]="currentTextAlign === 'right'"
+    (click)="setTextAlign('right')"
+  >
+    <mat-icon>format_align_right</mat-icon>
+  </button>
+
+  <div class="toolbar-divider"></div>
+
+  <!-- Number Format -->
+  <button
+    mat-icon-button
+    [matMenuTriggerFor]="numberFormatMenu"
+    matTooltip="Format de nombre"
+  >
+    <mat-icon>tag</mat-icon>
+  </button>
+  <mat-menu #numberFormatMenu="matMenu" class="number-format-menu">
+    @for (format of numberFormats; track format.value) {
+      <button
+        mat-menu-item
+        (click)="setNumberFormat(format.value)"
+        [class.active]="format.value === currentNumberFormat"
+      >
+        <div class="format-item">
+          <span class="format-label">{{ format.label }}</span>
+          <span class="format-example">{{ format.example }}</span>
+        </div>
+      </button>
+    }
+  </mat-menu>
+
+  <div class="toolbar-divider"></div>
+
+  <!-- Merge Cells -->
+  @if (hasSelection) {
+    <button
+      mat-icon-button
+      matTooltip="{{ isMerged ? 'Annuler la fusion' : 'Fusionner les cellules' }}"
+      [class.active]="isMerged"
+      (click)="toggleMerge()"
+    >
+      <mat-icon>{{ isMerged ? 'call_split' : 'call_merge' }}</mat-icon>
+    </button>
+  }
+
+  <!-- Wrap Text -->
+  <button
+    mat-icon-button
+    matTooltip="Renvoyer à la ligne automatiquement"
+    (click)="toggleWrapText()"
+  >
+    <mat-icon>wrap_text</mat-icon>
+  </button>
+</div>

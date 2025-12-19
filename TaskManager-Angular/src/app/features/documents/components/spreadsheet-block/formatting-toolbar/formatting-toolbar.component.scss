@@ -1,0 +1,146 @@
+// Formatting Toolbar Styles
+
+.formatting-toolbar {
+  @apply flex items-center gap-0.5 px-2 py-1 bg-gray-50 border-b border-gray-200;
+  min-height: 40px;
+  flex-wrap: wrap;
+
+  button {
+    @apply text-gray-600 flex items-center justify-center;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    padding: 0 !important;
+
+    &.active {
+      @apply bg-blue-100 text-blue-700;
+    }
+
+    &:hover:not(.active) {
+      @apply bg-gray-100;
+    }
+
+    mat-icon {
+      @apply text-lg;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      line-height: 1;
+    }
+
+    // Override Material button inner wrapper
+    ::ng-deep .mat-mdc-button-persistent-ripple,
+    ::ng-deep .mdc-button__ripple {
+      border-radius: 4px;
+    }
+
+    ::ng-deep .mat-mdc-button-touch-target {
+      width: 32px;
+      height: 32px;
+    }
+  }
+}
+
+.toolbar-divider {
+  @apply h-6 w-px bg-gray-300 mx-1;
+}
+
+// Font size button
+.font-size-btn {
+  @apply flex items-center gap-0.5;
+  width: auto !important;
+  min-width: 50px !important;
+  padding: 0 4px !important;
+
+  .font-size-label {
+    @apply text-sm font-medium;
+    min-width: 20px;
+    text-align: center;
+  }
+
+  .dropdown-icon {
+    font-size: 18px !important;
+    width: 18px !important;
+    height: 18px !important;
+  }
+}
+
+// Color button with indicator
+.color-btn {
+  @apply relative flex-col !important;
+  gap: 1px !important;
+
+  mat-icon {
+    margin-bottom: 2px;
+  }
+
+  .color-indicator {
+    width: 16px;
+    height: 3px;
+    border-radius: 1px;
+    flex-shrink: 0;
+  }
+}
+
+// Color picker grid
+.color-grid {
+  @apply grid gap-0.5 p-2;
+  grid-template-columns: repeat(10, 1fr);
+  width: 220px;
+
+  .color-swatch {
+    @apply w-5 h-5 rounded cursor-pointer border border-gray-200;
+    transition: transform 0.1s ease;
+
+    &:hover {
+      transform: scale(1.2);
+      z-index: 1;
+    }
+
+    &.selected {
+      @apply ring-2 ring-blue-500 ring-offset-1;
+    }
+
+    &.no-color {
+      @apply flex items-center justify-center bg-white;
+
+      mat-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+        color: #9ca3af;
+      }
+    }
+  }
+}
+
+// Number format menu
+.number-format-menu {
+  .format-item {
+    @apply flex justify-between items-center w-full gap-4;
+
+    .format-label {
+      @apply text-sm;
+    }
+
+    .format-example {
+      @apply text-xs text-gray-400 font-mono;
+    }
+  }
+}
+
+// Font size menu
+.font-size-menu {
+  button {
+    min-height: 32px;
+
+    &.active {
+      @apply bg-blue-50 text-blue-700;
+    }
+  }
+}
+
+// Active states for menu items
+::ng-deep .mat-mdc-menu-item.active {
+  @apply bg-blue-50;
+}

@@ -1,0 +1,108 @@
+// Import Dialog Styles
+
+:host {
+  display: block;
+}
+
+.drop-zone {
+  @apply flex flex-col items-center justify-center p-8 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50;
+  min-height: 200px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+
+  &.dragging {
+    @apply border-blue-500 bg-blue-50;
+  }
+
+  &.has-file {
+    @apply border-green-500 bg-green-50;
+  }
+
+  &:hover:not(.has-file) {
+    @apply border-gray-400 bg-gray-100;
+  }
+}
+
+.upload-icon {
+  @apply text-gray-400 mb-2;
+  font-size: 48px !important;
+  width: 48px !important;
+  height: 48px !important;
+}
+
+.drop-text {
+  @apply text-lg font-medium text-gray-600 mb-1;
+}
+
+.drop-subtext {
+  @apply text-sm text-gray-400 mb-3;
+}
+
+.file-select-btn {
+  @apply inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors;
+}
+
+.supported-formats {
+  @apply text-xs text-gray-400 mt-4;
+}
+
+.selected-file {
+  @apply flex items-center gap-4;
+
+  .file-icon {
+    @apply text-green-600;
+    font-size: 40px !important;
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .file-info {
+    @apply flex flex-col;
+
+    .file-name {
+      @apply font-medium text-gray-800;
+    }
+
+    .file-size {
+      @apply text-sm text-gray-500;
+    }
+  }
+
+  .clear-btn {
+    @apply text-gray-400 hover:text-red-500;
+  }
+}
+
+.error-message {
+  @apply flex items-center gap-2 mt-4 p-3 bg-red-50 text-red-600 rounded-lg;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.import-options {
+  @apply mt-6 p-4 bg-gray-50 rounded-lg;
+
+  h4 {
+    @apply text-sm font-medium text-gray-700 mb-3;
+  }
+
+  mat-checkbox {
+    @apply block mb-2;
+  }
+}
+
+mat-dialog-actions {
+  @apply gap-2 pt-4;
+
+  button {
+    @apply flex items-center gap-2;
+
+    mat-spinner {
+      display: inline-block;
+    }
+  }
+}

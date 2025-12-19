@@ -1,0 +1,83 @@
+<h2 mat-dialog-title>Importer un fichier</h2>
+
+<mat-dialog-content>
+  <!-- Drop Zone -->
+  <div
+    class="drop-zone"
+    [class.dragging]="isDragging()"
+    [class.has-file]="selectedFile()"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)"
+    (drop)="onDrop($event)"
+  >
+    @if (!selectedFile()) {
+      <mat-icon class="upload-icon">cloud_upload</mat-icon>
+      <p class="drop-text">Glissez-déposez un fichier ici</p>
+      <p class="drop-subtext">ou</p>
+      <label class="file-select-btn">
+        <input
+          type="file"
+          accept=".xlsx,.xls,.csv,.ods"
+          (change)="onFileSelected($event)"
+          hidden
+        />
+        <span>Choisir un fichier</span>
+      </label>
+      <p class="supported-formats">Formats supportés: .xlsx, .xls, .csv</p>
+    } @else {
+      <div class="selected-file">
+        <mat-icon class="file-icon">description</mat-icon>
+        <div class="file-info">
+          <span class="file-name">{{ selectedFile()?.name }}</span>
+          <span class="file-size">{{ formatFileSize(selectedFile()?.size || 0) }}</span>
+        </div>
+        <button mat-icon-button (click)="clearFile()" class="clear-btn">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    }
+  </div>
+
+  <!-- Error Message -->
+  @if (error()) {
+    <div class="error-message">
+      <mat-icon>error</mat-icon>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <!-- Options -->
+  @if (selectedFile()) {
+    <div class="import-options">
+      <h4>Options d'import</h4>
+
+      <mat-checkbox [(ngModel)]="preserveFormulas">
+        Conserver les formules
+      </mat-checkbox>
+
+      <mat-checkbox [(ngModel)]="preserveFormatting">
+        Conserver le formatage
+      </mat-checkbox>
+    </div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()" [disabled]="isLoading()">
+    Annuler
+  </button>
+  <button
+    mat-flat-button
+    color="primary"
+    (click)="importFile()"
+    [disabled]="!selectedFile() || isLoading()"
+  >
+    @if (isLoading()) {
+      <mat-spinner diameter="20"></mat-spinner>
+      <span>Import en cours...</span>
+    } @else {
+      <mat-icon>file_upload</mat-icon>
+      <span>Importer</span>
+    }
+  </button>
+</mat-dialog-actions>

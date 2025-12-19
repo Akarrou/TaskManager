@@ -20,6 +20,14 @@
 
   <!-- Main Content -->
   @if (!isLoading() && !error()) {
+    <!-- Formatting Toolbar -->
+    <app-formatting-toolbar
+      [currentFormat]="activeCellFormat()"
+      [hasSelection]="hasMultiCellSelection()"
+      [isMerged]="isActiveCellMerged()"
+      (formatChange)="onFormatChange($event)"
+    ></app-formatting-toolbar>
+
     <!-- Toolbar -->
     <div class="spreadsheet-toolbar">
       <div class="toolbar-left">
@@ -60,11 +68,17 @@
             <mat-icon>add</mat-icon>
             <span>Ajouter une feuille</span>
           </button>
-          <button mat-menu-item disabled>
-            <mat-icon>file_download</mat-icon>
-            <span>Exporter (Excel)</span>
+          <mat-divider></mat-divider>
+          <button mat-menu-item [matMenuTriggerFor]="freezeMenu">
+            <mat-icon>view_compact</mat-icon>
+            <span>Figer les volets</span>
           </button>
-          <button mat-menu-item disabled>
+          <mat-divider></mat-divider>
+          <button mat-menu-item [matMenuTriggerFor]="exportMenu">
+            <mat-icon>file_download</mat-icon>
+            <span>Exporter</span>
+          </button>
+          <button mat-menu-item (click)="openImportDialog()">
             <mat-icon>file_upload</mat-icon>
             <span>Importer</span>
           </button>
@@ -74,83 +88,149 @@
             <span>Supprimer</span>
           </button>
         </mat-menu>
+
+        <!-- Freeze Submenu -->
+        <mat-menu #freezeMenu="matMenu">
+          <button mat-menu-item (click)="freezeAtCurrentCell()">
+            <mat-icon>push_pin</mat-icon>
+            <span>Figer jusqu'à la cellule active</span>
+          </button>
+          <button mat-menu-item (click)="freezeFirstRow()">
+            <mat-icon>vertical_align_top</mat-icon>
+            <span>Figer la première ligne</span>
+          </button>
+          <button mat-menu-item (click)="freezeFirstColumn()">
+            <mat-icon>first_page</mat-icon>
+            <span>Figer la première colonne</span>
+          </button>
+          <mat-divider></mat-divider>
+          <button mat-menu-item (click)="unfreeze()" [disabled]="!hasFrozenPanes()">
+            <mat-icon>clear</mat-icon>
+            <span>Libérer les volets</span>
+          </button>
+        </mat-menu>
+
+        <!-- Export Submenu -->
+        <mat-menu #exportMenu="matMenu">
+          <button mat-menu-item (click)="exportToExcel()">
+            <mat-icon>table_chart</mat-icon>
+            <span>Excel (.xlsx)</span>
+          </button>
+          <button mat-menu-item (click)="exportToCSV()">
+            <mat-icon>text_snippet</mat-icon>
+            <span>CSV (.csv)</span>
+          </button>
+        </mat-menu>
       </div>
     </div>
 
-    <!-- Grid Container -->
-    <div class="grid-wrapper">
-      <!-- Column Headers -->
-      <div class="column-headers">
-        <div class="corner-cell"></div>
-        @for (col of visibleCols(); track col) {
-          <div
-            class="column-header"
-            [class.selected]="isColumnSelected(col)"
-          >
-            {{ getColumnLabel(col) }}
-          </div>
-        }
-      </div>
+    <!-- Grid Container with Virtual Scrolling -->
+    <div class="grid-wrapper" #gridWrapper>
+      <!-- Virtual Container (creates scrollable area) -->
+      <div class="virtual-container"
+           [style.height.px]="totalGridHeight() + 24"
+           [style.width.px]="totalGridWidth() + 50">
 
-      <!-- Grid with Row Headers -->
-      <div class="grid-body">
-        @for (row of visibleRows(); track row) {
-          <div class="grid-row">
-            <!-- Row Header -->
+        <!-- Column Headers (sticky) -->
+        <div class="column-headers" [style.left.px]="0">
+          <div class="corner-cell"></div>
+          <!-- Spacer for scrolled columns -->
+          <div class="column-spacer" [style.width.px]="offsetX()"></div>
+          @for (col of visibleCols(); track col) {
             <div
-              class="row-header"
-              [class.selected]="isRowSelected(row)"
+              class="column-header"
+              [class.selected]="isColumnSelected(col)"
+              [class.frozen]="isColumnFrozen(col)"
+              [style.width.px]="getColumnWidth(col)"
+              [style.min-width.px]="getColumnWidth(col)"
             >
-              {{ row + 1 }}
-            </div>
-
-            <!-- Cells -->
-            @for (col of visibleCols(); track col) {
+              {{ getColumnLabel(col) }}
               <div
-                class="cell"
-                [class.active]="isActiveCell(row, col)"
-                [class.selected]="isCellSelected(row, col)"
-                [class.editing]="isEditingCell(row, col)"
-                [class.has-formula]="cellHasFormula(row, col)"
-                [class.has-error]="isCellError(row, col)"
-                (click)="onCellClick(row, col, $event)"
-                (dblclick)="onCellDoubleClick(row, col)"
-              >
-                @if (isEditingCell(row, col)) {
-                  <input
-                    #cellInput
-                    type="text"
-                    class="cell-input"
-                    [class.formula-input]="editingCell()?.value?.startsWith('=')"
-                    [value]="editingCell()?.value || ''"
-                    (input)="onFormulaInput($any($event.target).value)"
-                    (keydown)="onCellInputKeyDown($event)"
-                    (blur)="exitEditMode(true)"
-                  />
+                class="resize-handle column-resize"
+                (mousedown)="startColumnResize($event, col)"
+              ></div>
+            </div>
+          }
+        </div>
 
-                  <!-- Formula Autocomplete Dropdown -->
-                  @if (showFormulaAutocomplete() && isActiveCell(row, col)) {
-                    <div class="formula-autocomplete">
-                      @for (fn of formulaSuggestions(); track fn.name; let i = $index) {
-                        <div
-                          class="autocomplete-item"
-                          [class.selected]="i === selectedSuggestionIndex()"
-                          (click)="selectFormulaSuggestion(fn)"
-                          (mouseenter)="selectedSuggestionIndex.set(i)"
-                        >
-                          <span class="fn-name">{{ fn.name }}</span>
-                          <span class="fn-desc">{{ fn.description }}</span>
-                        </div>
-                      }
-                    </div>
-                  }
-                } @else {
-                  <span class="cell-value">{{ getCellValue(row, col) }}</span>
-                }
+        <!-- Grid with Row Headers (virtualized) -->
+        <div class="grid-body">
+          <!-- Spacer for scrolled rows -->
+          <div class="row-spacer" [style.height.px]="offsetY()"></div>
+
+          @for (row of visibleRows(); track row) {
+            <div class="grid-row" [style.height.px]="getRowHeight(row)">
+              <!-- Row Header -->
+              <div
+                class="row-header"
+                [class.selected]="isRowSelected(row)"
+                [class.frozen]="isRowFrozen(row)"
+                [style.height.px]="getRowHeight(row)"
+              >
+                {{ row + 1 }}
+                <div
+                  class="resize-handle row-resize"
+                  (mousedown)="startRowResize($event, row)"
+                ></div>
               </div>
-            }
-          </div>
-        }
+
+              <!-- Spacer for scrolled columns in each row -->
+              <div class="cell-spacer" [style.width.px]="offsetX()"></div>
+
+              <!-- Cells -->
+              @for (col of visibleCols(); track col) {
+                <div
+                  class="cell"
+                  [class.active]="isActiveCell(row, col)"
+                  [class.selected]="isCellSelected(row, col)"
+                  [class.editing]="isEditingCell(row, col)"
+                  [class.has-formula]="cellHasFormula(row, col)"
+                  [class.has-error]="isCellError(row, col)"
+                  [class.frozen-row]="isRowFrozen(row)"
+                  [class.frozen-col]="isColumnFrozen(col)"
+                  [style.width.px]="getColumnWidth(col)"
+                  [style.min-width.px]="getColumnWidth(col)"
+                  [style.height.px]="getRowHeight(row)"
+                  [ngStyle]="getCellStyles(row, col)"
+                  (click)="onCellClick(row, col, $event)"
+                  (dblclick)="onCellDoubleClick(row, col)"
+                >
+                  @if (isEditingCell(row, col)) {
+                    <input
+                      #cellInput
+                      type="text"
+                      class="cell-input"
+                      [class.formula-input]="editingCell()?.value?.startsWith('=')"
+                      [value]="editingCell()?.value || ''"
+                      (input)="onFormulaInput($any($event.target).value)"
+                      (keydown)="onCellInputKeyDown($event)"
+                      (blur)="exitEditMode(true)"
+                    />
+
+                    <!-- Formula Autocomplete Dropdown -->
+                    @if (showFormulaAutocomplete() && isActiveCell(row, col)) {
+                      <div class="formula-autocomplete">
+                        @for (fn of formulaSuggestions(); track fn.name; let i = $index) {
+                          <div
+                            class="autocomplete-item"
+                            [class.selected]="i === selectedSuggestionIndex()"
+                            (click)="selectFormulaSuggestion(fn)"
+                            (mouseenter)="selectedSuggestionIndex.set(i)"
+                          >
+                            <span class="fn-name">{{ fn.name }}</span>
+                            <span class="fn-desc">{{ fn.description }}</span>
+                          </div>
+                        }
+                      </div>
+                    }
+                  } @else {
+                    <span class="cell-value">{{ getCellValue(row, col) }}</span>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
       </div>
     </div>
 

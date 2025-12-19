@@ -1,5 +1,6 @@
 // Spreadsheet Block Component Styles
 // Excel-like spreadsheet styling with Tailwind-compatible colors
+@use 'sass:color';
 
 $border-color: #d1d5db; // gray-300 - more visible than gray-200
 $header-bg: #f3f4f6;    // gray-100 - slightly darker header
@@ -107,7 +108,7 @@ $selected-header-bg: #dbeafe;
 }
 
 .column-header {
-  @apply flex items-center justify-center text-xs font-medium text-gray-600 select-none;
+  @apply flex items-center justify-center text-xs font-medium text-gray-600 select-none relative;
   width: 100px;
   min-width: 100px;
   height: 24px;
@@ -126,6 +127,69 @@ $selected-header-bg: #dbeafe;
   }
 }
 
+// Resize Handles
+.resize-handle {
+  position: absolute;
+  background: transparent;
+  z-index: 10;
+
+  &:hover {
+    background: $active-cell-border;
+  }
+}
+
+.column-resize {
+  right: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  cursor: col-resize;
+}
+
+.row-resize {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  cursor: row-resize;
+}
+
+// Frozen Panes Styling
+$frozen-border-color: #93c5fd; // blue-300
+$frozen-bg: #f0f9ff; // blue-50
+
+.frozen {
+  background: $frozen-bg !important;
+  border-right-color: $frozen-border-color !important;
+  border-bottom-color: $frozen-border-color !important;
+}
+
+.column-header.frozen {
+  position: sticky;
+  z-index: 25;
+  border-right: 2px solid $frozen-border-color !important;
+}
+
+.row-header.frozen {
+  position: sticky;
+  z-index: 25;
+  border-bottom: 2px solid $frozen-border-color !important;
+}
+
+.cell.frozen-row {
+  background: $frozen-bg;
+  border-bottom: 2px solid $frozen-border-color !important;
+}
+
+.cell.frozen-col {
+  background: $frozen-bg;
+  border-right: 2px solid $frozen-border-color !important;
+}
+
+.cell.frozen-row.frozen-col {
+  background: color.adjust($frozen-bg, $lightness: -3%);
+}
+
 // Grid Body
 .grid-body {
   @apply relative;
@@ -138,7 +202,7 @@ $selected-header-bg: #dbeafe;
 
 // Row Headers
 .row-header {
-  @apply flex items-center justify-center text-xs font-medium text-gray-600 select-none sticky left-0 z-10;
+  @apply flex items-center justify-center text-xs font-medium text-gray-600 select-none sticky left-0 z-10 relative;
   width: 50px;
   min-width: 50px;
   height: 24px;
@@ -300,6 +364,24 @@ $selected-header-bg: #dbeafe;
     width: 18px;
     height: 18px;
   }
+}
+
+// Virtual Scrolling
+.virtual-container {
+  position: relative;
+  min-width: 100%;
+  min-height: 100%;
+}
+
+.column-spacer,
+.cell-spacer {
+  flex-shrink: 0;
+  height: 100%;
+}
+
+.row-spacer {
+  width: 100%;
+  flex-shrink: 0;
 }
 
 // Scrollbar styling

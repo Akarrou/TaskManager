@@ -498,6 +498,147 @@ export class FormulaEngineService {
     return results;
   }
 
+  /**
+   * Recalculate only specific cells (optimized for dirty cell recalculation)
+   * Returns computed values for the specified cells and their dependents
+   */
+  recalculateCells(cells: Array<{ sheetId: string; row: number; col: number }>): Map<string, SpreadsheetCellValue> {
+    const results = new Map<string, SpreadsheetCellValue>();
+
+    if (!this.hfInstance || cells.length === 0) return results;
+
+    // Track all cells that need recalculation (including dependents)
+    const cellsToRecalculate = new Set<string>();
+
+    // Collect all dirty cells and their dependents
+    cells.forEach(({ sheetId, row, col }) => {
+      const key = getCellKey({ row, col, sheet: sheetId });
+      cellsToRecalculate.add(key);
+
+      // Add all dependents recursively
+      this.collectDependents(sheetId, row, col, cellsToRecalculate);
+    });
+
+    // Recalculate each cell
+    cellsToRecalculate.forEach(key => {
+      const [sheetId, rowStr, colStr] = key.split(':');
+      const row = parseInt(rowStr, 10);
+      const col = parseInt(colStr, 10);
+
+      const sheetIndex = this.sheetMapping.get(sheetId);
+      if (sheetIndex === undefined) return;
+
+      const address: SimpleCellAddress = { sheet: sheetIndex, row, col };
+
+      // Only get value for cells with formulas
+      if (this.hfInstance!.doesCellHaveFormula(address)) {
+        const value = this.hfInstance!.getCellValue(address);
+        results.set(key, this.convertHFValue(value));
+      }
+    });
+
+    return results;
+  }
+
+  /**
+   * Recursively collect all cells that depend on a given cell
+   */
+  private collectDependents(
+    sheetId: string,
+    row: number,
+    col: number,
+    collected: Set<string>,
+    visited: Set<string> = new Set()
+  ): void {
+    const key = getCellKey({ row, col, sheet: sheetId });
+
+    // Prevent infinite loops in circular references
+    if (visited.has(key)) return;
+    visited.add(key);
+
+    const dependents = this.getCellDependents(sheetId, row, col);
+
+    dependents.forEach(dep => {
+      const depKey = getCellKey({ row: dep.row, col: dep.col, sheet: dep.sheet || sheetId });
+
+      if (!collected.has(depKey)) {
+        collected.add(depKey);
+        // Recursively collect dependents of this dependent
+        this.collectDependents(dep.sheet || sheetId, dep.row, dep.col, collected, visited);
+      }
+    });
+  }
+
+  /**
+   * Get the topological order for recalculating a set of cells
+   * This ensures cells are calculated in the correct order (dependencies first)
+   */
+  getTopologicalOrder(cells: Array<{ sheetId: string; row: number; col: number }>): Array<{ sheetId: string; row: number; col: number }> {
+    if (!this.hfInstance || cells.length === 0) return [];
+
+    // Build dependency graph
+    const graph = new Map<string, Set<string>>();
+    const inDegree = new Map<string, number>();
+
+    // Initialize
+    cells.forEach(({ sheetId, row, col }) => {
+      const key = getCellKey({ row, col, sheet: sheetId });
+      if (!graph.has(key)) {
+        graph.set(key, new Set());
+        inDegree.set(key, 0);
+      }
+    });
+
+    // Build edges
+    cells.forEach(({ sheetId, row, col }) => {
+      const key = getCellKey({ row, col, sheet: sheetId });
+      const dependencies = this.getCellDependencies(sheetId, row, col);
+
+      dependencies.forEach(dep => {
+        const depKey = getCellKey({ row: dep.row, col: dep.col, sheet: dep.sheet || sheetId });
+
+        if (graph.has(depKey)) {
+          graph.get(depKey)!.add(key);
+          inDegree.set(key, (inDegree.get(key) || 0) + 1);
+        }
+      });
+    });
+
+    // Kahn's algorithm for topological sort
+    const result: Array<{ sheetId: string; row: number; col: number }> = [];
+    const queue: string[] = [];
+
+    // Start with cells that have no dependencies
+    inDegree.forEach((degree, key) => {
+      if (degree === 0) {
+        queue.push(key);
+      }
+    });
+
+    while (queue.length > 0) {
+      const key = queue.shift()!;
+      const [sheetId, rowStr, colStr] = key.split(':');
+      result.push({
+        sheetId,
+        row: parseInt(rowStr, 10),
+        col: parseInt(colStr, 10),
+      });
+
+      const dependents = graph.get(key);
+      if (dependents) {
+        dependents.forEach(depKey => {
+          const newDegree = (inDegree.get(depKey) || 0) - 1;
+          inDegree.set(depKey, newDegree);
+          if (newDegree === 0) {
+            queue.push(depKey);
+          }
+        });
+      }
+    }
+
+    return result;
+  }
+
   // =========================================================================
   // Private Helper Methods
   // =========================================================================
