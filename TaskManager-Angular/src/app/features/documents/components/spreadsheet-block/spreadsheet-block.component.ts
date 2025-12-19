@@ -655,14 +655,12 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
 
     // Fallback: Also scan all cells with formulas to ensure they're updated
     // This handles cases where HyperFormula dependency tracking might miss cells
-    const changedCellRef = this.getCellReference(row, col);
-
     cellsMap.forEach((cell, key) => {
       // Skip if already updated, visited, or no formula
       if (updatedKeys.has(key) || visited.has(key) || !cell.formula) return;
 
-      // Check if this formula references the changed cell
-      if (cell.formula.toUpperCase().includes(changedCellRef.toUpperCase())) {
+      // Check if this formula references the changed cell (directly or within a range)
+      if (this.formulaReferencesCell(cell.formula, row, col)) {
         const newValue = this.formulaEngine.getCellValue(cell.sheet_id, cell.row, cell.col);
 
         cellsMap.set(key, {
@@ -674,6 +672,67 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
         visited.add(key);
       }
     });
+  }
+
+  /**
+   * Check if a formula references a specific cell (either directly or within a range)
+   */
+  private formulaReferencesCell(formula: string, row: number, col: number): boolean {
+    const upperFormula = formula.toUpperCase();
+
+    // Direct cell reference check (e.g., "B1")
+    const directRef = this.getCellReference(row, col).toUpperCase();
+    if (upperFormula.includes(directRef)) {
+      return true;
+    }
+
+    // Range reference check (e.g., "A1:C1" should match B1)
+    // Pattern to match ranges like A1:C5, $A$1:$C$5, etc.
+    const rangePattern = /(\$?[A-Z]+\$?\d+):(\$?[A-Z]+\$?\d+)/gi;
+    let match;
+
+    while ((match = rangePattern.exec(upperFormula)) !== null) {
+      const startRef = match[1];
+      const endRef = match[2];
+
+      const startCell = this.parseCellRef(startRef);
+      const endCell = this.parseCellRef(endRef);
+
+      if (startCell && endCell) {
+        // Normalize range (in case it's defined backwards)
+        const minRow = Math.min(startCell.row, endCell.row);
+        const maxRow = Math.max(startCell.row, endCell.row);
+        const minCol = Math.min(startCell.col, endCell.col);
+        const maxCol = Math.max(startCell.col, endCell.col);
+
+        // Check if our cell is within this range
+        if (row >= minRow && row <= maxRow && col >= minCol && col <= maxCol) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Parse a cell reference string (e.g., "A1", "$B$2") to row/col
+   */
+  private parseCellRef(ref: string): { row: number; col: number } | null {
+    const match = ref.match(/^\$?([A-Z]+)\$?(\d+)$/i);
+    if (!match) return null;
+
+    const colLetters = match[1].toUpperCase();
+    const rowNum = parseInt(match[2], 10) - 1; // 0-indexed
+
+    // Convert column letters to index (A=0, B=1, ..., Z=25, AA=26, etc.)
+    let colNum = 0;
+    for (let i = 0; i < colLetters.length; i++) {
+      colNum = colNum * 26 + (colLetters.charCodeAt(i) - 64);
+    }
+    colNum -= 1; // 0-indexed
+
+    return { row: rowNum, col: colNum };
   }
 
   /**
