@@ -64,7 +64,8 @@
       "Bash(./scripts/seed-user.sh:*)",
       "Bash(pnpm add:*)",
       "mcp__context7__resolve-library-id",
-      "mcp__context7__get-library-docs"
+      "mcp__context7__get-library-docs",
+      "Bash(./scripts/deploy.sh:*)"
     ],
     "deny": [],
     "ask": []

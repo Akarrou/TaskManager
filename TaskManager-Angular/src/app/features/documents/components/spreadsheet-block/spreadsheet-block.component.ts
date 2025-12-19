@@ -2178,37 +2178,141 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
 
     const numberFormat = format?.numberFormat || 'general';
 
+    // Check if this is a date format
+    const isDateFormat = ['date-short', 'date-long', 'time', 'datetime'].includes(numberFormat);
+
+    // Try to parse as date if date format is requested
+    if (isDateFormat) {
+      const dateValue = this.parseAsDate(value);
+      if (dateValue) {
+        switch (numberFormat) {
+          case 'date-short':
+            return dateValue.toLocaleDateString('fr-FR');
+          case 'date-long':
+            return dateValue.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+          case 'time':
+            return dateValue.toLocaleTimeString('fr-FR');
+          case 'datetime':
+            return dateValue.toLocaleString('fr-FR');
+        }
+      }
+      // If we can't parse as date, return as-is
+      return String(value);
+    }
+
+    // Try to convert string to number if it looks like a number
+    let numericValue: number | null = null;
     if (typeof value === 'number') {
+      numericValue = value;
+    } else if (typeof value === 'string' && value.trim() !== '') {
+      const parsed = parseFloat(value);
+      if (!isNaN(parsed) && isFinite(parsed)) {
+        numericValue = parsed;
+      }
+    }
+
+    // Apply number formatting if we have a numeric value
+    if (numericValue !== null) {
       switch (numberFormat) {
         case 'number':
-          return value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          return numericValue.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         case 'currency':
-          return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+          return numericValue.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
         case 'percentage':
-          return (value * 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+          return (numericValue * 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
         case 'scientific':
-          return value.toExponential(2);
+          return numericValue.toExponential(2);
         default:
-          return value.toString();
+          // For 'general' format, return as-is (string or number toString)
+          return typeof value === 'number' ? value.toString() : String(value);
       }
     }
 
     if (value instanceof Date) {
-      switch (numberFormat) {
-        case 'date-short':
-          return value.toLocaleDateString('fr-FR');
-        case 'date-long':
-          return value.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-        case 'time':
-          return value.toLocaleTimeString('fr-FR');
-        case 'datetime':
-          return value.toLocaleString('fr-FR');
-        default:
-          return value.toLocaleDateString('fr-FR');
+      return value.toLocaleDateString('fr-FR');
+    }
+
+    return String(value);
+  }
+
+  /**
+   * Try to parse a value as a Date
+   */
+  private parseAsDate(value: SpreadsheetCellValue): Date | null {
+    if (value instanceof Date) {
+      return value;
+    }
+
+    if (typeof value === 'number') {
+      // Could be an Excel serial date number
+      // Excel serial date: days since 1900-01-01 (with a bug for 1900 leap year)
+      if (value > 0 && value < 2958466) { // Valid Excel date range
+        const excelEpoch = new Date(1899, 11, 30); // Dec 30, 1899
+        const date = new Date(excelEpoch.getTime() + value * 24 * 60 * 60 * 1000);
+        if (!isNaN(date.getTime())) {
+          return date;
+        }
+      }
+      return null;
+    }
+
+    if (typeof value === 'string' && value.trim() !== '') {
+      const str = value.trim();
+
+      // Try parsing common date formats
+      // Format: DD/MM/YYYY or DD-MM-YYYY
+      const frDateMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+      if (frDateMatch) {
+        const [, day, month, year] = frDateMatch;
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        if (!isNaN(date.getTime())) {
+          return date;
+        }
+      }
+
+      // Format: YYYY-MM-DD (ISO)
+      const isoDateMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (isoDateMatch) {
+        const date = new Date(str);
+        if (!isNaN(date.getTime())) {
+          return date;
+        }
+      }
+
+      // Format: YYYY-MM-DD HH:MM:SS or YYYY-MM-DDTHH:MM:SS
+      const isoDateTimeMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+      if (isoDateTimeMatch) {
+        const date = new Date(str);
+        if (!isNaN(date.getTime())) {
+          return date;
+        }
+      }
+
+      // Format: DD/MM/YYYY HH:MM or DD/MM/YYYY HH:MM:SS
+      const frDateTimeMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+      if (frDateTimeMatch) {
+        const [, day, month, year, hour, minute, second] = frDateTimeMatch;
+        const date = new Date(
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(day),
+          parseInt(hour),
+          parseInt(minute),
+          second ? parseInt(second) : 0
+        );
+        if (!isNaN(date.getTime())) {
+          return date;
+        }
+      }
+
+      // Try native Date parsing as fallback
+      const nativeDate = new Date(str);
+      if (!isNaN(nativeDate.getTime())) {
+        return nativeDate;
       }
     }
 
-    return value.toString();
+    return null;
   }
 
   // =====================================================================
