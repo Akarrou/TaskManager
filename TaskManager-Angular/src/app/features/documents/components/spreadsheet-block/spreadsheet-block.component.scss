@@ -1,0 +1,328 @@
+// Spreadsheet Block Component Styles
+// Excel-like spreadsheet styling with Tailwind-compatible colors
+
+$border-color: #d1d5db; // gray-300 - more visible than gray-200
+$header-bg: #f3f4f6;    // gray-100 - slightly darker header
+$active-cell-border: #3b82f6;
+$selection-bg: rgba(59, 130, 246, 0.1);
+$selected-header-bg: #dbeafe;
+
+.spreadsheet-container {
+  @apply w-full bg-white rounded-lg border border-gray-200 overflow-hidden;
+  min-height: 400px;
+  outline: none;
+
+  &:focus {
+    @apply ring-2 ring-blue-500 ring-opacity-50;
+  }
+}
+
+// Loading & Error States
+.loading-state,
+.error-state {
+  @apply flex items-center justify-center gap-3 p-8 text-gray-500;
+  min-height: 200px;
+}
+
+.error-state {
+  @apply flex-col text-red-600;
+
+  mat-icon {
+    @apply text-4xl;
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+  }
+}
+
+// Toolbar
+.spreadsheet-toolbar {
+  @apply flex items-center justify-between px-2 py-1 border-b border-gray-200 bg-gray-50;
+  height: 36px;
+}
+
+.toolbar-left {
+  @apply flex items-center gap-2 flex-1;
+}
+
+.toolbar-right {
+  @apply flex items-center gap-2;
+}
+
+.cell-reference {
+  @apply px-2 py-1 bg-white border border-gray-300 rounded text-sm font-mono;
+  min-width: 60px;
+  text-align: center;
+}
+
+.formula-bar {
+  @apply flex items-center flex-1 max-w-2xl bg-white border border-gray-300 rounded;
+
+  .fx-label {
+    @apply px-2 py-1 text-gray-500 font-medium text-sm border-r border-gray-300;
+  }
+
+  .formula-input {
+    @apply flex-1 px-2 py-1 text-sm outline-none;
+    border: none;
+    background: transparent;
+  }
+}
+
+.save-text {
+  @apply text-xs text-gray-500;
+}
+
+.delete-item {
+  color: #ef4444 !important;
+
+  mat-icon {
+    color: #ef4444 !important;
+  }
+}
+
+// Grid Wrapper
+.grid-wrapper {
+  @apply overflow-auto;
+  max-height: calc(100vh - 300px);
+  min-height: 300px;
+  // Add left and top border to complete the grid
+  border-left: 1px solid $border-color;
+}
+
+// Column Headers
+.column-headers {
+  @apply flex sticky top-0 z-10;
+  background: $header-bg;
+}
+
+.corner-cell {
+  @apply sticky left-0 z-20;
+  width: 50px;
+  min-width: 50px;
+  height: 24px;
+  background: $header-bg;
+  border-right: 1px solid $border-color;
+  border-bottom: 1px solid $border-color;
+}
+
+.column-header {
+  @apply flex items-center justify-center text-xs font-medium text-gray-600 select-none;
+  width: 100px;
+  min-width: 100px;
+  height: 24px;
+  border-right: 1px solid $border-color;
+  border-bottom: 1px solid $border-color;
+  background: $header-bg;
+
+  &.selected {
+    background: $selected-header-bg;
+    color: #1e40af;
+    font-weight: 600;
+  }
+
+  &:hover {
+    background: #f3f4f6;
+  }
+}
+
+// Grid Body
+.grid-body {
+  @apply relative;
+}
+
+.grid-row {
+  @apply flex;
+  height: 24px;
+}
+
+// Row Headers
+.row-header {
+  @apply flex items-center justify-center text-xs font-medium text-gray-600 select-none sticky left-0 z-10;
+  width: 50px;
+  min-width: 50px;
+  height: 24px;
+  border-right: 1px solid $border-color;
+  border-bottom: 1px solid $border-color;
+  background: $header-bg;
+
+  &.selected {
+    background: $selected-header-bg;
+    color: #1e40af;
+    font-weight: 600;
+  }
+
+  &:hover {
+    background: #f3f4f6;
+  }
+}
+
+// Cells
+.cell {
+  @apply relative flex items-center text-sm;
+  width: 100px;
+  min-width: 100px;
+  height: 24px;
+  padding: 0 4px;
+  border: 1px solid $border-color;
+  border-top: none;
+  border-left: none;
+  background: white;
+  overflow: hidden;
+  cursor: cell;
+  box-sizing: border-box;
+
+  &:hover:not(.active):not(.editing) {
+    background: #fafafa;
+  }
+
+  &.selected:not(.active) {
+    background: $selection-bg;
+  }
+
+  &.active {
+    outline: 2px solid $active-cell-border;
+    outline-offset: -2px;
+    z-index: 5;
+  }
+
+  &.editing {
+    padding: 0;
+  }
+}
+
+.cell-value {
+  @apply truncate;
+  line-height: 22px;
+}
+
+.cell-input {
+  @apply w-full h-full px-1 text-sm outline-none;
+  border: none;
+  background: white;
+
+  // Formula input styling (highlighted when typing a formula)
+  &.formula-input {
+    color: #1e40af;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-weight: 500;
+  }
+}
+
+// Formula highlighting for cells with formulas
+.cell.has-formula {
+  .cell-value {
+    color: #047857;
+  }
+}
+
+// Error highlighting for cells with errors
+.cell.has-error {
+  .cell-value {
+    color: #dc2626;
+    font-weight: 500;
+  }
+}
+
+// Formula Autocomplete Dropdown
+.formula-autocomplete {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 280px;
+  max-width: 400px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  margin-top: 2px;
+
+  .autocomplete-item {
+    @apply flex flex-col px-3 py-2 cursor-pointer;
+    border-bottom: 1px solid #f3f4f6;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover,
+    &.selected {
+      background: #eff6ff;
+    }
+
+    .fn-name {
+      @apply font-medium text-sm text-blue-700;
+      font-family: 'Monaco', 'Consolas', monospace;
+    }
+
+    .fn-desc {
+      @apply text-xs text-gray-500 mt-0.5;
+    }
+  }
+}
+
+// Sheet Tabs
+.sheet-tabs {
+  @apply flex items-center gap-1 px-2 py-1 border-t border-gray-200 bg-gray-50;
+  height: 32px;
+  overflow-x: auto;
+}
+
+.sheet-tab {
+  @apply px-3 py-1 text-sm rounded-t border border-b-0 border-gray-300 bg-white cursor-pointer;
+  min-width: 80px;
+  transition: all 0.15s ease;
+
+  &:hover:not(.active) {
+    background: #f3f4f6;
+  }
+
+  &.active {
+    background: white;
+    border-bottom-color: white;
+    margin-bottom: -1px;
+    font-weight: 500;
+    color: #1e40af;
+  }
+}
+
+.add-sheet-btn {
+  @apply flex items-center justify-center w-8 h-8 rounded hover:bg-gray-200 cursor-pointer;
+  border: none;
+  background: transparent;
+
+  mat-icon {
+    @apply text-gray-500;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+// Scrollbar styling
+.grid-wrapper {
+  &::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 5px;
+
+    &:hover {
+      background: #a1a1a1;
+    }
+  }
+
+  &::-webkit-scrollbar-corner {
+    background: #f1f1f1;
+  }
+}

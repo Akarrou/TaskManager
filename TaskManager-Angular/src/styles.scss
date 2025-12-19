@@ -72,7 +72,9 @@ body {
 
 // Force remove all borders and outlines from TipTap editor
 // This overrides Tailwind's default focus styles
-// EXCEPTION: .has-comments blocks which need border-left for comment indicators
+// EXCEPTIONS (handled via override rules below):
+// - .has-comments blocks which need border-left for comment indicators
+// - spreadsheet components which need their grid borders
 .ProseMirror,
 .ProseMirror *:not(.has-comments):not(.block-comment-indicator),
 tiptap-editor,
@@ -113,6 +115,43 @@ tiptap-editor,
   --tw-ring-color: transparent !important;
   --tw-ring-offset-shadow: 0 0 transparent !important;
   --tw-ring-shadow: 0 0 transparent !important;
+}
+
+// ============================================================================
+// SPREADSHEET - FORCE BORDERS (override global TipTap reset)
+// ============================================================================
+// The global TipTap reset removes all borders. We need to forcefully re-enable
+// them for the spreadsheet component with higher specificity.
+
+.ProseMirror .spreadsheet-container,
+tiptap-editor .spreadsheet-container,
+.editor-wrapper .spreadsheet-container {
+  // Allow borders on the container
+  border: 1px solid #e5e7eb !important;
+
+  // Force all spreadsheet elements to have their borders
+  .cell,
+  .column-header,
+  .row-header,
+  .corner-cell {
+    border: 1px solid #d1d5db !important;
+  }
+
+  .cell {
+    border-top: none !important;
+    border-left: none !important;
+  }
+
+  .grid-wrapper {
+    border-left: 1px solid #d1d5db !important;
+  }
+
+  .column-headers,
+  .spreadsheet-toolbar,
+  .sheet-tabs,
+  .formula-bar {
+    border-bottom: 1px solid #e5e7eb !important;
+  }
 }
 
 // ============================================================================

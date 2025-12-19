@@ -1,0 +1,173 @@
+<div class="spreadsheet-container" (keydown)="onKeyDown($event)" tabindex="0">
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="32"></mat-spinner>
+      <span>Chargement de la feuille de calcul...</span>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="error-state">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ error() }}</span>
+      <button mat-button color="primary" (click)="initializeSpreadsheet()">
+        Réessayer
+      </button>
+    </div>
+  }
+
+  <!-- Main Content -->
+  @if (!isLoading() && !error()) {
+    <!-- Toolbar -->
+    <div class="spreadsheet-toolbar">
+      <div class="toolbar-left">
+        <!-- Cell Reference Display -->
+        <div class="cell-reference">
+          @if (activeCell()) {
+            {{ getColumnLabel(activeCell()!.col) }}{{ activeCell()!.row + 1 }}
+          }
+        </div>
+
+        <!-- Formula Bar -->
+        <div class="formula-bar">
+          <span class="fx-label">fx</span>
+          <input
+            type="text"
+            class="formula-input"
+            [value]="formulaBarValue()"
+            (input)="formulaBarValue.set($any($event.target).value)"
+            (keydown.enter)="exitEditMode(true)"
+            placeholder="Entrez une valeur ou formule"
+          />
+        </div>
+      </div>
+
+      <div class="toolbar-right">
+        <!-- Save Indicator -->
+        @if (isSaving()) {
+          <mat-spinner diameter="16"></mat-spinner>
+          <span class="save-text">Enregistrement...</span>
+        }
+
+        <!-- Menu -->
+        <button mat-icon-button [matMenuTriggerFor]="menu" matTooltip="Options">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #menu="matMenu">
+          <button mat-menu-item (click)="addSheet()">
+            <mat-icon>add</mat-icon>
+            <span>Ajouter une feuille</span>
+          </button>
+          <button mat-menu-item disabled>
+            <mat-icon>file_download</mat-icon>
+            <span>Exporter (Excel)</span>
+          </button>
+          <button mat-menu-item disabled>
+            <mat-icon>file_upload</mat-icon>
+            <span>Importer</span>
+          </button>
+          <mat-divider></mat-divider>
+          <button mat-menu-item class="delete-item" (click)="deleteSpreadsheet()">
+            <mat-icon>delete</mat-icon>
+            <span>Supprimer</span>
+          </button>
+        </mat-menu>
+      </div>
+    </div>
+
+    <!-- Grid Container -->
+    <div class="grid-wrapper">
+      <!-- Column Headers -->
+      <div class="column-headers">
+        <div class="corner-cell"></div>
+        @for (col of visibleCols(); track col) {
+          <div
+            class="column-header"
+            [class.selected]="isColumnSelected(col)"
+          >
+            {{ getColumnLabel(col) }}
+          </div>
+        }
+      </div>
+
+      <!-- Grid with Row Headers -->
+      <div class="grid-body">
+        @for (row of visibleRows(); track row) {
+          <div class="grid-row">
+            <!-- Row Header -->
+            <div
+              class="row-header"
+              [class.selected]="isRowSelected(row)"
+            >
+              {{ row + 1 }}
+            </div>
+
+            <!-- Cells -->
+            @for (col of visibleCols(); track col) {
+              <div
+                class="cell"
+                [class.active]="isActiveCell(row, col)"
+                [class.selected]="isCellSelected(row, col)"
+                [class.editing]="isEditingCell(row, col)"
+                [class.has-formula]="cellHasFormula(row, col)"
+                [class.has-error]="isCellError(row, col)"
+                (click)="onCellClick(row, col, $event)"
+                (dblclick)="onCellDoubleClick(row, col)"
+              >
+                @if (isEditingCell(row, col)) {
+                  <input
+                    #cellInput
+                    type="text"
+                    class="cell-input"
+                    [class.formula-input]="editingCell()?.value?.startsWith('=')"
+                    [value]="editingCell()?.value || ''"
+                    (input)="onFormulaInput($any($event.target).value)"
+                    (keydown)="onCellInputKeyDown($event)"
+                    (blur)="exitEditMode(true)"
+                  />
+
+                  <!-- Formula Autocomplete Dropdown -->
+                  @if (showFormulaAutocomplete() && isActiveCell(row, col)) {
+                    <div class="formula-autocomplete">
+                      @for (fn of formulaSuggestions(); track fn.name; let i = $index) {
+                        <div
+                          class="autocomplete-item"
+                          [class.selected]="i === selectedSuggestionIndex()"
+                          (click)="selectFormulaSuggestion(fn)"
+                          (mouseenter)="selectedSuggestionIndex.set(i)"
+                        >
+                          <span class="fn-name">{{ fn.name }}</span>
+                          <span class="fn-desc">{{ fn.description }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+                } @else {
+                  <span class="cell-value">{{ getCellValue(row, col) }}</span>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Sheet Tabs -->
+    <div class="sheet-tabs">
+      @for (sheet of sheets(); track sheet.id) {
+        <button
+          class="sheet-tab"
+          [class.active]="sheet.id === activeSheetId()"
+          (click)="switchSheet(sheet.id)"
+        >
+          {{ sheet.name }}
+        </button>
+      }
+      <button class="add-sheet-btn" (click)="addSheet()" matTooltip="Ajouter une feuille">
+        <mat-icon>add</mat-icon>
+      </button>
+    </div>
+  }
+</div>

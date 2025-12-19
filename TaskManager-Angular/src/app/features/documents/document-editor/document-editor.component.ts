@@ -62,13 +62,15 @@ import { CommentThreadPanelComponent } from '../components/comment-thread-panel/
 import { CommentIndicatorDirective } from '../directives/comment-indicator.directive';
 import { MindmapExtension } from '../extensions/mindmap.extension';
 import { MindmapRendererDirective } from '../directives/mindmap-renderer.directive';
+import { SpreadsheetExtension } from '../extensions/spreadsheet.extension';
+import { SpreadsheetRendererDirective } from '../directives/spreadsheet-renderer.directive';
 
 const lowlight = createLowlight(all);
 
 @Component({
   selector: 'app-document-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, ImageBubbleMenuComponent, TaskSectionRendererDirective, DatabaseTableRendererDirective, CommentThreadPanelComponent, CommentIndicatorDirective, MindmapRendererDirective],
+  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, ImageBubbleMenuComponent, TaskSectionRendererDirective, DatabaseTableRendererDirective, CommentThreadPanelComponent, CommentIndicatorDirective, MindmapRendererDirective, SpreadsheetRendererDirective],
   templateUrl: './document-editor.component.html',
   styleUrl: './document-editor.component.scss',
   encapsulation: ViewEncapsulation.None
@@ -225,6 +227,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     // Mind Map
     { id: 'mindmap', label: 'Mind Map', icon: 'hub', action: () => this.insertMindmap() },
 
+    // Feuille de calcul
+    { id: 'spreadsheet', label: 'Feuille de calcul', icon: 'grid_on', action: () => this.insertSpreadsheet() },
+
     // Utilitaires
     { id: 'break', label: 'Saut de ligne', icon: 'keyboard_return', action: () => this.editor.chain().focus().setHardBreak().run() },
     { id: 'clear', label: 'Effacer format', icon: 'format_clear', action: () => this.editor.chain().focus().clearNodes().unsetAllMarks().run() },
@@ -297,6 +302,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         DatabaseTableExtension,
         BlockIdExtension,
         MindmapExtension,
+        SpreadsheetExtension,
       ],
       editorProps: {
         attributes: {
@@ -1746,6 +1752,14 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
    */
   insertMindmap() {
     this.editor.chain().focus().insertMindmap().run();
+    this.showSlashMenu.set(false);
+  }
+
+  /**
+   * Insert a spreadsheet block
+   */
+  insertSpreadsheet() {
+    this.editor.chain().focus().insertSpreadsheet().run();
     this.showSlashMenu.set(false);
   }
 
