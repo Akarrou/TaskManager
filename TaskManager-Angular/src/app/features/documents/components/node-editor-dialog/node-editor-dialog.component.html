@@ -18,33 +18,41 @@
 
       <div class="tab-content">
         <!-- Title -->
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Titre</mat-label>
+        <div class="c-form-group">
+          <label for="node-title" class="c-form-label">
+            Titre
+            <span class="c-form-label__required">*</span>
+          </label>
           <input
-            matInput
+            id="node-title"
+            type="text"
+            class="c-form-input"
             [ngModel]="title()"
             (ngModelChange)="title.set($event)"
             placeholder="Titre du nœud"
             autofocus
           />
-        </mat-form-field>
+        </div>
 
         <!-- Description -->
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Description (sous-titre)</mat-label>
+        <div class="c-form-group">
+          <label for="node-description" class="c-form-label">
+            Description (sous-titre)
+          </label>
           <textarea
-            matInput
+            id="node-description"
+            class="c-form-input c-form-textarea"
             [ngModel]="description()"
             (ngModelChange)="description.set($event)"
             placeholder="Description courte affichée sous le titre"
             rows="2"
           ></textarea>
-          <mat-hint>Affiché sous le titre dans le nœud</mat-hint>
-        </mat-form-field>
+          <p class="c-form-hint">Affiché sous le titre dans le nœud</p>
+        </div>
 
         <!-- Formatted Content -->
-        <div class="formatted-section">
-          <label class="section-label">Notes additionnelles</label>
+        <div class="c-form-group">
+          <label class="c-form-label">Notes additionnelles</label>
 
           <div class="formatting-toolbar">
             <button
@@ -73,17 +81,16 @@
             </button>
           </div>
 
-          <div class="formatted-content-wrapper">
-            <textarea
-              class="formatted-content-textarea"
-              [ngModel]="formattedContent()"
-              (ngModelChange)="formattedContent.set($event)"
-              placeholder="Notes, listes, informations complémentaires...&#10;&#10;• Point 1&#10;• Point 2"
-            ></textarea>
-          </div>
-          <mat-hint class="hint-text">
+          <textarea
+            class="c-form-input c-form-textarea c-form-textarea--notes"
+            [ngModel]="formattedContent()"
+            (ngModelChange)="formattedContent.set($event)"
+            placeholder="Notes, listes, informations complémentaires...&#10;&#10;• Point 1&#10;• Point 2"
+            rows="5"
+          ></textarea>
+          <p class="c-form-hint">
             Contenu additionnel visible au survol du nœud
-          </mat-hint>
+          </p>
         </div>
       </div>
     </mat-tab>
@@ -97,8 +104,8 @@
 
       <div class="tab-content">
         <!-- Shape selector -->
-        <div class="style-section">
-          <label class="section-label">Forme du nœud</label>
+        <div class="c-form-group">
+          <label class="c-form-label">Forme du nœud</label>
           <app-shape-selector
             [selectedShape]="shape()"
             (shapeChange)="onShapeChange($event)"
@@ -106,8 +113,8 @@
         </div>
 
         <!-- Background color -->
-        <div class="style-section">
-          <label class="section-label">Couleur de fond</label>
+        <div class="c-form-group">
+          <label class="c-form-label">Couleur de fond</label>
           <app-color-picker
             [selectedColor]="backgroundColor()"
             [showTrigger]="false"
@@ -116,8 +123,8 @@
         </div>
 
         <!-- Text color -->
-        <div class="style-section">
-          <label class="section-label">Couleur du texte</label>
+        <div class="c-form-group">
+          <label class="c-form-label">Couleur du texte</label>
           <div class="text-color-options">
             <button
               type="button"
@@ -141,8 +148,8 @@
         </div>
 
         <!-- Preview -->
-        <div class="style-section">
-          <label class="section-label">Aperçu</label>
+        <div class="c-form-group">
+          <label class="c-form-label">Aperçu</label>
           <div
             class="node-preview"
             [style.backgroundColor]="backgroundColor()"
@@ -166,7 +173,7 @@
       </ng-template>
 
       <div class="tab-content">
-        <div class="style-section">
+        <div class="c-form-group">
           <mat-slide-toggle
             [ngModel]="autoSize()"
             (ngModelChange)="autoSize.set($event)"
@@ -174,36 +181,38 @@
           >
             Taille automatique selon le contenu
           </mat-slide-toggle>
-          <p class="hint-text">
+          <p class="c-form-hint">
             Ajuste automatiquement la taille du nœud en fonction du texte
           </p>
         </div>
 
         @if (!autoSize()) {
           <div class="size-inputs">
-            <mat-form-field appearance="outline">
-              <mat-label>Largeur (px)</mat-label>
+            <div class="c-form-group">
+              <label for="node-width" class="c-form-label">Largeur (px)</label>
               <input
-                matInput
+                id="node-width"
                 type="number"
+                class="c-form-input"
                 [ngModel]="customWidth()"
                 (ngModelChange)="customWidth.set($event)"
                 min="80"
                 max="400"
               />
-            </mat-form-field>
+            </div>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Hauteur (px)</mat-label>
+            <div class="c-form-group">
+              <label for="node-height" class="c-form-label">Hauteur (px)</label>
               <input
-                matInput
+                id="node-height"
                 type="number"
+                class="c-form-input"
                 [ngModel]="customHeight()"
                 (ngModelChange)="customHeight.set($event)"
                 min="30"
                 max="300"
               />
-            </mat-form-field>
+            </div>
           </div>
         }
       </div>
@@ -211,10 +220,13 @@
   </mat-tab-group>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
-  <button mat-button (click)="cancel()">Annuler</button>
-  <button mat-flat-button color="primary" (click)="save()">
-    <mat-icon>check</mat-icon>
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button type="button" class="c-button c-button--secondary" (click)="cancel()">
+    <span class="material-icons-outlined">close</span>
+    Annuler
+  </button>
+  <button type="button" class="c-button c-button--primary" (click)="save()">
+    <span class="material-icons-outlined">check</span>
     Enregistrer
   </button>
 </mat-dialog-actions>

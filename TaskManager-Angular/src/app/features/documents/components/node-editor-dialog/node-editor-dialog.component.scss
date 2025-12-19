@@ -1,12 +1,22 @@
+@use "sass:color";
+@use "../../../../styles/variables" as v;
+@use "../../../../styles/mixins" as m;
+
+// ==========================================================================
+// Dialog Layout
+// ==========================================================================
+
 .dialog-title {
-  @apply flex items-center gap-2;
-  @apply text-gray-800;
+  display: flex;
+  align-items: center;
+  gap: v.$space-2;
+  color: v.$text-color-dark;
   margin: 0;
-  padding: 16px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: v.$space-4 v.$space-6;
+  border-bottom: 1px solid v.$border-color-light;
 
   mat-icon {
-    @apply text-blue-600;
+    color: v.$primary-color;
   }
 }
 
@@ -16,22 +26,35 @@
   max-width: 600px;
 }
 
+.dialog-actions {
+  padding: v.$space-4 v.$space-6 !important;
+  border-top: 1px solid v.$border-color-light;
+  margin: 0 !important;
+  gap: v.$space-3;
+}
+
+// ==========================================================================
+// Tabs
+// ==========================================================================
+
 .editor-tabs {
   ::ng-deep {
     .mat-mdc-tab-header {
-      background-color: #f9fafb;
-      border-bottom: 1px solid #e5e7eb;
+      background-color: v.$background-color-page;
+      border-bottom: 1px solid v.$border-color-light;
     }
 
     .mat-mdc-tab-labels {
-      padding: 0 16px;
+      padding: 0 v.$space-4;
     }
 
     .mat-mdc-tab {
       min-width: 120px;
 
       .mdc-tab__content {
-        @apply flex items-center gap-2;
+        display: flex;
+        align-items: center;
+        gap: v.$space-2;
 
         mat-icon {
           font-size: 18px;
@@ -42,34 +65,153 @@
     }
 
     .mat-mdc-tab-body-wrapper {
-      padding: 24px;
+      padding: v.$space-6;
     }
   }
 }
 
 .tab-content {
-  @apply flex flex-col gap-4;
+  display: flex;
+  flex-direction: column;
 }
 
-.full-width {
+// ==========================================================================
+// Form Elements (consistent with project-form)
+// ==========================================================================
+
+.c-form-group {
+  margin-bottom: v.$space-5;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.c-form-label {
+  display: block;
+  font-size: v.$font-size-sm;
+  font-weight: v.$font-weight-semibold;
+  color: v.$text-color-dark;
+  margin-bottom: v.$space-2;
+
+  &__required {
+    color: v.$error-color;
+    margin-left: v.$space-1;
+  }
+}
+
+.c-form-input {
   width: 100%;
+  padding: v.$space-3 v.$space-4;
+  font-size: v.$font-size-base;
+  color: v.$text-color-dark;
+  background-color: v.$background-color-form;
+  border: 1px solid v.$border-color-medium;
+  border-radius: v.$border-radius-md;
+  transition: all 0.2s ease;
+  font-family: inherit;
+
+  &:focus {
+    outline: none;
+    border-color: v.$primary-color;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background-color: white;
+  }
+
+  &::placeholder {
+    color: v.$text-color-disabled;
+  }
 }
 
-.section-label {
-  @apply block text-sm font-medium text-gray-700 mb-2;
+.c-form-textarea {
+  resize: vertical;
+  min-height: 60px;
+  line-height: 1.5;
+
+  &--notes {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    min-height: 100px;
+  }
 }
 
-.formatted-section {
-  @apply flex flex-col gap-2;
+.c-form-hint {
+  margin: v.$space-2 0 0;
+  font-size: v.$font-size-xs;
+  color: v.$text-color-light;
 }
+
+// ==========================================================================
+// Buttons (consistent with project-form)
+// ==========================================================================
+
+.c-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: v.$space-2;
+  height: 44px;
+  padding: 0 v.$space-6;
+  font-size: v.$font-size-base;
+  font-weight: v.$font-weight-medium;
+  border-radius: v.$border-radius-md;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+
+  .material-icons-outlined {
+    font-size: v.$font-size-xl;
+  }
+
+  &--primary {
+    background-color: v.$primary-color;
+    color: v.$text-color-inverted;
+    box-shadow: v.$shadow-sm;
+
+    &:hover {
+      background-color: v.$primary-color-dark;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  &--secondary {
+    background-color: v.$background-color-form;
+    color: v.$text-color-dark;
+    border-color: v.$border-color-medium;
+    box-shadow: v.$shadow-sm;
+
+    &:hover {
+      background-color: v.$background-color-page;
+      border-color: v.$text-color-light;
+    }
+  }
+}
+
+// ==========================================================================
+// Formatting Toolbar
+// ==========================================================================
 
 .formatting-toolbar {
-  @apply flex gap-1 p-2;
-  @apply bg-gray-100 rounded-t-lg border border-b-0 border-gray-300;
+  display: flex;
+  gap: v.$space-1;
+  padding: v.$space-2;
+  background-color: v.$background-color-page;
+  border: 1px solid v.$border-color-medium;
+  border-bottom: none;
+  border-radius: v.$border-radius-md v.$border-radius-md 0 0;
 
   button.mat-mdc-icon-button {
-    @apply w-9 h-9;
-    @apply flex items-center justify-center;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     .mat-mdc-button-touch-target {
       width: 36px;
@@ -77,85 +219,65 @@
     }
 
     mat-icon {
-      @apply flex items-center justify-center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 20px;
       width: 20px;
       height: 20px;
       line-height: 20px;
+      color: v.$text-color-medium;
     }
 
     &:hover {
-      @apply bg-gray-200 rounded;
+      background-color: v.$border-color-light;
+      border-radius: v.$border-radius-sm;
+
+      mat-icon {
+        color: v.$text-color-dark;
+      }
     }
   }
 }
 
-// Wrapper for formatted content with Material styling
-.formatted-content-wrapper {
-  @apply border border-gray-300 rounded-b-lg;
-  @apply bg-white;
-  transition: border-color 0.2s, box-shadow 0.2s;
-
-  &:focus-within {
-    @apply border-blue-500;
-    box-shadow: 0 0 0 1px #3b82f6;
-  }
-}
-
-.formatted-content-textarea {
-  @apply w-full p-3;
-  @apply text-sm text-gray-800;
-  @apply resize-none border-none;
-  @apply bg-transparent;
-  font-family: inherit;
-  line-height: 1.5;
-  min-height: 120px;
-
-  &:focus {
-    @apply outline-none;
-  }
-
-  &::placeholder {
-    @apply text-gray-400;
-  }
-}
-
-.hint-text {
-  @apply text-xs text-gray-500 mt-1;
-  margin: 0;
-}
-
-.style-section {
-  @apply flex flex-col gap-2 mb-4;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-}
+// ==========================================================================
+// Style Section
+// ==========================================================================
 
 .text-color-options {
-  @apply flex gap-3;
+  display: flex;
+  gap: v.$space-3;
 }
 
 .text-color-btn {
-  @apply flex items-center gap-2;
-  @apply px-4 py-2 rounded-lg;
-  @apply border-2 border-gray-200;
-  @apply bg-white cursor-pointer;
-  @apply text-sm font-medium text-gray-700;
-  @apply transition-all;
+  display: flex;
+  align-items: center;
+  gap: v.$space-2;
+  padding: v.$space-2 v.$space-4;
+  border-radius: v.$border-radius-md;
+  border: 2px solid v.$border-color-light;
+  background-color: white;
+  cursor: pointer;
+  font-size: v.$font-size-sm;
+  font-weight: v.$font-weight-medium;
+  color: v.$text-color-dark;
+  transition: all 0.2s ease;
 
   &:hover {
-    @apply border-gray-300 bg-gray-50;
+    border-color: v.$border-color-medium;
+    background-color: v.$background-color-page;
   }
 
   &.selected {
-    @apply border-blue-500 bg-blue-50;
+    border-color: v.$primary-color;
+    background-color: rgba(59, 130, 246, 0.05);
   }
 
   .color-swatch {
-    @apply w-5 h-5 rounded-full;
-    @apply border border-gray-300;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid v.$border-color-medium;
 
     &.light {
       background-color: #ffffff;
@@ -167,10 +289,18 @@
   }
 }
 
+// ==========================================================================
+// Node Preview
+// ==========================================================================
+
 .node-preview {
-  @apply flex flex-col items-center justify-center;
-  @apply p-4 rounded-lg;
-  @apply border-2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: v.$space-4;
+  border-radius: v.$border-radius-lg;
+  border: 2px solid currentColor;
   min-height: 60px;
   max-width: 200px;
   margin: 0 auto;
@@ -212,35 +342,27 @@
   }
 
   .preview-title {
-    @apply font-semibold text-sm;
+    font-weight: v.$font-weight-semibold;
+    font-size: v.$font-size-sm;
   }
 
   .preview-description {
-    @apply text-xs opacity-80 mt-1;
+    font-size: v.$font-size-xs;
+    opacity: 0.8;
+    margin-top: v.$space-1;
   }
 }
+
+// ==========================================================================
+// Size Inputs
+// ==========================================================================
 
 .size-inputs {
-  @apply flex gap-4;
+  display: flex;
+  gap: v.$space-4;
 
-  mat-form-field {
+  .c-form-group {
     flex: 1;
-  }
-}
-
-mat-dialog-actions {
-  @apply px-6 py-4;
-  @apply border-t border-gray-200;
-  margin: 0 !important;
-
-  button {
-    @apply ml-2;
-
-    mat-icon {
-      @apply mr-1;
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
+    margin-bottom: 0;
   }
 }
