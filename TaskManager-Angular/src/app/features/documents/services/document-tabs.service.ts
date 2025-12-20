@@ -4,10 +4,13 @@ import { from, Observable, forkJoin, of } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import {
   DocumentTab,
+  DocumentTabGroup,
   DocumentSection,
   DocumentTabItem,
   CreateDocumentTab,
   UpdateDocumentTab,
+  CreateDocumentTabGroup,
+  UpdateDocumentTabGroup,
   CreateDocumentSection,
   UpdateDocumentSection,
   DocumentDropTarget,
@@ -47,19 +50,23 @@ export class DocumentTabsService {
   }
 
   /**
-   * Get all tabs, sections, and items for a project in one call
+   * Get all tabs, groups, sections, and items for a project in one call
    */
   getTabsWithItemsByProject(projectId: string): Observable<TabsLoadResult> {
-    return this.getTabsByProject(projectId).pipe(
-      switchMap((tabs) => {
+    return forkJoin({
+      tabs: this.getTabsByProject(projectId),
+      groups: this.getGroupsByProject(projectId),
+    }).pipe(
+      switchMap(({ tabs, groups }) => {
         if (tabs.length === 0) {
-          return of({ tabs: [], sections: [], items: [] });
+          return of({ tabs: [], groups, sections: [], items: [] });
         }
 
         const tabIds = tabs.map((t) => t.id);
 
         return forkJoin({
           tabs: of(tabs),
+          groups: of(groups),
           sections: this.getSectionsByTabIds(tabIds),
           items: this.getItemsByTabIds(tabIds),
         });
@@ -151,6 +158,175 @@ export class DocumentTabsService {
           return r.data as DocumentTab;
         })
       )
+    );
+  }
+
+  // =====================================================================
+  // TAB GROUPS
+  // =====================================================================
+
+  /**
+   * Get all groups for a project
+   */
+  getGroupsByProject(projectId: string): Observable<DocumentTabGroup[]> {
+    return from(
+      this.client
+        .from('document_tab_groups')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('position', { ascending: true })
+    ).pipe(
+      map((response) => {
+        if (response.error) throw response.error;
+        return response.data as DocumentTabGroup[];
+      })
+    );
+  }
+
+  /**
+   * Create a new tab group
+   */
+  createGroup(group: CreateDocumentTabGroup): Observable<DocumentTabGroup> {
+    return from(
+      this.client.rpc('get_next_tab_group_position', { p_project_id: group.project_id })
+    ).pipe(
+      switchMap((positionResult) => {
+        const position = group.position ?? (positionResult.data as number) ?? 0;
+
+        return from(
+          this.client
+            .from('document_tab_groups')
+            .insert({
+              ...group,
+              position,
+              color: group.color ?? '#6366f1',
+              is_collapsed: false,
+            })
+            .select()
+            .single()
+        );
+      }),
+      map((response) => {
+        if (response.error) throw response.error;
+        return response.data as DocumentTabGroup;
+      })
+    );
+  }
+
+  /**
+   * Update an existing tab group
+   */
+  updateGroup(groupId: string, updates: UpdateDocumentTabGroup): Observable<DocumentTabGroup> {
+    return from(
+      this.client
+        .from('document_tab_groups')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', groupId)
+        .select()
+        .single()
+    ).pipe(
+      map((response) => {
+        if (response.error) throw response.error;
+        return response.data as DocumentTabGroup;
+      })
+    );
+  }
+
+  /**
+   * Delete a tab group (tabs become ungrouped via ON DELETE SET NULL)
+   */
+  deleteGroup(groupId: string): Observable<boolean> {
+    return from(
+      this.client.from('document_tab_groups').delete().eq('id', groupId)
+    ).pipe(
+      map((response) => {
+        if (response.error) throw response.error;
+        return true;
+      })
+    );
+  }
+
+  /**
+   * Reorder groups by updating their positions
+   */
+  reorderGroups(groupIds: string[]): Observable<DocumentTabGroup[]> {
+    const updates = groupIds.map((id, index) =>
+      this.client
+        .from('document_tab_groups')
+        .update({ position: index, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single()
+    );
+
+    return from(Promise.all(updates)).pipe(
+      map((responses) =>
+        responses.map((r) => {
+          if (r.error) throw r.error;
+          return r.data as DocumentTabGroup;
+        })
+      )
+    );
+  }
+
+  /**
+   * Move a tab to a group (or remove from group if groupId is null)
+   */
+  moveTabToGroup(tabId: string, groupId: string | null): Observable<DocumentTab> {
+    return from(
+      this.client
+        .from('document_tabs')
+        .update({
+          tab_group_id: groupId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', tabId)
+        .select()
+        .single()
+    ).pipe(
+      map((response) => {
+        if (response.error) throw response.error;
+        return response.data as DocumentTab;
+      })
+    );
+  }
+
+  /**
+   * Create a group and add tabs to it in one operation
+   */
+  createGroupWithTabs(
+    group: CreateDocumentTabGroup,
+    tabIds: string[]
+  ): Observable<{ group: DocumentTabGroup; tabs: DocumentTab[] }> {
+    return this.createGroup(group).pipe(
+      switchMap((createdGroup) => {
+        if (tabIds.length === 0) {
+          return of({ group: createdGroup, tabs: [] });
+        }
+
+        // Move all tabs to the new group
+        const movePromises = tabIds.map((tabId) =>
+          this.client
+            .from('document_tabs')
+            .update({
+              tab_group_id: createdGroup.id,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', tabId)
+            .select()
+            .single()
+        );
+
+        return from(Promise.all(movePromises)).pipe(
+          map((responses) => ({
+            group: createdGroup,
+            tabs: responses.map((r) => {
+              if (r.error) throw r.error;
+              return r.data as DocumentTab;
+            }),
+          }))
+        );
+      })
     );
   }
 

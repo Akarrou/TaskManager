@@ -135,7 +135,15 @@
   border-radius: 3px 3px 0 0;
 }
 
-.add-tab-btn {
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.add-tab-btn,
+.add-group-btn {
   flex-shrink: 0;
   width: 36px !important;
   height: 36px !important;
@@ -167,6 +175,12 @@
     margin: 0 !important;
     padding: 0 !important;
   }
+}
+
+.ungrouped-tabs-container {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 // Drag Preview
@@ -224,7 +238,8 @@
     }
   }
 
-  .add-tab-btn {
+  .add-tab-btn,
+  .add-group-btn {
     border-color: rgba(255, 255, 255, 0.2);
 
     &:hover {

@@ -100,8 +100,11 @@ export class ProjectFormComponent implements OnInit, OnDestroy {
 
   onSubmit() {
     if (this.form.valid) {
+      const rawName = this.form.value.name!.trim();
+      const capitalizedName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+
       const projectData = {
-        name: this.form.value.name!,
+        name: capitalizedName,
         description: this.form.value.description || null
       };
 

@@ -1,0 +1,67 @@
+<h2 mat-dialog-title>{{ dialogTitle }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="group-edit-form">
+    <!-- Group Name -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Nom du groupe</mat-label>
+      <input matInput formControlName="name" placeholder="Ex: Projets importants" maxlength="50" />
+      <mat-hint align="end">{{ form.value.name?.length || 0 }}/50</mat-hint>
+      @if (form.controls['name'].hasError('required')) {
+        <mat-error>Le nom est requis</mat-error>
+      }
+    </mat-form-field>
+
+    <!-- Color Selection -->
+    <div class="selection-section">
+      <label class="section-label">Couleur</label>
+      <div class="color-grid">
+        @for (color of colors; track color) {
+          <button
+            type="button"
+            class="color-option"
+            [class.selected]="selectedColor === color"
+            [style.background-color]="color"
+            (click)="selectColor(color)">
+            @if (selectedColor === color) {
+              <mat-icon class="check-icon">check</mat-icon>
+            }
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-section">
+      <label class="section-label">Aperçu</label>
+      <div class="preview-group" [style.border-color]="selectedColor">
+        <div class="preview-header">
+          <mat-icon class="expand-icon" [style.color]="selectedColor">expand_more</mat-icon>
+          <span class="preview-name" [style.color]="selectedColor">{{ form.value.name || 'Nom du groupe' }}</span>
+          <span class="preview-count">2 onglets</span>
+        </div>
+        <div class="preview-tabs">
+          <div class="preview-tab-item">
+            <mat-icon>folder</mat-icon>
+            <span>Onglet 1</span>
+          </div>
+          <div class="preview-tab-item">
+            <mat-icon>description</mat-icon>
+            <span>Onglet 2</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Annuler</button>
+  <button
+    mat-raised-button
+    color="primary"
+    [disabled]="!form.valid"
+    (click)="onSubmit()">
+    {{ isEditMode ? 'Enregistrer' : 'Créer' }}
+  </button>
+</mat-dialog-actions>

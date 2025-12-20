@@ -11,7 +11,13 @@ import {
   DragDropModule,
   moveItemInArray,
 } from '@angular/cdk/drag-drop';
-import { DocumentTab, UpdateDocumentTab, DocumentTabItem } from '../../models/document-tabs.model';
+import {
+  DocumentTab,
+  DocumentTabGroup,
+  UpdateDocumentTab,
+  UpdateDocumentTabGroup,
+  TabGroupWithTabs,
+} from '../../models/document-tabs.model';
 import {
   TabEditDialogComponent,
   TabEditDialogData,
@@ -21,6 +27,12 @@ import {
   DeleteTabDialogComponent,
   DeleteTabDialogData,
 } from '../delete-tab-dialog/delete-tab-dialog.component';
+import {
+  GroupEditDialogComponent,
+  GroupEditDialogData,
+  GroupEditDialogResult,
+} from '../group-edit-dialog/group-edit-dialog.component';
+import { TabGroupHeaderComponent } from '../tab-group-header/tab-group-header.component';
 
 @Component({
   selector: 'app-document-tab-bar',
@@ -32,6 +44,7 @@ import {
     MatMenuModule,
     MatTooltipModule,
     DragDropModule,
+    TabGroupHeaderComponent,
   ],
   templateUrl: './document-tab-bar.component.html',
   styleUrls: ['./document-tab-bar.component.scss'],
@@ -39,7 +52,10 @@ import {
 export class DocumentTabBarComponent {
   private dialog = inject(MatDialog);
 
-  @Input() tabs: DocumentTab[] = [];
+  // Tabs organized by groups
+  @Input() tabsByGroup: TabGroupWithTabs[] = [];
+  @Input() ungroupedTabs: DocumentTab[] = [];
+  @Input() tabs: DocumentTab[] = []; // All tabs (for backward compatibility)
   @Input() selectedTabId: string | null = null;
   @Input() allDropListIds: string[] = [];
   @Input() tabItemCounts: Map<string, number> = new Map();
@@ -51,8 +67,18 @@ export class DocumentTabBarComponent {
   @Output() tabsReorder = new EventEmitter<string[]>();
   @Output() documentDropOnTab = new EventEmitter<{ documentId: string; targetTabId: string }>();
 
+  // Group events
+  @Output() groupCreate = new EventEmitter<{ name: string; color: string }>();
+  @Output() groupUpdate = new EventEmitter<{ groupId: string; updates: UpdateDocumentTabGroup }>();
+  @Output() groupDelete = new EventEmitter<string>();
+  @Output() groupToggleCollapse = new EventEmitter<string>();
+  @Output() tabMoveToGroup = new EventEmitter<{ tabId: string; groupId: string | null }>();
+  @Output() groupCreateWithTabs = new EventEmitter<{ group: { name: string; color: string }; tabIds: string[] }>();
+
   // Track which tab is being hovered during drag
   dragOverTabId: string | null = null;
+  // Track tab being dragged for group creation
+  draggedTab: DocumentTab | null = null;
 
   onTabClick(tabId: string): void {
     if (tabId !== this.selectedTabId) {
@@ -75,7 +101,14 @@ export class DocumentTabBarComponent {
 
   onEditTab(tab: DocumentTab, event: Event): void {
     event.stopPropagation();
+    this.openTabEditDialog(tab);
+  }
 
+  onEditTabFromGroup(tab: DocumentTab): void {
+    this.openTabEditDialog(tab);
+  }
+
+  private openTabEditDialog(tab: DocumentTab): void {
     const dialogRef = this.dialog.open(TabEditDialogComponent, {
       width: '500px',
       data: { tab, mode: 'edit' } as TabEditDialogData,
@@ -155,5 +188,98 @@ export class DocumentTabBarComponent {
 
   onDragLeaveTab(): void {
     this.dragOverTabId = null;
+  }
+
+  // =====================================================================
+  // GROUP OPERATIONS
+  // =====================================================================
+
+  onAddGroup(): void {
+    const dialogRef = this.dialog.open(GroupEditDialogComponent, {
+      width: '500px',
+      data: { mode: 'create' } as GroupEditDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((result: GroupEditDialogResult | undefined) => {
+      if (result) {
+        this.groupCreate.emit(result);
+      }
+    });
+  }
+
+  onGroupToggleCollapse(groupId: string): void {
+    this.groupToggleCollapse.emit(groupId);
+  }
+
+  onGroupUpdate(groupId: string, updates: UpdateDocumentTabGroup): void {
+    this.groupUpdate.emit({ groupId, updates });
+  }
+
+  onGroupDelete(groupId: string): void {
+    this.groupDelete.emit(groupId);
+  }
+
+  onTabRemoveFromGroup(tabId: string): void {
+    this.tabMoveToGroup.emit({ tabId, groupId: null });
+  }
+
+  onTabDroppedInGroup(groupId: string, tabId: string): void {
+    this.tabMoveToGroup.emit({ tabId, groupId });
+  }
+
+  // Handle drop in the ungrouped tabs zone
+  onUngroupedTabDrop(event: CdkDragDrop<DocumentTab[]>): void {
+    const droppedTab = event.item.data as DocumentTab;
+
+    // If tab came from a group, remove it from the group
+    if (droppedTab && droppedTab.tab_group_id) {
+      this.tabMoveToGroup.emit({ tabId: droppedTab.id, groupId: null });
+    } else if (event.previousIndex !== event.currentIndex) {
+      // Reorder within ungrouped tabs
+      const reorderedTabs = [...this.ungroupedTabs];
+      moveItemInArray(reorderedTabs, event.previousIndex, event.currentIndex);
+      this.tabsReorder.emit(reorderedTabs.map((t) => t.id));
+    }
+  }
+
+  // Called when dragging an ungrouped tab onto another ungrouped tab
+  onTabDropOnTab(event: CdkDragDrop<DocumentTab[]>, targetTab: DocumentTab): void {
+    const draggedTab = event.item.data as DocumentTab;
+
+    // Only create group if both tabs are ungrouped
+    if (draggedTab && !draggedTab.tab_group_id && !targetTab.tab_group_id && draggedTab.id !== targetTab.id) {
+      const dialogRef = this.dialog.open(GroupEditDialogComponent, {
+        width: '500px',
+        data: { mode: 'create' } as GroupEditDialogData,
+      });
+
+      dialogRef.afterClosed().subscribe((result: GroupEditDialogResult | undefined) => {
+        if (result) {
+          this.groupCreateWithTabs.emit({
+            group: result,
+            tabIds: [draggedTab.id, targetTab.id],
+          });
+        }
+      });
+    }
+  }
+
+  // Track dragged tab for group creation
+  onTabDragStart(tab: DocumentTab): void {
+    this.draggedTab = tab;
+  }
+
+  onTabDragEnd(): void {
+    this.draggedTab = null;
+  }
+
+  trackGroup(index: number, group: TabGroupWithTabs): string {
+    return group.id;
+  }
+
+  // Get all tab drag & drop list IDs (for connecting groups and ungrouped zone)
+  getTabDragDropListIds(): string[] {
+    const groupIds = this.tabsByGroup.map(g => `group-${g.id}`);
+    return [...groupIds, 'ungrouped-tabs'];
   }
 }

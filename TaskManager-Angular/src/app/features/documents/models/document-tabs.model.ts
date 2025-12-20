@@ -1,6 +1,20 @@
 import { Document } from '../services/document.service';
 
 /**
+ * Document Tab Group - A collapsible container for organizing tabs (like Chrome/Brave)
+ */
+export interface DocumentTabGroup {
+  id: string;
+  project_id: string;
+  name: string;
+  color: string;
+  position: number;
+  is_collapsed: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/**
  * Document Tab - A container for organizing document cards within a project
  */
 export interface DocumentTab {
@@ -11,6 +25,7 @@ export interface DocumentTab {
   color: string;
   position: number;
   is_default: boolean;
+  tab_group_id?: string | null;
   user_id?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -80,10 +95,30 @@ export interface DocumentDropTarget {
 }
 
 /**
+ * Create DTO for DocumentTabGroup
+ */
+export type CreateDocumentTabGroup = Pick<DocumentTabGroup, 'project_id' | 'name'> &
+  Partial<Pick<DocumentTabGroup, 'color' | 'position'>>;
+
+/**
+ * Update DTO for DocumentTabGroup
+ */
+export type UpdateDocumentTabGroup = Partial<
+  Pick<DocumentTabGroup, 'name' | 'color' | 'position' | 'is_collapsed'>
+>;
+
+/**
+ * Tab Group with its tabs - Aggregated view for display
+ */
+export interface TabGroupWithTabs extends DocumentTabGroup {
+  tabs: DocumentTab[];
+}
+
+/**
  * Create DTO for DocumentTab
  */
 export type CreateDocumentTab = Pick<DocumentTab, 'project_id' | 'name'> &
-  Partial<Pick<DocumentTab, 'icon' | 'color' | 'position' | 'is_default'>>;
+  Partial<Pick<DocumentTab, 'icon' | 'color' | 'position' | 'is_default' | 'tab_group_id'>>;
 
 /**
  * Update DTO for DocumentTab
@@ -106,6 +141,7 @@ export type UpdateDocumentSection = Partial<Pick<DocumentSection, 'title' | 'ico
  */
 export interface TabsLoadResult {
   tabs: DocumentTab[];
+  groups: DocumentTabGroup[];
   sections: DocumentSection[];
   items: DocumentTabItem[];
 }

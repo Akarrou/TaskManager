@@ -6,14 +6,18 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { DocumentTabsService } from '../services/document-tabs.service';
 import {
   DocumentTab,
+  DocumentTabGroup,
   DocumentSection,
   DocumentTabItem,
   CreateDocumentTab,
   UpdateDocumentTab,
+  CreateDocumentTabGroup,
+  UpdateDocumentTabGroup,
   CreateDocumentSection,
   UpdateDocumentSection,
   DocumentDropTarget,
   TabWithItems,
+  TabGroupWithTabs,
   SectionWithItems,
 } from '../models/document-tabs.model';
 
@@ -22,6 +26,7 @@ import {
  */
 interface DocumentTabsState {
   tabs: DocumentTab[];
+  groups: DocumentTabGroup[];
   sections: DocumentSection[];
   items: DocumentTabItem[];
   selectedTabId: string | null;
@@ -35,6 +40,7 @@ interface DocumentTabsState {
  */
 const initialState: DocumentTabsState = {
   tabs: [],
+  groups: [],
   sections: [],
   items: [],
   selectedTabId: null,
@@ -180,6 +186,37 @@ export const DocumentTabsStore = signalStore(
     }),
 
     /**
+     * Get groups sorted by position
+     */
+    sortedGroups: computed(() =>
+      [...store.groups()].sort((a, b) => a.position - b.position)
+    ),
+
+    /**
+     * Get tabs organized by groups
+     */
+    tabsByGroup: computed((): TabGroupWithTabs[] => {
+      const groups = [...store.groups()].sort((a, b) => a.position - b.position);
+      const tabs = store.tabs();
+
+      return groups.map(group => ({
+        ...group,
+        tabs: tabs
+          .filter(t => t.tab_group_id === group.id)
+          .sort((a, b) => a.position - b.position),
+      }));
+    }),
+
+    /**
+     * Get ungrouped tabs (tabs not in any group)
+     */
+    ungroupedTabs: computed(() =>
+      store.tabs()
+        .filter(t => !t.tab_group_id)
+        .sort((a, b) => a.position - b.position)
+    ),
+
+    /**
      * Check if store is in loading state
      */
     isLoading: computed(() => store.loading()),
@@ -218,17 +255,18 @@ export const DocumentTabsStore = signalStore(
     // =====================================================================
 
     /**
-     * Load tabs, sections, and items for a project
+     * Load tabs, groups, sections, and items for a project
      */
     loadTabs: rxMethod<{ projectId: string }>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
         switchMap(({ projectId }) =>
           tabsService.getTabsWithItemsByProject(projectId).pipe(
-            tap(({ tabs, sections, items }) => {
+            tap(({ tabs, groups, sections, items }) => {
               const selectedTabId = tabs.find((t) => t.is_default)?.id ?? tabs[0]?.id ?? null;
               patchState(store, {
                 tabs,
+                groups,
                 sections,
                 items,
                 selectedTabId,
@@ -360,6 +398,198 @@ export const DocumentTabsStore = signalStore(
     selectTab(tabId: string | null): void {
       patchState(store, { selectedTabId: tabId });
     },
+
+    // =====================================================================
+    // TAB GROUP OPERATIONS
+    // =====================================================================
+
+    /**
+     * Create a new tab group
+     */
+    createGroup: rxMethod<{ group: CreateDocumentTabGroup }>(
+      pipe(
+        switchMap(({ group }) =>
+          tabsService.createGroup(group).pipe(
+            tap((newGroup) => {
+              patchState(store, {
+                groups: [...store.groups(), newGroup],
+              });
+              snackBar.open('Groupe créé', 'Fermer', { duration: 2000 });
+            }),
+            catchError((error: Error) => {
+              snackBar.open('Erreur lors de la création du groupe', 'Fermer', { duration: 5000 });
+              return of(null);
+            })
+          )
+        )
+      )
+    ),
+
+    /**
+     * Create a group with tabs (for drag-drop group creation)
+     */
+    createGroupWithTabs: rxMethod<{
+      group: CreateDocumentTabGroup;
+      tabIds: string[];
+    }>(
+      pipe(
+        switchMap(({ group, tabIds }) =>
+          tabsService.createGroupWithTabs(group, tabIds).pipe(
+            tap(({ group: newGroup, tabs: updatedTabs }) => {
+              patchState(store, {
+                groups: [...store.groups(), newGroup],
+                tabs: store.tabs().map((t) => {
+                  const updated = updatedTabs.find((u) => u.id === t.id);
+                  return updated ?? t;
+                }),
+              });
+              snackBar.open('Groupe créé', 'Fermer', { duration: 2000 });
+            }),
+            catchError((error: Error) => {
+              snackBar.open('Erreur lors de la création du groupe', 'Fermer', { duration: 5000 });
+              return of(null);
+            })
+          )
+        )
+      )
+    ),
+
+    /**
+     * Update a tab group
+     */
+    updateGroup: rxMethod<{ groupId: string; updates: UpdateDocumentTabGroup }>(
+      pipe(
+        switchMap(({ groupId, updates }) =>
+          tabsService.updateGroup(groupId, updates).pipe(
+            tap((updatedGroup) => {
+              patchState(store, {
+                groups: store.groups().map((g) =>
+                  g.id === groupId ? updatedGroup : g
+                ),
+              });
+            }),
+            catchError((error: Error) => {
+              snackBar.open('Erreur lors de la mise à jour du groupe', 'Fermer', { duration: 5000 });
+              return of(null);
+            })
+          )
+        )
+      )
+    ),
+
+    /**
+     * Delete a tab group (tabs become ungrouped)
+     */
+    deleteGroup: rxMethod<{ groupId: string }>(
+      pipe(
+        switchMap(({ groupId }) =>
+          tabsService.deleteGroup(groupId).pipe(
+            tap(() => {
+              // Update tabs to remove group reference
+              const updatedTabs = store.tabs().map((t) =>
+                t.tab_group_id === groupId ? { ...t, tab_group_id: null } : t
+              );
+              patchState(store, {
+                groups: store.groups().filter((g) => g.id !== groupId),
+                tabs: updatedTabs,
+              });
+              snackBar.open('Groupe supprimé', 'Fermer', { duration: 2000 });
+            }),
+            catchError((error: Error) => {
+              snackBar.open('Erreur lors de la suppression du groupe', 'Fermer', { duration: 5000 });
+              return of(null);
+            })
+          )
+        )
+      )
+    ),
+
+    /**
+     * Reorder groups
+     */
+    reorderGroups: rxMethod<{ groupIds: string[] }>(
+      pipe(
+        tap(({ groupIds }) => {
+          // Optimistic update
+          const reorderedGroups = groupIds.map((id, index) => {
+            const group = store.groups().find((g) => g.id === id);
+            return group ? { ...group, position: index } : null;
+          }).filter(Boolean) as DocumentTabGroup[];
+          patchState(store, { groups: reorderedGroups });
+        }),
+        switchMap(({ groupIds }) =>
+          tabsService.reorderGroups(groupIds).pipe(
+            tap((updatedGroups) => {
+              patchState(store, { groups: updatedGroups });
+            }),
+            catchError(() => of(null))
+          )
+        )
+      )
+    ),
+
+    /**
+     * Toggle group collapse state
+     */
+    toggleGroupCollapse(groupId: string): void {
+      const group = store.groups().find((g) => g.id === groupId);
+      if (group) {
+        tabsService.updateGroup(groupId, { is_collapsed: !group.is_collapsed }).subscribe({
+          next: (updated) => {
+            patchState(store, {
+              groups: store.groups().map((g) => (g.id === groupId ? updated : g)),
+            });
+          },
+        });
+      }
+    },
+
+    /**
+     * Move a tab to a group (or remove from group if groupId is null)
+     */
+    moveTabToGroup: rxMethod<{ tabId: string; groupId: string | null }>(
+      pipe(
+        tap(({ tabId, groupId }) => {
+          // Optimistic update
+          patchState(store, {
+            tabs: store.tabs().map((t) =>
+              t.id === tabId ? { ...t, tab_group_id: groupId } : t
+            ),
+          });
+        }),
+        switchMap(({ tabId, groupId }) =>
+          tabsService.moveTabToGroup(tabId, groupId).pipe(
+            tap((updatedTab) => {
+              patchState(store, {
+                tabs: store.tabs().map((t) =>
+                  t.id === tabId ? updatedTab : t
+                ),
+              });
+
+              // Check if we should delete empty group
+              if (!groupId) {
+                // Tab was removed from a group, check if any groups are now empty
+                const currentTabs = store.tabs();
+                const emptyGroups = store.groups().filter(
+                  (g) => !currentTabs.some((t) => t.tab_group_id === g.id)
+                );
+                if (emptyGroups.length > 0) {
+                  // Delete empty groups
+                  emptyGroups.forEach((g) => {
+                    tabsService.deleteGroup(g.id).subscribe(() => {
+                      patchState(store, {
+                        groups: store.groups().filter((grp) => grp.id !== g.id),
+                      });
+                    });
+                  });
+                }
+              }
+            }),
+            catchError(() => of(null))
+          )
+        )
+      )
+    ),
 
     // =====================================================================
     // SECTION OPERATIONS

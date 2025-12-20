@@ -1,27 +1,41 @@
 <div class="tab-bar">
-  <!-- Tabs Container (Draggable) -->
-  <div
-    class="tabs-container"
-    cdkDropList
-    cdkDropListOrientation="horizontal"
-    (cdkDropListDropped)="onTabDrop($event)">
-    @for (tab of tabs; track trackTab($index, tab)) {
-      <!-- Tab wrapper with drop zone for documents -->
-      <div
-        class="tab-item-wrapper"
-        cdkDropList
-        [id]="getTabDropListId(tab.id)"
-        [cdkDropListConnectedTo]="allDropListIds"
-        (cdkDropListDropped)="onDocumentDropOnTab($event, tab.id)"
-        (cdkDropListEntered)="onDragEnterTab(tab.id)"
-        (cdkDropListExited)="onDragLeaveTab()">
+  <div class="tabs-container">
+    <!-- Groups -->
+    @for (group of tabsByGroup; track trackGroup($index, group)) {
+      <app-tab-group-header
+        [group]="group"
+        [tabs]="group.tabs"
+        [selectedTabId]="selectedTabId"
+        [tabItemCounts]="tabItemCounts"
+        [connectedDropListIds]="getTabDragDropListIds()"
+        (toggleCollapse)="onGroupToggleCollapse(group.id)"
+        (editGroup)="onGroupUpdate(group.id, $event)"
+        (deleteGroup)="onGroupDelete(group.id)"
+        (tabSelect)="tabSelect.emit($event)"
+        (tabEdit)="onEditTabFromGroup($event)"
+        (tabDelete)="tabDelete.emit($event)"
+        (tabRemoveFromGroup)="onTabRemoveFromGroup($event)"
+        (tabDroppedInGroup)="onTabDroppedInGroup(group.id, $event)">
+      </app-tab-group-header>
+    }
+
+    <!-- Ungrouped Tabs -->
+    <div
+      class="ungrouped-tabs-container"
+      cdkDropList
+      id="ungrouped-tabs"
+      [cdkDropListConnectedTo]="getTabDragDropListIds()"
+      cdkDropListOrientation="horizontal"
+      (cdkDropListDropped)="onUngroupedTabDrop($event)">
+      @for (tab of ungroupedTabs; track trackTab($index, tab)) {
+        <!-- Tab item with drag capability -->
         <div
-          class="tab-item"
-          [class.selected]="isSelected(tab.id)"
-          [class.drag-over]="dragOverTabId === tab.id"
-          [style.--tab-color]="tab.color"
+          class="tab-item-wrapper"
           cdkDrag
-          (click)="onTabClick(tab.id)">
+          [cdkDragData]="tab"
+          (cdkDragStarted)="onTabDragStart(tab)"
+          (cdkDragEnded)="onTabDragEnd()">
+
           <!-- Drag Preview -->
           <div *cdkDragPreview class="tab-drag-preview" [style.border-color]="tab.color">
             <mat-icon [style.color]="tab.color">{{ tab.icon }}</mat-icon>
@@ -31,54 +45,80 @@
           <!-- Drag Placeholder -->
           <div *cdkDragPlaceholder class="tab-placeholder"></div>
 
-          <!-- Tab Content -->
-          <div class="tab-content">
-            <mat-icon class="tab-icon" [style.color]="isSelected(tab.id) ? tab.color : null">
-              {{ tab.icon }}
-            </mat-icon>
-            <span class="tab-name">{{ tab.name }}</span>
+          <!-- Tab with document drop zone -->
+          <div
+            class="tab-item"
+            [class.selected]="isSelected(tab.id)"
+            [class.drag-over]="dragOverTabId === tab.id"
+            [class.drag-target]="draggedTab && draggedTab.id !== tab.id"
+            [style.--tab-color]="tab.color"
+            cdkDropList
+            [id]="getTabDropListId(tab.id)"
+            [cdkDropListConnectedTo]="allDropListIds"
+            (cdkDropListDropped)="onDocumentDropOnTab($event, tab.id)"
+            (cdkDropListEntered)="onDragEnterTab(tab.id)"
+            (cdkDropListExited)="onDragLeaveTab()"
+            (click)="onTabClick(tab.id)">
 
-            <!-- Tab Menu -->
-            <button
-              mat-icon-button
-              class="tab-menu-btn"
-              [matMenuTriggerFor]="tabMenu"
-              (click)="$event.stopPropagation()">
-              <mat-icon>more_vert</mat-icon>
-            </button>
+            <!-- Tab Content -->
+            <div class="tab-content">
+              <mat-icon class="tab-icon" [style.color]="isSelected(tab.id) ? tab.color : null">
+                {{ tab.icon }}
+              </mat-icon>
+              <span class="tab-name">{{ tab.name }}</span>
 
-            <mat-menu #tabMenu="matMenu">
-              <button mat-menu-item (click)="onEditTab(tab, $event)">
-                <mat-icon>edit</mat-icon>
-                <span>Modifier</span>
-              </button>
+              <!-- Tab Menu -->
               <button
-                mat-menu-item
-                [disabled]="!canDeleteTab(tab.id)"
-                (click)="onDeleteTab(tab, $event)"
-                class="delete-option"
-                [matTooltip]="!canDeleteTab(tab.id) ? 'Déplacez d\'abord les documents pour supprimer cet onglet' : ''">
-                <mat-icon [color]="canDeleteTab(tab.id) ? 'warn' : ''">delete</mat-icon>
-                <span>Supprimer</span>
+                mat-icon-button
+                class="tab-menu-btn"
+                [matMenuTriggerFor]="tabMenu"
+                (click)="$event.stopPropagation()">
+                <mat-icon>more_vert</mat-icon>
               </button>
-            </mat-menu>
-          </div>
 
-          <!-- Selection Indicator -->
-          @if (isSelected(tab.id)) {
-            <div class="selection-indicator" [style.background-color]="tab.color"></div>
-          }
+              <mat-menu #tabMenu="matMenu">
+                <button mat-menu-item (click)="onEditTab(tab, $event)">
+                  <mat-icon>edit</mat-icon>
+                  <span>Modifier</span>
+                </button>
+                <button
+                  mat-menu-item
+                  [disabled]="!canDeleteTab(tab.id)"
+                  (click)="onDeleteTab(tab, $event)"
+                  class="delete-option"
+                  [matTooltip]="!canDeleteTab(tab.id) ? 'Déplacez d\'abord les documents pour supprimer cet onglet' : ''">
+                  <mat-icon [color]="canDeleteTab(tab.id) ? 'warn' : ''">delete</mat-icon>
+                  <span>Supprimer</span>
+                </button>
+              </mat-menu>
+            </div>
+
+            <!-- Selection Indicator -->
+            @if (isSelected(tab.id)) {
+              <div class="selection-indicator" [style.background-color]="tab.color"></div>
+            }
+          </div>
         </div>
-      </div>
-    }
+      }
+    </div>
   </div>
 
-  <!-- Add Tab Button -->
-  <button
-    mat-icon-button
-    class="add-tab-btn"
-    (click)="onAddTab()"
-    matTooltip="Nouvel onglet">
-    <mat-icon>add</mat-icon>
-  </button>
+  <!-- Action Buttons -->
+  <div class="action-buttons">
+    <button
+      mat-icon-button
+      class="add-tab-btn"
+      (click)="onAddTab()"
+      matTooltip="Nouvel onglet">
+      <mat-icon>add</mat-icon>
+    </button>
+
+    <button
+      mat-icon-button
+      class="add-group-btn"
+      (click)="onAddGroup()"
+      matTooltip="Nouveau groupe">
+      <mat-icon>create_new_folder</mat-icon>
+    </button>
+  </div>
 </div>

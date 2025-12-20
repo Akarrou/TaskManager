@@ -23,7 +23,12 @@ import { AppState } from '../../../app.state';
 import { selectSelectedProject } from '../../projects/store/project.selectors';
 import { selectAllDocuments, selectDocumentsLoading } from '../store/document.selectors';
 import * as DocumentActions from '../store/document.actions';
-import { DocumentDropTarget, UpdateDocumentTab, UpdateDocumentSection } from '../models/document-tabs.model';
+import {
+  DocumentDropTarget,
+  UpdateDocumentTab,
+  UpdateDocumentSection,
+  UpdateDocumentTabGroup,
+} from '../models/document-tabs.model';
 
 @Component({
   selector: 'app-document-list',
@@ -62,6 +67,10 @@ export class DocumentListComponent implements OnInit, OnDestroy {
   selectedTabWithItems = this.tabsStore.selectedTabWithItems;
   tabsLoading = this.tabsStore.isLoading;
   tabItemCounts = this.tabsStore.tabItemCounts;
+
+  // Groups Store signals
+  tabsByGroup = this.tabsStore.tabsByGroup;
+  ungroupedTabs = this.tabsStore.ungroupedTabs;
 
   // Computed: All drop list IDs (sections + unsectioned + tab drop zones)
   allDropListIds = computed(() => {
@@ -227,6 +236,53 @@ export class DocumentListComponent implements OnInit, OnDestroy {
         sectionId: null,
         position: 0,
       }
+    });
+  }
+
+  // ==========================================================================
+  // GROUP OPERATIONS
+  // ==========================================================================
+
+  onCreateGroup(data: { name: string; color: string }): void {
+    const project = this.currentProject();
+    if (!project) return;
+
+    this.tabsStore.createGroup({
+      group: {
+        project_id: project.id,
+        name: data.name,
+        color: data.color,
+      }
+    });
+  }
+
+  onUpdateGroup(data: { groupId: string; updates: UpdateDocumentTabGroup }): void {
+    this.tabsStore.updateGroup(data);
+  }
+
+  onDeleteGroup(groupId: string): void {
+    this.tabsStore.deleteGroup({ groupId });
+  }
+
+  onToggleGroupCollapse(groupId: string): void {
+    this.tabsStore.toggleGroupCollapse(groupId);
+  }
+
+  onTabMoveToGroup(data: { tabId: string; groupId: string | null }): void {
+    this.tabsStore.moveTabToGroup(data);
+  }
+
+  onGroupCreateWithTabs(data: { group: { name: string; color: string }; tabIds: string[] }): void {
+    const project = this.currentProject();
+    if (!project) return;
+
+    this.tabsStore.createGroupWithTabs({
+      group: {
+        project_id: project.id,
+        name: data.group.name,
+        color: data.group.color,
+      },
+      tabIds: data.tabIds,
     });
   }
 

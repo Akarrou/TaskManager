@@ -22,6 +22,8 @@
         @if (tabs().length > 0) {
           <app-document-tab-bar
             [tabs]="tabs()"
+            [tabsByGroup]="tabsByGroup()"
+            [ungroupedTabs]="ungroupedTabs()"
             [selectedTabId]="selectedTabId()"
             [allDropListIds]="allDropListIds()"
             [tabItemCounts]="tabItemCounts()"
@@ -30,7 +32,13 @@
             (tabUpdate)="onUpdateTab($event)"
             (tabDelete)="onDeleteTab($event)"
             (tabsReorder)="onReorderTabs($event)"
-            (documentDropOnTab)="onDocumentDropOnTab($event)">
+            (documentDropOnTab)="onDocumentDropOnTab($event)"
+            (groupCreate)="onCreateGroup($event)"
+            (groupUpdate)="onUpdateGroup($event)"
+            (groupDelete)="onDeleteGroup($event)"
+            (groupToggleCollapse)="onToggleGroupCollapse($event)"
+            (tabMoveToGroup)="onTabMoveToGroup($event)"
+            (groupCreateWithTabs)="onGroupCreateWithTabs($event)">
           </app-document-tab-bar>
         }
 
