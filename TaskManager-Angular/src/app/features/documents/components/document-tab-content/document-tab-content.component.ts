@@ -24,7 +24,7 @@ import {
   DocumentSection,
 } from '../../models/document-tabs.model';
 import { Document, DocumentStorageFile } from '../../services/document.service';
-import { DocumentSectionHeaderComponent } from '../document-section-header/document-section-header.component';
+import { DocumentSectionCardComponent } from '../document-section-card/document-section-card.component';
 
 @Component({
   selector: 'app-document-tab-content',
@@ -37,7 +37,7 @@ import { DocumentSectionHeaderComponent } from '../document-section-header/docum
     MatTooltipModule,
     DragDropModule,
     CdkDragHandle,
-    DocumentSectionHeaderComponent,
+    DocumentSectionCardComponent,
   ],
   templateUrl: './document-tab-content.component.html',
   styleUrls: ['./document-tab-content.component.scss'],

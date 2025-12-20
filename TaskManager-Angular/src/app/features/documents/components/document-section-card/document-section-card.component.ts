@@ -9,7 +9,7 @@ import { DocumentSection, UpdateDocumentSection } from '../../models/document-ta
 import { SectionEditDialogComponent, SectionEditDialogResult } from '../section-edit-dialog/section-edit-dialog.component';
 
 @Component({
-  selector: 'app-document-section-header',
+  selector: 'app-document-section-card',
   standalone: true,
   imports: [
     CommonModule,
@@ -18,10 +18,10 @@ import { SectionEditDialogComponent, SectionEditDialogResult } from '../section-
     MatButtonModule,
     MatTooltipModule,
   ],
-  templateUrl: './document-section-header.component.html',
-  styleUrls: ['./document-section-header.component.scss'],
+  templateUrl: './document-section-card.component.html',
+  styleUrls: ['./document-section-card.component.scss'],
 })
-export class DocumentSectionHeaderComponent {
+export class DocumentSectionCardComponent {
   private dialog = inject(MatDialog);
 
   @Input({ required: true }) section!: DocumentSection;

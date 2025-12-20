@@ -1,0 +1,65 @@
+<div
+  class="section-card"
+  [class.collapsed]="section.is_collapsed"
+  [style.--section-color]="section.color || '#6366f1'">
+
+  <!-- Header -->
+  <div class="section-card__header">
+    <!-- Collapse/Expand Button -->
+    <button
+      mat-icon-button
+      class="collapse-btn"
+      (click)="onToggleCollapse()"
+      [matTooltip]="section.is_collapsed ? 'Développer' : 'Réduire'">
+      <mat-icon>{{ section.is_collapsed ? 'expand_more' : 'expand_less' }}</mat-icon>
+    </button>
+
+    <!-- Section Icon -->
+    <mat-icon class="section-icon" [style.color]="section.color || '#6366f1'">
+      {{ section.icon || 'folder_open' }}
+    </mat-icon>
+
+    <!-- Section Title -->
+    <div class="section-title-container" (dblclick)="onDoubleClick()">
+      @if (isEditing()) {
+        <input
+          type="text"
+          class="title-input"
+          [ngModel]="editTitle()"
+          (ngModelChange)="editTitle.set($event)"
+          (blur)="onTitleBlur()"
+          (keydown)="onTitleKeydown($event)"
+          maxlength="100"
+          autofocus />
+      } @else {
+        <span class="section-title">{{ section.title }}</span>
+        <span class="item-count">({{ itemCount }})</span>
+      }
+    </div>
+
+    <!-- Actions -->
+    <div class="section-actions">
+      <button
+        mat-icon-button
+        class="edit-btn"
+        (click)="onEdit()"
+        matTooltip="Modifier la section">
+        <mat-icon>edit</mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        class="delete-btn"
+        (click)="onDelete()"
+        matTooltip="Supprimer la section">
+        <mat-icon>delete_outline</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Content (slot) -->
+  @if (!section.is_collapsed) {
+    <div class="section-card__content">
+      <ng-content></ng-content>
+    </div>
+  }
+</div>

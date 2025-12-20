@@ -73,40 +73,12 @@
 }
 
 // ==========================================================================
-// Section Container (the card)
+// Section Card Component Wrapper
 // ==========================================================================
-.section-container {
+.section-wrapper app-document-section-card {
   flex: 1;
   min-width: 0;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 12px;
-  padding: 1rem;
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.7);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  }
-
-  &.collapsed {
-    padding: 0.5rem 1rem;
-    background: rgba(0, 0, 0, 0.02);
-
-    .section-content {
-      display: none;
-    }
-  }
-}
-
-// Section header takes full width
-.section-container app-document-section-header {
   display: block;
-  margin-bottom: 1rem;
-}
-
-.section-container.collapsed app-document-section-header {
-  margin-bottom: 0;
 }
 
 .section-content {
@@ -890,19 +862,6 @@
 // Dark Mode Support
 // ==========================================================================
 :host-context(.dark-mode) {
-  .section-container {
-    background: rgba(255, 255, 255, 0.03);
-    border-color: rgba(255, 255, 255, 0.05);
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    &.collapsed {
-      background: rgba(255, 255, 255, 0.02);
-    }
-  }
-
   .section-drag-handle {
     color: rgba(255, 255, 255, 0.4);
 

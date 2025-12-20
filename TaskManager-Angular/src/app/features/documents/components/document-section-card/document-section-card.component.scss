@@ -1,23 +1,23 @@
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.625rem 1rem;
+@use "../../../../styles/variables" as v;
+
+.section-card {
   background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--section-color, #6366f1) 10%, transparent) 0%,
-    color-mix(in srgb, var(--section-color, #6366f1) 3%, transparent) 100%
+    135deg,
+    color-mix(in srgb, var(--section-color, #6366f1) 4%, white) 0%,
+    color-mix(in srgb, var(--section-color, #6366f1) 1%, white) 100%
   );
-  border-radius: 10px;
   border-left: 4px solid var(--section-color, #6366f1);
+  border-radius: 12px;
+  padding: 1rem;
   transition: all 0.2s ease;
 
   &:hover {
     background: linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--section-color, #6366f1) 15%, transparent) 0%,
-      color-mix(in srgb, var(--section-color, #6366f1) 5%, transparent) 100%
+      135deg,
+      color-mix(in srgb, var(--section-color, #6366f1) 6%, white) 0%,
+      color-mix(in srgb, var(--section-color, #6366f1) 2%, white) 100%
     );
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--section-color, #6366f1) 10%, transparent);
 
     .section-actions {
       opacity: 1;
@@ -25,8 +25,18 @@
   }
 
   &.collapsed {
-    background: transparent;
-    border-left-color: var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+    padding: 0.5rem 1rem;
+    background: color-mix(in srgb, var(--section-color, #6366f1) 2%, white);
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  &__content {
+    margin-top: 1rem;
   }
 }
 
@@ -146,23 +156,23 @@
 
 // Dark mode
 :host-context(.dark-mode) {
-  .section-header {
+  .section-card {
     background: linear-gradient(
-      90deg,
-      rgba(99, 102, 241, 0.15) 0%,
-      rgba(99, 102, 241, 0.05) 100%
+      135deg,
+      color-mix(in srgb, var(--section-color, #6366f1) 8%, #1a1a1a) 0%,
+      color-mix(in srgb, var(--section-color, #6366f1) 3%, #1a1a1a) 100%
     );
 
     &:hover {
       background: linear-gradient(
-        90deg,
-        rgba(99, 102, 241, 0.2) 0%,
-        rgba(99, 102, 241, 0.08) 100%
+        135deg,
+        color-mix(in srgb, var(--section-color, #6366f1) 12%, #1a1a1a) 0%,
+        color-mix(in srgb, var(--section-color, #6366f1) 5%, #1a1a1a) 100%
       );
     }
 
     &.collapsed {
-      background: rgba(255, 255, 255, 0.05);
+      background: color-mix(in srgb, var(--section-color, #6366f1) 3%, #1a1a1a);
     }
   }
 
