@@ -52,8 +52,13 @@
                 <mat-icon>edit</mat-icon>
                 <span>Modifier</span>
               </button>
-              <button mat-menu-item (click)="onDeleteTab(tab.id, $event)" class="delete-option">
-                <mat-icon color="warn">delete</mat-icon>
+              <button
+                mat-menu-item
+                [disabled]="!canDeleteTab(tab.id)"
+                (click)="onDeleteTab(tab, $event)"
+                class="delete-option"
+                [matTooltip]="!canDeleteTab(tab.id) ? 'Déplacez d\'abord les documents pour supprimer cet onglet' : ''">
+                <mat-icon [color]="canDeleteTab(tab.id) ? 'warn' : ''">delete</mat-icon>
                 <span>Supprimer</span>
               </button>
             </mat-menu>

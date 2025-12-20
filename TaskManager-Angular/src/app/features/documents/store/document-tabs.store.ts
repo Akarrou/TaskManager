@@ -159,6 +159,27 @@ export const DocumentTabsStore = signalStore(
     ),
 
     /**
+     * Get item count per tab (for delete restriction)
+     */
+    tabItemCounts: computed(() => {
+      const counts = new Map<string, number>();
+      const items = store.items();
+
+      // Initialize all tabs with 0
+      store.tabs().forEach(tab => {
+        counts.set(tab.id, 0);
+      });
+
+      // Count items per tab
+      items.forEach(item => {
+        const current = counts.get(item.tab_id) || 0;
+        counts.set(item.tab_id, current + 1);
+      });
+
+      return counts;
+    }),
+
+    /**
      * Check if store is in loading state
      */
     isLoading: computed(() => store.loading()),

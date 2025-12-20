@@ -123,11 +123,16 @@ export class TabEditDialogComponent {
   onSubmit(): void {
     if (this.form.valid) {
       const result: TabEditDialogResult = {
-        name: this.form.value.name.trim(),
+        name: this.capitalizeFirstLetter(this.form.value.name.trim()),
         icon: this.selectedIcon,
         color: this.selectedColor,
       };
       this.dialogRef.close(result);
     }
+  }
+
+  private capitalizeFirstLetter(text: string): string {
+    if (!text) return text;
+    return text.charAt(0).toUpperCase() + text.slice(1);
   }
 }

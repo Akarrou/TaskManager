@@ -61,6 +61,7 @@ export class DocumentListComponent implements OnInit, OnDestroy {
   selectedTabId = this.tabsStore.selectedTabId;
   selectedTabWithItems = this.tabsStore.selectedTabWithItems;
   tabsLoading = this.tabsStore.isLoading;
+  tabItemCounts = this.tabsStore.tabItemCounts;
 
   // Computed: All drop list IDs (sections + unsectioned + tab drop zones)
   allDropListIds = computed(() => {

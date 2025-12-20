@@ -17,6 +17,10 @@ import {
   TabEditDialogData,
   TabEditDialogResult,
 } from '../tab-edit-dialog/tab-edit-dialog.component';
+import {
+  DeleteTabDialogComponent,
+  DeleteTabDialogData,
+} from '../delete-tab-dialog/delete-tab-dialog.component';
 
 @Component({
   selector: 'app-document-tab-bar',
@@ -38,6 +42,7 @@ export class DocumentTabBarComponent {
   @Input() tabs: DocumentTab[] = [];
   @Input() selectedTabId: string | null = null;
   @Input() allDropListIds: string[] = [];
+  @Input() tabItemCounts: Map<string, number> = new Map();
 
   @Output() tabSelect = new EventEmitter<string>();
   @Output() tabCreate = new EventEmitter<{ name: string; icon: string; color: string }>();
@@ -83,12 +88,19 @@ export class DocumentTabBarComponent {
     });
   }
 
-  onDeleteTab(tabId: string, event: Event): void {
+  onDeleteTab(tab: DocumentTab, event: Event): void {
     event.stopPropagation();
-    // Confirm before delete
-    if (confirm('Supprimer cet onglet ? Les documents ne seront pas supprimés.')) {
-      this.tabDelete.emit(tabId);
-    }
+
+    const dialogRef = this.dialog.open(DeleteTabDialogComponent, {
+      width: '450px',
+      data: { tabName: tab.name } as DeleteTabDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.tabDelete.emit(tab.id);
+      }
+    });
   }
 
   onTabDrop(event: CdkDragDrop<DocumentTab[]>): void {
@@ -105,6 +117,14 @@ export class DocumentTabBarComponent {
 
   isSelected(tabId: string): boolean {
     return tabId === this.selectedTabId;
+  }
+
+  getTabItemCount(tabId: string): number {
+    return this.tabItemCounts.get(tabId) || 0;
+  }
+
+  canDeleteTab(tabId: string): boolean {
+    return this.getTabItemCount(tabId) === 0;
   }
 
   getTabDropListId(tabId: string): string {
