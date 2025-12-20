@@ -1,0 +1,114 @@
+<h2 mat-dialog-title class="dialog-title">
+  <mat-icon>date_range</mat-icon>
+  Sélectionner une plage de dates
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <!-- Instruction -->
+  <div class="instruction">
+    {{ getInstructionText() }}
+  </div>
+
+  <!-- Month Navigation -->
+  <div class="month-navigation">
+    <button mat-icon-button (click)="previousMonth()" aria-label="Mois précédent">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <span class="month-name">{{ currentMonthName() }}</span>
+    <button mat-icon-button (click)="nextMonth()" aria-label="Mois suivant">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+  </div>
+
+  <!-- Calendar -->
+  <div class="calendar">
+    <!-- Week days header -->
+    <div class="week-header">
+      @for (day of weekDays; track day) {
+        <div class="week-day">{{ day }}</div>
+      }
+    </div>
+
+    <!-- Calendar weeks -->
+    @for (week of calendarDays(); track $index) {
+      <div class="week-row">
+        @for (day of week; track $index) {
+          @if (day) {
+            <button
+              class="day-cell"
+              [class.today]="isToday(day)"
+              [class.start-date]="isStartDate(day)"
+              [class.end-date]="isEndDate(day)"
+              [class.in-range]="isInRange(day)"
+              (click)="onDayClick(day)"
+            >
+              {{ day.getDate() }}
+            </button>
+          } @else {
+            <div class="day-cell empty"></div>
+          }
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Time inputs (if includeTime is enabled) -->
+  @if (includeTime) {
+    <div class="time-section">
+      <div class="time-input">
+        <label>Début</label>
+        <input
+          type="time"
+          [ngModel]="startTime()"
+          (ngModelChange)="startTime.set($event)"
+        />
+      </div>
+      <div class="time-input">
+        <label>Fin</label>
+        <input
+          type="time"
+          [ngModel]="endTime()"
+          (ngModelChange)="endTime.set($event)"
+        />
+      </div>
+    </div>
+  }
+
+  <!-- Selected range display -->
+  @if (startDate() || endDate()) {
+    <div class="selected-range">
+      <span class="label">Sélection :</span>
+      <span class="range-value">
+        @if (startDate()) {
+          {{ startDate() | date:'d MMM yyyy':'':'fr' }}
+          @if (includeTime) {
+            {{ startTime() }}
+          }
+        } @else {
+          ...
+        }
+        →
+        @if (endDate()) {
+          {{ endDate() | date:'d MMM yyyy':'':'fr' }}
+          @if (includeTime) {
+            {{ endTime() }}
+          }
+        } @else {
+          ...
+        }
+      </span>
+    </div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button color="warn" (click)="clear()">
+    Effacer
+  </button>
+  <button mat-button (click)="cancel()">
+    Annuler
+  </button>
+  <button mat-flat-button color="primary" (click)="confirm()">
+    Confirmer
+  </button>
+</mat-dialog-actions>

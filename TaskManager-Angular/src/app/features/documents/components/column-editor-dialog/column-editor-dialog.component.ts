@@ -58,12 +58,16 @@ export class ColumnEditorDialogComponent implements OnInit {
     { value: 'text', label: 'Texte' },
     { value: 'number', label: 'Nombre' },
     { value: 'date', label: 'Date' },
+    { value: 'date-range', label: 'Plage de dates' },
     { value: 'checkbox', label: 'Case à cocher' },
     { value: 'select', label: 'Sélection' },
     { value: 'multi-select', label: 'Sélection multiple' },
     { value: 'url', label: 'URL' },
     { value: 'email', label: 'Email' },
   ];
+
+  // Include time option for date-range columns
+  includeTime = signal(false);
 
   // Choices for select/multi-select (editable)
   choices = signal<SelectChoice[]>([]);
@@ -94,6 +98,11 @@ export class ColumnEditorDialogComponent implements OnInit {
       this.choices.set([...this.data.column.options.choices]);
     }
 
+    // Load includeTime option for date-range columns
+    if (this.data.column?.type === 'date-range' && this.data.column.options?.includeTime) {
+      this.includeTime.set(true);
+    }
+
     // Watch for type changes to show/hide choice editor
     this.columnForm.get('type')?.valueChanges.subscribe((type: ColumnType) => {
       if (type !== 'select' && type !== 'multi-select') {
@@ -122,6 +131,13 @@ export class ColumnEditorDialogComponent implements OnInit {
   get isSelectType(): boolean {
     const type = this.columnForm.get('type')?.value;
     return type === 'select' || type === 'multi-select';
+  }
+
+  /**
+   * Check if current type is date-range
+   */
+  get isDateRangeType(): boolean {
+    return this.columnForm.get('type')?.value === 'date-range';
   }
 
   /**
@@ -241,6 +257,13 @@ export class ColumnEditorDialogComponent implements OnInit {
     if (columnType === 'select' || columnType === 'multi-select') {
       column.options = {
         choices: this.choices(),
+      };
+    }
+
+    // Add options for date-range
+    if (columnType === 'date-range') {
+      column.options = {
+        includeTime: this.includeTime(),
       };
     }
 

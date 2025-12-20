@@ -118,6 +118,22 @@
         </div>
       }
 
+      <!-- Options for Date Range -->
+      @if (isDateRangeType) {
+        <div class="date-range-options">
+          <mat-checkbox
+            [checked]="includeTime()"
+            (change)="includeTime.set($event.checked)"
+            class="option-checkbox"
+          >
+            Inclure les heures
+          </mat-checkbox>
+          <p class="text-xs text-gray-500 mt-1">
+            Permet de définir une heure de début et de fin en plus des dates
+          </p>
+        </div>
+      }
+
       <!-- Column Options -->
       <div class="column-options">
         <mat-checkbox formControlName="required" class="option-checkbox">

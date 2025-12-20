@@ -1,0 +1,184 @@
+.dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 16px 24px;
+  font-size: 1.25rem;
+  font-weight: 500;
+
+  mat-icon {
+    color: #3b82f6;
+  }
+}
+
+.dialog-content {
+  padding: 0 24px 16px;
+  min-width: 320px;
+}
+
+.instruction {
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+  padding: 8px;
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.month-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+
+  .month-name {
+    font-weight: 500;
+    font-size: 1rem;
+  }
+}
+
+.calendar {
+  .week-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: 4px;
+
+    .week-day {
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #6b7280;
+      padding: 4px;
+    }
+  }
+
+  .week-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+
+  .day-cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.15s ease;
+
+    &:hover:not(.empty) {
+      background: #e5e7eb;
+    }
+
+    &.empty {
+      cursor: default;
+    }
+
+    &.today {
+      font-weight: 600;
+      border: 1px solid #3b82f6;
+    }
+
+    &.start-date,
+    &.end-date {
+      background: #3b82f6;
+      color: white;
+      font-weight: 500;
+
+      &:hover {
+        background: #2563eb;
+      }
+    }
+
+    &.in-range {
+      background: #dbeafe;
+      border-radius: 0;
+
+      &:hover {
+        background: #bfdbfe;
+      }
+    }
+
+    &.start-date {
+      border-radius: 50% 0 0 50%;
+
+      &.end-date {
+        border-radius: 50%;
+      }
+    }
+
+    &.end-date {
+      border-radius: 0 50% 50% 0;
+    }
+  }
+}
+
+.time-section {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+
+  .time-input {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    label {
+      font-size: 0.75rem;
+      color: #6b7280;
+      font-weight: 500;
+    }
+
+    input[type='time'] {
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      font-family: inherit;
+
+      &:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+      }
+    }
+  }
+}
+
+.selected-range {
+  margin-top: 16px;
+  padding: 12px;
+  background: #eff6ff;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 500;
+  }
+
+  .range-value {
+    font-size: 0.875rem;
+    color: #1e40af;
+    font-weight: 500;
+  }
+}
+
+mat-dialog-actions {
+  padding: 8px 16px 16px;
+  gap: 8px;
+}

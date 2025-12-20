@@ -386,6 +386,23 @@
                                   <option value="__create_new__">✨ Créer une nouvelle option</option>
                                 </select>
                               </div>
+                            } @else if (column.type === 'date-range') {
+                              <!-- Date Range type -->
+                              <button
+                                type="button"
+                                class="date-range-cell"
+                                (click)="onOpenDateRangePicker(row.id, column.id); $event.stopPropagation()">
+                                @if (getDateRangeValue(row.cells[column.id]); as rangeValue) {
+                                  <span class="date-range-value">
+                                    {{ rangeValue | dateRangeFormat:columnHasIncludeTime(column) }}
+                                  </span>
+                                } @else {
+                                  <span class="date-range-empty">
+                                    <mat-icon>date_range</mat-icon>
+                                    Définir
+                                  </span>
+                                }
+                              </button>
                             } @else {
                               <!-- Text, number, date, url, email types -->
                               <input

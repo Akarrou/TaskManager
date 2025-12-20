@@ -178,6 +178,10 @@ export class DatabaseFiltersComponent {
         'is_empty',
         'is_not_empty',
       ],
+      'date-range': [
+        'is_empty',
+        'is_not_empty',
+      ],
       checkbox: ['equals'],
       select: ['equals', 'not_equals', 'is_empty', 'is_not_empty'],
       'multi-select': [
@@ -215,6 +219,7 @@ export class DatabaseFiltersComponent {
       text: 'contains',
       number: 'equals',
       date: 'equals',
+      'date-range': 'is_not_empty',
       checkbox: 'equals',
       select: 'equals',
       'multi-select': 'contains',

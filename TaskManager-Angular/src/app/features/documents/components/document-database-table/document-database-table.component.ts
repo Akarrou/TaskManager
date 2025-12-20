@@ -24,6 +24,9 @@ import {
   QueryRowsParams,
   DatabaseView,
   findNameColumn,
+  DateRangeValue,
+  isDateRangeValue,
+  hasIncludeTime,
 } from '../../models/database.model';
 import { DatabaseService } from '../../services/database.service';
 import { Document, DocumentService } from '../../services/document.service';
@@ -54,6 +57,12 @@ import { DatabaseKanbanView } from '../database-kanban-view/database-kanban-view
 import { DatabaseCalendarView } from '../database-calendar-view/database-calendar-view';
 import { DatabaseTimelineView } from '../database-timeline-view/database-timeline-view';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import {
+  DateRangePickerDialogComponent,
+  DateRangePickerDialogData,
+  DateRangePickerDialogResult,
+} from '../date-range-picker-dialog/date-range-picker-dialog.component';
+import { DateRangeFormatPipe } from '../../../../shared/pipes/date-range-format.pipe';
 
 /**
  * DocumentDatabaseTableComponent
@@ -81,6 +90,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
     DatabaseKanbanView,
     DatabaseCalendarView,
     DatabaseTimelineView,
+    DateRangeFormatPipe,
   ],
   templateUrl: './document-database-table.component.html',
   styleUrl: './document-database-table.component.scss',
@@ -856,6 +866,8 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
         return 0;
       case 'date':
         return null;
+      case 'date-range':
+        return null;
       case 'checkbox':
         return false;
       case 'multi-select':
@@ -863,6 +875,50 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
       default:
         return null;
     }
+  }
+
+  /**
+   * Open date range picker dialog
+   */
+  onOpenDateRangePicker(rowId: string, columnId: string): void {
+    const column = this.databaseConfig().columns.find(col => col.id === columnId);
+    if (!column || column.type !== 'date-range') return;
+
+    const row = this.rows().find(r => r.id === rowId);
+    if (!row) return;
+
+    const currentValue = row.cells[columnId];
+    const dateRangeValue = isDateRangeValue(currentValue) ? currentValue : null;
+
+    const dialogData: DateRangePickerDialogData = {
+      value: dateRangeValue,
+      includeTime: hasIncludeTime(column),
+    };
+
+    const dialogRef = this.dialog.open(DateRangePickerDialogComponent, {
+      width: '400px',
+      data: dialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((result: DateRangePickerDialogResult | undefined) => {
+      if (result !== undefined) {
+        this.onUpdateCell(rowId, columnId, result.value);
+      }
+    });
+  }
+
+  /**
+   * Get DateRangeValue from cell value
+   */
+  getDateRangeValue(cellValue: CellValue): DateRangeValue | null {
+    return isDateRangeValue(cellValue) ? cellValue : null;
+  }
+
+  /**
+   * Check if column has includeTime option
+   */
+  columnHasIncludeTime(column: DatabaseColumn): boolean {
+    return hasIncludeTime(column);
   }
 
   /**

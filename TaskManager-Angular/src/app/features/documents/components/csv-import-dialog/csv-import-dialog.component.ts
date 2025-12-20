@@ -25,7 +25,7 @@ import {
   CsvImportPreview,
   DetectedColumn,
 } from '../../models/csv-import.model';
-import { ColumnType, SelectChoice, DatabaseColumn } from '../../models/database.model';
+import { ColumnType, SelectChoice, DatabaseColumn, DateRangeValue } from '../../models/database.model';
 
 /**
  * Dialog pour importer des données CSV dans une base de données
@@ -102,6 +102,7 @@ export class CsvImportDialogComponent {
     'text',
     'number',
     'date',
+    'date-range',
     'checkbox',
     'select',
     'multi-select',
@@ -514,6 +515,14 @@ export class CsvImportDialogComponent {
           .filter(id => id !== null);
 
         return choiceIds.length > 0 ? choiceIds : null;
+      case 'date-range':
+        // Parse date range from CSV (e.g., "1 avr. 2026 → 30 avr. 2026")
+        const parsed = CsvTypeDetector.parseDateRange(value);
+        if (!parsed.startDate && !parsed.endDate) return null;
+        return {
+          startDate: parsed.startDate,
+          endDate: parsed.endDate,
+        } as DateRangeValue;
       default:
         return value;
     }

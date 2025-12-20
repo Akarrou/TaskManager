@@ -16,6 +16,7 @@ export type ColumnType =
   | 'text'
   | 'number'
   | 'date'
+  | 'date-range'
   | 'checkbox'
   | 'select'
   | 'multi-select'
@@ -67,6 +68,17 @@ export interface ColumnOptions {
 
   // For date columns
   dateFormat?: string; // e.g., 'DD/MM/YYYY', 'YYYY-MM-DD'
+
+  // For date-range columns
+  includeTime?: boolean; // Whether to include time in the date range
+}
+
+/**
+ * Value for date-range column type
+ */
+export interface DateRangeValue {
+  startDate: string | null; // ISO format: "2026-04-01" or "2026-04-01T10:00:00"
+  endDate: string | null;   // ISO format: "2026-04-30" or "2026-04-30T18:00:00"
 }
 
 /**
@@ -179,7 +191,7 @@ export interface DatabaseConfig {
 /**
  * Cell value types
  */
-export type CellValue = string | number | boolean | string[] | null;
+export type CellValue = string | number | boolean | string[] | DateRangeValue | null;
 
 /**
  * Database row (stored in PostgreSQL table)
@@ -419,6 +431,25 @@ export function hasDateFormat(column: DatabaseColumn): column is DatabaseColumn 
 }
 
 /**
+ * Type guard to check if a value is a DateRangeValue
+ */
+export function isDateRangeValue(value: CellValue): value is DateRangeValue {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    ('startDate' in value || 'endDate' in value)
+  );
+}
+
+/**
+ * Type guard to check if a column has includeTime option
+ */
+export function hasIncludeTime(column: DatabaseColumn): boolean {
+  return column.type === 'date-range' && column.options?.includeTime === true;
+}
+
+/**
  * Find the Name column in a database config
  * This column is linked to the document title and cannot be deleted.
  * @param columns - Array of database columns
@@ -447,6 +478,7 @@ export const COLUMN_TYPE_TO_PG_TYPE: Record<ColumnType, string> = {
   text: 'TEXT',
   number: 'NUMERIC',
   date: 'DATE',
+  'date-range': 'JSONB',
   checkbox: 'BOOLEAN',
   select: 'TEXT',
   'multi-select': 'TEXT[]',
@@ -461,6 +493,7 @@ export const DEFAULT_COLUMN_WIDTHS: Record<ColumnType, number> = {
   text: 200,
   number: 120,
   date: 150,
+  'date-range': 250,
   checkbox: 80,
   select: 180,
   'multi-select': 220,
