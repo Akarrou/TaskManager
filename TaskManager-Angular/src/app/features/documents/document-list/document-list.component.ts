@@ -85,11 +85,21 @@ export class DocumentListComponent implements OnInit, OnDestroy {
     );
   });
 
-  // Computed: Map of documents for quick lookup
+  // Computed: Map of ALL documents (including children) for quick lookup
   documentMap = computed(() => {
-    const docs = this.documents();
+    const project = this.selectedProjectSignal();
+    const allDocs = this.allDocumentsSignal();
     const map = new Map<string, Document>();
-    docs.forEach(doc => map.set(doc.id, doc));
+
+    if (!project) {
+      return map;
+    }
+
+    // Include ALL documents from this project (root and children)
+    allDocs
+      .filter(doc => doc.project_id === project.id)
+      .forEach(doc => map.set(doc.id, doc));
+
     return map;
   });
 
@@ -116,11 +126,11 @@ export class DocumentListComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Effect: load storage files when documents change
+    // Effect: load storage files when documents change (for all documents including children)
     effect(() => {
-      const docs = this.documents();
-      if (docs.length > 0) {
-        this.loadStorageFilesForDocuments(docs);
+      const docMap = this.documentMap();
+      if (docMap.size > 0) {
+        this.loadStorageFilesForDocuments(Array.from(docMap.values()));
       }
     });
   }

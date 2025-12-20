@@ -40,6 +40,35 @@
   }
 }
 
+// ==========================================================================
+// Drag & Drop Support for content passed via ng-content
+// ==========================================================================
+:host ::ng-deep {
+  .cdk-drag-preview {
+    box-sizing: border-box;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .cdk-drag-placeholder {
+    opacity: 0.5;
+  }
+
+  .cdk-drag-animating {
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .cdk-drop-list-dragging .c-document-card:not(.cdk-drag-placeholder) {
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  // Drop zone highlight
+  .cdk-drop-list-receiving {
+    background: rgba(99, 102, 241, 0.08);
+    border-radius: 8px;
+  }
+}
+
 .collapse-btn {
   width: 28px !important;
   height: 28px !important;
@@ -154,7 +183,69 @@
   color: var(--mat-sys-error, #dc2626);
 }
 
+// ==========================================================================
+// Documents Grid & Cards
+// ==========================================================================
+
+.documents-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.drop-zone-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  border: 2px dashed var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+  border-radius: 8px;
+  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+  min-height: 80px;
+  transition: all 0.2s ease;
+
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    opacity: 0.5;
+  }
+
+  span {
+    font-size: 0.875rem;
+  }
+}
+
+// Drag & Drop Preview
+.document-drag-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--mat-sys-surface, white);
+  border: 2px solid var(--section-color, #6366f1);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  mat-icon {
+    color: var(--section-color, #6366f1);
+  }
+}
+
+.document-placeholder {
+  background: color-mix(in srgb, var(--section-color, #6366f1) 10%, white);
+  border: 2px dashed var(--section-color, #6366f1);
+  border-radius: 8px;
+  min-height: 60px;
+}
+
+// ==========================================================================
 // Dark mode
+// ==========================================================================
 :host-context(.dark-mode) {
   .section-card {
     background: linear-gradient(
@@ -178,5 +269,17 @@
 
   .title-input {
     background: var(--mat-sys-surface-container, #2a2a2a);
+  }
+
+  .drop-zone-empty {
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .document-drag-preview {
+    background: var(--mat-sys-surface-container, #2a2a2a);
+  }
+
+  .document-placeholder {
+    background: color-mix(in srgb, var(--section-color, #6366f1) 15%, #1a1a1a);
   }
 }

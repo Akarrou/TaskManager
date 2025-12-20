@@ -185,9 +185,9 @@ export class DocumentTabContentComponent {
     this.documentClick.emit(documentId);
   }
 
-  onDocumentDelete(event: Event, documentId: string): void {
-    event.stopPropagation();
-    this.documentDelete.emit({ event, documentId });
+  onDocumentDelete(data: { event: Event; documentId: string }): void {
+    data.event.stopPropagation();
+    this.documentDelete.emit(data);
   }
 
   onOpenStorageFile(event: Event, url: string): void {

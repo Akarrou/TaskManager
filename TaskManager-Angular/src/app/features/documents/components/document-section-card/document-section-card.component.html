@@ -56,10 +56,50 @@
     </div>
   </div>
 
-  <!-- Content (slot) -->
+  <!-- Content with Drop Zone -->
   @if (!section.is_collapsed) {
-    <div class="section-card__content">
-      <ng-content></ng-content>
+    <div
+      class="section-card__content"
+      cdkDropList
+      [id]="dropListId"
+      [cdkDropListData]="items"
+      [cdkDropListConnectedTo]="connectedDropListIds"
+      (cdkDropListDropped)="onDrop($event)">
+
+      @if (items.length === 0) {
+        <div class="drop-zone-empty">
+          <mat-icon>drag_indicator</mat-icon>
+          <span>Glissez des documents ici</span>
+        </div>
+      } @else {
+        <div class="documents-grid">
+          @for (item of items; track trackItem($index, item)) {
+            @if (getDocumentForItem(item); as doc) {
+              <div cdkDrag [cdkDragData]="item">
+                <!-- Drag Preview -->
+                <div *cdkDragPreview class="document-drag-preview">
+                  <mat-icon>description</mat-icon>
+                  <span>{{ doc.title || 'Sans titre' }}</span>
+                </div>
+
+                <!-- Drag Placeholder -->
+                <div *cdkDragPlaceholder class="document-placeholder"></div>
+
+                <!-- Document Card Component -->
+                <app-document-card
+                  [document]="doc"
+                  [item]="item"
+                  [childDocuments]="getChildDocuments(doc.id)"
+                  [storageFiles]="getStorageFilesForDocument(doc.id)"
+                  [sectionColor]="section.color || '#6366f1'"
+                  (documentClick)="onDocumentClick($event)"
+                  (documentDelete)="documentDelete.emit($event)">
+                </app-document-card>
+              </div>
+            }
+          }
+        </div>
+      }
     </div>
   }
 </div>
