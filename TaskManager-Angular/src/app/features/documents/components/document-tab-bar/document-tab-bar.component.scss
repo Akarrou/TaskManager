@@ -177,6 +177,62 @@
   }
 }
 
+.groups-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.group-wrapper {
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+// Group Drag Preview
+.group-drag-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--mat-sys-surface, white);
+  border-radius: 8px;
+  border-left: 3px solid;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .group-count-preview {
+    font-size: 0.75rem;
+    font-weight: 400;
+    background: rgba(0, 0, 0, 0.08);
+    padding: 0.125rem 0.5rem;
+    border-radius: 10px;
+  }
+}
+
+// Group Drag Placeholder
+.group-placeholder {
+  min-width: 120px;
+  height: 60px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 2px dashed var(--mat-sys-primary, #6366f1);
+  border-radius: 8px;
+}
+
+// Drop list animation for groups
+.groups-container.cdk-drop-list-dragging .group-wrapper:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
 .ungrouped-tabs-container {
   display: flex;
   align-items: flex-start;

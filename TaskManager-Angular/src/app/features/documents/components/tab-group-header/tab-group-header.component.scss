@@ -215,6 +215,49 @@
   color: var(--mat-sys-error, #dc2626);
 }
 
+// Tab wrapper for drag
+.tab-item-wrapper {
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+// Drag Preview
+.tab-drag-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--mat-sys-surface, white);
+  border-radius: 8px;
+  border-left: 3px solid;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+// Drag Placeholder
+.tab-placeholder {
+  min-width: 80px;
+  height: 32px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 2px dashed var(--mat-sys-primary, #6366f1);
+  border-radius: 6px;
+}
+
+// Drop list animation
+.cdk-drop-list-dragging .tab-item-wrapper:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
 // Dark mode support
 :host-context(.dark-mode) {
   .group-container {

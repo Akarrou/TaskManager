@@ -268,6 +268,10 @@ export class DocumentListComponent implements OnInit, OnDestroy {
     this.tabsStore.toggleGroupCollapse(groupId);
   }
 
+  onReorderGroups(groupIds: string[]): void {
+    this.tabsStore.reorderGroups({ groupIds });
+  }
+
   onTabMoveToGroup(data: { tabId: string; groupId: string | null }): void {
     this.tabsStore.moveTabToGroup(data);
   }

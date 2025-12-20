@@ -72,6 +72,7 @@ export class DocumentTabBarComponent {
   @Output() groupUpdate = new EventEmitter<{ groupId: string; updates: UpdateDocumentTabGroup }>();
   @Output() groupDelete = new EventEmitter<string>();
   @Output() groupToggleCollapse = new EventEmitter<string>();
+  @Output() groupsReorder = new EventEmitter<string[]>();
   @Output() tabMoveToGroup = new EventEmitter<{ tabId: string; groupId: string | null }>();
   @Output() groupCreateWithTabs = new EventEmitter<{ group: { name: string; color: string }; tabIds: string[] }>();
 
@@ -217,6 +218,15 @@ export class DocumentTabBarComponent {
 
   onGroupDelete(groupId: string): void {
     this.groupDelete.emit(groupId);
+  }
+
+  // Handle group reorder via drag & drop
+  onGroupDrop(event: CdkDragDrop<TabGroupWithTabs[]>): void {
+    if (event.previousIndex !== event.currentIndex) {
+      const reorderedGroups = [...this.tabsByGroup];
+      moveItemInArray(reorderedGroups, event.previousIndex, event.currentIndex);
+      this.groupsReorder.emit(reorderedGroups.map((g) => g.id));
+    }
   }
 
   onTabRemoveFromGroup(tabId: string): void {

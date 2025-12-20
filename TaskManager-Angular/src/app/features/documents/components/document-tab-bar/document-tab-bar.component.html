@@ -1,23 +1,43 @@
 <div class="tab-bar">
   <div class="tabs-container">
-    <!-- Groups -->
-    @for (group of tabsByGroup; track trackGroup($index, group)) {
-      <app-tab-group-header
-        [group]="group"
-        [tabs]="group.tabs"
-        [selectedTabId]="selectedTabId"
-        [tabItemCounts]="tabItemCounts"
-        [connectedDropListIds]="getTabDragDropListIds()"
-        (toggleCollapse)="onGroupToggleCollapse(group.id)"
-        (editGroup)="onGroupUpdate(group.id, $event)"
-        (deleteGroup)="onGroupDelete(group.id)"
-        (tabSelect)="tabSelect.emit($event)"
-        (tabEdit)="onEditTabFromGroup($event)"
-        (tabDelete)="tabDelete.emit($event)"
-        (tabRemoveFromGroup)="onTabRemoveFromGroup($event)"
-        (tabDroppedInGroup)="onTabDroppedInGroup(group.id, $event)">
-      </app-tab-group-header>
-    }
+    <!-- Groups Container (for drag & drop reorder) -->
+    <div
+      class="groups-container"
+      cdkDropList
+      id="groups-list"
+      [cdkDropListData]="tabsByGroup"
+      cdkDropListOrientation="horizontal"
+      (cdkDropListDropped)="onGroupDrop($event)">
+      @for (group of tabsByGroup; track trackGroup($index, group)) {
+        <div class="group-wrapper" cdkDrag [cdkDragData]="group">
+          <!-- Group Drag Preview -->
+          <div *cdkDragPreview class="group-drag-preview" [style.border-color]="group.color">
+            <mat-icon [style.color]="group.color">folder</mat-icon>
+            <span>{{ group.name }}</span>
+            <span class="group-count-preview">{{ group.tabs.length }}</span>
+          </div>
+
+          <!-- Group Drag Placeholder -->
+          <div *cdkDragPlaceholder class="group-placeholder"></div>
+
+          <app-tab-group-header
+            [group]="group"
+            [tabs]="group.tabs"
+            [selectedTabId]="selectedTabId"
+            [tabItemCounts]="tabItemCounts"
+            [connectedDropListIds]="getTabDragDropListIds()"
+            (toggleCollapse)="onGroupToggleCollapse(group.id)"
+            (editGroup)="onGroupUpdate(group.id, $event)"
+            (deleteGroup)="onGroupDelete(group.id)"
+            (tabSelect)="tabSelect.emit($event)"
+            (tabEdit)="onEditTabFromGroup($event)"
+            (tabDelete)="tabDelete.emit($event)"
+            (tabRemoveFromGroup)="onTabRemoveFromGroup($event)"
+            (tabDroppedInGroup)="onTabDroppedInGroup(group.id, $event)">
+          </app-tab-group-header>
+        </div>
+      }
+    </div>
 
     <!-- Ungrouped Tabs -->
     <div

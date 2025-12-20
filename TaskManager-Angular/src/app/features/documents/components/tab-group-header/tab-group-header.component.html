@@ -46,49 +46,64 @@
     <div class="grouped-tabs">
       @for (tab of tabs; track trackTab($index, tab)) {
         <div
-          class="tab-item"
-          [class.selected]="isTabSelected(tab.id)"
-          [style.--tab-color]="tab.color"
-          (click)="onTabClick(tab.id, $event)">
+          class="tab-item-wrapper"
+          cdkDrag
+          [cdkDragData]="tab">
 
-          <mat-icon class="tab-icon" [style.color]="isTabSelected(tab.id) ? tab.color : null">
-            {{ tab.icon }}
-          </mat-icon>
-          <span class="tab-name">{{ tab.name }}</span>
+          <!-- Drag Preview -->
+          <div *cdkDragPreview class="tab-drag-preview" [style.border-color]="tab.color">
+            <mat-icon [style.color]="tab.color">{{ tab.icon }}</mat-icon>
+            <span>{{ tab.name }}</span>
+          </div>
 
-          <!-- Tab Menu -->
-          <button
-            mat-icon-button
-            class="tab-menu-btn"
-            [matMenuTriggerFor]="tabMenu"
-            (click)="$event.stopPropagation()">
-            <mat-icon>more_vert</mat-icon>
-          </button>
+          <!-- Drag Placeholder -->
+          <div *cdkDragPlaceholder class="tab-placeholder"></div>
 
-          <mat-menu #tabMenu="matMenu">
-            <button mat-menu-item (click)="onTabEdit(tab, $event)">
-              <mat-icon>edit</mat-icon>
-              <span>Modifier</span>
-            </button>
-            <button mat-menu-item (click)="onRemoveFromGroup(tab.id, $event)">
-              <mat-icon>logout</mat-icon>
-              <span>Retirer du groupe</span>
-            </button>
+          <div
+            class="tab-item"
+            [class.selected]="isTabSelected(tab.id)"
+            [style.--tab-color]="tab.color"
+            (click)="onTabClick(tab.id, $event)">
+
+            <mat-icon class="tab-icon" [style.color]="isTabSelected(tab.id) ? tab.color : null">
+              {{ tab.icon }}
+            </mat-icon>
+            <span class="tab-name">{{ tab.name }}</span>
+
+            <!-- Tab Menu -->
             <button
-              mat-menu-item
-              [disabled]="!canDeleteTab(tab.id)"
-              (click)="onTabDelete(tab.id, $event)"
-              class="delete-option"
-              [matTooltip]="!canDeleteTab(tab.id) ? 'Déplacez d\'abord les documents' : ''">
-              <mat-icon [color]="canDeleteTab(tab.id) ? 'warn' : ''">delete</mat-icon>
-              <span>Supprimer</span>
+              mat-icon-button
+              class="tab-menu-btn"
+              [matMenuTriggerFor]="tabMenu"
+              (click)="$event.stopPropagation()">
+              <mat-icon>more_vert</mat-icon>
             </button>
-          </mat-menu>
 
-          <!-- Selection Indicator -->
-          @if (isTabSelected(tab.id)) {
-            <div class="selection-indicator" [style.background-color]="tab.color"></div>
-          }
+            <mat-menu #tabMenu="matMenu">
+              <button mat-menu-item (click)="onTabEdit(tab, $event)">
+                <mat-icon>edit</mat-icon>
+                <span>Modifier</span>
+              </button>
+              <button mat-menu-item (click)="onRemoveFromGroup(tab.id, $event)">
+                <mat-icon>logout</mat-icon>
+                <span>Retirer du groupe</span>
+              </button>
+              <button
+                mat-menu-item
+                [disabled]="!canDeleteTab(tab.id)"
+                (click)="onTabDelete(tab.id, $event)"
+                class="delete-option"
+                [matTooltip]="!canDeleteTab(tab.id) ? 'Déplacez d\'abord les documents' : ''">
+                <mat-icon [color]="canDeleteTab(tab.id) ? 'warn' : ''">delete</mat-icon>
+                <span>Supprimer</span>
+              </button>
+            </mat-menu>
+
+            <!-- Selection Indicator -->
+            @if (isTabSelected(tab.id)) {
+              <div class="selection-indicator" [style.background-color]="tab.color"></div>
+            }
+          </div>
         </div>
       }
     </div>
