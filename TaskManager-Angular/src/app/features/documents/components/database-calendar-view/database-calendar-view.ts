@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { DatabaseRow, DatabaseColumn } from '../../models/database.model';
+import { MatMenuModule } from '@angular/material/menu';
+import { DatabaseRow, DatabaseColumn, isDateRangeValue } from '../../models/database.model';
 
 /**
  * Calendar day definition
@@ -24,7 +25,7 @@ interface CalendarDay {
 @Component({
   selector: 'app-database-calendar-view',
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatButtonModule, MatTooltipModule],
+  imports: [CommonModule, MatIconModule, MatButtonModule, MatTooltipModule, MatMenuModule],
   templateUrl: './database-calendar-view.html',
   styleUrl: './database-calendar-view.scss',
 })
@@ -32,17 +33,24 @@ export class DatabaseCalendarView {
   @Input() rows: DatabaseRow[] = [];
   @Input() columns: DatabaseColumn[] = [];
   @Input() dateColumnId?: string;
+  @Input() dateRangeColumnId?: string; // New: for date-range column type
 
   @Output() rowClick = new EventEmitter<string>();
   @Output() addDateColumn = new EventEmitter<void>();
   @Output() configureDateColumn = new EventEmitter<void>();
+  @Output() selectDateColumn = new EventEmitter<{ columnId: string; isDateRange: boolean }>();
 
   // Current month signal
   currentMonth = signal(new Date());
 
-  // Computed: Check if we have date columns
+  // Computed: Check if we have date columns (including date-range)
   hasDateColumn = computed(() => {
-    return this.columns.some((col) => col.type === 'date');
+    return this.columns.some((col) => col.type === 'date' || col.type === 'date-range');
+  });
+
+  // Computed: Check if we're using a date-range column
+  isUsingDateRange = computed(() => {
+    return !!this.dateRangeColumnId;
   });
 
   // Computed: Get the date column
@@ -52,12 +60,37 @@ export class DatabaseCalendarView {
     return this.columns.find((col) => col.id === columnId) || null;
   });
 
+  // Computed: Get all date columns (date and date-range)
+  availableDateColumns = computed(() => {
+    return this.columns.filter((col) => col.type === 'date' || col.type === 'date-range');
+  });
+
+  // Computed: Get the currently selected column name
+  selectedColumnName = computed(() => {
+    if (this.dateRangeColumnId) {
+      const col = this.columns.find((c) => c.id === this.dateRangeColumnId);
+      return col?.name || 'Plage de dates';
+    }
+    if (this.dateColumnId) {
+      const col = this.columns.find((c) => c.id === this.dateColumnId);
+      return col?.name || 'Date';
+    }
+    return 'Sélectionner une colonne';
+  });
+
+  // Computed: Check if a column is currently selected
+  isColumnSelected(columnId: string): boolean {
+    return this.dateColumnId === columnId || this.dateRangeColumnId === columnId;
+  }
+
   // Computed: Generate calendar grid
   calendarDays = computed((): CalendarDay[] => {
     const month = this.currentMonth();
+    const dateRangeColId = this.dateRangeColumnId;
     const dateColumnId = this.dateColumnId;
 
-    if (!dateColumnId) {
+    // Need either date-range or date column
+    if (!dateRangeColId && !dateColumnId) {
       return [];
     }
 
@@ -68,9 +101,23 @@ export class DatabaseCalendarView {
     return days.map((day) => ({
       ...day,
       rows: this.rows.filter((row) => {
-        const cellDate = row.cells[dateColumnId];
-        if (!cellDate) return false;
-        return this.isSameDay(new Date(cellDate as string), day.date);
+        if (dateRangeColId) {
+          // Using date-range column - show on start date (or any day in range)
+          const cellValue = row.cells[dateRangeColId];
+          if (!isDateRangeValue(cellValue) || !cellValue.startDate) return false;
+
+          const startDate = new Date(cellValue.startDate);
+          const endDate = cellValue.endDate ? new Date(cellValue.endDate) : startDate;
+
+          // Check if this day is within the range
+          return this.isDateInRange(day.date, startDate, endDate);
+        } else if (dateColumnId) {
+          // Using regular date column
+          const cellDate = row.cells[dateColumnId];
+          if (!cellDate) return false;
+          return this.isSameDay(new Date(cellDate as string), day.date);
+        }
+        return false;
       }),
     }));
   });
@@ -149,6 +196,18 @@ export class DatabaseCalendarView {
       date1.getMonth() === date2.getMonth() &&
       date1.getDate() === date2.getDate()
     );
+  }
+
+  /**
+   * Check if a date is within a range (inclusive)
+   */
+  private isDateInRange(date: Date, startDate: Date, endDate: Date): boolean {
+    // Normalize dates to start of day for comparison
+    const dateTime = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+    const startTime = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()).getTime();
+    const endTime = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()).getTime();
+
+    return dateTime >= startTime && dateTime <= endTime;
   }
 
   /**
@@ -265,5 +324,15 @@ export class DatabaseCalendarView {
    */
   onConfigureDateColumn(): void {
     this.configureDateColumn.emit();
+  }
+
+  /**
+   * Handle column selection from menu
+   */
+  onSelectColumn(column: DatabaseColumn): void {
+    this.selectDateColumn.emit({
+      columnId: column.id,
+      isDateRange: column.type === 'date-range',
+    });
   }
 }

@@ -135,10 +135,12 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
 
   // Calendar view state
   calendarDateColumnId = signal<string | undefined>(undefined);
+  calendarDateRangeColumnId = signal<string | undefined>(undefined);
 
   // Timeline view state
   timelineStartDateColumnId = signal<string | undefined>(undefined);
   timelineEndDateColumnId = signal<string | undefined>(undefined);
+  timelineDateRangeColumnId = signal<string | undefined>(undefined);
 
   // Computed
   columnCount = computed(() => this.databaseConfig().columns.length);
@@ -1581,14 +1583,26 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
    * Handle "Add date column" from Calendar empty state
    */
   onCalendarAddDateColumn(): void {
-    // Find first date column or create one
+    // First, check for date-range columns
+    const dateRangeColumn = this.databaseConfig().columns.find(
+      (col) => col.type === 'date-range'
+    );
+
+    if (dateRangeColumn) {
+      this.calendarDateRangeColumnId.set(dateRangeColumn.id);
+      this.calendarDateColumnId.set(undefined);
+      this.saveCurrentViewConfig();
+      return;
+    }
+
+    // Then check for regular date columns
     const dateColumn = this.databaseConfig().columns.find(
       (col) => col.type === 'date'
     );
 
     if (dateColumn) {
-      // Use existing date column
       this.calendarDateColumnId.set(dateColumn.id);
+      this.calendarDateRangeColumnId.set(undefined);
       this.saveCurrentViewConfig();
     } else {
       // Create a new date column
@@ -1600,22 +1614,58 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
    * Handle "Configure date column" from Calendar
    */
   onCalendarConfigureDateColumn(): void {
-    // Find all date columns
+    // Find all date and date-range columns
     const dateColumns = this.databaseConfig().columns.filter(
       (col) => col.type === 'date'
     );
+    const dateRangeColumns = this.databaseConfig().columns.filter(
+      (col) => col.type === 'date-range'
+    );
 
-    if (dateColumns.length === 0) {
+    // Combine all date-related columns for cycling
+    const allDateColumns = [...dateRangeColumns, ...dateColumns];
+
+    if (allDateColumns.length === 0) {
       this.onAddColumn();
       return;
     }
 
-    // For now, cycle through available date columns
-    // TODO: Show a dialog to let user choose
-    const currentDateColumn = this.calendarDateColumnId();
-    const currentIndex = dateColumns.findIndex((col) => col.id === currentDateColumn);
-    const nextIndex = (currentIndex + 1) % dateColumns.length;
-    this.calendarDateColumnId.set(dateColumns[nextIndex].id);
+    // Determine current selection
+    const currentDateRangeCol = this.calendarDateRangeColumnId();
+    const currentDateCol = this.calendarDateColumnId();
+    const currentId = currentDateRangeCol || currentDateCol;
+
+    // Find current index
+    const currentIndex = allDateColumns.findIndex(
+      (col) => col.id === currentId
+    );
+    const nextIndex = (currentIndex + 1) % allDateColumns.length;
+    const nextColumn = allDateColumns[nextIndex];
+
+    if (nextColumn.type === 'date-range') {
+      // Use date-range column
+      this.calendarDateRangeColumnId.set(nextColumn.id);
+      this.calendarDateColumnId.set(undefined);
+    } else {
+      // Use regular date column
+      this.calendarDateRangeColumnId.set(undefined);
+      this.calendarDateColumnId.set(nextColumn.id);
+    }
+
+    this.saveCurrentViewConfig();
+  }
+
+  /**
+   * Handle column selection from Calendar dropdown
+   */
+  onCalendarSelectDateColumn(event: { columnId: string; isDateRange: boolean }): void {
+    if (event.isDateRange) {
+      this.calendarDateRangeColumnId.set(event.columnId);
+      this.calendarDateColumnId.set(undefined);
+    } else {
+      this.calendarDateRangeColumnId.set(undefined);
+      this.calendarDateColumnId.set(event.columnId);
+    }
     this.saveCurrentViewConfig();
   }
 
@@ -1634,13 +1684,27 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
    * Handle "Add date column" from Timeline
    */
   onTimelineAddDateColumn(): void {
-    // Find first existing date column or create one
+    // First, check for date-range columns
+    const dateRangeColumn = this.databaseConfig().columns.find(
+      (col) => col.type === 'date-range'
+    );
+
+    if (dateRangeColumn) {
+      this.timelineDateRangeColumnId.set(dateRangeColumn.id);
+      this.timelineStartDateColumnId.set(undefined);
+      this.timelineEndDateColumnId.set(undefined);
+      this.saveCurrentViewConfig();
+      return;
+    }
+
+    // Then check for regular date columns
     const dateColumn = this.databaseConfig().columns.find(
       (col) => col.type === 'date'
     );
 
     if (dateColumn) {
       this.timelineStartDateColumnId.set(dateColumn.id);
+      this.timelineDateRangeColumnId.set(undefined);
       this.saveCurrentViewConfig();
     } else {
       // Create a new date column
@@ -1652,31 +1716,69 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
    * Handle "Configure date columns" from Timeline
    */
   onTimelineConfigureDateColumns(): void {
-    // Find all date columns
+    // Find all date and date-range columns
     const dateColumns = this.databaseConfig().columns.filter(
       (col) => col.type === 'date'
     );
+    const dateRangeColumns = this.databaseConfig().columns.filter(
+      (col) => col.type === 'date-range'
+    );
 
-    if (dateColumns.length === 0) {
+    // Combine all date-related columns for cycling
+    const allDateColumns = [...dateRangeColumns, ...dateColumns];
+
+    if (allDateColumns.length === 0) {
       this.onAddColumn();
       return;
     }
 
-    // For now, cycle through available date columns for start date
-    // TODO: Show a dialog to let user choose both start and end date columns
-    const currentStartDateColumn = this.timelineStartDateColumnId();
-    const currentIndex = dateColumns.findIndex(
-      (col) => col.id === currentStartDateColumn
-    );
-    const nextIndex = (currentIndex + 1) % dateColumns.length;
-    this.timelineStartDateColumnId.set(dateColumns[nextIndex].id);
+    // Determine current selection
+    const currentDateRangeCol = this.timelineDateRangeColumnId();
+    const currentStartDateCol = this.timelineStartDateColumnId();
+    const currentId = currentDateRangeCol || currentStartDateCol;
 
-    // Optionally set the next column as end date
-    if (dateColumns.length > 1) {
-      const endIndex = (nextIndex + 1) % dateColumns.length;
-      this.timelineEndDateColumnId.set(dateColumns[endIndex].id);
+    // Find current index
+    const currentIndex = allDateColumns.findIndex(
+      (col) => col.id === currentId
+    );
+    const nextIndex = (currentIndex + 1) % allDateColumns.length;
+    const nextColumn = allDateColumns[nextIndex];
+
+    if (nextColumn.type === 'date-range') {
+      // Use date-range column
+      this.timelineDateRangeColumnId.set(nextColumn.id);
+      this.timelineStartDateColumnId.set(undefined);
+      this.timelineEndDateColumnId.set(undefined);
+    } else {
+      // Use regular date column
+      this.timelineDateRangeColumnId.set(undefined);
+      this.timelineStartDateColumnId.set(nextColumn.id);
+
+      // Optionally set the next date column as end date
+      if (dateColumns.length > 1) {
+        const nextDateIdx = dateColumns.findIndex(col => col.id === nextColumn.id);
+        const endIndex = (nextDateIdx + 1) % dateColumns.length;
+        this.timelineEndDateColumnId.set(dateColumns[endIndex].id);
+      }
     }
 
+    this.saveCurrentViewConfig();
+  }
+
+  /**
+   * Handle column selection from Timeline dropdown
+   */
+  onTimelineSelectDateColumn(event: { columnId: string; isDateRange: boolean }): void {
+    if (event.isDateRange) {
+      this.timelineDateRangeColumnId.set(event.columnId);
+      this.timelineStartDateColumnId.set(undefined);
+      this.timelineEndDateColumnId.set(undefined);
+    } else {
+      this.timelineDateRangeColumnId.set(undefined);
+      this.timelineStartDateColumnId.set(event.columnId);
+      // Clear end date when selecting a new start date column
+      this.timelineEndDateColumnId.set(undefined);
+    }
     this.saveCurrentViewConfig();
   }
 

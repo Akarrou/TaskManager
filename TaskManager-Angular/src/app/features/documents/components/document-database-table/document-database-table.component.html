@@ -471,9 +471,11 @@
             [rows]="rows()"
             [columns]="databaseConfig().columns"
             [dateColumnId]="calendarDateColumnId()"
+            [dateRangeColumnId]="calendarDateRangeColumnId()"
             (rowClick)="onCalendarRowClick($event)"
             (addDateColumn)="onCalendarAddDateColumn()"
-            (configureDateColumn)="onCalendarConfigureDateColumn()">
+            (configureDateColumn)="onCalendarConfigureDateColumn()"
+            (selectDateColumn)="onCalendarSelectDateColumn($event)">
           </app-database-calendar-view>
         }
         @case ('timeline') {
@@ -482,9 +484,11 @@
             [columns]="databaseConfig().columns"
             [startDateColumnId]="timelineStartDateColumnId()"
             [endDateColumnId]="timelineEndDateColumnId()"
+            [dateRangeColumnId]="timelineDateRangeColumnId()"
             (rowClick)="onTimelineRowClick($event)"
             (addDateColumn)="onTimelineAddDateColumn()"
-            (configureDateColumns)="onTimelineConfigureDateColumns()">
+            (configureDateColumns)="onTimelineConfigureDateColumns()"
+            (selectDateColumn)="onTimelineSelectDateColumn($event)">
           </app-database-timeline-view>
         }
       }

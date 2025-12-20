@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { DatabaseRow, DatabaseColumn } from '../../models/database.model';
+import { MatMenuModule } from '@angular/material/menu';
+import { DatabaseRow, DatabaseColumn, isDateRangeValue } from '../../models/database.model';
 
 /**
  * Timeline item definition
@@ -29,7 +30,7 @@ interface TimelineItem {
 @Component({
   selector: 'app-database-timeline-view',
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatButtonModule, MatTooltipModule],
+  imports: [CommonModule, MatIconModule, MatButtonModule, MatTooltipModule, MatMenuModule],
   templateUrl: './database-timeline-view.html',
   styleUrl: './database-timeline-view.scss',
 })
@@ -38,10 +39,12 @@ export class DatabaseTimelineView {
   @Input() columns: DatabaseColumn[] = [];
   @Input() startDateColumnId?: string;
   @Input() endDateColumnId?: string;
+  @Input() dateRangeColumnId?: string; // New: for date-range column type
 
   @Output() rowClick = new EventEmitter<string>();
   @Output() addDateColumn = new EventEmitter<void>();
   @Output() configureDateColumns = new EventEmitter<void>();
+  @Output() selectDateColumn = new EventEmitter<{ columnId: string; isDateRange: boolean }>();
 
   // Timeline configuration
   readonly TIMELINE_HEIGHT = 400;
@@ -56,9 +59,14 @@ export class DatabaseTimelineView {
   currentZoom = signal(1);
   currentPan = signal(0);
 
-  // Computed: Check if we have date columns
+  // Computed: Check if we have date columns (including date-range)
   hasDateColumn = computed(() => {
-    return this.columns.some((col) => col.type === 'date');
+    return this.columns.some((col) => col.type === 'date' || col.type === 'date-range');
+  });
+
+  // Computed: Check if we're using a date-range column
+  isUsingDateRange = computed(() => {
+    return !!this.dateRangeColumnId;
   });
 
   // Computed: Get the start date column
@@ -68,23 +76,63 @@ export class DatabaseTimelineView {
     return this.columns.find((col) => col.id === columnId) || null;
   });
 
+  // Computed: Get all date columns (date and date-range)
+  availableDateColumns = computed(() => {
+    return this.columns.filter((col) => col.type === 'date' || col.type === 'date-range');
+  });
+
+  // Computed: Get the currently selected column name
+  selectedColumnName = computed(() => {
+    if (this.dateRangeColumnId) {
+      const col = this.columns.find((c) => c.id === this.dateRangeColumnId);
+      return col?.name || 'Plage de dates';
+    }
+    if (this.startDateColumnId) {
+      const col = this.columns.find((c) => c.id === this.startDateColumnId);
+      return col?.name || 'Date';
+    }
+    return 'Sélectionner une colonne';
+  });
+
+  // Check if a column is currently selected
+  isColumnSelected(columnId: string): boolean {
+    return this.startDateColumnId === columnId || this.dateRangeColumnId === columnId;
+  }
+
   // Computed: Get date range (min and max dates from all rows)
   dateRange = computed(() => {
+    const dateRangeColId = this.dateRangeColumnId;
     const startColumnId = this.startDateColumnId;
-    if (!startColumnId) return null;
+
+    // Need either a date-range column or a start date column
+    if (!dateRangeColId && !startColumnId) return null;
 
     const dates: Date[] = [];
 
     this.rows.forEach((row) => {
-      const startDate = row.cells[startColumnId];
-      if (startDate) {
-        dates.push(new Date(startDate as string));
-      }
+      if (dateRangeColId) {
+        // Using date-range column
+        const cellValue = row.cells[dateRangeColId];
+        if (isDateRangeValue(cellValue)) {
+          if (cellValue.startDate) {
+            dates.push(new Date(cellValue.startDate));
+          }
+          if (cellValue.endDate) {
+            dates.push(new Date(cellValue.endDate));
+          }
+        }
+      } else if (startColumnId) {
+        // Using separate date columns
+        const startDate = row.cells[startColumnId];
+        if (startDate) {
+          dates.push(new Date(startDate as string));
+        }
 
-      if (this.endDateColumnId) {
-        const endDate = row.cells[this.endDateColumnId];
-        if (endDate) {
-          dates.push(new Date(endDate as string));
+        if (this.endDateColumnId) {
+          const endDate = row.cells[this.endDateColumnId];
+          if (endDate) {
+            dates.push(new Date(endDate as string));
+          }
         }
       }
     });
@@ -106,11 +154,14 @@ export class DatabaseTimelineView {
 
   // Computed: Generate timeline items
   timelineItems = computed((): TimelineItem[] => {
+    const dateRangeColId = this.dateRangeColumnId;
     const startColumnId = this.startDateColumnId;
     const endColumnId = this.endDateColumnId;
     const range = this.dateRange();
 
-    if (!startColumnId || !range) return [];
+    // Need either date-range column or start date column
+    if (!dateRangeColId && !startColumnId) return [];
+    if (!range) return [];
 
     const totalTime = range.max.getTime() - range.min.getTime();
     const usableWidth = this.TIMELINE_WIDTH - 2 * this.PADDING;
@@ -118,12 +169,29 @@ export class DatabaseTimelineView {
     const items: TimelineItem[] = [];
 
     this.rows.forEach((row, index) => {
-      const startValue = row.cells[startColumnId];
-      if (!startValue) return;
+      let startDate: Date | undefined;
+      let endDate: Date | undefined;
 
-      const startDate = new Date(startValue as string);
-      const endValue = endColumnId ? row.cells[endColumnId] : null;
-      const endDate = endValue ? new Date(endValue as string) : undefined;
+      if (dateRangeColId) {
+        // Using date-range column
+        const cellValue = row.cells[dateRangeColId];
+        if (!isDateRangeValue(cellValue) || !cellValue.startDate) return;
+
+        startDate = new Date(cellValue.startDate);
+        if (cellValue.endDate) {
+          endDate = new Date(cellValue.endDate);
+        }
+      } else if (startColumnId) {
+        // Using separate date columns
+        const startValue = row.cells[startColumnId];
+        if (!startValue) return;
+
+        startDate = new Date(startValue as string);
+        const endValue = endColumnId ? row.cells[endColumnId] : null;
+        endDate = endValue ? new Date(endValue as string) : undefined;
+      }
+
+      if (!startDate) return;
 
       // Calculate position
       const startOffset = startDate.getTime() - range.min.getTime();
@@ -277,6 +345,16 @@ export class DatabaseTimelineView {
    */
   onConfigureDateColumns(): void {
     this.configureDateColumns.emit();
+  }
+
+  /**
+   * Handle column selection from menu
+   */
+  onSelectColumn(column: DatabaseColumn): void {
+    this.selectDateColumn.emit({
+      columnId: column.id,
+      isDateRange: column.type === 'date-range',
+    });
   }
 
   /**

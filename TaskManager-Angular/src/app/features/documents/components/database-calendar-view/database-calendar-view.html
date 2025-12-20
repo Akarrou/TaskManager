@@ -11,14 +11,30 @@
 }
 
 <!-- Empty State: No date column configured -->
-@else if (!dateColumnId) {
+@else if (!dateColumnId && !dateRangeColumnId) {
   <div class="empty-state">
     <mat-icon class="empty-icon">calendar_month</mat-icon>
-    <p class="empty-text">Configurez la colonne date pour afficher le calendrier</p>
-    <button mat-raised-button color="primary" (click)="onConfigureDateColumn()">
-      <mat-icon>settings</mat-icon>
-      Configurer la colonne date
-    </button>
+    <p class="empty-text">Sélectionnez une colonne date pour afficher le calendrier</p>
+    @if (availableDateColumns().length > 0) {
+      <button mat-raised-button color="primary" [matMenuTriggerFor]="emptyStateColumnMenu">
+        <mat-icon>calendar_today</mat-icon>
+        Choisir une colonne
+      </button>
+      <mat-menu #emptyStateColumnMenu="matMenu">
+        @for (col of availableDateColumns(); track col.id) {
+          <button mat-menu-item (click)="onSelectColumn(col)">
+            <mat-icon>{{ col.type === 'date-range' ? 'date_range' : 'event' }}</mat-icon>
+            <span>{{ col.name }}</span>
+            <span class="column-type-badge">{{ col.type === 'date-range' ? 'Plage' : 'Date' }}</span>
+          </button>
+        }
+      </mat-menu>
+    } @else {
+      <button mat-raised-button color="primary" (click)="onAddDateColumn()">
+        <mat-icon>add</mat-icon>
+        Ajouter une colonne Date
+      </button>
+    }
   </div>
 }
 
@@ -27,25 +43,55 @@
   <div class="calendar-view">
     <!-- Header with Navigation -->
     <div class="calendar-header">
-      <button
-        mat-icon-button
-        (click)="previousMonth()"
-        matTooltip="Mois précédent">
-        <mat-icon>chevron_left</mat-icon>
-      </button>
+      <div class="calendar-header__nav">
+        <button
+          mat-icon-button
+          (click)="previousMonth()"
+          matTooltip="Mois précédent">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
 
-      <h2 class="month-name">{{ monthName() }}</h2>
+        <h2 class="month-name">{{ monthName() }}</h2>
 
-      <button
-        mat-icon-button
-        (click)="nextMonth()"
-        matTooltip="Mois suivant">
-        <mat-icon>chevron_right</mat-icon>
-      </button>
+        <button
+          mat-icon-button
+          (click)="nextMonth()"
+          matTooltip="Mois suivant">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
 
-      <button mat-button (click)="today()">
-        Aujourd'hui
-      </button>
+        <button mat-button (click)="today()">
+          Aujourd'hui
+        </button>
+      </div>
+
+      <!-- Column Selector -->
+      @if (availableDateColumns().length > 1) {
+        <div class="calendar-header__column-selector">
+          <button
+            mat-stroked-button
+            [matMenuTriggerFor]="columnSelectorMenu"
+            matTooltip="Changer la colonne date">
+            <mat-icon>{{ isUsingDateRange() ? 'date_range' : 'event' }}</mat-icon>
+            {{ selectedColumnName() }}
+            <mat-icon class="dropdown-icon">arrow_drop_down</mat-icon>
+          </button>
+          <mat-menu #columnSelectorMenu="matMenu">
+            @for (col of availableDateColumns(); track col.id) {
+              <button
+                mat-menu-item
+                (click)="onSelectColumn(col)"
+                [class.selected]="isColumnSelected(col.id)">
+                <mat-icon>{{ col.type === 'date-range' ? 'date_range' : 'event' }}</mat-icon>
+                <span>{{ col.name }}</span>
+                @if (isColumnSelected(col.id)) {
+                  <mat-icon class="check-icon">check</mat-icon>
+                }
+              </button>
+            }
+          </mat-menu>
+        </div>
+      }
     </div>
 
     <!-- Weekdays Header -->
