@@ -20,7 +20,7 @@
 
 .tabs-container {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.25rem;
   flex: 1;
   min-width: 0;
@@ -179,7 +179,7 @@
 
 .ungrouped-tabs-container {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.25rem;
 }
 

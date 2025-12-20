@@ -529,12 +529,43 @@ export const DocumentTabsStore = signalStore(
     ),
 
     /**
-     * Toggle group collapse state
+     * Toggle group collapse state (accordion behavior: opening one closes others)
      */
     toggleGroupCollapse(groupId: string): void {
       const group = store.groups().find((g) => g.id === groupId);
-      if (group) {
-        tabsService.updateGroup(groupId, { is_collapsed: !group.is_collapsed }).subscribe({
+      if (!group) return;
+
+      const isOpening = group.is_collapsed; // If currently collapsed, we're opening it
+
+      if (isOpening) {
+        // Accordion behavior: collapse all other groups and expand this one
+        const otherGroups = store.groups().filter((g) => g.id !== groupId && !g.is_collapsed);
+
+        // First, collapse all other open groups
+        const collapsePromises = otherGroups.map((g) =>
+          tabsService.updateGroup(g.id, { is_collapsed: true }).toPromise()
+        );
+
+        // Then expand the target group
+        Promise.all(collapsePromises).then(() => {
+          tabsService.updateGroup(groupId, { is_collapsed: false }).subscribe({
+            next: (updated) => {
+              patchState(store, {
+                groups: store.groups().map((g) => {
+                  if (g.id === groupId) return updated;
+                  // Collapse all other groups
+                  if (otherGroups.some((og) => og.id === g.id)) {
+                    return { ...g, is_collapsed: true };
+                  }
+                  return g;
+                }),
+              });
+            },
+          });
+        });
+      } else {
+        // Simply collapse this group
+        tabsService.updateGroup(groupId, { is_collapsed: true }).subscribe({
           next: (updated) => {
             patchState(store, {
               groups: store.groups().map((g) => (g.id === groupId ? updated : g)),
