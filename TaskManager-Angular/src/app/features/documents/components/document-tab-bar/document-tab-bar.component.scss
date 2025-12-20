@@ -26,6 +26,10 @@
   min-width: 0;
 }
 
+.tab-item-wrapper {
+  // Wrapper needed for drop zone
+}
+
 .tab-item {
   position: relative;
   display: flex;
@@ -51,6 +55,18 @@
 
     .tab-name {
       font-weight: 600;
+    }
+  }
+
+  // Drag over state (when dragging a document over the tab)
+  &.drag-over {
+    background: rgba(99, 102, 241, 0.15);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+    border: 2px dashed var(--mat-sys-primary, #6366f1);
+
+    .tab-icon {
+      color: var(--mat-sys-primary, #6366f1);
     }
   }
 

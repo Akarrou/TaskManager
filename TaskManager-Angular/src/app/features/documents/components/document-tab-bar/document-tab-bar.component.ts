@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,10 +7,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import {
   CdkDragDrop,
+  CdkDropList,
   DragDropModule,
   moveItemInArray,
 } from '@angular/cdk/drag-drop';
-import { DocumentTab, UpdateDocumentTab } from '../../models/document-tabs.model';
+import { DocumentTab, UpdateDocumentTab, DocumentTabItem } from '../../models/document-tabs.model';
 import {
   TabEditDialogComponent,
   TabEditDialogData,
@@ -36,12 +37,17 @@ export class DocumentTabBarComponent {
 
   @Input() tabs: DocumentTab[] = [];
   @Input() selectedTabId: string | null = null;
+  @Input() allDropListIds: string[] = [];
 
   @Output() tabSelect = new EventEmitter<string>();
   @Output() tabCreate = new EventEmitter<{ name: string; icon: string; color: string }>();
   @Output() tabUpdate = new EventEmitter<{ tabId: string; updates: UpdateDocumentTab }>();
   @Output() tabDelete = new EventEmitter<string>();
   @Output() tabsReorder = new EventEmitter<string[]>();
+  @Output() documentDropOnTab = new EventEmitter<{ documentId: string; targetTabId: string }>();
+
+  // Track which tab is being hovered during drag
+  dragOverTabId: string | null = null;
 
   onTabClick(tabId: string): void {
     if (tabId !== this.selectedTabId) {
@@ -99,5 +105,35 @@ export class DocumentTabBarComponent {
 
   isSelected(tabId: string): boolean {
     return tabId === this.selectedTabId;
+  }
+
+  getTabDropListId(tabId: string): string {
+    return `tab-drop-${tabId}`;
+  }
+
+  getTabDropListIds(): string[] {
+    return this.tabs.map(t => this.getTabDropListId(t.id));
+  }
+
+  onDocumentDropOnTab(event: CdkDragDrop<unknown>, tabId: string): void {
+    // Get the document data from the drag event
+    const dragData = event.item.data;
+
+    if (dragData && (dragData.document_id || dragData.isUnorganized)) {
+      const documentId = dragData.document_id;
+      if (documentId) {
+        this.documentDropOnTab.emit({ documentId, targetTabId: tabId });
+      }
+    }
+
+    this.dragOverTabId = null;
+  }
+
+  onDragEnterTab(tabId: string): void {
+    this.dragOverTabId = tabId;
+  }
+
+  onDragLeaveTab(): void {
+    this.dragOverTabId = null;
   }
 }

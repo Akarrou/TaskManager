@@ -60,8 +60,14 @@ export class DocumentListComponent implements OnInit, OnDestroy {
   tabs = this.tabsStore.sortedTabs;
   selectedTabId = this.tabsStore.selectedTabId;
   selectedTabWithItems = this.tabsStore.selectedTabWithItems;
-  allDropListIds = this.tabsStore.allDropListIds;
   tabsLoading = this.tabsStore.isLoading;
+
+  // Computed: All drop list IDs (sections + unsectioned + tab drop zones)
+  allDropListIds = computed(() => {
+    const baseIds = this.tabsStore.allDropListIds();
+    const tabDropIds = this.tabs().map(t => `tab-drop-${t.id}`);
+    return [...baseIds, ...tabDropIds, 'unorganized-documents'];
+  });
 
   // Computed: filter documents by selected project
   // Only show root documents (no parent_id) in the main grid
@@ -199,6 +205,18 @@ export class DocumentListComponent implements OnInit, OnDestroy {
 
   onReorderTabs(tabIds: string[]): void {
     this.tabsStore.reorderTabs({ tabIds });
+  }
+
+  onDocumentDropOnTab(data: { documentId: string; targetTabId: string }): void {
+    // Move document to another tab (unsectioned area of that tab)
+    this.tabsStore.moveDocument({
+      documentId: data.documentId,
+      target: {
+        tabId: data.targetTabId,
+        sectionId: null,
+        position: 0,
+      }
+    });
   }
 
   // ==========================================================================

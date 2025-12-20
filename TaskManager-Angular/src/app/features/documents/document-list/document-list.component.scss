@@ -3,7 +3,226 @@
 @use "sass:color";
 
 // ==========================================================================
-// Document Tabs Container
+// Main Layout with Sidebar
+// ==========================================================================
+.c-documents-layout {
+  display: flex;
+  gap: 1.5rem;
+  min-height: calc(100vh - 200px);
+}
+
+.c-documents-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+// ==========================================================================
+// Sidebar: Unorganized Documents
+// ==========================================================================
+.c-documents-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 1rem;
+  align-self: flex-start;
+  max-height: calc(100vh - 180px);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.08) 0%, rgba(251, 191, 36, 0.02) 100%);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-radius: 12px;
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: #f59e0b;
+  }
+}
+
+.sidebar-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: v.$text-color-dark;
+}
+
+.sidebar-count {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #f59e0b;
+  background: rgba(251, 191, 36, 0.2);
+  padding: 0.125rem 0.5rem;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+.sidebar-hint {
+  font-size: 0.75rem;
+  color: #92400e;
+  margin: 0 0 0.75rem 0;
+  font-style: italic;
+}
+
+.sidebar-documents {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 60px;
+  padding-right: 0.25rem;
+
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(251, 191, 36, 0.3);
+    border-radius: 2px;
+  }
+
+  &.cdk-drop-list-receiving {
+    background: rgba(99, 102, 241, 0.08);
+    border-radius: 8px;
+  }
+}
+
+.sidebar-document-card {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+    .sidebar-document-card__drag-handle {
+      opacity: 1;
+    }
+
+    .sidebar-document-card__delete {
+      opacity: 1;
+    }
+  }
+
+  &__drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    opacity: 0.3;
+    transition: opacity 0.2s ease;
+    color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.5));
+    flex-shrink: 0;
+
+    &:active {
+      cursor: grabbing;
+    }
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  &__content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: v.$primary-color;
+    flex-shrink: 0;
+  }
+
+  &__title {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: v.$text-color-dark;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__delete {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    padding: 0 !important;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    flex-shrink: 0;
+
+    .mat-mdc-button-touch-target {
+      width: 24px !important;
+      height: 24px !important;
+    }
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+      color: #9ca3af;
+    }
+
+    &:hover mat-icon {
+      color: #ef4444;
+    }
+  }
+}
+
+.sidebar-document-placeholder {
+  height: 44px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 2px dashed var(--mat-sys-primary, #6366f1);
+  border-radius: 8px;
+}
+
+// Responsive: Hide sidebar on smaller screens
+@media (max-width: 1024px) {
+  .c-documents-layout {
+    flex-direction: column;
+  }
+
+  .c-documents-sidebar {
+    width: 100%;
+    position: static;
+    max-height: 300px;
+    order: -1; // Move to top on mobile
+  }
+}
+
+// ==========================================================================
+// Document Tabs Container (legacy, kept for compatibility)
 // ==========================================================================
 .c-document-tabs-container {
   display: flex;
@@ -483,6 +702,56 @@
       &:hover .item-icon {
         color: color.adjust(v.$accent-color, $lightness: -10%);
       }
+    }
+  }
+}
+
+// ==========================================================================
+// Dark Mode Support
+// ==========================================================================
+:host-context(.dark-mode) {
+  .c-documents-sidebar {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.12) 0%, rgba(251, 191, 36, 0.04) 100%);
+    border-color: rgba(251, 191, 36, 0.25);
+  }
+
+  .sidebar-title {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .sidebar-hint {
+    color: #fbbf24;
+  }
+
+  .sidebar-documents {
+    &::-webkit-scrollbar-thumb {
+      background: rgba(251, 191, 36, 0.4);
+    }
+  }
+
+  .sidebar-document-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.08);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    &__title {
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    &__drag-handle {
+      color: rgba(255, 255, 255, 0.4);
+    }
+  }
+
+  .c-document-card {
+    background-color: rgba(30, 30, 30, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+
+    &:hover {
+      background-color: rgba(40, 40, 40, 1);
     }
   }
 }

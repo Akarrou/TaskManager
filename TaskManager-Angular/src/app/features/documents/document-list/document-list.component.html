@@ -13,162 +13,166 @@
       <p>Chargement des documents...</p>
     </div>
   } @else {
-    <!-- Tab Container -->
-    <div class="c-document-tabs-container" cdkDropListGroup>
+    <!-- Main Layout with Sidebar -->
+    <div class="c-documents-layout" cdkDropListGroup>
 
-      <!-- Tab Bar -->
-      @if (tabs().length > 0) {
-        <app-document-tab-bar
-          [tabs]="tabs()"
-          [selectedTabId]="selectedTabId()"
-          (tabSelect)="onTabSelect($event)"
-          (tabCreate)="onCreateTab($event)"
-          (tabUpdate)="onUpdateTab($event)"
-          (tabDelete)="onDeleteTab($event)"
-          (tabsReorder)="onReorderTabs($event)">
-        </app-document-tab-bar>
-      }
+      <!-- Main Content Area (scrollable) -->
+      <div class="c-documents-main">
+        <!-- Tab Bar -->
+        @if (tabs().length > 0) {
+          <app-document-tab-bar
+            [tabs]="tabs()"
+            [selectedTabId]="selectedTabId()"
+            [allDropListIds]="allDropListIds()"
+            (tabSelect)="onTabSelect($event)"
+            (tabCreate)="onCreateTab($event)"
+            (tabUpdate)="onUpdateTab($event)"
+            (tabDelete)="onDeleteTab($event)"
+            (tabsReorder)="onReorderTabs($event)"
+            (documentDropOnTab)="onDocumentDropOnTab($event)">
+          </app-document-tab-bar>
+        }
 
-      <!-- Tab Content (when tabs exist and one is selected) -->
-      @if (tabs().length > 0 && selectedTabWithItems()) {
-        <app-document-tab-content
-          [tab]="selectedTabWithItems()"
-          [documents]="documentMap()"
-          [storageFiles]="documentStorageFiles()"
-          [allDropListIds]="allDropListIds()"
-          (documentClick)="openDocument($event)"
-          (documentDelete)="onDeleteDocument($event)"
-          (sectionCreate)="onCreateSection($event)"
-          (sectionUpdate)="onUpdateSection($event)"
-          (sectionDelete)="onDeleteSection($event)"
-          (sectionToggleCollapse)="onToggleSectionCollapse($event)"
-          (sectionsReorder)="onReorderSections($event)"
-          (documentMove)="onDocumentMove($event)"
-          (documentsReorder)="onDocumentsReorder($event)"
-          (documentAdd)="onDocumentAdd($event)">
-        </app-document-tab-content>
-      }
+        <!-- Tab Content (when tabs exist and one is selected) -->
+        @if (tabs().length > 0 && selectedTabWithItems()) {
+          <app-document-tab-content
+            [tab]="selectedTabWithItems()"
+            [documents]="documentMap()"
+            [storageFiles]="documentStorageFiles()"
+            [allDropListIds]="allDropListIds()"
+            (documentClick)="openDocument($event)"
+            (documentDelete)="onDeleteDocument($event)"
+            (sectionCreate)="onCreateSection($event)"
+            (sectionUpdate)="onUpdateSection($event)"
+            (sectionDelete)="onDeleteSection($event)"
+            (sectionToggleCollapse)="onToggleSectionCollapse($event)"
+            (sectionsReorder)="onReorderSections($event)"
+            (documentMove)="onDocumentMove($event)"
+            (documentsReorder)="onDocumentsReorder($event)"
+            (documentAdd)="onDocumentAdd($event)">
+          </app-document-tab-content>
+        }
 
-      <!-- No Tabs Yet - Show Empty State with Create Tab Option -->
-      @if (tabs().length === 0) {
-        <div class="c-document-list__no-tabs">
-          <div class="no-tabs-content">
-            <mat-icon class="no-tabs-icon">tab</mat-icon>
-            <h3>Organisez vos documents avec des onglets</h3>
-            <p>Créez des onglets pour organiser vos documents par catégorie, projet ou thème.</p>
-            <button mat-raised-button color="primary" (click)="onCreateTab({ name: 'Tous les documents', icon: 'folder', color: '#6366f1' })">
-              <mat-icon>add</mat-icon>
-              Créer mon premier onglet
-            </button>
-          </div>
-
-          <!-- Show unorganized documents -->
-          @if (documents().length > 0) {
-            <div class="unorganized-documents-section">
-              <h4 class="unorganized-title">
-                <mat-icon>description</mat-icon>
-                Documents existants ({{ documents().length }})
-              </h4>
-              <p class="unorganized-hint">Ces documents seront organisables une fois un onglet créé.</p>
-
-              <div class="c-document-list__grid">
-                @for (doc of documents(); track doc.id) {
-                  <div
-                    class="c-document-card"
-                    (click)="openDocument(doc.id)">
-                    <div class="c-document-card__header">
-                      <div class="c-document-card__icon">
-                        <mat-icon>description</mat-icon>
-                      </div>
-                      <div class="c-document-card__info">
-                        <h3 class="c-document-card__title">{{ doc.title || 'Sans titre' }}</h3>
-                        <p class="c-document-card__date">Modifié le {{ doc.updated_at | date:'dd/MM/yyyy HH:mm' }}</p>
-                      </div>
-                      <button mat-icon-button (click)="deleteDocument($event, doc.id)" title="Supprimer" class="c-document-card__delete">
-                        <mat-icon>delete</mat-icon>
-                      </button>
-                    </div>
-
-                    <!-- Child Documents and Storage Files -->
-                    @if (getChildDocuments(doc.id).length > 0 || getStorageFiles(doc.id).length > 0) {
-                      <div class="c-document-card__attachments">
-                        <div class="c-document-card__columns">
-                          <!-- Child Pages Column -->
-                          @if (getChildDocuments(doc.id).length > 0) {
-                            <div class="c-document-card__column">
-                              <div class="c-document-card__column-title">
-                                <mat-icon class="column-icon">description</mat-icon>
-                                Pages
-                              </div>
-                              <div class="c-document-card__column-list">
-                                @for (child of getChildDocuments(doc.id); track child.id) {
-                                  <button
-                                    class="c-document-card__item"
-                                    (click)="$event.stopPropagation(); openDocument(child.id)">
-                                    <mat-icon class="item-icon">article</mat-icon>
-                                    <span class="item-title">{{ child.title || 'Sans titre' }}</span>
-                                  </button>
-                                }
-                              </div>
-                            </div>
-                          }
-
-                          <!-- Storage Files Column -->
-                          @if (getStorageFiles(doc.id).length > 0) {
-                            <div class="c-document-card__column">
-                              <div class="c-document-card__column-title">
-                                <mat-icon class="column-icon">folder</mat-icon>
-                                Fichiers
-                              </div>
-                              <div class="c-document-card__column-list">
-                                @for (file of getStorageFiles(doc.id); track file.path) {
-                                  <a
-                                    class="c-document-card__item c-document-card__item--file"
-                                    [href]="file.url"
-                                    target="_blank"
-                                    (click)="$event.stopPropagation()">
-                                    <mat-icon class="item-icon">attach_file</mat-icon>
-                                    <span class="item-title">{{ file.name }}</span>
-                                    <mat-icon class="item-external">open_in_new</mat-icon>
-                                  </a>
-                                }
-                              </div>
-                            </div>
-                          }
-                        </div>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            </div>
-          } @else {
-            <!-- No documents at all -->
-            <div class="c-document-list__empty">
-              <mat-icon class="c-empty-icon">note_add</mat-icon>
-              <p>Aucun document pour le moment.</p>
-              <button mat-raised-button color="primary" (click)="createNewDocument()">
-                Créer mon premier document
+        <!-- No Tabs Yet - Show Empty State with Create Tab Option -->
+        @if (tabs().length === 0) {
+          <div class="c-document-list__no-tabs">
+            <div class="no-tabs-content">
+              <mat-icon class="no-tabs-icon">tab</mat-icon>
+              <h3>Organisez vos documents avec des onglets</h3>
+              <p>Créez des onglets pour organiser vos documents par catégorie, projet ou thème.</p>
+              <button mat-raised-button color="primary" (click)="onCreateTab({ name: 'Tous les documents', icon: 'folder', color: '#6366f1' })">
+                <mat-icon>add</mat-icon>
+                Créer mon premier onglet
               </button>
             </div>
-          }
-        </div>
-      }
 
-      <!-- Unorganized Documents Section (when tabs exist but some documents are not organized) -->
+            <!-- Show unorganized documents -->
+            @if (documents().length > 0) {
+              <div class="unorganized-documents-section">
+                <h4 class="unorganized-title">
+                  <mat-icon>description</mat-icon>
+                  Documents existants ({{ documents().length }})
+                </h4>
+                <p class="unorganized-hint">Ces documents seront organisables une fois un onglet créé.</p>
+
+                <div class="c-document-list__grid">
+                  @for (doc of documents(); track doc.id) {
+                    <div
+                      class="c-document-card"
+                      (click)="openDocument(doc.id)">
+                      <div class="c-document-card__header">
+                        <div class="c-document-card__icon">
+                          <mat-icon>description</mat-icon>
+                        </div>
+                        <div class="c-document-card__info">
+                          <h3 class="c-document-card__title">{{ doc.title || 'Sans titre' }}</h3>
+                          <p class="c-document-card__date">Modifié le {{ doc.updated_at | date:'dd/MM/yyyy HH:mm' }}</p>
+                        </div>
+                        <button mat-icon-button (click)="deleteDocument($event, doc.id)" title="Supprimer" class="c-document-card__delete">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
+
+                      <!-- Child Documents and Storage Files -->
+                      @if (getChildDocuments(doc.id).length > 0 || getStorageFiles(doc.id).length > 0) {
+                        <div class="c-document-card__attachments">
+                          <div class="c-document-card__columns">
+                            <!-- Child Pages Column -->
+                            @if (getChildDocuments(doc.id).length > 0) {
+                              <div class="c-document-card__column">
+                                <div class="c-document-card__column-title">
+                                  <mat-icon class="column-icon">description</mat-icon>
+                                  Pages
+                                </div>
+                                <div class="c-document-card__column-list">
+                                  @for (child of getChildDocuments(doc.id); track child.id) {
+                                    <button
+                                      class="c-document-card__item"
+                                      (click)="$event.stopPropagation(); openDocument(child.id)">
+                                      <mat-icon class="item-icon">article</mat-icon>
+                                      <span class="item-title">{{ child.title || 'Sans titre' }}</span>
+                                    </button>
+                                  }
+                                </div>
+                              </div>
+                            }
+
+                            <!-- Storage Files Column -->
+                            @if (getStorageFiles(doc.id).length > 0) {
+                              <div class="c-document-card__column">
+                                <div class="c-document-card__column-title">
+                                  <mat-icon class="column-icon">folder</mat-icon>
+                                  Fichiers
+                                </div>
+                                <div class="c-document-card__column-list">
+                                  @for (file of getStorageFiles(doc.id); track file.path) {
+                                    <a
+                                      class="c-document-card__item c-document-card__item--file"
+                                      [href]="file.url"
+                                      target="_blank"
+                                      (click)="$event.stopPropagation()">
+                                      <mat-icon class="item-icon">attach_file</mat-icon>
+                                      <span class="item-title">{{ file.name }}</span>
+                                      <mat-icon class="item-external">open_in_new</mat-icon>
+                                    </a>
+                                  }
+                                </div>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            } @else {
+              <!-- No documents at all -->
+              <div class="c-document-list__empty">
+                <mat-icon class="c-empty-icon">note_add</mat-icon>
+                <p>Aucun document pour le moment.</p>
+                <button mat-raised-button color="primary" (click)="createNewDocument()">
+                  Créer mon premier document
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Sidebar: Unorganized Documents (fixed on right) -->
       @if (tabs().length > 0 && unorganizedDocuments().length > 0) {
-        <div class="unorganized-documents-panel">
-          <div class="unorganized-header">
-            <div class="unorganized-header__left">
-              <mat-icon>inbox</mat-icon>
-              <span class="unorganized-header__title">Documents non organisés</span>
-              <span class="unorganized-header__count">({{ unorganizedDocuments().length }})</span>
-            </div>
-            <span class="unorganized-header__hint">Glissez-les dans un onglet ci-dessus</span>
+        <aside class="c-documents-sidebar">
+          <div class="sidebar-header">
+            <mat-icon>inbox</mat-icon>
+            <span class="sidebar-title">Non organisés</span>
+            <span class="sidebar-count">{{ unorganizedDocuments().length }}</span>
           </div>
 
+          <p class="sidebar-hint">Glissez vers un onglet</p>
+
           <div
-            class="unorganized-grid"
+            class="sidebar-documents"
             cdkDropList
             [id]="'unorganized-documents'"
             [cdkDropListData]="unorganizedDocuments()"
@@ -177,7 +181,7 @@
 
             @for (doc of unorganizedDocuments(); track doc.id) {
               <div
-                class="c-document-card c-document-card--unorganized"
+                class="sidebar-document-card"
                 cdkDrag
                 [cdkDragData]="{ document_id: doc.id, isUnorganized: true }"
                 (click)="openDocument(doc.id)">
@@ -189,74 +193,26 @@
                 </div>
 
                 <!-- Drag Placeholder -->
-                <div *cdkDragPlaceholder class="document-placeholder"></div>
+                <div *cdkDragPlaceholder class="sidebar-document-placeholder"></div>
 
-                <div class="c-document-card__header">
-                  <div class="c-document-card__drag-handle" cdkDragHandle>
-                    <mat-icon>drag_indicator</mat-icon>
-                  </div>
-                  <div class="c-document-card__icon">
-                    <mat-icon>description</mat-icon>
-                  </div>
-                  <div class="c-document-card__info">
-                    <h3 class="c-document-card__title">{{ doc.title || 'Sans titre' }}</h3>
-                    <p class="c-document-card__date">Modifié le {{ doc.updated_at | date:'dd/MM/yyyy HH:mm' }}</p>
-                  </div>
-                  <button mat-icon-button (click)="deleteDocument($event, doc.id)" title="Supprimer" class="c-document-card__delete">
-                    <mat-icon>delete</mat-icon>
-                  </button>
+                <div class="sidebar-document-card__drag-handle" cdkDragHandle>
+                  <mat-icon>drag_indicator</mat-icon>
                 </div>
-
-                <!-- Child Documents and Storage Files -->
-                @if (getChildDocuments(doc.id).length > 0 || getStorageFiles(doc.id).length > 0) {
-                  <div class="c-document-card__attachments">
-                    <div class="c-document-card__columns">
-                      @if (getChildDocuments(doc.id).length > 0) {
-                        <div class="c-document-card__column">
-                          <div class="c-document-card__column-title">
-                            <mat-icon class="column-icon">description</mat-icon>
-                            Pages
-                          </div>
-                          <div class="c-document-card__column-list">
-                            @for (child of getChildDocuments(doc.id); track child.id) {
-                              <button
-                                class="c-document-card__item"
-                                (click)="$event.stopPropagation(); openDocument(child.id)">
-                                <mat-icon class="item-icon">article</mat-icon>
-                                <span class="item-title">{{ child.title || 'Sans titre' }}</span>
-                              </button>
-                            }
-                          </div>
-                        </div>
-                      }
-                      @if (getStorageFiles(doc.id).length > 0) {
-                        <div class="c-document-card__column">
-                          <div class="c-document-card__column-title">
-                            <mat-icon class="column-icon">folder</mat-icon>
-                            Fichiers
-                          </div>
-                          <div class="c-document-card__column-list">
-                            @for (file of getStorageFiles(doc.id); track file.path) {
-                              <a
-                                class="c-document-card__item c-document-card__item--file"
-                                [href]="file.url"
-                                target="_blank"
-                                (click)="$event.stopPropagation()">
-                                <mat-icon class="item-icon">attach_file</mat-icon>
-                                <span class="item-title">{{ file.name }}</span>
-                                <mat-icon class="item-external">open_in_new</mat-icon>
-                              </a>
-                            }
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  </div>
-                }
+                <div class="sidebar-document-card__content">
+                  <mat-icon class="sidebar-document-card__icon">description</mat-icon>
+                  <span class="sidebar-document-card__title">{{ doc.title || 'Sans titre' }}</span>
+                </div>
+                <button
+                  mat-icon-button
+                  class="sidebar-document-card__delete"
+                  (click)="deleteDocument($event, doc.id)"
+                  title="Supprimer">
+                  <mat-icon>close</mat-icon>
+                </button>
               </div>
             }
           </div>
-        </div>
+        </aside>
       }
     </div>
   }
