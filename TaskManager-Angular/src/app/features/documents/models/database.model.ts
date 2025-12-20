@@ -149,6 +149,11 @@ export interface DatabaseView {
 }
 
 /**
+ * Timeline granularity type
+ */
+export type TimelineGranularity = 'auto' | 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year';
+
+/**
  * View-specific configuration
  */
 export interface ViewConfig {
@@ -167,6 +172,16 @@ export interface ViewConfig {
 
   // Column order (if different from default)
   columnOrder?: string[]; // array of column ids
+
+  // Calendar view configuration
+  calendarDateColumnId?: string;
+  calendarDateRangeColumnId?: string;
+
+  // Timeline view configuration
+  timelineStartDateColumnId?: string;
+  timelineEndDateColumnId?: string;
+  timelineDateRangeColumnId?: string;
+  timelineGranularity?: TimelineGranularity;
 }
 
 // =====================================================================

@@ -1,11 +1,11 @@
-import { Component, Input, Output, EventEmitter, computed, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, computed, signal, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
-import { DatabaseRow, DatabaseColumn, isDateRangeValue } from '../../models/database.model';
+import { DatabaseRow, DatabaseColumn, isDateRangeValue, TimelineGranularity } from '../../models/database.model';
 
 /**
  * Timeline item definition
@@ -23,9 +23,9 @@ interface TimelineItem {
 }
 
 /**
- * Time granularity options for the timeline
+ * Re-export TimelineGranularity as TimeGranularity for backward compatibility
  */
-export type TimeGranularity = 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year';
+export type TimeGranularity = Exclude<TimelineGranularity, 'auto'>;
 
 /**
  * Granularity option for display
@@ -49,17 +49,26 @@ interface GranularityOption {
   templateUrl: './database-timeline-view.html',
   styleUrl: './database-timeline-view.scss',
 })
-export class DatabaseTimelineView {
+export class DatabaseTimelineView implements OnChanges {
   @Input() rows: DatabaseRow[] = [];
   @Input() columns: DatabaseColumn[] = [];
   @Input() startDateColumnId?: string;
   @Input() endDateColumnId?: string;
-  @Input() dateRangeColumnId?: string; // New: for date-range column type
+  @Input() dateRangeColumnId?: string; // For date-range column type
+  @Input() initialGranularity: TimelineGranularity = 'auto'; // Initial granularity from parent
 
   @Output() rowClick = new EventEmitter<string>();
+
+  // Internal signals to make inputs reactive for computed properties
+  private rowsSignal = signal<DatabaseRow[]>([]);
+  private columnsSignal = signal<DatabaseColumn[]>([]);
+  private startDateColumnIdSignal = signal<string | undefined>(undefined);
+  private endDateColumnIdSignal = signal<string | undefined>(undefined);
+  private dateRangeColumnIdSignal = signal<string | undefined>(undefined);
   @Output() addDateColumn = new EventEmitter<void>();
   @Output() configureDateColumns = new EventEmitter<void>();
   @Output() selectDateColumn = new EventEmitter<{ columnId: string; isDateRange: boolean }>();
+  @Output() granularityChange = new EventEmitter<TimelineGranularity>(); // Emit when granularity changes
 
   // Timeline configuration
   readonly TIMELINE_HEIGHT = 400;
@@ -100,34 +109,38 @@ export class DatabaseTimelineView {
 
   // Computed: Check if we have date columns (including date-range)
   hasDateColumn = computed(() => {
-    return this.columns.some((col) => col.type === 'date' || col.type === 'date-range');
+    return this.columnsSignal().some((col) => col.type === 'date' || col.type === 'date-range');
   });
 
   // Computed: Check if we're using a date-range column
   isUsingDateRange = computed(() => {
-    return !!this.dateRangeColumnId;
+    return !!this.dateRangeColumnIdSignal();
   });
 
   // Computed: Get the start date column
   startDateColumn = computed(() => {
-    const columnId = this.startDateColumnId;
+    const columnId = this.startDateColumnIdSignal();
     if (!columnId) return null;
-    return this.columns.find((col) => col.id === columnId) || null;
+    return this.columnsSignal().find((col) => col.id === columnId) || null;
   });
 
   // Computed: Get all date columns (date and date-range)
   availableDateColumns = computed(() => {
-    return this.columns.filter((col) => col.type === 'date' || col.type === 'date-range');
+    return this.columnsSignal().filter((col) => col.type === 'date' || col.type === 'date-range');
   });
 
   // Computed: Get the currently selected column name
   selectedColumnName = computed(() => {
-    if (this.dateRangeColumnId) {
-      const col = this.columns.find((c) => c.id === this.dateRangeColumnId);
+    const dateRangeColId = this.dateRangeColumnIdSignal();
+    const startColId = this.startDateColumnIdSignal();
+    const columns = this.columnsSignal();
+
+    if (dateRangeColId) {
+      const col = columns.find((c) => c.id === dateRangeColId);
       return col?.name || 'Plage de dates';
     }
-    if (this.startDateColumnId) {
-      const col = this.columns.find((c) => c.id === this.startDateColumnId);
+    if (startColId) {
+      const col = columns.find((c) => c.id === startColId);
       return col?.name || 'Date';
     }
     return 'Sélectionner une colonne';
@@ -135,7 +148,7 @@ export class DatabaseTimelineView {
 
   // Check if a column is currently selected
   isColumnSelected(columnId: string): boolean {
-    return this.startDateColumnId === columnId || this.dateRangeColumnId === columnId;
+    return this.startDateColumnIdSignal() === columnId || this.dateRangeColumnIdSignal() === columnId;
   }
 
   // Get the current granularity label
@@ -232,15 +245,17 @@ export class DatabaseTimelineView {
 
   // Computed: Get date range (min and max dates from all rows)
   dateRange = computed(() => {
-    const dateRangeColId = this.dateRangeColumnId;
-    const startColumnId = this.startDateColumnId;
+    const dateRangeColId = this.dateRangeColumnIdSignal();
+    const startColumnId = this.startDateColumnIdSignal();
+    const endColumnId = this.endDateColumnIdSignal();
+    const rows = this.rowsSignal();
 
     // Need either a date-range column or a start date column
     if (!dateRangeColId && !startColumnId) return null;
 
     const dates: Date[] = [];
 
-    this.rows.forEach((row) => {
+    rows.forEach((row) => {
       if (dateRangeColId) {
         // Using date-range column
         const cellValue = row.cells[dateRangeColId];
@@ -259,8 +274,8 @@ export class DatabaseTimelineView {
           dates.push(new Date(startDate as string));
         }
 
-        if (this.endDateColumnId) {
-          const endDate = row.cells[this.endDateColumnId];
+        if (endColumnId) {
+          const endDate = row.cells[endColumnId];
           if (endDate) {
             dates.push(new Date(endDate as string));
           }
@@ -285,9 +300,10 @@ export class DatabaseTimelineView {
 
   // Computed: Generate timeline items
   timelineItems = computed((): TimelineItem[] => {
-    const dateRangeColId = this.dateRangeColumnId;
-    const startColumnId = this.startDateColumnId;
-    const endColumnId = this.endDateColumnId;
+    const dateRangeColId = this.dateRangeColumnIdSignal();
+    const startColumnId = this.startDateColumnIdSignal();
+    const endColumnId = this.endDateColumnIdSignal();
+    const rows = this.rowsSignal();
     const range = this.dateRange();
     const datesWidth = this.datesAreaWidth();
 
@@ -300,7 +316,7 @@ export class DatabaseTimelineView {
 
     const items: TimelineItem[] = [];
 
-    this.rows.forEach((row, index) => {
+    rows.forEach((row, index) => {
       let startDate: Date | undefined;
       let endDate: Date | undefined;
 
@@ -597,10 +613,38 @@ export class DatabaseTimelineView {
   }
 
   /**
+   * Handle input changes - sync inputs to signals for reactivity
+   */
+  ngOnChanges(changes: SimpleChanges): void {
+    // Sync all inputs to their corresponding signals
+    if (changes['rows']) {
+      this.rowsSignal.set(this.rows);
+    }
+    if (changes['columns']) {
+      this.columnsSignal.set(this.columns);
+    }
+    if (changes['startDateColumnId']) {
+      this.startDateColumnIdSignal.set(this.startDateColumnId);
+    }
+    if (changes['endDateColumnId']) {
+      this.endDateColumnIdSignal.set(this.endDateColumnId);
+    }
+    if (changes['dateRangeColumnId']) {
+      this.dateRangeColumnIdSignal.set(this.dateRangeColumnId);
+    }
+    // Update granularity when initialGranularity input changes
+    if (changes['initialGranularity'] && changes['initialGranularity'].currentValue) {
+      this.currentGranularity.set(changes['initialGranularity'].currentValue);
+    }
+  }
+
+  /**
    * Change the time granularity
    */
   onSelectGranularity(granularity: TimeGranularity | 'auto'): void {
     this.currentGranularity.set(granularity);
+    // Emit the change to parent for persistence
+    this.granularityChange.emit(granularity as TimelineGranularity);
   }
 
   /**

@@ -168,12 +168,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     const current = this.documentState();
     const original = this.originalSnapshot();
     const dirty = hasChanges(createSnapshot(current), original);
-    console.log('[DocumentEditor] isDirty computed:', dirty, {
-      currentTitle: current.title,
-      originalTitle: original?.title,
-      currentContent: JSON.stringify(current.content).substring(0, 100),
-      originalContent: original?.content ? JSON.stringify(original.content).substring(0, 100) : 'null'
-    });
     return dirty;
   });
 
@@ -654,9 +648,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         state.database_row_id,
         capitalizedTitle
       ).pipe(takeUntil(this.destroy$))
-      .subscribe({
-        error: (err) => console.error('Failed to sync title to database:', err)
-      });
+        .subscribe({
+          error: (err) => console.error('Failed to sync title to database:', err)
+        });
     }
   }
 
@@ -800,24 +794,24 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       metadata: this.databaseService.getDatabaseMetadata(databaseId),
       rows: this.databaseService.getRows({ databaseId, limit: 1000 })
     })
-    .pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: ({ metadata, rows }: { metadata: DocumentDatabase; rows: DatabaseRow[] }) => {
-        this.databaseMetadata.set(metadata);
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: ({ metadata, rows }: { metadata: DocumentDatabase; rows: DatabaseRow[] }) => {
+          this.databaseMetadata.set(metadata);
 
-        // Find the specific row for this document
-        const row = rows.find((r: DatabaseRow) => r.id === rowId);
-        if (row) {
-          this.databaseRow.set(row);
+          // Find the specific row for this document
+          const row = rows.find((r: DatabaseRow) => r.id === rowId);
+          if (row) {
+            this.databaseRow.set(row);
+          }
+
+          this.isLoadingDatabaseProperties.set(false);
+        },
+        error: (err: unknown) => {
+          console.error('Failed to load database properties:', err);
+          this.isLoadingDatabaseProperties.set(false);
         }
-
-        this.isLoadingDatabaseProperties.set(false);
-      },
-      error: (err: unknown) => {
-        console.error('Failed to load database properties:', err);
-        this.isLoadingDatabaseProperties.set(false);
-      }
-    });
+      });
   }
 
   /**
@@ -834,26 +828,26 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       columnId,
       value
     })
-    .pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: () => {
-        // Update local state
-        this.databaseRow.update((row: DatabaseRow | null) => {
-          if (!row) return row;
-          return {
-            ...row,
-            cells: {
-              ...row.cells,
-              [columnId]: value
-            }
-          };
-        });
-      },
-      error: (err: unknown) => {
-        console.error('Failed to update database property:', err);
-        alert('Impossible de mettre à jour la propriété');
-      }
-    });
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          // Update local state
+          this.databaseRow.update((row: DatabaseRow | null) => {
+            if (!row) return row;
+            return {
+              ...row,
+              cells: {
+                ...row.cells,
+                [columnId]: value
+              }
+            };
+          });
+        },
+        error: (err: unknown) => {
+          console.error('Failed to update database property:', err);
+          alert('Impossible de mettre à jour la propriété');
+        }
+      });
   }
 
   /**
@@ -1058,7 +1052,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
     save$.pipe(takeUntil(this.destroy$)).subscribe({
       next: (doc) => {
-        console.log('[DocumentEditor] Save successful, updating snapshot');
 
         // Capture current state before updating
         const currentState = this.documentState();
@@ -1077,8 +1070,6 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
           title: currentState.title,
           content: currentState.content
         });
-
-        console.log('[DocumentEditor] After save - isDirty should be false');
 
         // Update URL if new document
         if (!state.id) {
@@ -1712,27 +1703,27 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       documentId: currentDocId,
       config: DEFAULT_DATABASE_CONFIG,
     })
-    .pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: (response) => {
-        // Step 2: Insert the block with the pre-generated databaseId
-        this.editor.chain().focus().insertDatabaseTable(response.databaseId).run();
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          // Step 2: Insert the block with the pre-generated databaseId
+          this.editor.chain().focus().insertDatabaseTable(response.databaseId).run();
 
-        // Step 3: Save immediately to persist the databaseId
-        this.saveDocumentImmediate().pipe(take(1)).subscribe({
-          next: () => {},
-          error: (err) => {
-            console.error('❌ Failed to save document after database creation:', err);
-          }
-        });
+          // Step 3: Save immediately to persist the databaseId
+          this.saveDocumentImmediate().pipe(take(1)).subscribe({
+            next: () => { },
+            error: (err) => {
+              console.error('❌ Failed to save document after database creation:', err);
+            }
+          });
 
-        this.showSlashMenu.set(false);
-      },
-      error: (err) => {
-        console.error('❌ Failed to create database:', err);
-        alert('Impossible de créer la base de données. Veuillez réessayer.');
-      }
-    });
+          this.showSlashMenu.set(false);
+        },
+        error: (err) => {
+          console.error('❌ Failed to create database:', err);
+          alert('Impossible de créer la base de données. Veuillez réessayer.');
+        }
+      });
   }
 
   /**
@@ -1754,29 +1745,29 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       documentId: currentDocId,
       config: taskConfig,
     })
-    .pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: (response) => {
-        // Step 2: Insert the block with the pre-generated databaseId
-        this.editor.chain().focus().insertDatabaseTable(response.databaseId).run();
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          // Step 2: Insert the block with the pre-generated databaseId
+          this.editor.chain().focus().insertDatabaseTable(response.databaseId).run();
 
-        // Step 3: Save immediately to persist the databaseId
-        this.saveDocumentImmediate().pipe(take(1)).subscribe({
-          next: () => {
-            console.log('✅ Task database created successfully');
-          },
-          error: (err) => {
-            console.error('❌ Failed to save document after task database creation:', err);
-          }
-        });
+          // Step 3: Save immediately to persist the databaseId
+          this.saveDocumentImmediate().pipe(take(1)).subscribe({
+            next: () => {
+              console.log('✅ Task database created successfully');
+            },
+            error: (err) => {
+              console.error('❌ Failed to save document after task database creation:', err);
+            }
+          });
 
-        this.showSlashMenu.set(false);
-      },
-      error: (err) => {
-        console.error('❌ Failed to create task database:', err);
-        alert('Impossible de créer la base de données de tâches. Veuillez réessayer.');
-      }
-    });
+          this.showSlashMenu.set(false);
+        },
+        error: (err) => {
+          console.error('❌ Failed to create task database:', err);
+          alert('Impossible de créer la base de données de tâches. Veuillez réessayer.');
+        }
+      });
   }
 
   /**

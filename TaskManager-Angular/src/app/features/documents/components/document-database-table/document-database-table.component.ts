@@ -27,6 +27,7 @@ import {
   DateRangeValue,
   isDateRangeValue,
   hasIncludeTime,
+  TimelineGranularity,
 } from '../../models/database.model';
 import { DatabaseService } from '../../services/database.service';
 import { Document, DocumentService } from '../../services/document.service';
@@ -141,6 +142,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   timelineStartDateColumnId = signal<string | undefined>(undefined);
   timelineEndDateColumnId = signal<string | undefined>(undefined);
   timelineDateRangeColumnId = signal<string | undefined>(undefined);
+  timelineGranularity = signal<TimelineGranularity>('auto');
 
   // Computed
   columnCount = computed(() => this.databaseConfig().columns.length);
@@ -255,6 +257,11 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
             }
           }
         });
+
+        // Apply defaultView from Supabase config (source of truth)
+        if (metadata.config.defaultView) {
+          this.currentView.set(metadata.config.defaultView);
+        }
 
         // Helper function to continue initialization after config is ready
         const continueInitialization = () => {
@@ -748,10 +755,19 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Switch view type
+   * Switch view type and persist as default
    */
   onSwitchView(viewType: ViewType) {
     this.currentView.set(viewType);
+    // Update defaultView in config
+    this.databaseConfig.update(config => ({
+      ...config,
+      defaultView: viewType,
+    }));
+    // Load view-specific config for the new view
+    this.loadViewConfig();
+    // Persist to Supabase
+    this.saveCurrentViewConfig();
   }
 
   /**
@@ -1231,11 +1247,6 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
                   });
 
                   // Notify parent component (TipTap editor) to remove the node
-                  console.log('🔔 Notifying parent about database deletion', {
-                    databaseId: this.databaseId,
-                    hasCallback: !!this.onDataChange,
-                  });
-
                   if (this.onDataChange) {
                     this.onDataChange({
                       databaseId: this.databaseId,
@@ -1243,9 +1254,6 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
                       storageMode: this.storageMode,
                       deleted: true,
                     });
-                    console.log('✅ onDataChange callback executed');
-                  } else {
-                    console.warn('⚠️ No onDataChange callback provided');
                   }
                 },
                 error: (err: unknown) => {
@@ -1370,6 +1378,19 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Get display name for a view type
+   */
+  private getViewDisplayName(viewType: ViewType): string {
+    const names: Record<ViewType, string> = {
+      table: 'Vue tableau',
+      kanban: 'Vue Kanban',
+      calendar: 'Vue calendrier',
+      timeline: 'Vue timeline',
+    };
+    return names[viewType] || viewType;
+  }
+
+  /**
    * Load filters and sort from current view config
    */
   private loadViewConfig(): void {
@@ -1377,8 +1398,9 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     if (currentView?.config?.filters) {
       this.activeFilters.set(currentView.config.filters);
     }
-    if (currentView?.config?.sortBy) {
+    if (currentView?.config?.sortBy && this.currentView() !== 'timeline') {
       // Vérifier que la colonne existe avant d'appliquer le tri
+      // Note: For timeline view, sortBy is used for endDateColumnId (legacy), so skip
       const columnExists = this.databaseConfig().columns.some(
         (col) => col.id === currentView.config.sortBy
       );
@@ -1389,22 +1411,51 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
         });
       }
     }
-    if (currentView?.config?.groupBy) {
+    if (currentView?.config?.groupBy && this.currentView() === 'kanban') {
       this.kanbanGroupByColumnId.set(currentView.config.groupBy);
     }
-    // Load calendar dateColumn from view config
-    // Note: dateColumn is stored in groupBy for calendar views (reusing the field)
-    if (this.currentView() === 'calendar' && currentView?.config?.groupBy) {
-      this.calendarDateColumnId.set(currentView.config.groupBy);
-    }
-    // Load timeline date columns from view config
-    // Note: We use groupBy for startDate and sortBy for endDate (reusing fields)
-    if (this.currentView() === 'timeline') {
-      if (currentView?.config?.groupBy) {
-        this.timelineStartDateColumnId.set(currentView.config.groupBy);
+
+    // Load calendar view config
+    if (this.currentView() === 'calendar') {
+      // Use dedicated fields first, fallback to legacy groupBy
+      if (currentView?.config?.calendarDateColumnId) {
+        this.calendarDateColumnId.set(currentView.config.calendarDateColumnId);
+        this.calendarDateRangeColumnId.set(undefined);
+      } else if (currentView?.config?.calendarDateRangeColumnId) {
+        this.calendarDateRangeColumnId.set(currentView.config.calendarDateRangeColumnId);
+        this.calendarDateColumnId.set(undefined);
+      } else if (currentView?.config?.groupBy) {
+        // Legacy: groupBy was used for date column
+        this.calendarDateColumnId.set(currentView.config.groupBy);
       }
-      if (currentView?.config?.sortBy) {
-        this.timelineEndDateColumnId.set(currentView.config.sortBy);
+    }
+
+    // Load timeline view config
+    if (this.currentView() === 'timeline') {
+      // Use dedicated fields first, fallback to legacy groupBy/sortBy
+      if (currentView?.config?.timelineDateRangeColumnId) {
+        this.timelineDateRangeColumnId.set(currentView.config.timelineDateRangeColumnId);
+        this.timelineStartDateColumnId.set(undefined);
+        this.timelineEndDateColumnId.set(undefined);
+      } else if (currentView?.config?.timelineStartDateColumnId) {
+        this.timelineStartDateColumnId.set(currentView.config.timelineStartDateColumnId);
+        this.timelineEndDateColumnId.set(currentView.config?.timelineEndDateColumnId);
+        this.timelineDateRangeColumnId.set(undefined);
+      } else {
+        // Legacy: groupBy was used for startDate, sortBy for endDate
+        if (currentView?.config?.groupBy) {
+          this.timelineStartDateColumnId.set(currentView.config.groupBy);
+        }
+        if (currentView?.config?.sortBy) {
+          this.timelineEndDateColumnId.set(currentView.config.sortBy);
+        }
+      }
+
+      // Load timeline granularity
+      if (currentView?.config?.timelineGranularity) {
+        this.timelineGranularity.set(currentView.config.timelineGranularity);
+      } else {
+        this.timelineGranularity.set('auto');
       }
     }
   }
@@ -1479,40 +1530,90 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
 
   /**
    * Save current view configuration (filters, sort) to Supabase
+   * Creates view entry dynamically if it doesn't exist
    */
   private saveCurrentViewConfig(): void {
-    const currentView = this.getCurrentView();
-    if (!currentView) return;
+    let viewToUpdate = this.getCurrentView();
 
-    // Update the view config
-    currentView.config.filters = this.activeFilters();
-    const sort = this.activeSort();
-    if (sort) {
-      currentView.config.sortBy = sort.columnId;
-      currentView.config.sortOrder = sort.order;
-    } else {
-      delete currentView.config.sortBy;
-      delete currentView.config.sortOrder;
+    // If view doesn't exist in the array, create it dynamically
+    if (!viewToUpdate) {
+      const viewType = this.currentView();
+      const newView: DatabaseView = {
+        id: `${viewType}-view`,
+        name: this.getViewDisplayName(viewType),
+        type: viewType,
+        config: {},
+      };
+
+      // Add the new view to the config
+      this.databaseConfig.update(config => ({
+        ...config,
+        views: [...config.views, newView],
+      }));
+
+      // Get the newly added view
+      viewToUpdate = this.databaseConfig().views.find(v => v.type === viewType);
     }
 
-    // Save kanban groupBy
-    if (this.currentView() === 'kanban') {
-      currentView.config.groupBy = this.kanbanGroupByColumnId();
+    if (viewToUpdate) {
+      // Update the view config
+      viewToUpdate.config.filters = this.activeFilters();
+
+      // Save sort config only for non-timeline views (timeline uses sortBy for legacy endDate)
+      if (this.currentView() !== 'timeline') {
+        const sort = this.activeSort();
+        if (sort) {
+          viewToUpdate.config.sortBy = sort.columnId;
+          viewToUpdate.config.sortOrder = sort.order;
+        } else {
+          delete viewToUpdate.config.sortBy;
+          delete viewToUpdate.config.sortOrder;
+        }
+      }
+
+      // Save kanban groupBy
+      if (this.currentView() === 'kanban') {
+        viewToUpdate.config.groupBy = this.kanbanGroupByColumnId();
+      }
+
+      // Save calendar view config using dedicated fields
+      if (this.currentView() === 'calendar') {
+        viewToUpdate.config.calendarDateColumnId = this.calendarDateColumnId();
+        viewToUpdate.config.calendarDateRangeColumnId = this.calendarDateRangeColumnId();
+        // Keep legacy groupBy for backward compatibility
+        viewToUpdate.config.groupBy = this.calendarDateColumnId() || this.calendarDateRangeColumnId();
+      }
+
+      // Save timeline view config using dedicated fields
+      if (this.currentView() === 'timeline') {
+        viewToUpdate.config.timelineStartDateColumnId = this.timelineStartDateColumnId();
+        viewToUpdate.config.timelineEndDateColumnId = this.timelineEndDateColumnId();
+        viewToUpdate.config.timelineDateRangeColumnId = this.timelineDateRangeColumnId();
+        viewToUpdate.config.timelineGranularity = this.timelineGranularity();
+        // Keep legacy fields for backward compatibility
+        viewToUpdate.config.groupBy = this.timelineStartDateColumnId() || this.timelineDateRangeColumnId();
+        viewToUpdate.config.sortBy = this.timelineEndDateColumnId();
+      }
     }
 
-    // Save calendar dateColumn (reuse groupBy field)
-    if (this.currentView() === 'calendar') {
-      currentView.config.groupBy = this.calendarDateColumnId();
-    }
+    // ALWAYS persist to Supabase - even if view-specific config wasn't updated
+    // This ensures defaultView is saved when switching views
+    // IMPORTANT: Don't use takeUntil here - we want the save to complete even if user navigates away
+    const configToSave = this.databaseConfig();
 
-    // Save timeline date columns (reuse groupBy for startDate, sortBy for endDate)
-    if (this.currentView() === 'timeline') {
-      currentView.config.groupBy = this.timelineStartDateColumnId();
-      currentView.config.sortBy = this.timelineEndDateColumnId();
-    }
-
-    // Persist to Supabase (debounced via changeSubject)
-    this.changeSubject.next();
+    this.databaseService
+      .updateDatabaseConfig(this.databaseId, configToSave)
+      .subscribe({
+        next: () => {
+          // Also sync to TipTap (debounced) - only if component still alive
+          if (!this.destroy$.closed) {
+            this.changeSubject.next();
+          }
+        },
+        error: (err) => {
+          console.error('Failed to save view config to Supabase:', err);
+        },
+      });
   }
 
   // =====================================================================
@@ -1779,6 +1880,14 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
       // Clear end date when selecting a new start date column
       this.timelineEndDateColumnId.set(undefined);
     }
+    this.saveCurrentViewConfig();
+  }
+
+  /**
+   * Handle granularity change from Timeline view
+   */
+  onTimelineGranularityChange(granularity: TimelineGranularity): void {
+    this.timelineGranularity.set(granularity);
     this.saveCurrentViewConfig();
   }
 

@@ -129,7 +129,6 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
 
       // Always set the data change callback to handle updates and deletions
       componentRef.setInput('onDataChange', (attrs: DatabaseNodeAttributes) => {
-        console.log('🔗 Directive callback received', { deleted: attrs.deleted });
         this.updateNodeAttributes(block, attrs);
       });
 
@@ -145,11 +144,9 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
    * Update TipTap node attributes when database changes
    */
   private updateNodeAttributes(element: HTMLElement, attrs: DatabaseNodeAttributes) {
-    console.log('📝 updateNodeAttributes called', { attrs, deleted: attrs.deleted });
 
     // Handle database deletion: remove the node from TipTap
     if (attrs.deleted) {
-      console.log('🚨 Deletion flag detected, calling deleteNode');
       this.deleteNode(element);
       return;
     }

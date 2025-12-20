@@ -485,10 +485,12 @@
             [startDateColumnId]="timelineStartDateColumnId()"
             [endDateColumnId]="timelineEndDateColumnId()"
             [dateRangeColumnId]="timelineDateRangeColumnId()"
+            [initialGranularity]="timelineGranularity()"
             (rowClick)="onTimelineRowClick($event)"
             (addDateColumn)="onTimelineAddDateColumn()"
             (configureDateColumns)="onTimelineConfigureDateColumns()"
-            (selectDateColumn)="onTimelineSelectDateColumn($event)">
+            (selectDateColumn)="onTimelineSelectDateColumn($event)"
+            (granularityChange)="onTimelineGranularityChange($event)">
           </app-database-timeline-view>
         }
       }
