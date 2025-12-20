@@ -1,17 +1,38 @@
 @if (tab) {
   <div class="tab-content">
-    <!-- Sections -->
-    @for (section of tab.sections; track trackSection($index, section)) {
-      <div class="section-container" [class.collapsed]="section.is_collapsed">
-        <!-- Section Header -->
-        <app-document-section-header
-          [section]="section"
-          [itemCount]="section.items.length"
-          (titleChange)="onSectionTitleChange(section.id, $event)"
-          (toggleCollapse)="onSectionToggleCollapse(section.id)"
-          (delete)="onSectionDelete(section.id)"
-          cdkDrag>
-        </app-document-section-header>
+    <!-- Sections Drop List -->
+    <div
+      class="sections-list"
+      cdkDropList
+      cdkDropListOrientation="vertical"
+      [cdkDropListData]="tab.sections"
+      (cdkDropListDropped)="onSectionDrop($event)">
+
+      @for (section of tab.sections; track trackSection($index, section)) {
+        <div
+          class="section-container"
+          [class.collapsed]="section.is_collapsed"
+          cdkDrag
+          [cdkDragData]="section">
+
+          <!-- Section Drag Preview -->
+          <div *cdkDragPreview class="section-drag-preview">
+            <mat-icon [style.color]="section.color || '#6366f1'">{{ section.icon || 'folder_open' }}</mat-icon>
+            <span>{{ section.title }}</span>
+          </div>
+
+          <!-- Section Drag Placeholder -->
+          <div *cdkDragPlaceholder class="section-placeholder"></div>
+
+          <!-- Section Header -->
+          <app-document-section-header
+            [section]="section"
+            [itemCount]="section.items.length"
+            (titleChange)="onSectionTitleChange(section.id, $event)"
+            (sectionUpdate)="onSectionFullUpdate(section.id, $event)"
+            (toggleCollapse)="onSectionToggleCollapse(section.id)"
+            (delete)="onSectionDelete(section.id)">
+          </app-document-section-header>
 
         <!-- Section Content (Drop Zone) -->
         @if (!section.is_collapsed) {
@@ -119,8 +140,9 @@
             }
           </div>
         }
-      </div>
-    }
+        </div>
+      }
+    </div>
 
     <!-- Unsectioned Documents -->
     <div class="unsectioned-container">

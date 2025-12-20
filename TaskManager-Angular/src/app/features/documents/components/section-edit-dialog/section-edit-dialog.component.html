@@ -1,0 +1,71 @@
+<h2 mat-dialog-title>{{ dialogTitle }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="section-edit-form">
+    <!-- Section Title -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Titre de la section</mat-label>
+      <input matInput formControlName="title" placeholder="Ex: Documents importants" maxlength="100" />
+      <mat-hint align="end">{{ form.value.title?.length || 0 }}/100</mat-hint>
+      @if (form.controls['title'].hasError('required')) {
+        <mat-error>Le titre est requis</mat-error>
+      }
+    </mat-form-field>
+
+    <!-- Icon Selection -->
+    <div class="selection-section">
+      <label class="section-label">Icône</label>
+      <div class="icon-grid">
+        @for (icon of icons; track icon) {
+          <button
+            type="button"
+            class="icon-option"
+            [class.selected]="selectedIcon === icon"
+            [style.color]="selectedIcon === icon ? selectedColor : null"
+            (click)="selectIcon(icon)">
+            <mat-icon>{{ icon }}</mat-icon>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Color Selection -->
+    <div class="selection-section">
+      <label class="section-label">Couleur</label>
+      <div class="color-grid">
+        @for (color of colors; track color) {
+          <button
+            type="button"
+            class="color-option"
+            [class.selected]="selectedColor === color"
+            [style.background-color]="color"
+            (click)="selectColor(color)">
+            @if (selectedColor === color) {
+              <mat-icon class="check-icon">check</mat-icon>
+            }
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-section">
+      <label class="section-label">Aperçu</label>
+      <div class="preview-header" [style.border-left-color]="selectedColor">
+        <mat-icon [style.color]="selectedColor">{{ selectedIcon }}</mat-icon>
+        <span class="preview-title">{{ form.value.title || 'Titre de la section' }}</span>
+      </div>
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Annuler</button>
+  <button
+    mat-raised-button
+    color="primary"
+    [disabled]="!form.valid"
+    (click)="onSubmit()">
+    {{ isEditMode ? 'Enregistrer' : 'Créer' }}
+  </button>
+</mat-dialog-actions>

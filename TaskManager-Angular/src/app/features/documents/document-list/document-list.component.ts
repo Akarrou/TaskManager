@@ -23,7 +23,7 @@ import { AppState } from '../../../app.state';
 import { selectSelectedProject } from '../../projects/store/project.selectors';
 import { selectAllDocuments, selectDocumentsLoading } from '../store/document.selectors';
 import * as DocumentActions from '../store/document.actions';
-import { DocumentDropTarget, UpdateDocumentTab } from '../models/document-tabs.model';
+import { DocumentDropTarget, UpdateDocumentTab, UpdateDocumentSection } from '../models/document-tabs.model';
 
 @Component({
   selector: 'app-document-list',
@@ -214,11 +214,15 @@ export class DocumentListComponent implements OnInit, OnDestroy {
     });
   }
 
-  onUpdateSection(data: { sectionId: string; title: string }): void {
+  onUpdateSection(data: { sectionId: string; updates: UpdateDocumentSection }): void {
     this.tabsStore.updateSection({
       sectionId: data.sectionId,
-      updates: { title: data.title }
+      updates: data.updates
     });
+  }
+
+  onReorderSections(data: { tabId: string; sectionIds: string[] }): void {
+    this.tabsStore.reorderSections({ sectionIds: data.sectionIds });
   }
 
   onDeleteSection(sectionId: string): void {

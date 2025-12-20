@@ -210,6 +210,8 @@ export class DocumentTabsService {
             .insert({
               ...section,
               position,
+              icon: section.icon ?? 'folder_open',
+              color: section.color ?? '#6366f1',
               is_collapsed: false,
             })
             .select()

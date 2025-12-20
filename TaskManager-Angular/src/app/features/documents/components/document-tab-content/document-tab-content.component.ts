@@ -19,6 +19,8 @@ import {
   SectionWithItems,
   DocumentTabItem,
   DocumentDropTarget,
+  UpdateDocumentSection,
+  DocumentSection,
 } from '../../models/document-tabs.model';
 import { Document, DocumentStorageFile } from '../../services/document.service';
 import { DocumentSectionHeaderComponent } from '../document-section-header/document-section-header.component';
@@ -47,9 +49,10 @@ export class DocumentTabContentComponent {
   @Output() documentClick = new EventEmitter<string>();
   @Output() documentDelete = new EventEmitter<{ event: Event; documentId: string }>();
   @Output() sectionCreate = new EventEmitter<string>(); // tabId
-  @Output() sectionUpdate = new EventEmitter<{ sectionId: string; title: string }>();
+  @Output() sectionUpdate = new EventEmitter<{ sectionId: string; updates: UpdateDocumentSection }>();
   @Output() sectionDelete = new EventEmitter<string>();
   @Output() sectionToggleCollapse = new EventEmitter<string>();
+  @Output() sectionsReorder = new EventEmitter<{ tabId: string; sectionIds: string[] }>();
   @Output() documentMove = new EventEmitter<{ documentId: string; target: DocumentDropTarget }>();
   @Output() documentsReorder = new EventEmitter<{
     tabId: string;
@@ -139,7 +142,25 @@ export class DocumentTabContentComponent {
   }
 
   onSectionTitleChange(sectionId: string, title: string): void {
-    this.sectionUpdate.emit({ sectionId, title });
+    this.sectionUpdate.emit({ sectionId, updates: { title } });
+  }
+
+  onSectionFullUpdate(sectionId: string, updates: UpdateDocumentSection): void {
+    this.sectionUpdate.emit({ sectionId, updates });
+  }
+
+  onSectionDrop(event: CdkDragDrop<SectionWithItems[]>): void {
+    if (!this.tab || event.previousIndex === event.currentIndex) return;
+
+    // Create a mutable copy of sections
+    const sections = [...this.tab.sections];
+    moveItemInArray(sections, event.previousIndex, event.currentIndex);
+
+    // Emit the new order
+    this.sectionsReorder.emit({
+      tabId: this.tab.id,
+      sectionIds: sections.map(s => s.id),
+    });
   }
 
   onSectionToggleCollapse(sectionId: string): void {

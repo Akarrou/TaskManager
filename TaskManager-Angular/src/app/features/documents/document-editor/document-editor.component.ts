@@ -963,6 +963,18 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     if (newTitle !== this.documentState().title) {
       // Call existing onTitleChange with the new title
       this.onTitleChange(newTitle);
+
+      // Update the breadcrumbs signal to reflect the new title immediately
+      this.breadcrumbs.update(crumbs => {
+        if (crumbs.length === 0) return crumbs;
+        // Update the last breadcrumb (current document) with the new title
+        const updated = [...crumbs];
+        updated[updated.length - 1] = {
+          ...updated[updated.length - 1],
+          title: newTitle
+        };
+        return updated;
+      });
     }
 
     this.isEditingTitle.set(false);

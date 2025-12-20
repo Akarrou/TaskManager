@@ -23,6 +23,8 @@ export interface DocumentSection {
   id: string;
   tab_id: string;
   title: string;
+  icon: string;
+  color: string;
   position: number;
   is_collapsed: boolean;
   created_at?: string;
@@ -92,12 +94,12 @@ export type UpdateDocumentTab = Partial<Pick<DocumentTab, 'name' | 'icon' | 'col
  * Create DTO for DocumentSection
  */
 export type CreateDocumentSection = Pick<DocumentSection, 'tab_id' | 'title'> &
-  Partial<Pick<DocumentSection, 'position'>>;
+  Partial<Pick<DocumentSection, 'icon' | 'color' | 'position'>>;
 
 /**
  * Update DTO for DocumentSection
  */
-export type UpdateDocumentSection = Partial<Pick<DocumentSection, 'title' | 'position' | 'is_collapsed'>>;
+export type UpdateDocumentSection = Partial<Pick<DocumentSection, 'title' | 'icon' | 'color' | 'position' | 'is_collapsed'>>;
 
 /**
  * Result of loading tabs with all related data
