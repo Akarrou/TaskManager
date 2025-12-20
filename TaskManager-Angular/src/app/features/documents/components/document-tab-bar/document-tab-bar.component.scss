@@ -1,0 +1,226 @@
+.tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+  margin-bottom: 1rem;
+  overflow-x: auto;
+
+  // Hide scrollbar but keep functionality
+  scrollbar-width: thin;
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+  }
+}
+
+.tabs-container {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.tab-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: transparent;
+  min-width: 120px;
+  max-width: 200px;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+
+    .tab-menu-btn {
+      opacity: 1;
+    }
+  }
+
+  &.selected {
+    background: rgba(var(--tab-color-rgb, 99, 102, 241), 0.08);
+
+    .tab-name {
+      font-weight: 600;
+    }
+  }
+
+  // CDK Drag styles
+  &.cdk-drag-animating {
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.tab-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.tab-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+}
+
+.tab-name {
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.tab-menu-btn {
+  width: 24px !important;
+  height: 24px !important;
+  padding: 0 !important;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  flex-shrink: 0;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  .mat-mdc-button-touch-target {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+.selection-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+}
+
+.add-tab-btn {
+  flex-shrink: 0;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  padding: 0 !important;
+  border: 2px dashed var(--mat-sys-outline, rgba(0, 0, 0, 0.2));
+  border-radius: 8px;
+  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+  transition: all 0.2s ease;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  &:hover {
+    border-color: var(--mat-sys-primary, #6366f1);
+    color: var(--mat-sys-primary, #6366f1);
+    background: rgba(99, 102, 241, 0.08);
+  }
+
+  .mat-mdc-button-touch-target {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+// Drag Preview
+.tab-drag-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--mat-sys-surface, white);
+  border-radius: 8px;
+  border-left: 3px solid;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+// Drag Placeholder
+.tab-placeholder {
+  min-width: 120px;
+  height: 40px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 2px dashed var(--mat-sys-primary, #6366f1);
+  border-radius: 8px;
+}
+
+// Drop list animation
+.cdk-drop-list-dragging .tab-item:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+// Menu delete option
+.delete-option {
+  color: var(--mat-sys-error, #dc2626);
+}
+
+// Dark mode
+:host-context(.dark-mode) {
+  .tab-bar {
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .tab-item {
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    &.selected {
+      background: rgba(var(--tab-color-rgb, 99, 102, 241), 0.15);
+    }
+  }
+
+  .add-tab-btn {
+    border-color: rgba(255, 255, 255, 0.2);
+
+    &:hover {
+      background: rgba(99, 102, 241, 0.15);
+    }
+  }
+
+  .tab-drag-preview {
+    background: var(--mat-sys-surface-container, #2a2a2a);
+  }
+
+  .tab-placeholder {
+    background: rgba(99, 102, 241, 0.2);
+  }
+}

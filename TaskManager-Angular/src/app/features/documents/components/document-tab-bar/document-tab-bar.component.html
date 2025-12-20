@@ -1,0 +1,68 @@
+<div class="tab-bar">
+  <!-- Tabs Container (Draggable) -->
+  <div
+    class="tabs-container"
+    cdkDropList
+    cdkDropListOrientation="horizontal"
+    (cdkDropListDropped)="onTabDrop($event)">
+    @for (tab of tabs; track trackTab($index, tab)) {
+      <div
+        class="tab-item"
+        [class.selected]="isSelected(tab.id)"
+        [style.--tab-color]="tab.color"
+        cdkDrag
+        (click)="onTabClick(tab.id)">
+        <!-- Drag Preview -->
+        <div *cdkDragPreview class="tab-drag-preview" [style.border-color]="tab.color">
+          <mat-icon [style.color]="tab.color">{{ tab.icon }}</mat-icon>
+          <span>{{ tab.name }}</span>
+        </div>
+
+        <!-- Drag Placeholder -->
+        <div *cdkDragPlaceholder class="tab-placeholder"></div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+          <mat-icon class="tab-icon" [style.color]="isSelected(tab.id) ? tab.color : null">
+            {{ tab.icon }}
+          </mat-icon>
+          <span class="tab-name">{{ tab.name }}</span>
+
+          <!-- Tab Menu -->
+          <button
+            mat-icon-button
+            class="tab-menu-btn"
+            [matMenuTriggerFor]="tabMenu"
+            (click)="$event.stopPropagation()">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+
+          <mat-menu #tabMenu="matMenu">
+            <button mat-menu-item (click)="onEditTab(tab, $event)">
+              <mat-icon>edit</mat-icon>
+              <span>Modifier</span>
+            </button>
+            <button mat-menu-item (click)="onDeleteTab(tab.id, $event)" class="delete-option">
+              <mat-icon color="warn">delete</mat-icon>
+              <span>Supprimer</span>
+            </button>
+          </mat-menu>
+        </div>
+
+        <!-- Selection Indicator -->
+        @if (isSelected(tab.id)) {
+          <div class="selection-indicator" [style.background-color]="tab.color"></div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Add Tab Button -->
+  <button
+    mat-icon-button
+    class="add-tab-btn"
+    (click)="onAddTab()"
+    matTooltip="Nouvel onglet">
+    <mat-icon>add</mat-icon>
+  </button>
+</div>

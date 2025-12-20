@@ -1,0 +1,258 @@
+@if (tab) {
+  <div class="tab-content">
+    <!-- Sections -->
+    @for (section of tab.sections; track trackSection($index, section)) {
+      <div class="section-container" [class.collapsed]="section.is_collapsed">
+        <!-- Section Header -->
+        <app-document-section-header
+          [section]="section"
+          [itemCount]="section.items.length"
+          (titleChange)="onSectionTitleChange(section.id, $event)"
+          (toggleCollapse)="onSectionToggleCollapse(section.id)"
+          (delete)="onSectionDelete(section.id)"
+          cdkDrag>
+        </app-document-section-header>
+
+        <!-- Section Content (Drop Zone) -->
+        @if (!section.is_collapsed) {
+          <div
+            class="section-content"
+            cdkDropList
+            [id]="getDropListId(section.id)"
+            [cdkDropListData]="section.items"
+            [cdkDropListConnectedTo]="allDropListIds"
+            (cdkDropListDropped)="onDrop($event, section.id)">
+
+            @if (section.items.length === 0) {
+              <div class="drop-zone-empty">
+                <mat-icon>drag_indicator</mat-icon>
+                <span>Glissez des documents ici</span>
+              </div>
+            } @else {
+              <div class="documents-grid">
+                @for (item of section.items; track trackItem($index, item)) {
+                  @if (getDocumentForItem(item); as doc) {
+                    <div
+                      class="c-document-card"
+                      cdkDrag
+                      [cdkDragData]="item"
+                      (click)="onDocumentClick(doc.id)">
+
+                      <!-- Drag Preview -->
+                      <div *cdkDragPreview class="document-drag-preview">
+                        <mat-icon>description</mat-icon>
+                        <span>{{ doc.title || 'Sans titre' }}</span>
+                      </div>
+
+                      <!-- Drag Placeholder -->
+                      <div *cdkDragPlaceholder class="document-placeholder"></div>
+
+                      <!-- Card Content -->
+                      <div class="c-document-card__header">
+                        <div class="c-document-card__drag-handle" cdkDragHandle>
+                          <mat-icon>drag_indicator</mat-icon>
+                        </div>
+                        <div class="c-document-card__icon">
+                          <mat-icon>description</mat-icon>
+                        </div>
+                        <div class="c-document-card__info">
+                          <h3 class="c-document-card__title">{{ doc.title || 'Sans titre' }}</h3>
+                          <p class="c-document-card__date">Modifié le {{ doc.updated_at | date:'dd/MM/yyyy HH:mm' }}</p>
+                        </div>
+                        <button
+                          mat-icon-button
+                          (click)="onDocumentDelete($event, doc.id)"
+                          title="Supprimer"
+                          class="c-document-card__delete">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
+
+                      <!-- Attachments -->
+                      @if (getChildDocuments(doc.id).length > 0 || getStorageFilesForDocument(doc.id).length > 0) {
+                        <div class="c-document-card__attachments">
+                          <div class="c-document-card__columns">
+                            @if (getChildDocuments(doc.id).length > 0) {
+                              <div class="c-document-card__column">
+                                <div class="c-document-card__column-title">
+                                  <mat-icon class="column-icon">description</mat-icon>
+                                  Pages
+                                </div>
+                                <div class="c-document-card__column-list">
+                                  @for (child of getChildDocuments(doc.id); track child.id) {
+                                    <button
+                                      class="c-document-card__item"
+                                      (click)="$event.stopPropagation(); onDocumentClick(child.id)">
+                                      <mat-icon class="item-icon">article</mat-icon>
+                                      <span class="item-title">{{ child.title || 'Sans titre' }}</span>
+                                    </button>
+                                  }
+                                </div>
+                              </div>
+                            }
+                            @if (getStorageFilesForDocument(doc.id).length > 0) {
+                              <div class="c-document-card__column">
+                                <div class="c-document-card__column-title">
+                                  <mat-icon class="column-icon">folder</mat-icon>
+                                  Fichiers
+                                </div>
+                                <div class="c-document-card__column-list">
+                                  @for (file of getStorageFilesForDocument(doc.id); track file.path) {
+                                    <button
+                                      class="c-document-card__item c-document-card__item--file"
+                                      (click)="onOpenStorageFile($event, file.url)">
+                                      <mat-icon class="item-icon">attach_file</mat-icon>
+                                      <span class="item-title">{{ file.name }}</span>
+                                      <mat-icon class="item-external">open_in_new</mat-icon>
+                                    </button>
+                                  }
+                                </div>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Unsectioned Documents -->
+    <div class="unsectioned-container">
+      @if (tab.sections.length > 0 && tab.unsectionedItems.length > 0) {
+        <div class="unsectioned-label">
+          <mat-icon>category</mat-icon>
+          <span>Sans section</span>
+          <span class="item-count">({{ tab.unsectionedItems.length }})</span>
+        </div>
+      }
+
+      <div
+        class="unsectioned-content"
+        cdkDropList
+        [id]="getDropListId(null)"
+        [cdkDropListData]="tab.unsectionedItems"
+        [cdkDropListConnectedTo]="allDropListIds"
+        (cdkDropListDropped)="onDrop($event, null)">
+
+        @if (tab.unsectionedItems.length === 0 && tab.sections.length === 0) {
+          <div class="empty-state">
+            <mat-icon class="empty-icon">note_add</mat-icon>
+            <p>Aucun document dans cet onglet</p>
+          </div>
+        } @else if (tab.unsectionedItems.length === 0 && tab.sections.length > 0) {
+          <div class="drop-zone-empty drop-zone-minimal">
+            <mat-icon>drag_indicator</mat-icon>
+            <span>Zone de dépôt</span>
+          </div>
+        } @else {
+          <div class="documents-grid">
+            @for (item of tab.unsectionedItems; track trackItem($index, item)) {
+              @if (getDocumentForItem(item); as doc) {
+                <div
+                  class="c-document-card"
+                  cdkDrag
+                  [cdkDragData]="item"
+                  (click)="onDocumentClick(doc.id)">
+
+                  <!-- Drag Preview -->
+                  <div *cdkDragPreview class="document-drag-preview">
+                    <mat-icon>description</mat-icon>
+                    <span>{{ doc.title || 'Sans titre' }}</span>
+                  </div>
+
+                  <!-- Drag Placeholder -->
+                  <div *cdkDragPlaceholder class="document-placeholder"></div>
+
+                  <!-- Card Content -->
+                  <div class="c-document-card__header">
+                    <div class="c-document-card__drag-handle" cdkDragHandle>
+                      <mat-icon>drag_indicator</mat-icon>
+                    </div>
+                    <div class="c-document-card__icon">
+                      <mat-icon>description</mat-icon>
+                    </div>
+                    <div class="c-document-card__info">
+                      <h3 class="c-document-card__title">{{ doc.title || 'Sans titre' }}</h3>
+                      <p class="c-document-card__date">Modifié le {{ doc.updated_at | date:'dd/MM/yyyy HH:mm' }}</p>
+                    </div>
+                    <button
+                      mat-icon-button
+                      (click)="onDocumentDelete($event, doc.id)"
+                      title="Supprimer"
+                      class="c-document-card__delete">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+
+                  <!-- Attachments -->
+                  @if (getChildDocuments(doc.id).length > 0 || getStorageFilesForDocument(doc.id).length > 0) {
+                    <div class="c-document-card__attachments">
+                      <div class="c-document-card__columns">
+                        @if (getChildDocuments(doc.id).length > 0) {
+                          <div class="c-document-card__column">
+                            <div class="c-document-card__column-title">
+                              <mat-icon class="column-icon">description</mat-icon>
+                              Pages
+                            </div>
+                            <div class="c-document-card__column-list">
+                              @for (child of getChildDocuments(doc.id); track child.id) {
+                                <button
+                                  class="c-document-card__item"
+                                  (click)="$event.stopPropagation(); onDocumentClick(child.id)">
+                                  <mat-icon class="item-icon">article</mat-icon>
+                                  <span class="item-title">{{ child.title || 'Sans titre' }}</span>
+                                </button>
+                              }
+                            </div>
+                          </div>
+                        }
+                        @if (getStorageFilesForDocument(doc.id).length > 0) {
+                          <div class="c-document-card__column">
+                            <div class="c-document-card__column-title">
+                              <mat-icon class="column-icon">folder</mat-icon>
+                              Fichiers
+                            </div>
+                            <div class="c-document-card__column-list">
+                              @for (file of getStorageFilesForDocument(doc.id); track file.path) {
+                                <button
+                                  class="c-document-card__item c-document-card__item--file"
+                                  (click)="onOpenStorageFile($event, file.url)">
+                                  <mat-icon class="item-icon">attach_file</mat-icon>
+                                  <span class="item-title">{{ file.name }}</span>
+                                  <mat-icon class="item-external">open_in_new</mat-icon>
+                                </button>
+                              }
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Add Section Button -->
+    <div class="add-section-container">
+      <button mat-stroked-button class="add-section-btn" (click)="onAddSection()">
+        <mat-icon>add</mat-icon>
+        <span>Ajouter une section</span>
+      </button>
+    </div>
+  </div>
+} @else {
+  <div class="no-tab-selected">
+    <mat-icon>tab</mat-icon>
+    <p>Sélectionnez ou créez un onglet pour organiser vos documents</p>
+  </div>
+}

@@ -197,6 +197,7 @@
 // Buttons
 .c-form-actions {
   display: flex;
+  justify-content: flex-end;
   gap: v.$space-3;
   margin-top: v.$space-2;
 }
