@@ -225,7 +225,7 @@
                 <div class="sidebar-document-card__drag-handle" cdkDragHandle>
                   <mat-icon>drag_indicator</mat-icon>
                 </div>
-                <div class="sidebar-document-card__content">
+                <div class="sidebar-document-card__content" [matTooltip]="doc.title || 'Sans titre'">
                   <mat-icon class="sidebar-document-card__icon">description</mat-icon>
                   <span class="sidebar-document-card__title">{{ doc.title || 'Sans titre' }}</span>
                 </div>

@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { forkJoin, of } from 'rxjs';
@@ -38,6 +39,7 @@ import {
     MatIconModule,
     MatButtonModule,
     MatCardModule,
+    MatTooltipModule,
     DragDropModule,
     DocumentTabBarComponent,
     DocumentTabContentComponent,

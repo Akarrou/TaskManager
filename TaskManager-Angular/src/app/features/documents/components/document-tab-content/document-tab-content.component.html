@@ -55,7 +55,7 @@
                   <div class="unsectioned-doc-card__drag-handle" cdkDragHandle>
                     <mat-icon>drag_indicator</mat-icon>
                   </div>
-                  <div class="unsectioned-doc-card__content">
+                  <div class="unsectioned-doc-card__content" [matTooltip]="doc.title || 'Sans titre'">
                     <mat-icon class="unsectioned-doc-card__icon">description</mat-icon>
                     <div class="unsectioned-doc-card__info">
                       <span class="unsectioned-doc-card__title">{{ doc.title || 'Sans titre' }}</span>

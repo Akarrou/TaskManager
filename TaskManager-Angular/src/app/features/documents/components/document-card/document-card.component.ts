@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import {
   CdkDrag,
   CdkDragHandle,
@@ -25,6 +26,7 @@ export interface ExternalLink {
     CommonModule,
     MatIconModule,
     MatButtonModule,
+    MatTooltipModule,
     DragDropModule,
   ],
   templateUrl: './document-card.component.html',

@@ -26,7 +26,7 @@
       <mat-icon>description</mat-icon>
     </div>
 
-    <div class="document-card__info">
+    <div class="document-card__info" [matTooltip]="document.title || 'Sans titre'">
       <h3 class="document-card__title">{{ document.title || 'Sans titre' }}</h3>
       <p class="document-card__date">Modifié le {{ document.updated_at | date:'dd/MM/yyyy HH:mm' }}</p>
     </div>
