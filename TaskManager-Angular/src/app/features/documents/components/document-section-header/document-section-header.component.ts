@@ -5,7 +5,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
-import { CdkDragHandle } from '@angular/cdk/drag-drop';
 import { DocumentSection, UpdateDocumentSection } from '../../models/document-tabs.model';
 import { SectionEditDialogComponent, SectionEditDialogResult } from '../section-edit-dialog/section-edit-dialog.component';
 
@@ -18,7 +17,6 @@ import { SectionEditDialogComponent, SectionEditDialogResult } from '../section-
     MatIconModule,
     MatButtonModule,
     MatTooltipModule,
-    CdkDragHandle,
   ],
   templateUrl: './document-section-header.component.html',
   styleUrls: ['./document-section-header.component.scss'],

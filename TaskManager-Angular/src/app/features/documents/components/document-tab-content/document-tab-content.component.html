@@ -10,10 +10,14 @@
 
       @for (section of tab.sections; track trackSection($index, section)) {
         <div
-          class="section-container"
-          [class.collapsed]="section.is_collapsed"
+          class="section-wrapper"
           cdkDrag
           [cdkDragData]="section">
+
+          <!-- Section Drag Handle (outside the card) -->
+          <div class="section-drag-handle" cdkDragHandle matTooltip="Glisser pour réorganiser">
+            <mat-icon>drag_indicator</mat-icon>
+          </div>
 
           <!-- Section Drag Preview -->
           <div *cdkDragPreview class="section-drag-preview">
@@ -24,15 +28,17 @@
           <!-- Section Drag Placeholder -->
           <div *cdkDragPlaceholder class="section-placeholder"></div>
 
-          <!-- Section Header -->
-          <app-document-section-header
-            [section]="section"
-            [itemCount]="section.items.length"
-            (titleChange)="onSectionTitleChange(section.id, $event)"
-            (sectionUpdate)="onSectionFullUpdate(section.id, $event)"
-            (toggleCollapse)="onSectionToggleCollapse(section.id)"
-            (delete)="onSectionDelete(section.id)">
-          </app-document-section-header>
+          <!-- Section Container (the card) -->
+          <div class="section-container" [class.collapsed]="section.is_collapsed">
+            <!-- Section Header -->
+            <app-document-section-header
+              [section]="section"
+              [itemCount]="section.items.length"
+              (titleChange)="onSectionTitleChange(section.id, $event)"
+              (sectionUpdate)="onSectionFullUpdate(section.id, $event)"
+              (toggleCollapse)="onSectionToggleCollapse(section.id)"
+              (delete)="onSectionDelete(section.id)">
+            </app-document-section-header>
 
         <!-- Section Content (Drop Zone) -->
         @if (!section.is_collapsed) {
@@ -141,7 +147,8 @@
           </div>
         }
         </div>
-      }
+      </div>
+    }
     </div>
 
     <!-- Unsectioned Documents -->

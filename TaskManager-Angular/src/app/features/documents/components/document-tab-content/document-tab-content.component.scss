@@ -14,24 +14,95 @@
 .sections-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 1.5rem;
 }
 
 // ==========================================================================
-// Section Container
+// Section Wrapper (contains drag handle + section card)
+// ==========================================================================
+.section-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.25rem;
+
+  &:hover {
+    .section-drag-handle {
+      opacity: 0.5;
+    }
+  }
+}
+
+.section-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 40px;
+  cursor: grab;
+  opacity: 0;
+  transition: all 0.2s ease;
+  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.4));
+  border-radius: 6px;
+  flex-shrink: 0;
+  margin-top: 0.5rem;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &:hover {
+    opacity: 1 !important;
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--mat-sys-primary, #6366f1);
+  }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+// ==========================================================================
+// Section Container (the card)
 // ==========================================================================
 .section-container {
-  margin-bottom: 0.5rem;
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
 
   &.collapsed {
+    padding: 0.5rem 1rem;
+    background: rgba(0, 0, 0, 0.02);
+
     .section-content {
       display: none;
     }
   }
 }
 
+// Section header takes full width
+.section-container app-document-section-header {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.section-container.collapsed app-document-section-header {
+  margin-bottom: 0;
+}
+
 .section-content {
-  min-height: 80px;
+  min-height: 100px;
+  padding-left: 0.5rem;
 }
 
 // ==========================================================================
@@ -39,8 +110,8 @@
 // ==========================================================================
 .documents-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: v.$space-6;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
 }
 
 // ==========================================================================
@@ -51,38 +122,43 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 2rem;
-  border: 2px dashed var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+  gap: 0.75rem;
+  padding: 2.5rem 2rem;
+  border: 2px dashed var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.1));
   border-radius: 12px;
-  background: rgba(99, 102, 241, 0.02);
-  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.02) 0%, rgba(99, 102, 241, 0.01) 100%);
+  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.5));
   transition: all 0.2s ease;
 
   mat-icon {
-    font-size: 24px;
-    width: 24px;
-    height: 24px;
-    opacity: 0.5;
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    opacity: 0.4;
   }
 
   span {
     font-size: 0.875rem;
+    font-weight: 500;
   }
 
   &.drop-zone-minimal {
-    padding: 1rem;
+    padding: 1.25rem 1.5rem;
     flex-direction: row;
     gap: 0.5rem;
+    background: rgba(0, 0, 0, 0.01);
+    border-style: dashed;
 
     mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      opacity: 0.3;
     }
 
     span {
-      font-size: 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 400;
     }
   }
 }
@@ -99,31 +175,38 @@
 // Unsectioned Container
 // ==========================================================================
 .unsectioned-container {
-  margin-top: 0.5rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .unsectioned-label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 0;
-  font-size: 0.875rem;
-  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+  padding: 0.5rem 0 1rem 0;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.5));
 
   mat-icon {
     font-size: 18px;
     width: 18px;
     height: 18px;
+    opacity: 0.6;
   }
 
   .item-count {
     font-size: 0.75rem;
-    opacity: 0.7;
+    opacity: 0.6;
+    font-weight: 400;
   }
 }
 
 .unsectioned-content {
-  min-height: 60px;
+  min-height: 80px;
 }
 
 // ==========================================================================
@@ -157,7 +240,7 @@
 .add-section-container {
   display: flex;
   justify-content: center;
-  padding: 1rem 0;
+  padding: 2rem 0 1rem 0;
 }
 
 .add-section-btn {
@@ -165,16 +248,20 @@
   align-items: center !important;
   justify-content: center !important;
   gap: 0.5rem;
-  padding: 0.5rem 1rem !important;
-  border: 2px dashed var(--mat-sys-outline, rgba(0, 0, 0, 0.2));
-  border-radius: 8px;
-  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+  padding: 0.625rem 1.25rem !important;
+  border: 2px dashed var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.15)) !important;
+  border-radius: 10px;
+  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.5));
+  font-weight: 500;
+  font-size: 0.875rem;
   transition: all 0.2s ease;
+  background: transparent !important;
 
   &:hover {
-    border-color: var(--mat-sys-primary, #6366f1);
+    border-color: var(--mat-sys-primary, #6366f1) !important;
     color: var(--mat-sys-primary, #6366f1);
-    background: rgba(99, 102, 241, 0.08);
+    background: rgba(99, 102, 241, 0.06) !important;
+    transform: translateY(-1px);
   }
 
   mat-icon {
@@ -556,9 +643,35 @@
 // Dark Mode Support
 // ==========================================================================
 :host-context(.dark-mode) {
+  .section-container {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.05);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    &.collapsed {
+      background: rgba(255, 255, 255, 0.02);
+    }
+  }
+
+  .section-drag-handle {
+    color: rgba(255, 255, 255, 0.4);
+
+    &:hover {
+      background: rgba(99, 102, 241, 0.2);
+      color: var(--mat-sys-primary, #818cf8);
+    }
+  }
+
+  .unsectioned-container {
+    border-top-color: rgba(255, 255, 255, 0.08);
+  }
+
   .drop-zone-empty {
-    background: rgba(99, 102, 241, 0.05);
-    border-color: rgba(255, 255, 255, 0.12);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(99, 102, 241, 0.02) 100%);
+    border-color: rgba(255, 255, 255, 0.1);
   }
 
   .document-drag-preview {
@@ -579,10 +692,11 @@
   }
 
   .add-section-btn {
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.15) !important;
 
     &:hover {
-      background: rgba(99, 102, 241, 0.15);
+      background: rgba(99, 102, 241, 0.12) !important;
+      border-color: var(--mat-sys-primary, #6366f1) !important;
     }
   }
 
