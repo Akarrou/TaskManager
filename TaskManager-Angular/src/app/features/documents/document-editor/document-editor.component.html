@@ -37,6 +37,16 @@
       }
     </div>
 
+    <!-- Comment toggle button -->
+    <button
+      class="comment-toggle-button"
+      (click)="openCommentPanel(null)"
+      [class.active]="commentPanelOpen()"
+      title="Ajouter un commentaire"
+    >
+      <mat-icon>add_comment</mat-icon>
+    </button>
+
     <!-- Properties toggle button (only for task documents) -->
     @if (isDatabaseRowDocument()) {
       <button
@@ -48,16 +58,6 @@
         <mat-icon>tune</mat-icon>
       </button>
     }
-
-    <!-- Comment toggle button -->
-    <button
-      class="comment-toggle-button"
-      (click)="openCommentPanel(null)"
-      [class.active]="commentPanelOpen()"
-      title="Ajouter un commentaire"
-    >
-      <mat-icon>add_comment</mat-icon>
-    </button>
   </div>
 
   <!-- Pinned Properties & Save Status Row -->
