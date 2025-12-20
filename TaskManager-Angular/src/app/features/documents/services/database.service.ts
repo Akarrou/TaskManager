@@ -23,6 +23,7 @@ import {
   SortOrder,
   ColumnType,
   SelectChoice,
+  findNameColumn,
 } from '../models/database.model';
 import { CsvImportResult, CsvImportError } from '../models/csv-import.model';
 import { DocumentService, Document } from './document.service';
@@ -943,6 +944,7 @@ export class DatabaseService {
       name: string;
       type: ColumnType;
       options?: { choices?: SelectChoice[] };
+      isNameColumn?: boolean;
     }>
   ): Observable<DatabaseColumn[]> {
     const createdColumns: DatabaseColumn[] = [];
@@ -956,6 +958,7 @@ export class DatabaseService {
         options: col.options,
         visible: true,
         order: index,
+        isNameColumn: col.isNameColumn,
       };
 
       createdColumns.push(column);
@@ -1184,6 +1187,154 @@ export class DatabaseService {
           rowsImported: 0,
           errors: [{ row: 0, message: error.message || 'Erreur lors de l\'import' }],
         });
+      })
+    );
+  }
+
+  /**
+   * Import rows with associated documents (for all database types)
+   * Each row gets a linked document with the Name column as title
+   */
+  importRowsWithDocuments(
+    databaseId: string,
+    rows: Array<Record<string, CellValue>>,
+    projectId?: string,
+    onProgress?: (current: number, total: number) => void
+  ): Observable<CsvImportResult> {
+    console.log('[importRowsWithDocuments] Starting import', { databaseId, rowCount: rows.length, projectId });
+    const errors: CsvImportError[] = [];
+    let imported = 0;
+
+    // Ensure the PostgreSQL table exists before importing
+    return this.ensureTableExists(databaseId).pipe(
+      switchMap(() => this.getDatabaseMetadata(databaseId)),
+      switchMap((metadata: DocumentDatabase) => {
+        console.log('[importRowsWithDocuments] Got metadata', { columns: metadata.config.columns.map(c => c.name) });
+
+        // Extract all column IDs used in the rows data and convert to PostgreSQL column names
+        const usedColumnNames = new Set<string>();
+        rows.forEach(row => {
+          Object.keys(row).forEach(key => {
+            usedColumnNames.add(`col_${key.replace(/-/g, '_')}`);
+          });
+        });
+
+        // Get table name for schema cache waiting
+        const tableName = metadata.table_name;
+
+        // Wait for all dynamic columns to be visible in schema cache
+        const columnWaits$: Observable<boolean>[] = Array.from(usedColumnNames).map(columnName => {
+          console.log(`[importRowsWithDocuments] Waiting for column ${columnName} in schema cache`);
+          return this.waitForColumnInSchema(tableName, columnName);
+        });
+
+        // If no dynamic columns, proceed immediately
+        const waitForColumns$ = columnWaits$.length > 0
+          ? concat(...columnWaits$).pipe(toArray(), map(() => true))
+          : of(true);
+
+        return waitForColumns$.pipe(
+          switchMap(() => {
+            console.log('[importRowsWithDocuments] All columns visible in schema cache, starting import');
+
+            // Find name column using the helper
+            const nameColumn = findNameColumn(metadata.config.columns);
+            console.log('[importRowsWithDocuments] Name column:', nameColumn?.id, nameColumn?.name);
+
+            // Create observables for each row (with document)
+            const rowImports$ = rows.map((cells, rowIndex) => {
+              const title = nameColumn
+                ? (cells[nameColumn.id] as string) || `Sans titre ${rowIndex + 1}`
+                : `Sans titre ${rowIndex + 1}`;
+
+              return this.addRow({
+                databaseId,
+                cells,
+                row_order: rowIndex,
+              }).pipe(
+                switchMap((row: DatabaseRow) => {
+                  console.log(`[importRowsWithDocuments] Row ${rowIndex + 1} created:`, row.id, 'creating document...');
+                  // Create linked document for this row
+                  return this.documentService.createDatabaseRowDocument({
+                    title,
+                    database_id: databaseId,
+                    database_row_id: row.id,
+                    project_id: projectId,
+                  }).pipe(
+                    map(() => {
+                      imported++;
+                      onProgress?.(imported, rows.length);
+                      return { success: true, rowIndex };
+                    })
+                  );
+                }),
+                catchError((err: unknown) => {
+                  const error = err as Error;
+                  errors.push({
+                    row: rowIndex + 1,
+                    message: error.message || 'Erreur lors de l\'insertion',
+                  });
+                  onProgress?.(imported, rows.length);
+                  return of({ success: false, rowIndex });
+                })
+              );
+            });
+
+            // Execute all row imports sequentially to avoid overwhelming the server
+            return concat(...rowImports$).pipe(
+              toArray(),
+              map(() => {
+                console.log('[importRowsWithDocuments] Import complete!', { imported, errorCount: errors.length });
+                return {
+                  columnsCreated: 0,
+                  rowsImported: imported,
+                  errors,
+                };
+              })
+            );
+          })
+        );
+      }),
+      catchError((err: unknown) => {
+        const error = err as Error;
+        console.error('[importRowsWithDocuments] Failed:', error);
+        return of({
+          columnsCreated: 0,
+          rowsImported: 0,
+          errors: [{ row: 0, message: error.message || 'Erreur lors de l\'import' }],
+        });
+      })
+    );
+  }
+
+  /**
+   * Sync document title to database row (for bidirectional sync)
+   * Called when a document title is updated to update the Name column in the database row
+   */
+  syncDocumentTitleToRow(
+    databaseId: string,
+    rowId: string,
+    newTitle: string
+  ): Observable<boolean> {
+    return this.getDatabaseMetadata(databaseId).pipe(
+      switchMap(metadata => {
+        const nameColumn = findNameColumn(metadata.config.columns);
+        if (!nameColumn) {
+          console.log('[syncDocumentTitleToRow] No name column found, skipping sync');
+          return of(false);
+        }
+
+        console.log('[syncDocumentTitleToRow] Syncing title to column:', nameColumn.name);
+        return this.updateCell({
+          databaseId,
+          rowId,
+          columnId: nameColumn.id,
+          value: newTitle,
+        });
+      }),
+      catchError(error => {
+        console.error('[syncDocumentTitleToRow] Failed to sync:', error);
+        return of(false);
       })
     );
   }

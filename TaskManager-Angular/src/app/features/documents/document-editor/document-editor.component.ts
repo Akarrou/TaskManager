@@ -639,11 +639,25 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   // Handle title changes from input
   onTitleChange(newTitle: string) {
     const capitalizedTitle = this.capitalizeFirstLetter(newTitle);
-    this.documentState.update(state => ({
-      ...state,
+    const state = this.documentState();
+
+    this.documentState.update(s => ({
+      ...s,
       title: capitalizedTitle
     }));
     this.changeSubject.next();
+
+    // Sync title to database row if this is a database row document
+    if (state.database_id && state.database_row_id) {
+      this.databaseService.syncDocumentTitleToRow(
+        state.database_id,
+        state.database_row_id,
+        capitalizedTitle
+      ).pipe(takeUntil(this.destroy$))
+      .subscribe({
+        error: (err) => console.error('Failed to sync title to database:', err)
+      });
+    }
   }
 
   private capitalizeFirstLetter(text: string): string {

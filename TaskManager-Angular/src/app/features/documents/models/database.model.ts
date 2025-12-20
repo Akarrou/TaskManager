@@ -83,6 +83,7 @@ export interface DatabaseColumn {
   readonly?: boolean; // Prevents editing and deletion of column (for protected task columns)
   order: number;
   color?: PropertyColor; // Color for pinned properties display
+  isNameColumn?: boolean; // Marks this column as linked to the document title (cannot be deleted)
 }
 
 // =====================================================================
@@ -417,6 +418,24 @@ export function hasDateFormat(column: DatabaseColumn): column is DatabaseColumn 
   return column.type === 'date' && column.options?.dateFormat !== undefined;
 }
 
+/**
+ * Find the Name column in a database config
+ * This column is linked to the document title and cannot be deleted.
+ * @param columns - Array of database columns
+ * @returns The Name column if found, undefined otherwise
+ */
+export function findNameColumn(columns: DatabaseColumn[]): DatabaseColumn | undefined {
+  // Priority 1: explicit isNameColumn flag
+  const flagged = columns.find(col => col.isNameColumn === true);
+  if (flagged) return flagged;
+
+  // Priority 2: fallback by name (for backward compatibility with existing databases)
+  return columns.find(col =>
+    col.type === 'text' &&
+    ['nom', 'name', 'title', 'titre'].includes(col.name.toLowerCase())
+  );
+}
+
 // =====================================================================
 // PostgreSQL Type Mapping
 // =====================================================================
@@ -455,12 +474,24 @@ export const DEFAULT_COLUMN_WIDTHS: Record<ColumnType, number> = {
 
 /**
  * Default database configuration for new databases
- * Starts with NO columns - user must add columns or import CSV
+ * Starts with a "Nom" column linked to the document title
  * With lazy creation, the PostgreSQL table is only created when needed
  */
 export const DEFAULT_DATABASE_CONFIG: DatabaseConfig = {
   name: 'Nouvelle base de données',
-  columns: [], // Empty by default - user adds columns manually or via CSV import
+  columns: [
+    {
+      id: crypto.randomUUID(),
+      name: 'Nom',
+      type: 'text',
+      visible: true,
+      required: true,
+      order: 0,
+      isNameColumn: true,
+      color: 'blue',
+      width: DEFAULT_COLUMN_WIDTHS.text,
+    },
+  ],
   views: [
     {
       id: 'view-table',

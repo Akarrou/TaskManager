@@ -25,7 +25,7 @@ import {
   CsvImportPreview,
   DetectedColumn,
 } from '../../models/csv-import.model';
-import { ColumnType, SelectChoice } from '../../models/database.model';
+import { ColumnType, SelectChoice, DatabaseColumn } from '../../models/database.model';
 
 /**
  * Dialog pour importer des données CSV dans une base de données
@@ -374,14 +374,25 @@ export class CsvImportDialogComponent {
       // Étape 2: Créer les colonnes
       this.importStatus.set('Création des colonnes...');
 
-      const createdColumns = await new Promise((resolve, reject) => {
+      // Detect Name column (first text column named "Nom", "Name", "Title", "Titre", or first text column)
+      const nameColumnNames = ['nom', 'name', 'title', 'titre'];
+      let nameColumnIndex = columns.findIndex(c =>
+        c.type === 'text' && nameColumnNames.includes(c.name.toLowerCase())
+      );
+      // If no explicit name column, use first text column
+      if (nameColumnIndex === -1) {
+        nameColumnIndex = columns.findIndex(c => c.type === 'text');
+      }
+
+      const createdColumns = await new Promise<DatabaseColumn[]>((resolve, reject) => {
         this.databaseService
           .createColumnsFromCsv(
             this.databaseId,
-            columns.map(c => ({
+            columns.map((c, index) => ({
               name: c.name,
               type: c.type,
               options: c.options,
+              isNameColumn: index === nameColumnIndex, // Mark as Name column
             }))
           )
           .subscribe({
@@ -408,14 +419,15 @@ export class CsvImportDialogComponent {
         return cells;
       });
 
-      // Étape 4: Importer les lignes par batch
+      // Étape 4: Importer les lignes avec documents associés
       this.importStatus.set('Importation des lignes...');
 
       const result = await new Promise<CsvImportResult>((resolve, reject) => {
         this.databaseService
-          .importRowsFromCsv(
+          .importRowsWithDocuments(
             this.databaseId,
             formattedRows,
+            undefined, // No projectId for generic database imports
             (current, total) => {
               const progress = 30 + Math.floor((current / total) * 65);
               this.importProgress.set(progress);

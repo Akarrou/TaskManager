@@ -23,6 +23,7 @@ import {
   SortOrder,
   QueryRowsParams,
   DatabaseView,
+  findNameColumn,
 } from '../../models/database.model';
 import { DatabaseService } from '../../services/database.service';
 import { Document, DocumentService } from '../../services/document.service';
@@ -351,7 +352,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
 
   /**
    * Add a new row
-   * For task databases, also creates a linked document (Notion-style)
+   * Creates a linked document if the database has a Name column (Notion-style)
    */
   onAddRow() {
     const newRowOrder = this.rows().length;
@@ -362,18 +363,16 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
       emptyCells[col.id] = this.getDefaultValueForColumn(col);
     });
 
-    // Check if this is a task database (has type: 'task' in config)
-    const config = this.databaseConfig() as DatabaseConfig & { type?: string };
-    const isTaskDatabase = config.type === 'task';
+    // Check if database has a Name column (should create linked document)
+    const nameColumn = findNameColumn(this.databaseConfig().columns);
 
-    if (isTaskDatabase) {
-      // For task databases, create row WITH linked document
-      // Note: No project_id for task row documents
+    if (nameColumn) {
+      // Create row WITH linked document (for databases with Name column)
       this.databaseService
         .addRowWithDocument(
           this.databaseId,
           emptyCells,
-          undefined, // No project_id for task row documents
+          undefined, // No project_id for row documents
           newRowOrder
         )
         .pipe(takeUntil(this.destroy$))
@@ -390,7 +389,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
           },
         });
     } else {
-      // For regular databases, just create the row
+      // For databases without Name column, just create the row
       this.databaseService
         .addRow({
           databaseId: this.databaseId,
@@ -429,12 +428,11 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
       })
     );
 
-    // Check if this is a title column update -> sync with linked document
-    const titleColumn = this.databaseConfig().columns.find(
-      (col: DatabaseColumn) => col.id === columnId && (col.name.toLowerCase().includes('title') || col.name.toLowerCase().includes('titre'))
-    );
+    // Check if this is the Name column update -> sync with linked document
+    const nameColumn = findNameColumn(this.databaseConfig().columns);
+    const isNameColumnUpdate = nameColumn && nameColumn.id === columnId;
 
-    if (titleColumn && typeof value === 'string') {
+    if (isNameColumnUpdate && typeof value === 'string') {
       // Get the linked document for this row and update its title
       this.databaseService.getRowDocument(this.databaseId, rowId)
         .pipe(takeUntil(this.destroy$))
@@ -690,6 +688,14 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     // Block deletion of readonly columns
     if (column.readonly) {
       console.warn('Cannot delete readonly column:', column.name);
+      return;
+    }
+
+    // Block deletion of Name column (linked to document title)
+    if (column.isNameColumn) {
+      this.snackBar.open('La colonne "Nom" ne peut pas être supprimée car elle est liée au titre du document', 'OK', {
+        duration: 4000,
+      });
       return;
     }
 
