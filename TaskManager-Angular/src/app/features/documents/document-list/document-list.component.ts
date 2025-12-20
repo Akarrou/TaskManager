@@ -71,6 +71,22 @@ export class DocumentListComponent implements OnInit, OnDestroy {
   // Groups Store signals
   tabsByGroup = this.tabsStore.tabsByGroup;
   ungroupedTabs = this.tabsStore.ungroupedTabs;
+  groups = this.tabsStore.sortedGroups;
+
+  // Computed: Get the group name for the selected tab (for breadcrumb)
+  selectedTabBreadcrumb = computed(() => {
+    const tab = this.selectedTabWithItems();
+    if (!tab) return null;
+
+    const group = this.groups().find(g => g.id === tab.tab_group_id);
+    return {
+      groupName: group?.name || null,
+      groupColor: group?.color || null,
+      tabName: tab.name,
+      tabIcon: tab.icon,
+      tabColor: tab.color,
+    };
+  });
 
   // Computed: All drop list IDs (sections + unsectioned + tab drop zones)
   allDropListIds = computed(() => {

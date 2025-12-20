@@ -45,6 +45,23 @@
 
         <!-- Tab Content (when tabs exist and one is selected) -->
         @if (tabs().length > 0 && selectedTabWithItems()) {
+          <!-- Breadcrumb showing current group/tab -->
+          @if (selectedTabBreadcrumb(); as breadcrumb) {
+            <div class="tab-breadcrumb">
+              @if (breadcrumb.groupName) {
+                <span class="breadcrumb-group" [style.color]="breadcrumb.groupColor">
+                  <mat-icon>folder</mat-icon>
+                  {{ breadcrumb.groupName }}
+                </span>
+                <mat-icon class="breadcrumb-separator">chevron_right</mat-icon>
+              }
+              <span class="breadcrumb-tab" [style.color]="breadcrumb.tabColor">
+                <mat-icon>{{ breadcrumb.tabIcon }}</mat-icon>
+                {{ breadcrumb.tabName }}
+              </span>
+            </div>
+          }
+
           <app-document-tab-content
             [tab]="selectedTabWithItems()"
             [documents]="documentMap()"

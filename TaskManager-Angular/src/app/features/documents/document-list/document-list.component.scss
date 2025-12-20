@@ -25,6 +25,43 @@
 }
 
 // ==========================================================================
+// Tab Breadcrumb
+// ==========================================================================
+.tab-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.8125rem;
+  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+
+  .breadcrumb-group,
+  .breadcrumb-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  .breadcrumb-separator {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: var(--mat-sys-outline, rgba(0, 0, 0, 0.3));
+  }
+
+  .breadcrumb-tab {
+    font-weight: 500;
+  }
+}
+
+// ==========================================================================
 // Sidebar: Unorganized Documents
 // ==========================================================================
 .c-documents-sidebar {
