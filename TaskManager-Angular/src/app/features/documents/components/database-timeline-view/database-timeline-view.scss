@@ -158,6 +158,9 @@ button.selected {
     padding: 0.75rem 1rem;
     border-right: 1px solid #e5e7eb;
     background: #f9fafb;
+    position: sticky;
+    left: 0;
+    z-index: 2;
   }
 
   &__dates {
@@ -198,6 +201,10 @@ button.selected {
     min-width: 250px;
     flex-shrink: 0;
     border-right: 1px solid #e5e7eb;
+    position: sticky;
+    left: 0;
+    background: #ffffff;
+    z-index: 1;
   }
 
   &__days-bg {
@@ -245,6 +252,11 @@ button.selected {
     flex-shrink: 0;
     padding: 0.75rem 1rem;
     overflow: hidden;
+    position: sticky;
+    left: 0;
+    background: #ffffff;
+    z-index: 2;
+    border-right: 1px solid #e5e7eb;
   }
 
   &__task-title {
@@ -395,6 +407,7 @@ button.selected {
     &__info {
       width: 180px;
       min-width: 180px;
+      // sticky properties inherited from base
     }
   }
 

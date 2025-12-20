@@ -53,6 +53,41 @@
     <div class="timeline-header">
       <h3 class="timeline-header__title">Vue Timeline</h3>
       <div class="timeline-header__controls">
+        <!-- Granularity Selector -->
+        <button
+          mat-stroked-button
+          [matMenuTriggerFor]="granularityMenu"
+          matTooltip="Changer la granularité temporelle">
+          <mat-icon>{{ currentGranularityIcon() }}</mat-icon>
+          {{ currentGranularityLabel() }}
+          <mat-icon class="dropdown-icon">arrow_drop_down</mat-icon>
+        </button>
+        <mat-menu #granularityMenu="matMenu">
+          <button
+            mat-menu-item
+            (click)="onSelectGranularity('auto')"
+            [class.selected]="isGranularitySelected('auto')">
+            <mat-icon>auto_fix_high</mat-icon>
+            <span>Auto</span>
+            @if (isGranularitySelected('auto')) {
+              <mat-icon class="check-icon">check</mat-icon>
+            }
+          </button>
+          <mat-divider></mat-divider>
+          @for (option of granularityOptions; track option.value) {
+            <button
+              mat-menu-item
+              (click)="onSelectGranularity(option.value)"
+              [class.selected]="isGranularitySelected(option.value)">
+              <mat-icon>{{ option.icon }}</mat-icon>
+              <span>{{ option.label }}</span>
+              @if (isGranularitySelected(option.value)) {
+                <mat-icon class="check-icon">check</mat-icon>
+              }
+            </button>
+          }
+        </mat-menu>
+
         <!-- Column Selector -->
         @if (availableDateColumns().length > 1) {
           <button
@@ -86,13 +121,13 @@
       </div>
     </div>
 
-    <!-- Timeline Content -->
+    <!-- Timeline Content with horizontal scroll -->
     <div class="timeline-content">
-      <div class="timeline-grid">
+      <div class="timeline-grid" [style.min-width.px]="timelineWidth()">
         <!-- Header row with time markers -->
         <div class="timeline-grid__header">
           <div class="timeline-grid__task-column">Lignes</div>
-          <div class="timeline-grid__dates">
+          <div class="timeline-grid__dates" [style.width.px]="datesAreaWidth()">
             @for (marker of timeMarkers(); track marker.x) {
               <div class="timeline-grid__date-header" [style.left.px]="marker.x">
                 {{ marker.label }}
@@ -104,7 +139,7 @@
         <!-- Background grid with vertical lines -->
         <div class="timeline-grid__background">
           <div class="timeline-grid__task-column-bg"></div>
-          <div class="timeline-grid__days-bg">
+          <div class="timeline-grid__days-bg" [style.width.px]="datesAreaWidth()">
             @for (marker of timeMarkers(); track marker.x) {
               <div class="timeline-grid__day-column" [style.left.px]="marker.x"></div>
             }
@@ -123,7 +158,7 @@
               </div>
 
               <!-- Bar container -->
-              <div class="timeline-row__bar-container">
+              <div class="timeline-row__bar-container" [style.width.px]="datesAreaWidth()">
                 @if (item.endDate && item.width > 10) {
                   <!-- Duration bar -->
                   <div
