@@ -9,7 +9,7 @@
       cdkDropListOrientation="horizontal"
       (cdkDropListDropped)="onGroupDrop($event)">
       @for (group of tabsByGroup; track trackGroup($index, group)) {
-        <div class="group-wrapper" cdkDrag [cdkDragData]="group">
+        <div class="group-wrapper" cdkDrag [cdkDragData]="group" [cdkDragDisabled]="isDraggingTab">
           <!-- Group Drag Preview -->
           <div *cdkDragPreview class="group-drag-preview" [style.border-color]="group.color">
             <mat-icon [style.color]="group.color">folder</mat-icon>
@@ -33,7 +33,9 @@
             (tabEdit)="onEditTabFromGroup($event)"
             (tabDelete)="tabDelete.emit($event)"
             (tabRemoveFromGroup)="onTabRemoveFromGroup($event)"
-            (tabDroppedInGroup)="onTabDroppedInGroup(group.id, $event)">
+            (tabDroppedInGroup)="onTabDroppedInGroup(group.id, $event)"
+            (tabDragStarted)="onTabDragStart($event)"
+            (tabDragEnded)="onTabDragEnd()">
           </app-tab-group-header>
         </div>
       }
@@ -42,11 +44,24 @@
     <!-- Ungrouped Tabs -->
     <div
       class="ungrouped-tabs-container"
+      [class.empty]="ungroupedTabs.length === 0 && tabsByGroup.length > 0"
+      [class.drag-active]="isDraggingTab"
       cdkDropList
       id="ungrouped-tabs"
       [cdkDropListConnectedTo]="getTabDragDropListIds()"
       cdkDropListOrientation="horizontal"
-      (cdkDropListDropped)="onUngroupedTabDrop($event)">
+      (cdkDropListDropped)="onUngroupedTabDrop($event)"
+      (cdkDropListEntered)="onUngroupedDragEnter()"
+      (cdkDropListExited)="onUngroupedDragLeave()">
+
+      <!-- Empty state placeholder when no ungrouped tabs but groups exist -->
+      @if (ungroupedTabs.length === 0 && tabsByGroup.length > 0) {
+        <div class="ungrouped-empty-placeholder">
+          <mat-icon>tab_unselected</mat-icon>
+          <span>Déposer ici</span>
+        </div>
+      }
+
       @for (tab of ungroupedTabs; track trackTab($index, tab)) {
         <!-- Tab item with drag capability -->
         <div

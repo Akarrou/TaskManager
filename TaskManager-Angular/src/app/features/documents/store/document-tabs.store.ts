@@ -535,43 +535,34 @@ export const DocumentTabsStore = signalStore(
       const group = store.groups().find((g) => g.id === groupId);
       if (!group) return;
 
-      const isOpening = group.is_collapsed; // If currently collapsed, we're opening it
+      const isOpening = group.is_collapsed;
 
       if (isOpening) {
         // Accordion behavior: collapse all other groups and expand this one
-        const otherGroups = store.groups().filter((g) => g.id !== groupId && !g.is_collapsed);
+        // Optimistic update: expand target, collapse all others
+        patchState(store, {
+          groups: store.groups().map((g) => ({
+            ...g,
+            is_collapsed: g.id === groupId ? false : true,
+          })),
+        });
 
-        // First, collapse all other open groups
-        const collapsePromises = otherGroups.map((g) =>
-          tabsService.updateGroup(g.id, { is_collapsed: true }).toPromise()
+        // Persist all changes to backend
+        const updates = store.groups().map((g) =>
+          tabsService.updateGroup(g.id, { is_collapsed: g.id !== groupId })
         );
 
-        // Then expand the target group
-        Promise.all(collapsePromises).then(() => {
-          tabsService.updateGroup(groupId, { is_collapsed: false }).subscribe({
-            next: (updated) => {
-              patchState(store, {
-                groups: store.groups().map((g) => {
-                  if (g.id === groupId) return updated;
-                  // Collapse all other groups
-                  if (otherGroups.some((og) => og.id === g.id)) {
-                    return { ...g, is_collapsed: true };
-                  }
-                  return g;
-                }),
-              });
-            },
-          });
-        });
+        // Execute all updates (fire and forget, state is already updated)
+        updates.forEach((update$) => update$.subscribe());
       } else {
         // Simply collapse this group
-        tabsService.updateGroup(groupId, { is_collapsed: true }).subscribe({
-          next: (updated) => {
-            patchState(store, {
-              groups: store.groups().map((g) => (g.id === groupId ? updated : g)),
-            });
-          },
+        patchState(store, {
+          groups: store.groups().map((g) =>
+            g.id === groupId ? { ...g, is_collapsed: true } : g
+          ),
         });
+
+        tabsService.updateGroup(groupId, { is_collapsed: true }).subscribe();
       }
     },
 
@@ -596,25 +587,8 @@ export const DocumentTabsStore = signalStore(
                   t.id === tabId ? updatedTab : t
                 ),
               });
-
-              // Check if we should delete empty group
-              if (!groupId) {
-                // Tab was removed from a group, check if any groups are now empty
-                const currentTabs = store.tabs();
-                const emptyGroups = store.groups().filter(
-                  (g) => !currentTabs.some((t) => t.tab_group_id === g.id)
-                );
-                if (emptyGroups.length > 0) {
-                  // Delete empty groups
-                  emptyGroups.forEach((g) => {
-                    tabsService.deleteGroup(g.id).subscribe(() => {
-                      patchState(store, {
-                        groups: store.groups().filter((grp) => grp.id !== g.id),
-                      });
-                    });
-                  });
-                }
-              }
+              // Note: Empty groups are NOT automatically deleted.
+              // User can manually delete empty groups via the group menu.
             }),
             catchError(() => of(null))
           )

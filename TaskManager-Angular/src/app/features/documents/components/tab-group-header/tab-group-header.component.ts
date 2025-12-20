@@ -44,6 +44,8 @@ export class TabGroupHeaderComponent {
   @Output() tabDelete = new EventEmitter<string>();
   @Output() tabRemoveFromGroup = new EventEmitter<string>();
   @Output() tabDroppedInGroup = new EventEmitter<string>(); // tabId of dropped tab
+  @Output() tabDragStarted = new EventEmitter<DocumentTab>();
+  @Output() tabDragEnded = new EventEmitter<void>();
 
   // Track drag over state
   isDragOver = false;
@@ -136,5 +138,14 @@ export class TabGroupHeaderComponent {
 
   getDropListId(): string {
     return `group-${this.group.id}`;
+  }
+
+  // Tab drag handlers
+  onTabDragStart(tab: DocumentTab): void {
+    this.tabDragStarted.emit(tab);
+  }
+
+  onTabDragEnd(): void {
+    this.tabDragEnded.emit();
   }
 }

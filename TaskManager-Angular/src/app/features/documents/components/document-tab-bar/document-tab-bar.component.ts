@@ -80,6 +80,8 @@ export class DocumentTabBarComponent {
   dragOverTabId: string | null = null;
   // Track tab being dragged for group creation
   draggedTab: DocumentTab | null = null;
+  // Track if a tab is being dragged (for showing drop zone)
+  isDraggingTab = false;
 
   onTabClick(tabId: string): void {
     if (tabId !== this.selectedTabId) {
@@ -277,10 +279,21 @@ export class DocumentTabBarComponent {
   // Track dragged tab for group creation
   onTabDragStart(tab: DocumentTab): void {
     this.draggedTab = tab;
+    this.isDraggingTab = true;
   }
 
   onTabDragEnd(): void {
     this.draggedTab = null;
+    this.isDraggingTab = false;
+  }
+
+  // Track drag enter/leave for ungrouped zone
+  onUngroupedDragEnter(): void {
+    // Visual feedback when dragging over ungrouped zone
+  }
+
+  onUngroupedDragLeave(): void {
+    // Reset visual feedback
   }
 
   trackGroup(index: number, group: TabGroupWithTabs): string {

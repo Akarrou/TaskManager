@@ -2,17 +2,10 @@
   class="group-container"
   [class.collapsed]="group.is_collapsed"
   [class.drag-over]="isDragOver"
-  [style.--group-color]="group.color"
-  cdkDropList
-  [id]="getDropListId()"
-  [cdkDropListData]="tabs"
-  [cdkDropListConnectedTo]="connectedDropListIds"
-  (cdkDropListDropped)="onDrop($event)"
-  (cdkDropListEntered)="isDragOver = true"
-  (cdkDropListExited)="isDragOver = false">
+  [style.--group-color]="group.color">
 
   <!-- Group Header -->
-  <div class="group-header" (click)="onToggleCollapse()">
+  <div class="group-header" (click)="onToggleCollapse()" cdkDragHandle>
     <button mat-icon-button class="collapse-btn" [matTooltip]="group.is_collapsed ? 'Déplier' : 'Replier'">
       <mat-icon>{{ group.is_collapsed ? 'chevron_right' : 'expand_more' }}</mat-icon>
     </button>
@@ -41,14 +34,25 @@
     </mat-menu>
   </div>
 
-  <!-- Grouped Tabs (collapsible) -->
+  <!-- Grouped Tabs (collapsible) - This is the drop list for tabs -->
   @if (!group.is_collapsed) {
-    <div class="grouped-tabs">
+    <div
+      class="grouped-tabs"
+      cdkDropList
+      [id]="getDropListId()"
+      [cdkDropListData]="tabs"
+      [cdkDropListConnectedTo]="connectedDropListIds"
+      cdkDropListOrientation="horizontal"
+      (cdkDropListDropped)="onDrop($event)"
+      (cdkDropListEntered)="isDragOver = true"
+      (cdkDropListExited)="isDragOver = false">
       @for (tab of tabs; track trackTab($index, tab)) {
         <div
           class="tab-item-wrapper"
           cdkDrag
-          [cdkDragData]="tab">
+          [cdkDragData]="tab"
+          (cdkDragStarted)="onTabDragStart(tab)"
+          (cdkDragEnded)="onTabDragEnd()">
 
           <!-- Drag Preview -->
           <div *cdkDragPreview class="tab-drag-preview" [style.border-color]="tab.color">
@@ -106,6 +110,18 @@
           </div>
         </div>
       }
+    </div>
+  } @else {
+    <!-- Collapsed state: still allow dropping tabs into the group -->
+    <div
+      class="grouped-tabs-collapsed"
+      cdkDropList
+      [id]="getDropListId()"
+      [cdkDropListData]="tabs"
+      [cdkDropListConnectedTo]="connectedDropListIds"
+      (cdkDropListDropped)="onDrop($event)"
+      (cdkDropListEntered)="isDragOver = true"
+      (cdkDropListExited)="isDragOver = false">
     </div>
   }
 </div>
