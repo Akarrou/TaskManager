@@ -49,8 +49,11 @@
       <button
         mat-icon-button
         class="delete-btn"
+        [disabled]="itemCount > 0"
         (click)="onDelete()"
-        matTooltip="Supprimer la section">
+        [matTooltip]="itemCount > 0
+          ? 'Déplacez d\'abord les documents pour supprimer cette section'
+          : 'Supprimer la section'">
         <mat-icon>delete_outline</mat-icon>
       </button>
     </div>

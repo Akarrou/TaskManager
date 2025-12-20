@@ -118,11 +118,16 @@ export class DocumentSectionCardComponent {
   }
 
   private saveTitle(): void {
-    const newTitle = this.editTitle().trim();
+    const newTitle = this.capitalizeFirstLetter(this.editTitle().trim());
     if (newTitle && newTitle !== this.section.title) {
       this.titleChange.emit(newTitle);
     }
     this.isEditing.set(false);
+  }
+
+  private capitalizeFirstLetter(text: string): string {
+    if (!text) return text;
+    return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
   private cancelEdit(): void {

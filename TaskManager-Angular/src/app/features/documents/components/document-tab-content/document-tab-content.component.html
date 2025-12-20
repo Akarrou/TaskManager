@@ -118,7 +118,7 @@
             (titleChange)="onSectionTitleChange(section.id, $event)"
             (sectionUpdate)="onSectionFullUpdate(section.id, $event)"
             (toggleCollapse)="onSectionToggleCollapse(section.id)"
-            (delete)="onSectionDelete(section.id)"
+            (delete)="onSectionDelete(section.id, section.title)"
             (documentClick)="onDocumentClick($event)"
             (documentDelete)="onDocumentDelete($event)"
             (drop)="onDrop($event, section.id)">

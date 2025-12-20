@@ -50,10 +50,15 @@ export class NewDocumentDialogComponent implements OnInit {
   onConfirm() {
     if (this.documentForm.valid) {
       const result: NewDocumentDialogResult = {
-        title: this.documentForm.value.title.trim(),
+        title: this.capitalizeFirstLetter(this.documentForm.value.title.trim()),
       };
       this.dialogRef.close(result);
     }
+  }
+
+  private capitalizeFirstLetter(text: string): string {
+    if (!text) return text;
+    return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
   get isFormValid(): boolean {

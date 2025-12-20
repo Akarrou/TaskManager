@@ -109,7 +109,7 @@
 }
 
 .section-title {
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
   overflow: hidden;
@@ -125,7 +125,7 @@
 
 .title-input {
   flex: 1;
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 600;
   border: 1px solid var(--mat-sys-primary, #6366f1);
   border-radius: 4px;
@@ -181,6 +181,16 @@
 
 .delete-btn {
   color: var(--mat-sys-error, #dc2626);
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    color: #9ca3af !important;
+
+    mat-icon {
+      color: #9ca3af !important;
+    }
+  }
 }
 
 // ==========================================================================

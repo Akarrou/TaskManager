@@ -1,9 +1,10 @@
-import { Component, Input, Output, EventEmitter, inject, computed, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog } from '@angular/material/dialog';
 import {
   CdkDragDrop,
   CdkDropList,
@@ -25,6 +26,7 @@ import {
 } from '../../models/document-tabs.model';
 import { Document, DocumentStorageFile } from '../../services/document.service';
 import { DocumentSectionCardComponent } from '../document-section-card/document-section-card.component';
+import { DeleteSectionDialogComponent } from '../delete-section-dialog/delete-section-dialog.component';
 
 @Component({
   selector: 'app-document-tab-content',
@@ -43,6 +45,8 @@ import { DocumentSectionCardComponent } from '../document-section-card/document-
   styleUrls: ['./document-tab-content.component.scss'],
 })
 export class DocumentTabContentComponent {
+  private dialog = inject(MatDialog);
+
   @Input() tab: TabWithItems | null = null;
   @Input() documents: Map<string, Document> = new Map();
   @Input() storageFiles: Map<string, DocumentStorageFile[]> = new Map();
@@ -169,10 +173,17 @@ export class DocumentTabContentComponent {
     this.sectionToggleCollapse.emit(sectionId);
   }
 
-  onSectionDelete(sectionId: string): void {
-    if (confirm('Supprimer cette section ? Les documents seront déplacés vers la zone non-sectionnée.')) {
-      this.sectionDelete.emit(sectionId);
-    }
+  onSectionDelete(sectionId: string, sectionTitle: string): void {
+    const dialogRef = this.dialog.open(DeleteSectionDialogComponent, {
+      width: '450px',
+      data: { sectionTitle }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (confirmed) {
+        this.sectionDelete.emit(sectionId);
+      }
+    });
   }
 
   onAddSection(): void {

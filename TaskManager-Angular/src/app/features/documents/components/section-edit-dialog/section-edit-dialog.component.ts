@@ -133,11 +133,16 @@ export class SectionEditDialogComponent {
   onSubmit(): void {
     if (this.form.valid) {
       const result: SectionEditDialogResult = {
-        title: this.form.value.title.trim(),
+        title: this.capitalizeFirstLetter(this.form.value.title.trim()),
         icon: this.selectedIcon,
         color: this.selectedColor,
       };
       this.dialogRef.close(result);
     }
+  }
+
+  private capitalizeFirstLetter(text: string): string {
+    if (!text) return text;
+    return text.charAt(0).toUpperCase() + text.slice(1);
   }
 }

@@ -638,11 +638,17 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
   // Handle title changes from input
   onTitleChange(newTitle: string) {
+    const capitalizedTitle = this.capitalizeFirstLetter(newTitle);
     this.documentState.update(state => ({
       ...state,
-      title: newTitle
+      title: capitalizedTitle
     }));
     this.changeSubject.next();
+  }
+
+  private capitalizeFirstLetter(text: string): string {
+    if (!text) return text;
+    return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
   ngOnInit() {
@@ -952,7 +958,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
    * Save edited title from breadcrumb
    */
   saveTitle() {
-    const newTitle = this.tempTitle().trim();
+    const newTitle = this.capitalizeFirstLetter(this.tempTitle().trim());
 
     if (!newTitle) {
       // Empty title not allowed, cancel editing
