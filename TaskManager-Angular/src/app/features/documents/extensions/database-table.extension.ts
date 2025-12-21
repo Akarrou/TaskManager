@@ -119,6 +119,21 @@ export const DatabaseTableExtension = Node.create<DatabaseTableOptions>({
           };
         },
       },
+
+      // Linked database flag (true if this is a reference to another document's database)
+      isLinked: {
+        default: false,
+        parseHTML: element => element.getAttribute('data-is-linked') === 'true',
+        renderHTML: attributes => {
+          // Only render if true to keep HTML clean
+          if (attributes['isLinked']) {
+            return {
+              'data-is-linked': 'true',
+            };
+          }
+          return {};
+        },
+      },
     };
   },
 

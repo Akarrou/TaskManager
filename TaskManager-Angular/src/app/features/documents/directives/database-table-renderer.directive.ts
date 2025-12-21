@@ -91,6 +91,7 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
       const databaseId = block.getAttribute('data-database-id') || '';
       const configAttr = block.getAttribute('data-config');
       const storageMode = block.getAttribute('data-storage-mode') || 'supabase';
+      const isLinked = block.getAttribute('data-is-linked') === 'true';
 
       // Parse config
       let config = null;
@@ -126,6 +127,7 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
       componentRef.setInput('documentId', this.documentId);
       componentRef.setInput('config', config);
       componentRef.setInput('storageMode', storageMode);
+      componentRef.setInput('linkedDatabase', isLinked);
 
       // Always set the data change callback to handle updates and deletions
       componentRef.setInput('onDataChange', (attrs: DatabaseNodeAttributes) => {
@@ -155,6 +157,9 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
     element.setAttribute('data-database-id', attrs.databaseId);
     element.setAttribute('data-config', JSON.stringify(attrs.config));
     element.setAttribute('data-storage-mode', attrs.storageMode);
+    if (attrs.isLinked !== undefined) {
+      element.setAttribute('data-is-linked', String(attrs.isLinked));
+    }
 
     // Update TipTap node via transaction
     if (this.editor) {

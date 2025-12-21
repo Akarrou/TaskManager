@@ -151,6 +151,13 @@
               <span>Importer CSV</span>
             </button>
           }
+          <!-- Connect to existing database (only for empty tables) -->
+          @if (canConnectToExisting()) {
+            <button mat-menu-item (click)="openConnectDatabaseDialog()">
+              <mat-icon>link</mat-icon>
+              <span>Connecter à une base existante</span>
+            </button>
+          }
           <button mat-menu-item (click)="onDeleteDatabase()" class="delete-menu-item">
             <mat-icon color="warn">delete</mat-icon>
             <span>Supprimer la base de données</span>

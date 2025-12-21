@@ -239,6 +239,7 @@ export interface DatabaseNodeAttributes {
   config: DatabaseConfig;
   storageMode: 'supabase'; // Always 'supabase' for dynamic tables
   deleted?: boolean; // Flag to indicate database deletion for TipTap node removal
+  isLinked?: boolean; // True if this is a reference to another document's database (don't delete data on block removal)
 }
 
 // =====================================================================

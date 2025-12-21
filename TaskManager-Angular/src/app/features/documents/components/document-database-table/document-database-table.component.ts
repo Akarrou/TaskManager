@@ -53,6 +53,11 @@ import {
   DeleteDatabaseDialogComponent,
   DeleteDatabaseDialogData,
 } from '../delete-database-dialog/delete-database-dialog.component';
+import {
+  ConnectDatabaseDialogComponent,
+  ConnectDatabaseDialogData,
+  ConnectDatabaseDialogResult,
+} from '../connect-database-dialog/connect-database-dialog.component';
 import { CsvImportDialogData, CsvImportResult } from '../../models/csv-import.model';
 import { DatabaseFiltersComponent } from '../database-filters/database-filters.component';
 import { DatabaseKanbanView } from '../database-kanban-view/database-kanban-view';
@@ -111,6 +116,9 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   @Input() storageMode: 'supabase' = 'supabase';
   @Input() defaultPageSize: number = 5;
   @Input() onDataChange?: (attrs: DatabaseNodeAttributes) => void;
+  @Input() set linkedDatabase(value: boolean) {
+    this.isLinked.set(value);
+  }
 
   // State signals
   isLoading = signal(false);
@@ -122,6 +130,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   rows = signal<DatabaseRow[]>([]);
   currentView = signal<ViewType>('table');
   isCreatingDatabase = signal(false);
+  isLinked = signal(false); // True if this database is a reference to another document's database
 
   // Filtering and sorting state
   activeFilters = signal<Filter[]>([]);
@@ -783,6 +792,83 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Vérifie si la connexion à une base existante est autorisée (aucune ligne uniquement)
+   */
+  canConnectToExisting(): boolean {
+    return this.rows().length === 0;
+  }
+
+  /**
+   * Ouvre le dialog pour connecter à une base de données existante
+   */
+  openConnectDatabaseDialog(): void {
+    const dialogData: ConnectDatabaseDialogData = {
+      currentDatabaseId: this.databaseId,
+    };
+
+    const dialogRef = this.dialog.open(ConnectDatabaseDialogComponent, {
+      width: '500px',
+      maxHeight: '80vh',
+      data: dialogData,
+    });
+
+    dialogRef
+      .afterClosed()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((result: ConnectDatabaseDialogResult | undefined) => {
+        if (result) {
+          this.connectToDatabase(result);
+        }
+      });
+  }
+
+  /**
+   * Connecte à une base de données existante:
+   * 1. Supprime la base de données vide actuelle
+   * 2. Met à jour le nœud TipTap pour pointer vers la base sélectionnée
+   * 3. Marque le bloc comme "lié" (isLinked) pour éviter la suppression des données
+   */
+  private connectToDatabase(result: ConnectDatabaseDialogResult): void {
+    this.isLoading.set(true);
+
+    // Supprimer la base de données vide actuelle
+    this.databaseService
+      .deleteDatabase(this.databaseId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          // Marquer comme base liée (référence à une autre base)
+          this.isLinked.set(true);
+
+          // Mettre à jour le nœud TipTap avec la nouvelle référence et le flag isLinked
+          if (this.onDataChange) {
+            this.onDataChange({
+              databaseId: result.selectedDatabaseId,
+              config: result.selectedDatabaseConfig,
+              storageMode: 'supabase',
+              isLinked: true,
+            });
+          }
+
+          // Mettre à jour l'ID local et recharger
+          this.databaseId = result.selectedDatabaseId;
+          this.initializeDatabase();
+
+          this.snackBar.open('Base de données connectée avec succès', 'OK', {
+            duration: 3000,
+          });
+        },
+        error: (err: unknown) => {
+          this.isLoading.set(false);
+          console.error('Failed to connect database:', err);
+          this.snackBar.open('Erreur lors de la connexion', 'OK', {
+            duration: 5000,
+          });
+        },
+      });
+  }
+
+  /**
    * Ouvre le dialog d'import CSV
    * Pour les Task Databases, ouvre le TaskCsvImportDialogComponent spécialisé
    * Pour les autres databases, ouvre le CsvImportDialogComponent générique
@@ -862,6 +948,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
 
   /**
    * Sync database config to TipTap node
+   * Preserves isLinked flag to maintain linked database state
    */
   private syncToTipTap() {
     if (!this.onDataChange) return;
@@ -870,6 +957,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
       databaseId: this.databaseId,
       config: this.databaseConfig(),
       storageMode: 'supabase',
+      isLinked: this.isLinked(),
     };
 
     this.onDataChange(attrs);
@@ -1230,9 +1318,12 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
 
   /**
    * Delete entire database with confirmation
-   * Removes the PostgreSQL table, metadata, and TipTap node
+   * For linked databases: only removes the TipTap node (keeps data intact)
+   * For owned databases: removes the PostgreSQL table, metadata, and TipTap node
    */
   onDeleteDatabase(): void {
+    const isLinkedDb = this.isLinked();
+
     const dialogRef = this.dialog.open<DeleteDatabaseDialogComponent, DeleteDatabaseDialogData, boolean>(
       DeleteDatabaseDialogComponent,
       {
@@ -1240,6 +1331,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
         data: {
           databaseName: this.databaseConfig().name,
           rowCount: this.rowCount(),
+          isLinked: isLinkedDb,
         },
       }
     );
@@ -1249,41 +1341,74 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (confirmed: boolean | undefined) => {
           if (confirmed) {
-            this.isLoading.set(true);
-            this.databaseService
-              .deleteDatabase(this.databaseId)
-              .pipe(takeUntil(this.destroy$))
-              .subscribe({
-                next: () => {
-                  this.isLoading.set(false);
-                  this.snackBar.open('Base de données supprimée avec succès', 'OK', {
-                    duration: 3000,
-                  });
-
-                  // Notify parent component (TipTap editor) to remove the node
-                  if (this.onDataChange) {
-                    this.onDataChange({
-                      databaseId: this.databaseId,
-                      config: this.databaseConfig(),
-                      storageMode: this.storageMode,
-                      deleted: true,
-                    });
-                  }
-                },
-                error: (err: unknown) => {
-                  this.isLoading.set(false);
-                  console.error('Failed to delete database:', err);
-                  const errorMessage = err instanceof Error
-                    ? err.message
-                    : 'Erreur lors de la suppression de la base de données';
-                  this.snackBar.open(errorMessage, 'OK', {
-                    duration: 5000,
-                  });
-                },
-              });
+            if (isLinkedDb) {
+              // Linked database: just remove the TipTap node, keep data
+              this.unlinkDatabase();
+            } else {
+              // Original database: delete everything
+              this.deleteOwnedDatabase();
+            }
           }
         },
       });
+  }
+
+  /**
+   * Delete an owned database (removes PostgreSQL table, metadata, and TipTap node)
+   */
+  private deleteOwnedDatabase(): void {
+    this.isLoading.set(true);
+    this.databaseService
+      .deleteDatabase(this.databaseId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.isLoading.set(false);
+          this.snackBar.open('Base de données supprimée avec succès', 'OK', {
+            duration: 3000,
+          });
+
+          // Notify parent component (TipTap editor) to remove the node
+          if (this.onDataChange) {
+            this.onDataChange({
+              databaseId: this.databaseId,
+              config: this.databaseConfig(),
+              storageMode: this.storageMode,
+              deleted: true,
+            });
+          }
+        },
+        error: (err: unknown) => {
+          this.isLoading.set(false);
+          console.error('Failed to delete database:', err);
+          const errorMessage = err instanceof Error
+            ? err.message
+            : 'Erreur lors de la suppression de la base de données';
+          this.snackBar.open(errorMessage, 'OK', {
+            duration: 5000,
+          });
+        },
+      });
+  }
+
+  /**
+   * Unlink a connected database (removes the TipTap node without deleting data)
+   */
+  private unlinkDatabase(): void {
+    // Simply remove the TipTap node - data stays in the original database
+    if (this.onDataChange) {
+      this.onDataChange({
+        databaseId: this.databaseId,
+        config: this.databaseConfig(),
+        storageMode: this.storageMode,
+        deleted: true,
+        isLinked: true,
+      });
+    }
+
+    this.snackBar.open('Bloc retiré (les données sont conservées)', 'OK', {
+      duration: 3000,
+    });
   }
 
   /**

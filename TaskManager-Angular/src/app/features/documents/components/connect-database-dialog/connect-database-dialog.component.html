@@ -1,0 +1,71 @@
+<h2 mat-dialog-title class="dialog-title">
+  <mat-icon>link</mat-icon>
+  Connecter à une base existante
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  @if (isLoading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Chargement des bases de données...</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <mat-icon>error_outline</mat-icon>
+      <p>{{ error() }}</p>
+    </div>
+  } @else if (databases().length === 0) {
+    <div class="empty-state">
+      <mat-icon>storage</mat-icon>
+      <p>Aucune autre base de données disponible</p>
+      <p class="text-sm text-gray-500">
+        Créez d'abord une base de données dans un autre document.
+      </p>
+    </div>
+  } @else {
+    <p class="info-text">
+      Sélectionnez une base de données existante pour l'afficher ici.
+      La base de données actuelle (vide) sera supprimée.
+    </p>
+
+    <div class="database-list">
+      @for (db of databases(); track db.database_id) {
+        <div
+          class="database-item"
+          [class.selected]="isSelected(db)"
+          (click)="onSelectDatabase(db)">
+          <div class="database-icon">
+            <mat-icon>table_chart</mat-icon>
+          </div>
+          <div class="database-info">
+            <div class="database-name">{{ getDatabaseName(db) }}</div>
+            <div class="database-meta">
+              <span>{{ getColumnCount(db) }} colonne(s)</span>
+              <span class="separator">•</span>
+              <span>Créée le {{ formatDate(db.created_at) }}</span>
+            </div>
+          </div>
+          @if (isSelected(db)) {
+            <mat-icon class="check-icon">check_circle</mat-icon>
+          }
+        </div>
+      }
+    </div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
+  <button mat-button class="dialog-btn-secondary" (click)="onCancel()">
+    <mat-icon>cancel</mat-icon>
+    Annuler
+  </button>
+
+  <button
+    mat-raised-button
+    color="primary"
+    [disabled]="!selectedDatabase()"
+    (click)="onConfirm()">
+    <mat-icon>link</mat-icon>
+    Connecter
+  </button>
+</mat-dialog-actions>

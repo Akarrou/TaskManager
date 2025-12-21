@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 export interface DeleteDatabaseDialogData {
   databaseName: string;
   rowCount: number;
+  isLinked?: boolean; // True if this is a linked database (only remove block, keep data)
 }
 
 @Component({
