@@ -7,11 +7,11 @@ export function registerCommentTools(server) {
     // =========================================================================
     // list_comments - List comments for a document or specific block
     // =========================================================================
-    server.tool('list_comments', 'List all comments for a document with pagination, optionally filtered by block ID.', {
-        document_id: z.string().uuid().describe('The UUID of the document'),
-        block_id: z.string().optional().describe('Optional block ID to filter comments for a specific block'),
-        limit: z.number().min(1).max(100).optional().default(50).describe('Maximum number of comments to return'),
-        offset: z.number().min(0).optional().default(0).describe('Number of comments to skip for pagination'),
+    server.tool('list_comments', `List comments attached to a document with pagination. Comments are attached to specific blocks (TipTap nodes) within a document, enabling inline discussions similar to Google Docs. Each comment has a block_id (TipTap node ID), content, user_id, and timestamp. Returns comments sorted by creation time with pagination info including total count. Use get_blocks_with_comments first to find which blocks have discussions.`, {
+        document_id: z.string().uuid().describe('The document UUID to get comments for.'),
+        block_id: z.string().optional().describe('Filter to comments on a specific TipTap block/node. Get block IDs from get_blocks_with_comments.'),
+        limit: z.number().min(1).max(100).optional().default(50).describe('Max comments per page. Default 50.'),
+        offset: z.number().min(0).optional().default(0).describe('Number to skip for pagination.'),
     }, async ({ document_id, block_id, limit, offset }) => {
         try {
             const supabase = getSupabaseClient();
@@ -54,12 +54,12 @@ export function registerCommentTools(server) {
     // =========================================================================
     // add_comment - Add a comment to a document block
     // =========================================================================
-    server.tool('add_comment', 'Add a comment to a specific block in a document.', {
-        document_id: z.string().uuid().describe('The UUID of the document'),
-        block_id: z.string().describe('The ID of the block to comment on'),
-        content: z.string().min(1).describe('The comment content'),
-        user_id: z.string().uuid().describe('The UUID of the user posting the comment'),
-        user_email: z.string().email().optional().describe('Email of the user (for display purposes)'),
+    server.tool('add_comment', `Add a comment to a specific block in a document. Comments enable inline discussions on document content. The block_id must be a valid TipTap node ID from the document's content (found in the content JSON). Returns the created comment with its generated ID. Comments are timestamped and attributed to the specified user. Related tools: list_comments, delete_comment, get_blocks_with_comments.`, {
+        document_id: z.string().uuid().describe('The document UUID where the comment should be added.'),
+        block_id: z.string().describe('The TipTap block/node ID to attach the comment to. Found in document content JSON.'),
+        content: z.string().min(1).describe('The comment text content.'),
+        user_id: z.string().uuid().describe('The UUID of the user posting the comment.'),
+        user_email: z.string().email().optional().describe('User email for display. Optional, shown alongside comment.'),
     }, async ({ document_id, block_id, content, user_id, user_email }) => {
         try {
             const supabase = getSupabaseClient();
@@ -97,8 +97,8 @@ export function registerCommentTools(server) {
     // =========================================================================
     // delete_comment - Delete a comment
     // =========================================================================
-    server.tool('delete_comment', 'Delete a comment by its ID.', {
-        comment_id: z.string().uuid().describe('The UUID of the comment to delete'),
+    server.tool('delete_comment', `Delete a comment from a document. This permanently removes the comment. Get comment IDs from list_comments. Returns confirmation of deletion. Related tools: list_comments, add_comment.`, {
+        comment_id: z.string().uuid().describe('The comment UUID to delete. Get this from list_comments.'),
     }, async ({ comment_id }) => {
         try {
             const supabase = getSupabaseClient();
@@ -126,9 +126,9 @@ export function registerCommentTools(server) {
     // =========================================================================
     // get_comment_count - Get comment count for a document or block
     // =========================================================================
-    server.tool('get_comment_count', 'Get the number of comments on a document, optionally filtered by block.', {
-        document_id: z.string().uuid().describe('The UUID of the document'),
-        block_id: z.string().optional().describe('Optional block ID to count comments for a specific block'),
+    server.tool('get_comment_count', `Get the total number of comments on a document or specific block. Faster than list_comments when you only need the count. Returns document_id, block_id (if filtered), and count. Use this for displaying comment indicators or checking activity level. Related tools: list_comments (full data), get_blocks_with_comments (per-block counts).`, {
+        document_id: z.string().uuid().describe('The document UUID to count comments for.'),
+        block_id: z.string().optional().describe('Count only comments on this specific block.'),
     }, async ({ document_id, block_id }) => {
         try {
             const supabase = getSupabaseClient();
@@ -160,8 +160,8 @@ export function registerCommentTools(server) {
     // =========================================================================
     // get_blocks_with_comments - Get all blocks that have comments in a document
     // =========================================================================
-    server.tool('get_blocks_with_comments', 'Get a list of all block IDs that have comments in a document, with comment counts.', {
-        document_id: z.string().uuid().describe('The UUID of the document'),
+    server.tool('get_blocks_with_comments', `Get all blocks in a document that have comments, with comment counts per block. Returns array of { block_id, comment_count }. Use this to: 1) Find which blocks have discussions, 2) Display comment indicators in the UI, 3) Know which block_ids to query with list_comments. Essential for understanding where conversations exist in a document.`, {
+        document_id: z.string().uuid().describe('The document UUID to analyze.'),
     }, async ({ document_id }) => {
         try {
             const supabase = getSupabaseClient();

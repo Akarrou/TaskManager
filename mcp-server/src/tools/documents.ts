@@ -11,12 +11,12 @@ export function registerDocumentTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'list_documents',
-    'List all documents with pagination. Can filter by project or parent document for hierarchical navigation.',
+    `List documents in the Kodo workspace with pagination support. Documents are rich-text pages (using TipTap editor format) that can be organized hierarchically with parent-child relationships. They can belong to projects, contain embedded databases, and be organized within tabs. Returns document metadata (id, title, parent_id, project_id) with pagination info including total count and hasMore flag. Use get_document to retrieve full content. Related tools: search_documents (find by title), get_document_breadcrumb (navigation path).`,
     {
-      project_id: z.string().uuid().optional().describe('Filter documents by project ID'),
-      parent_id: z.string().uuid().optional().describe('Filter documents by parent document ID (for hierarchy)'),
-      limit: z.number().min(1).max(100).optional().default(50).describe('Maximum number of documents to return'),
-      offset: z.number().min(0).optional().default(0).describe('Number of documents to skip for pagination'),
+      project_id: z.string().uuid().optional().describe('Filter to only documents in this project. Get project IDs from list_projects.'),
+      parent_id: z.string().uuid().optional().describe('Filter to child documents of this parent. Use to navigate hierarchical document structures or find sub-pages.'),
+      limit: z.number().min(1).max(100).optional().default(50).describe('Maximum documents per page. Default 50, max 100.'),
+      offset: z.number().min(0).optional().default(0).describe('Number of documents to skip for pagination. Use with limit for paging through large sets.'),
     },
     async ({ project_id, parent_id, limit, offset }) => {
       try {
@@ -71,9 +71,9 @@ export function registerDocumentTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'get_document',
-    'Get a document by ID including its full content (TipTap JSON).',
+    `Get a document's full details including its rich-text content. Returns the complete document object with: id, title, content (TipTap JSON format), parent_id, project_id, database_id (if linked to a database row), and timestamps. The content field contains a TipTap document structure with nested nodes like paragraphs, headings, lists, tables, and embedded databases. Use list_documents first to find document IDs. Related tools: update_document (modify content), get_document_breadcrumb (path), list_comments (see comments).`,
     {
-      document_id: z.string().uuid().describe('The UUID of the document'),
+      document_id: z.string().uuid().describe('The UUID of the document to retrieve. Get this from list_documents or search_documents.'),
     },
     async ({ document_id }) => {
       try {
@@ -108,12 +108,12 @@ export function registerDocumentTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'create_document',
-    'Create a new document with optional TipTap content.',
+    `Create a new document (rich-text page) in the Kodo workspace. Documents support TipTap editor content including headings, paragraphs, lists, tables, code blocks, and embedded databases. They can be organized hierarchically by setting a parent_id for wiki-like nested structure. Returns the created document with its generated UUID. Typical workflow: create document, then use update_document to add content, or link it to a tab/section for navigation. Related tools: update_document (add content), create_database (embed a table).`,
     {
-      title: z.string().min(1).max(500).describe('The title of the document'),
-      project_id: z.string().uuid().optional().describe('Optional project ID to associate the document with'),
-      parent_id: z.string().uuid().optional().describe('Optional parent document ID for hierarchy'),
-      content: z.any().optional().describe('Optional TipTap JSON content (default: empty document)'),
+      title: z.string().min(1).max(500).describe('The document title displayed in navigation and breadcrumbs. Should be descriptive.'),
+      project_id: z.string().uuid().optional().describe('Project to associate this document with. Required for the document to appear in project navigation.'),
+      parent_id: z.string().uuid().optional().describe('Parent document ID to create a nested/child document. Creates hierarchical wiki-like structure.'),
+      content: z.any().optional().describe('Initial TipTap JSON content. Format: { type: "doc", content: [...nodes] }. Leave empty for a blank document.'),
     },
     async ({ title, project_id, parent_id, content }) => {
       try {
@@ -162,11 +162,11 @@ export function registerDocumentTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'update_document',
-    'Update a document\'s title or content.',
+    `Update a document's title and/or content. Only provide the fields you want to change - unspecified fields remain unchanged. Content must be valid TipTap JSON format (nodes with type and optional content array). The document's updated_at timestamp is automatically set. Use get_document first to see current content if you need to modify it partially. Note: This replaces the entire content field, so include all existing content you want to keep.`,
     {
-      document_id: z.string().uuid().describe('The UUID of the document to update'),
-      title: z.string().min(1).max(500).optional().describe('New title for the document'),
-      content: z.any().optional().describe('New TipTap JSON content'),
+      document_id: z.string().uuid().describe('The UUID of the document to update. Get this from list_documents.'),
+      title: z.string().min(1).max(500).optional().describe('New title. Leave undefined to keep current title.'),
+      content: z.any().optional().describe('New TipTap JSON content to replace existing. Format: { type: "doc", content: [...] }. Leave undefined to keep current content.'),
     },
     async ({ document_id, title, content }) => {
       try {
@@ -217,10 +217,10 @@ export function registerDocumentTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'delete_document',
-    'Delete a document. Use cascade=true to also delete child documents and associated databases.',
+    `Delete a document from the workspace. By default, only deletes the specified document - child documents become orphaned. Use cascade=true to delete the entire document tree including all nested child documents and any embedded databases. WARNING: Deleted documents cannot be recovered. Returns confirmation with count of deleted items when cascade is used. Comments and file attachments linked to deleted documents are also removed.`,
     {
-      document_id: z.string().uuid().describe('The UUID of the document to delete'),
-      cascade: z.boolean().optional().default(false).describe('If true, delete all child documents and databases'),
+      document_id: z.string().uuid().describe('The UUID of the document to delete.'),
+      cascade: z.boolean().optional().default(false).describe('Set to true to also delete all child documents and embedded databases recursively. Default false deletes only the specified document.'),
     },
     async ({ document_id, cascade }) => {
       try {
@@ -281,11 +281,11 @@ export function registerDocumentTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'search_documents',
-    'Search documents by title using a text query.',
+    `Search for documents by title using case-insensitive partial matching. Use this to find documents when you know part of the title. Returns matching documents sorted by last updated. More efficient than list_documents when looking for specific content. The search uses SQL ILIKE for partial matching - "meeting" would match "Team Meeting Notes" and "Q4 meeting minutes". Related tools: list_documents (browse all), get_document (full content).`,
     {
-      query: z.string().min(1).describe('Search query to match against document titles'),
-      project_id: z.string().uuid().optional().describe('Optional project ID to filter search'),
-      limit: z.number().min(1).max(50).optional().default(20).describe('Maximum number of results'),
+      query: z.string().min(1).describe('Search term to match against document titles. Partial matches are supported (e.g., "report" matches "Q4 Report").'),
+      project_id: z.string().uuid().optional().describe('Limit search to a specific project. Omit to search across all projects.'),
+      limit: z.number().min(1).max(50).optional().default(20).describe('Maximum results to return. Default 20, max 50.'),
     },
     async ({ query, project_id, limit }) => {
       try {
@@ -327,9 +327,9 @@ export function registerDocumentTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'get_document_breadcrumb',
-    'Get the full navigation path (breadcrumb) from root to a document.',
+    `Get the navigation path from the root document to the specified document. Returns an ordered array of ancestors from root to the document itself, each with id and title. Useful for understanding document hierarchy and building navigation UI. Example output: [{ id: "...", title: "Parent" }, { id: "...", title: "Child" }]. Returns just the document itself if it has no parent.`,
     {
-      document_id: z.string().uuid().describe('The UUID of the document'),
+      document_id: z.string().uuid().describe('The UUID of the document to get the breadcrumb for.'),
     },
     async ({ document_id }) => {
       try {
@@ -367,9 +367,9 @@ export function registerDocumentTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'get_documents_stats',
-    'Get statistics about documents (total count, recent documents, last modified).',
+    `Get aggregate statistics about documents in the workspace. Returns: total document count, count of documents created in last 7 days, and the most recently modified document. Useful for dashboards, monitoring activity, or understanding workspace usage. Can be filtered to a specific project or show all projects. Related tools: list_documents (browse), get_task_stats (task metrics).`,
     {
-      project_id: z.string().uuid().optional().describe('Optional project ID to filter statistics'),
+      project_id: z.string().uuid().optional().describe('Filter statistics to a specific project. Omit for workspace-wide stats.'),
     },
     async ({ project_id }) => {
       try {
@@ -437,11 +437,11 @@ export function registerDocumentTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'link_task_to_document',
-    'Create a relationship between a task and a document.',
+    `Create a relationship between a task (from a task database) and a document. This enables cross-referencing between documentation and work items. Relation types: 'related' (general association), 'blocking' (document blocks task), 'blocked_by' (task blocks document), 'parent' (document is parent), 'child' (document is child). Use get_document_tasks to see existing links. The task_id is a row ID from a task-type database.`,
     {
-      document_id: z.string().uuid().describe('The UUID of the document'),
-      task_id: z.string().uuid().describe('The UUID of the task (row ID from a task database)'),
-      relation_type: z.enum(['related', 'blocking', 'blocked_by', 'parent', 'child']).optional().default('related').describe('Type of relationship'),
+      document_id: z.string().uuid().describe('The UUID of the document to link.'),
+      task_id: z.string().uuid().describe('The row ID of the task from a task database. Get this from list_tasks or get_database_rows on a task database.'),
+      relation_type: z.enum(['related', 'blocking', 'blocked_by', 'parent', 'child']).optional().default('related').describe('Type of relationship. Default is "related" for general association.'),
     },
     async ({ document_id, task_id, relation_type }) => {
       try {
@@ -481,9 +481,9 @@ export function registerDocumentTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'get_document_tasks',
-    'Get all tasks that are linked to a document.',
+    `Get all tasks that are linked to a specific document. Returns an array of relationship records including task_id, relation_type, and timestamps. Use this to see what work items are associated with a document. To get full task details, use the task_id with get_task. Related tools: link_task_to_document (create links), unlink_task_from_document (remove links).`,
     {
-      document_id: z.string().uuid().describe('The UUID of the document'),
+      document_id: z.string().uuid().describe('The UUID of the document to get linked tasks for.'),
     },
     async ({ document_id }) => {
       try {
@@ -518,10 +518,10 @@ export function registerDocumentTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'unlink_task_from_document',
-    'Remove a relationship between a task and a document.',
+    `Remove the relationship between a task and a document. This does not delete either the task or the document - only the link between them. Use get_document_tasks first to see existing links and get the task_id. Returns confirmation of successful removal.`,
     {
-      document_id: z.string().uuid().describe('The UUID of the document'),
-      task_id: z.string().uuid().describe('The UUID of the task'),
+      document_id: z.string().uuid().describe('The UUID of the document to unlink from.'),
+      task_id: z.string().uuid().describe('The row ID of the task to unlink. Get this from get_document_tasks.'),
     },
     async ({ document_id, task_id }) => {
       try {

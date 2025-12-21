@@ -11,7 +11,7 @@ export function registerUserTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'list_users',
-    'List all users in the system. Uses the get_all_users RPC function.',
+    `List all users registered in the system. Returns basic user info (id, email). Requires service role access. Use this to find user IDs for assigning tasks, adding project members, or attributing comments. Related tools: get_user (details), get_profile (profile data), update_profile.`,
     {},
     async () => {
       try {
@@ -42,9 +42,9 @@ export function registerUserTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'get_user',
-    'Get detailed information about a specific user by their ID.',
+    `Get detailed auth information about a user from Supabase Auth. Returns: id, email, created_at, updated_at, last_sign_in_at, and user_metadata. Requires service role access. For profile-specific data (display_name, avatar), use get_profile instead. Related tools: get_profile, update_profile, list_users.`,
     {
-      user_id: z.string().uuid().describe('The UUID of the user'),
+      user_id: z.string().uuid().describe('The user UUID. Get this from list_users or project members.'),
     },
     async ({ user_id }) => {
       try {
@@ -87,9 +87,9 @@ export function registerUserTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'get_profile',
-    'Get a user\'s profile information from the profiles table.',
+    `Get a user's profile data from the profiles table. Returns display_name, avatar_url, and custom metadata. If no profile exists, falls back to auth user_metadata. Profiles are for user-facing information (display names, avatars) while auth user data is for authentication. Related tools: update_profile, get_user (auth data).`,
     {
-      user_id: z.string().uuid().describe('The UUID of the user'),
+      user_id: z.string().uuid().describe('The user UUID to get profile for.'),
     },
     async ({ user_id }) => {
       try {
@@ -146,12 +146,12 @@ export function registerUserTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'update_profile',
-    'Update a user\'s profile information. Can update display name, avatar URL, or other metadata.',
+    `Update a user's profile information. Creates the profile if it doesn't exist (upsert). Also syncs display_name and avatar_url to Supabase Auth user_metadata. Only provide fields you want to change. At least one field must be specified. Related tools: get_profile, get_user.`,
     {
-      user_id: z.string().uuid().describe('The UUID of the user to update'),
-      display_name: z.string().min(1).max(100).optional().describe('New display name'),
-      avatar_url: z.string().url().optional().describe('New avatar URL'),
-      metadata: z.record(z.unknown()).optional().describe('Additional metadata to store'),
+      user_id: z.string().uuid().describe('The user UUID to update.'),
+      display_name: z.string().min(1).max(100).optional().describe('New display name shown in the UI.'),
+      avatar_url: z.string().url().optional().describe('New avatar image URL. Must be a valid URL.'),
+      metadata: z.record(z.unknown()).optional().describe('Custom metadata object to store (merged with existing).'),
     },
     async ({ user_id, display_name, avatar_url, metadata }) => {
       try {

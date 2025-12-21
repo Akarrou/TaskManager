@@ -7,9 +7,9 @@ export function registerDatabaseTools(server) {
     // =========================================================================
     // list_databases - List all databases
     // =========================================================================
-    server.tool('list_databases', 'List all dynamic databases (Notion-like tables) in the system.', {
-        document_id: z.string().uuid().optional().describe('Filter databases by the document they belong to'),
-        type: z.enum(['task', 'generic']).optional().describe('Filter by database type'),
+    server.tool('list_databases', `List all Notion-like databases in the workspace. Databases are structured tables with typed columns that can be embedded in documents or exist standalone. They support two types: "task" (with predefined columns for task management, used by task tools) and "generic" (custom columns). Returns simplified view with database_id, name, type, column_count, and document_id. Use get_database_schema for full column details. Related tools: create_database, get_database_rows, add_database_row.`, {
+        document_id: z.string().uuid().optional().describe('Filter to databases embedded in a specific document.'),
+        type: z.enum(['task', 'generic']).optional().describe('Filter by database type: "task" for task management, "generic" for custom tables.'),
     }, async ({ document_id, type }) => {
         try {
             const supabase = getSupabaseClient();
@@ -59,8 +59,8 @@ export function registerDatabaseTools(server) {
     // =========================================================================
     // get_database_schema - Get database column configuration
     // =========================================================================
-    server.tool('get_database_schema', 'Get the schema (columns configuration) of a database.', {
-        database_id: z.string().describe('The database ID (format: db-uuid)'),
+    server.tool('get_database_schema', `Get the complete schema of a database including all column definitions. Returns: database_id, name, type, columns array (with id, name, type, options for selects, visibility), and views configuration. Column types include: text, number, select, multi_select, date, checkbox, url, email, phone, person, formula, relation, rollup, created_time, last_edited_time, created_by, last_edited_by. Essential for understanding how to query and update database rows. Related tools: add_column, update_column.`, {
+        database_id: z.string().describe('The database ID. Format: db-uuid (e.g., "db-123e4567-e89b-...").'),
     }, async ({ database_id }) => {
         try {
             const supabase = getSupabaseClient();
@@ -99,12 +99,12 @@ export function registerDatabaseTools(server) {
     // =========================================================================
     // get_database_rows - Query rows from a database
     // =========================================================================
-    server.tool('get_database_rows', 'Get rows from a database with optional filtering and sorting.', {
-        database_id: z.string().describe('The database ID (format: db-uuid)'),
-        limit: z.number().min(1).max(100).optional().default(50).describe('Maximum rows to return'),
-        offset: z.number().min(0).optional().default(0).describe('Number of rows to skip'),
-        sort_by: z.string().optional().describe('Column name to sort by'),
-        sort_order: z.enum(['asc', 'desc']).optional().default('asc').describe('Sort direction'),
+    server.tool('get_database_rows', `Query rows from a database with pagination. Returns denormalized rows with column names as keys (not column IDs), plus metadata fields prefixed with underscore: _id (row UUID), _row_order, _created_at, _updated_at. Also returns total_count for pagination. For task databases, use list_tasks instead which provides normalized task fields. Use get_database_schema first to understand available columns. Related tools: add_database_row, update_database_row, delete_database_rows.`, {
+        database_id: z.string().describe('The database ID. Format: db-uuid.'),
+        limit: z.number().min(1).max(100).optional().default(50).describe('Maximum rows per page. Default 50, max 100.'),
+        offset: z.number().min(0).optional().default(0).describe('Number of rows to skip for pagination.'),
+        sort_by: z.string().optional().describe('Column name to sort by. Currently sorts by row_order.'),
+        sort_order: z.enum(['asc', 'desc']).optional().default('asc').describe('Sort direction: asc (ascending) or desc (descending).'),
     }, async ({ database_id, limit, offset, sort_by, sort_order }) => {
         try {
             const supabase = getSupabaseClient();
@@ -177,9 +177,9 @@ export function registerDatabaseTools(server) {
     // =========================================================================
     // add_database_row - Add a new row to a database
     // =========================================================================
-    server.tool('add_database_row', 'Add a new row to a database. Provide cell values as a JSON object mapping column names to values.', {
-        database_id: z.string().describe('The database ID (format: db-uuid)'),
-        cells: z.record(z.unknown()).describe('Cell values as { columnName: value } object'),
+    server.tool('add_database_row', `Add a new row to a database. Use column names (not IDs) as keys in the cells object - they are automatically mapped to column IDs. For task databases, use create_task instead which provides a typed interface. The new row is added at the end (highest row_order). Returns the created row with its generated UUID. Example cells: { "Title": "My Item", "Status": "active", "Count": 42 }. Related tools: get_database_schema (column names), update_database_row.`, {
+        database_id: z.string().describe('The database ID to add a row to. Format: db-uuid.'),
+        cells: z.record(z.unknown()).describe('Cell values as { "ColumnName": value } object. Use get_database_schema to see available columns.'),
     }, async ({ database_id, cells }) => {
         try {
             const supabase = getSupabaseClient();
@@ -242,10 +242,10 @@ export function registerDatabaseTools(server) {
     // =========================================================================
     // update_database_row - Update a row in a database
     // =========================================================================
-    server.tool('update_database_row', 'Update specific cells in a database row.', {
-        database_id: z.string().describe('The database ID (format: db-uuid)'),
-        row_id: z.string().uuid().describe('The row ID to update'),
-        cells: z.record(z.unknown()).describe('Cell values to update as { columnName: value } object'),
+    server.tool('update_database_row', `Update specific cells in an existing database row. Only provide the columns you want to change - existing values are preserved for unspecified columns. Uses column names (not IDs) in the cells object. For task databases, use update_task instead. Returns the updated row. Example: { "Status": "completed", "Progress": 100 }. Related tools: get_database_rows (find row IDs), add_database_row, delete_database_rows.`, {
+        database_id: z.string().describe('The database ID containing the row. Format: db-uuid.'),
+        row_id: z.string().uuid().describe('The row UUID to update. Get this from get_database_rows (_id field).'),
+        cells: z.record(z.unknown()).describe('Cells to update as { "ColumnName": newValue }. Unspecified columns keep current values.'),
     }, async ({ database_id, row_id, cells }) => {
         try {
             const supabase = getSupabaseClient();
@@ -314,9 +314,9 @@ export function registerDatabaseTools(server) {
     // =========================================================================
     // delete_database_rows - Delete rows from a database
     // =========================================================================
-    server.tool('delete_database_rows', 'Delete one or more rows from a database.', {
-        database_id: z.string().describe('The database ID (format: db-uuid)'),
-        row_ids: z.array(z.string().uuid()).min(1).describe('Array of row IDs to delete'),
+    server.tool('delete_database_rows', `Delete one or more rows from a database permanently. Accepts an array of row UUIDs to delete in a single operation. Deletion is immediate and cannot be undone. For task databases, use delete_task instead if you want confirmation logging. Returns count of deleted rows. Related tools: get_database_rows (find rows), update_database_row.`, {
+        database_id: z.string().describe('The database ID. Format: db-uuid.'),
+        row_ids: z.array(z.string().uuid()).min(1).describe('Array of row UUIDs to delete. Get these from get_database_rows (_id field).'),
     }, async ({ database_id, row_ids }) => {
         try {
             const supabase = getSupabaseClient();
@@ -345,18 +345,18 @@ export function registerDatabaseTools(server) {
     // =========================================================================
     // create_database - Create a new database
     // =========================================================================
-    server.tool('create_database', 'Create a new Notion-like database with columns configuration.', {
-        name: z.string().min(1).max(255).describe('Name of the database'),
-        document_id: z.string().uuid().optional().describe('Parent document ID (optional for standalone database)'),
-        type: z.enum(['task', 'generic']).optional().default('generic').describe('Database type'),
+    server.tool('create_database', `Create a new Notion-like database with custom columns. Databases are structured tables that can be embedded in documents or exist standalone. Type "task" creates a database with predefined columns (Title, Description, Status, Priority, Due Date, Assigned To) suitable for task management - use with list_tasks/create_task. Type "generic" creates an empty schema that you define with columns. Returns the created database with its generated database_id. Column IDs are auto-generated. Related tools: add_column (add more columns later), add_database_row (add data).`, {
+        name: z.string().min(1).max(255).describe('Display name for the database.'),
+        document_id: z.string().uuid().optional().describe('Parent document to embed the database in. Omit for standalone database.'),
+        type: z.enum(['task', 'generic']).optional().default('generic').describe('"task" creates predefined task columns. "generic" (default) starts empty.'),
         columns: z.array(z.object({
-            name: z.string().describe('Column name'),
-            type: z.enum(['text', 'number', 'select', 'multi_select', 'date', 'checkbox', 'url', 'email', 'phone', 'formula', 'relation', 'rollup', 'created_time', 'last_edited_time', 'created_by', 'last_edited_by', 'person']).describe('Column type'),
+            name: z.string().describe('Column display name.'),
+            type: z.enum(['text', 'number', 'select', 'multi_select', 'date', 'checkbox', 'url', 'email', 'phone', 'formula', 'relation', 'rollup', 'created_time', 'last_edited_time', 'created_by', 'last_edited_by', 'person']).describe('Column data type.'),
             options: z.array(z.object({
                 label: z.string(),
                 color: z.string().optional(),
-            })).optional().describe('Options for select/multi_select columns'),
-        })).optional().describe('Column definitions'),
+            })).optional().describe('Required for select/multi_select types. Array of { label, color? }.'),
+        })).optional().describe('Initial column definitions. For type "task" with no columns, default task columns are created.'),
     }, async ({ name, document_id, type, columns }) => {
         try {
             const supabase = getSupabaseClient();
@@ -437,9 +437,9 @@ export function registerDatabaseTools(server) {
     // =========================================================================
     // delete_database - Delete a database
     // =========================================================================
-    server.tool('delete_database', 'Delete a database and all its data. This action cannot be undone.', {
-        database_id: z.string().describe('The database ID (format: db-uuid)'),
-        confirm: z.boolean().describe('Must be true to confirm deletion'),
+    server.tool('delete_database', `DESTRUCTIVE: Permanently delete a database and ALL its data (rows, linked documents). This action CANNOT be undone. The confirm parameter must be explicitly set to true as a safety measure. Use list_databases to see database_id. Consider exporting data first if needed. Returns confirmation of successful deletion. WARNING: All rows in the database are permanently lost.`, {
+        database_id: z.string().describe('The database ID to delete. Format: db-uuid.'),
+        confirm: z.boolean().describe('REQUIRED: Must be true to proceed. Safety measure against accidental deletion.'),
     }, async ({ database_id, confirm }) => {
         if (!confirm) {
             return {
@@ -486,14 +486,14 @@ export function registerDatabaseTools(server) {
     // =========================================================================
     // add_column - Add a column to a database
     // =========================================================================
-    server.tool('add_column', 'Add a new column to an existing database.', {
-        database_id: z.string().describe('The database ID (format: db-uuid)'),
-        name: z.string().min(1).describe('Column name'),
-        type: z.enum(['text', 'number', 'select', 'multi_select', 'date', 'checkbox', 'url', 'email', 'phone', 'formula', 'relation', 'rollup', 'created_time', 'last_edited_time', 'created_by', 'last_edited_by', 'person']).describe('Column type'),
+    server.tool('add_column', `Add a new column to an existing database. The column is added to the end of the column list. Column ID is auto-generated. Existing rows will have null values for the new column until updated. For select/multi_select types, you must provide options. Column names must be unique within the database. Returns the created column with its generated ID. Related tools: update_column, delete_column, get_database_schema.`, {
+        database_id: z.string().describe('The database ID to add a column to. Format: db-uuid.'),
+        name: z.string().min(1).describe('Column display name. Must be unique within this database.'),
+        type: z.enum(['text', 'number', 'select', 'multi_select', 'date', 'checkbox', 'url', 'email', 'phone', 'formula', 'relation', 'rollup', 'created_time', 'last_edited_time', 'created_by', 'last_edited_by', 'person']).describe('Column data type.'),
         options: z.array(z.object({
             label: z.string(),
             color: z.string().optional(),
-        })).optional().describe('Options for select/multi_select columns'),
+        })).optional().describe('Required for select/multi_select. Array of { label: "value", color?: "colorName" }.'),
     }, async ({ database_id, name, type, options }) => {
         try {
             const supabase = getSupabaseClient();
@@ -557,15 +557,15 @@ export function registerDatabaseTools(server) {
     // =========================================================================
     // update_column - Update a column in a database
     // =========================================================================
-    server.tool('update_column', 'Update a column\'s properties in a database.', {
-        database_id: z.string().describe('The database ID (format: db-uuid)'),
-        column_id: z.string().describe('The column ID to update'),
-        name: z.string().min(1).optional().describe('New column name'),
-        visible: z.boolean().optional().describe('Column visibility'),
+    server.tool('update_column', `Update a column's properties (name, visibility, select options). Column type cannot be changed. Only provide the properties you want to change. For select/multi_select, updating options replaces the entire options array. Hidden columns (visible=false) don't appear in default table views but data is preserved. Get column_id from get_database_schema. Related tools: add_column, delete_column.`, {
+        database_id: z.string().describe('The database ID. Format: db-uuid.'),
+        column_id: z.string().describe('The column ID to update. Format: col_uuid. Get from get_database_schema.'),
+        name: z.string().min(1).optional().describe('New display name. Leave undefined to keep current.'),
+        visible: z.boolean().optional().describe('Set to false to hide column in views. Data is preserved.'),
         options: z.array(z.object({
             label: z.string(),
             color: z.string().optional(),
-        })).optional().describe('Options for select/multi_select columns'),
+        })).optional().describe('Replace select/multi_select options. For other types, this is ignored.'),
     }, async ({ database_id, column_id, name, visible, options }) => {
         try {
             const supabase = getSupabaseClient();
@@ -623,9 +623,9 @@ export function registerDatabaseTools(server) {
     // =========================================================================
     // delete_column - Delete a column from a database
     // =========================================================================
-    server.tool('delete_column', 'Delete a column from a database. Existing cell data for this column will be lost.', {
-        database_id: z.string().describe('The database ID (format: db-uuid)'),
-        column_id: z.string().describe('The column ID to delete'),
+    server.tool('delete_column', `Delete a column from a database. WARNING: All cell data for this column in existing rows is permanently lost. The column is removed from the schema and cannot be recovered. Consider using update_column with visible=false to hide instead of delete. Get column_id from get_database_schema. Returns the name of the deleted column.`, {
+        database_id: z.string().describe('The database ID. Format: db-uuid.'),
+        column_id: z.string().describe('The column ID to delete. Format: col_uuid. Get from get_database_schema.'),
     }, async ({ database_id, column_id }) => {
         try {
             const supabase = getSupabaseClient();
@@ -678,10 +678,10 @@ export function registerDatabaseTools(server) {
     // =========================================================================
     // import_csv - Import CSV data into a database
     // =========================================================================
-    server.tool('import_csv', 'Import CSV data into a database. The CSV must have a header row matching column names.', {
-        database_id: z.string().describe('The database ID (format: db-uuid)'),
-        csv_content: z.string().describe('CSV content as a string with header row'),
-        skip_unknown_columns: z.boolean().optional().default(true).describe('Skip columns not found in database schema'),
+    server.tool('import_csv', `Bulk import data from CSV format into a database. The first row must be column headers matching database column names. Each subsequent row becomes a database row. Column names are matched case-sensitively. Unknown columns can be skipped or cause an error based on skip_unknown_columns. Values are imported as strings - type conversion is not automatic. Returns count of imported rows. Useful for migrating data or bulk population. Related tools: add_database_row (single row), get_database_schema (column names).`, {
+        database_id: z.string().describe('The database ID to import into. Format: db-uuid.'),
+        csv_content: z.string().describe('CSV string with header row. Format: "Column1,Column2\\nvalue1,value2\\nvalue3,value4"'),
+        skip_unknown_columns: z.boolean().optional().default(true).describe('If true (default), ignore columns not in schema. If false, error on unknown columns.'),
     }, async ({ database_id, csv_content, skip_unknown_columns }) => {
         try {
             const supabase = getSupabaseClient();

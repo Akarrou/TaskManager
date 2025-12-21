@@ -12,9 +12,9 @@ export function registerStorageTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'list_document_files',
-    'List all files attached to a document in storage.',
+    `List all files attached to a document in Supabase Storage. Files are stored under documents/{document_id}/files/. Returns array of files with: name, path, size, content_type, created_at, and public URL. Use this to see what attachments exist on a document. Empty folders are hidden. Related tools: get_file_url (access file), delete_file (remove).`,
     {
-      document_id: z.string().uuid().describe('The document ID'),
+      document_id: z.string().uuid().describe('The document UUID to list files for.'),
     },
     async ({ document_id }) => {
       try {
@@ -75,10 +75,10 @@ export function registerStorageTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'get_file_url',
-    'Get the public URL for a file in storage. Can also generate signed URLs for private files.',
+    `Get a URL to access a file in storage. Two modes: public URL (permanent, for public files) or signed URL (expires in 1 hour, for private files). Public URLs work if the bucket allows public access. Signed URLs provide temporary authenticated access. Get file paths from list_document_files. Returns the URL and type (public/signed).`,
     {
-      file_path: z.string().describe('Full path to the file (e.g., documents/uuid/files/filename.pdf)'),
-      signed: z.boolean().optional().default(false).describe('Generate a signed URL (expires in 1 hour)'),
+      file_path: z.string().describe('Full storage path (e.g., "documents/uuid/files/report.pdf"). Get from list_document_files.'),
+      signed: z.boolean().optional().default(false).describe('Set true for time-limited signed URL. Default false for permanent public URL.'),
     },
     async ({ file_path, signed }) => {
       try {
@@ -137,9 +137,9 @@ export function registerStorageTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'delete_file',
-    'Delete a file from storage.',
+    `Permanently delete a file from Supabase Storage. This action cannot be undone. Get the file path from list_document_files. Returns confirmation of deletion. WARNING: The file and any links to it will stop working immediately.`,
     {
-      file_path: z.string().describe('Full path to the file to delete'),
+      file_path: z.string().describe('Full storage path to delete (e.g., "documents/uuid/files/old-report.pdf").'),
     },
     async ({ file_path }) => {
       try {

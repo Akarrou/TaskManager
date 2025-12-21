@@ -7,8 +7,8 @@ export function registerSpreadsheetTools(server) {
     // =========================================================================
     // list_spreadsheets - List all spreadsheets
     // =========================================================================
-    server.tool('list_spreadsheets', 'List all spreadsheets, optionally filtered by document.', {
-        document_id: z.string().uuid().optional().describe('Filter spreadsheets by document ID'),
+    server.tool('list_spreadsheets', `List all Excel-like spreadsheets in the workspace. Spreadsheets are grid-based calculation tools embedded in documents, separate from Notion-like databases. They support formulas, multiple sheets, and cell formatting. Returns spreadsheet metadata (id, document_id, config). Use get_spreadsheet for full details or get_cells to access data. Related tools: create_spreadsheet, get_cells, update_cell.`, {
+        document_id: z.string().uuid().optional().describe('Filter to spreadsheets in a specific document.'),
     }, async ({ document_id }) => {
         try {
             const supabase = getSupabaseClient();
@@ -40,8 +40,8 @@ export function registerSpreadsheetTools(server) {
     // =========================================================================
     // get_spreadsheet - Get a spreadsheet with its configuration
     // =========================================================================
-    server.tool('get_spreadsheet', 'Get a spreadsheet by ID including its configuration.', {
-        spreadsheet_id: z.string().uuid().describe('The UUID of the spreadsheet'),
+    server.tool('get_spreadsheet', `Get a spreadsheet's full configuration including sheets list, active sheet, and table name. Does not return cell data - use get_cells for that. Config includes: name, sheets array (each with id, name, rowCount, columnCount, frozen rows/cols), activeSheet. Related tools: get_cells (data), update_spreadsheet (config changes).`, {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID. Get from list_spreadsheets.'),
     }, async ({ spreadsheet_id }) => {
         try {
             const supabase = getSupabaseClient();
@@ -70,11 +70,11 @@ export function registerSpreadsheetTools(server) {
     // =========================================================================
     // create_spreadsheet - Create a new spreadsheet
     // =========================================================================
-    server.tool('create_spreadsheet', 'Create a new Excel-like spreadsheet.', {
-        document_id: z.string().uuid().describe('The parent document ID'),
-        name: z.string().min(1).max(255).optional().default('Spreadsheet').describe('Spreadsheet name'),
-        rows: z.number().min(1).max(1000).optional().default(100).describe('Initial number of rows'),
-        columns: z.number().min(1).max(26).optional().default(10).describe('Initial number of columns'),
+    server.tool('create_spreadsheet', `Create a new Excel-like spreadsheet embedded in a document. Starts with one empty sheet ("Sheet 1"). Columns are limited to 26 (A-Z). Cells support values, numbers, and formulas (starting with "="). Use update_cell or update_cells_batch to populate data. Returns the created spreadsheet with its UUID. Related tools: add_sheet (multiple sheets), update_cell (add data).`, {
+        document_id: z.string().uuid().describe('The parent document to embed this spreadsheet in.'),
+        name: z.string().min(1).max(255).optional().default('Spreadsheet').describe('Display name for the spreadsheet.'),
+        rows: z.number().min(1).max(1000).optional().default(100).describe('Initial row count. Default 100, max 1000.'),
+        columns: z.number().min(1).max(26).optional().default(10).describe('Initial column count. Default 10, max 26 (A-Z).'),
     }, async ({ document_id, name, rows, columns }) => {
         try {
             const supabase = getSupabaseClient();
@@ -137,9 +137,9 @@ export function registerSpreadsheetTools(server) {
     // =========================================================================
     // update_spreadsheet - Update spreadsheet configuration
     // =========================================================================
-    server.tool('update_spreadsheet', 'Update a spreadsheet\'s configuration.', {
-        spreadsheet_id: z.string().uuid().describe('The UUID of the spreadsheet'),
-        config: z.record(z.unknown()).describe('Configuration updates (merged with existing)'),
+    server.tool('update_spreadsheet', `Update a spreadsheet's configuration (metadata, not cell data). Config is merged with existing - only provide fields to change. Can update name, activeSheet, or sheet properties. To update cell values, use update_cell or update_cells_batch instead. Related tools: get_spreadsheet (current config), add_sheet.`, {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID to update.'),
+        config: z.record(z.unknown()).describe('Config fields to merge. Example: { name: "New Name", activeSheet: "sheet2" }.'),
     }, async ({ spreadsheet_id, config }) => {
         try {
             const supabase = getSupabaseClient();
@@ -186,9 +186,9 @@ export function registerSpreadsheetTools(server) {
     // =========================================================================
     // delete_spreadsheet - Delete a spreadsheet
     // =========================================================================
-    server.tool('delete_spreadsheet', 'Delete a spreadsheet and all its cell data.', {
-        spreadsheet_id: z.string().uuid().describe('The UUID of the spreadsheet to delete'),
-        confirm: z.boolean().describe('Must be true to confirm deletion'),
+    server.tool('delete_spreadsheet', `DESTRUCTIVE: Permanently delete a spreadsheet and ALL its cell data across all sheets. This action CANNOT be undone. The confirm parameter must be true as a safety measure. Consider exporting data first. Returns confirmation of deletion. WARNING: All sheets and cells are permanently lost.`, {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID to delete.'),
+        confirm: z.boolean().describe('REQUIRED: Must be true to proceed. Safety measure.'),
     }, async ({ spreadsheet_id, confirm }) => {
         if (!confirm) {
             return {
@@ -229,13 +229,13 @@ export function registerSpreadsheetTools(server) {
     // =========================================================================
     // get_cells - Get cells from a spreadsheet
     // =========================================================================
-    server.tool('get_cells', 'Get cells from a spreadsheet for a given range.', {
-        spreadsheet_id: z.string().uuid().describe('The UUID of the spreadsheet'),
-        sheet_id: z.string().optional().default('sheet1').describe('Sheet ID'),
-        start_row: z.number().min(0).optional().default(0).describe('Starting row (0-indexed)'),
-        start_col: z.number().min(0).optional().default(0).describe('Starting column (0-indexed)'),
-        end_row: z.number().min(0).optional().default(99).describe('Ending row (inclusive)'),
-        end_col: z.number().min(0).optional().default(9).describe('Ending column (inclusive)'),
+    server.tool('get_cells', `Get cell data from a spreadsheet for a specified range. Returns cells with row, col, value, and formula (if any). Cells without data are not returned (sparse). Uses 0-based indexing: row 0 is row 1 in UI, col 0 is column A. Default range is A1:J100 (first 10 columns, 100 rows). Use smaller ranges for better performance. Related tools: update_cell, update_cells_batch, clear_range.`, {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID.'),
+        sheet_id: z.string().optional().default('sheet1').describe('Which sheet to read. Default "sheet1".'),
+        start_row: z.number().min(0).optional().default(0).describe('Starting row, 0-indexed. 0 = row 1 in UI.'),
+        start_col: z.number().min(0).optional().default(0).describe('Starting column, 0-indexed. 0 = column A.'),
+        end_row: z.number().min(0).optional().default(99).describe('Ending row, inclusive. Default 99 (row 100).'),
+        end_col: z.number().min(0).optional().default(9).describe('Ending column, inclusive. Default 9 (column J).'),
     }, async ({ spreadsheet_id, sheet_id, start_row, start_col, end_row, end_col }) => {
         try {
             const supabase = getSupabaseClient();
@@ -280,12 +280,12 @@ export function registerSpreadsheetTools(server) {
     // =========================================================================
     // update_cell - Update a single cell
     // =========================================================================
-    server.tool('update_cell', 'Update a single cell in a spreadsheet.', {
-        spreadsheet_id: z.string().uuid().describe('The UUID of the spreadsheet'),
-        sheet_id: z.string().optional().default('sheet1').describe('Sheet ID'),
-        row: z.number().min(0).describe('Row index (0-indexed)'),
-        col: z.number().min(0).describe('Column index (0-indexed)'),
-        value: z.unknown().describe('Cell value (string, number, or formula)'),
+    server.tool('update_cell', `Update a single cell's value. Values starting with "=" are treated as formulas. Uses 0-based indexing (row 0 = row 1, col 0 = column A). Creates the cell if it doesn't exist (upsert). For updating many cells, use update_cells_batch for better performance. Related tools: get_cells, update_cells_batch, clear_range.`, {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID.'),
+        sheet_id: z.string().optional().default('sheet1').describe('Which sheet. Default "sheet1".'),
+        row: z.number().min(0).describe('Row index, 0-based. 0 = row 1 in UI.'),
+        col: z.number().min(0).describe('Column index, 0-based. 0 = column A, 1 = B, etc.'),
+        value: z.unknown().describe('Cell value: string, number, or formula (start with "="). Examples: "Hello", 42, "=SUM(A1:A10)".'),
     }, async ({ spreadsheet_id, sheet_id, row, col, value }) => {
         try {
             const supabase = getSupabaseClient();
@@ -335,14 +335,14 @@ export function registerSpreadsheetTools(server) {
     // =========================================================================
     // update_cells_batch - Update multiple cells at once
     // =========================================================================
-    server.tool('update_cells_batch', 'Update multiple cells in a spreadsheet at once.', {
-        spreadsheet_id: z.string().uuid().describe('The UUID of the spreadsheet'),
-        sheet_id: z.string().optional().default('sheet1').describe('Sheet ID'),
+    server.tool('update_cells_batch', `Update multiple cells in a single operation (batch). More efficient than multiple update_cell calls. Each cell in the array specifies row, col, and value. Values starting with "=" are formulas. All cells must be in the same sheet. Returns count of updated cells. Use this for populating data or making bulk changes. Related tools: update_cell (single), get_cells, clear_range.`, {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID.'),
+        sheet_id: z.string().optional().default('sheet1').describe('Which sheet. All cells go to this sheet.'),
         cells: z.array(z.object({
-            row: z.number().min(0).describe('Row index'),
-            col: z.number().min(0).describe('Column index'),
-            value: z.unknown().describe('Cell value'),
-        })).min(1).describe('Array of cells to update'),
+            row: z.number().min(0).describe('Row index, 0-based.'),
+            col: z.number().min(0).describe('Column index, 0-based.'),
+            value: z.unknown().describe('Cell value or formula.'),
+        })).min(1).describe('Array of { row, col, value } objects to update.'),
     }, async ({ spreadsheet_id, sheet_id, cells }) => {
         try {
             const supabase = getSupabaseClient();
@@ -378,11 +378,11 @@ export function registerSpreadsheetTools(server) {
     // =========================================================================
     // add_sheet - Add a new sheet to a spreadsheet
     // =========================================================================
-    server.tool('add_sheet', 'Add a new sheet to a spreadsheet.', {
-        spreadsheet_id: z.string().uuid().describe('The UUID of the spreadsheet'),
-        name: z.string().min(1).max(100).describe('Sheet name'),
-        rows: z.number().min(1).max(1000).optional().default(100).describe('Number of rows'),
-        columns: z.number().min(1).max(26).optional().default(10).describe('Number of columns'),
+    server.tool('add_sheet', `Add a new sheet (tab) to an existing spreadsheet. Similar to adding worksheet tabs in Excel. Each sheet has its own grid of cells. Sheet ID is auto-generated (sheet2, sheet3, etc.). New sheet starts empty. Returns the generated sheet ID. Related tools: rename_sheet, delete_sheet, get_spreadsheet (list sheets).`, {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID to add a sheet to.'),
+        name: z.string().min(1).max(100).describe('Sheet tab name displayed in UI.'),
+        rows: z.number().min(1).max(1000).optional().default(100).describe('Initial row count. Default 100.'),
+        columns: z.number().min(1).max(26).optional().default(10).describe('Initial column count. Default 10 (A-J).'),
     }, async ({ spreadsheet_id, name, rows, columns }) => {
         try {
             const supabase = getSupabaseClient();
@@ -437,10 +437,10 @@ export function registerSpreadsheetTools(server) {
     // =========================================================================
     // rename_sheet - Rename a sheet
     // =========================================================================
-    server.tool('rename_sheet', 'Rename a sheet in a spreadsheet.', {
-        spreadsheet_id: z.string().uuid().describe('The UUID of the spreadsheet'),
-        sheet_id: z.string().describe('The sheet ID to rename'),
-        name: z.string().min(1).max(100).describe('New sheet name'),
+    server.tool('rename_sheet', `Rename a sheet's display name in the spreadsheet tabs. Does not affect cell data or formulas referencing this sheet. Get current sheet IDs from get_spreadsheet config.sheets array. Returns confirmation of rename.`, {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID.'),
+        sheet_id: z.string().describe('The sheet ID to rename (e.g., "sheet1", "sheet2").'),
+        name: z.string().min(1).max(100).describe('New tab name.'),
     }, async ({ spreadsheet_id, sheet_id, name }) => {
         try {
             const supabase = getSupabaseClient();
@@ -492,9 +492,9 @@ export function registerSpreadsheetTools(server) {
     // =========================================================================
     // delete_sheet - Delete a sheet
     // =========================================================================
-    server.tool('delete_sheet', 'Delete a sheet from a spreadsheet.', {
-        spreadsheet_id: z.string().uuid().describe('The UUID of the spreadsheet'),
-        sheet_id: z.string().describe('The sheet ID to delete'),
+    server.tool('delete_sheet', `Delete a sheet from a spreadsheet. WARNING: All cells in the sheet are permanently deleted. Cannot delete the last remaining sheet - a spreadsheet must have at least one. If deleting the active sheet, another sheet becomes active. Returns confirmation with deleted sheet name.`, {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID.'),
+        sheet_id: z.string().describe('The sheet ID to delete (e.g., "sheet1").'),
     }, async ({ spreadsheet_id, sheet_id }) => {
         try {
             const supabase = getSupabaseClient();
@@ -563,13 +563,13 @@ export function registerSpreadsheetTools(server) {
     // =========================================================================
     // clear_range - Clear a range of cells
     // =========================================================================
-    server.tool('clear_range', 'Clear a range of cells in a spreadsheet.', {
-        spreadsheet_id: z.string().uuid().describe('The UUID of the spreadsheet'),
-        sheet_id: z.string().optional().default('sheet1').describe('Sheet ID'),
-        start_row: z.number().min(0).describe('Starting row (0-indexed)'),
-        start_col: z.number().min(0).describe('Starting column (0-indexed)'),
-        end_row: z.number().min(0).describe('Ending row (inclusive)'),
-        end_col: z.number().min(0).describe('Ending column (inclusive)'),
+    server.tool('clear_range', `Clear (delete) all cells in a rectangular range. Both values and formulas are removed. Uses 0-based indexing. Clears from (start_row, start_col) to (end_row, end_col) inclusive. Returns count of cleared cells. Use this to reset areas before re-populating or to remove unwanted data. Related tools: update_cells_batch (replace data), get_cells.`, {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID.'),
+        sheet_id: z.string().optional().default('sheet1').describe('Which sheet. Default "sheet1".'),
+        start_row: z.number().min(0).describe('Starting row, 0-based.'),
+        start_col: z.number().min(0).describe('Starting column, 0-based. 0 = column A.'),
+        end_row: z.number().min(0).describe('Ending row, inclusive.'),
+        end_col: z.number().min(0).describe('Ending column, inclusive.'),
     }, async ({ spreadsheet_id, sheet_id, start_row, start_col, end_row, end_col }) => {
         try {
             const supabase = getSupabaseClient();
