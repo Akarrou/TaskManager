@@ -88,36 +88,29 @@
           }
         </mat-menu>
 
-        <!-- Column Selector -->
-        @if (availableDateColumns().length > 1) {
-          <button
-            mat-stroked-button
-            [matMenuTriggerFor]="columnSelectorMenu"
-            matTooltip="Changer la colonne date">
-            <mat-icon>{{ isUsingDateRange() ? 'date_range' : 'event' }}</mat-icon>
-            {{ selectedColumnName() }}
-            <mat-icon class="dropdown-icon">arrow_drop_down</mat-icon>
-          </button>
-          <mat-menu #columnSelectorMenu="matMenu">
-            @for (col of availableDateColumns(); track col.id) {
-              <button
-                mat-menu-item
-                (click)="onSelectColumn(col)"
-                [class.selected]="isColumnSelected(col.id)">
-                <mat-icon>{{ col.type === 'date-range' ? 'date_range' : 'event' }}</mat-icon>
-                <span>{{ col.name }}</span>
-                @if (isColumnSelected(col.id)) {
-                  <mat-icon class="check-icon">check</mat-icon>
-                }
-              </button>
-            }
-          </mat-menu>
-        } @else if (availableDateColumns().length === 1) {
-          <span class="current-column-label">
-            <mat-icon>{{ isUsingDateRange() ? 'date_range' : 'event' }}</mat-icon>
-            {{ selectedColumnName() }}
-          </span>
-        }
+        <!-- Column Selector - Always show to allow changing column -->
+        <button
+          mat-stroked-button
+          [matMenuTriggerFor]="columnSelectorMenu"
+          matTooltip="Changer la colonne date">
+          <mat-icon>{{ isUsingDateRange() ? 'date_range' : 'event' }}</mat-icon>
+          {{ selectedColumnName() }}
+          <mat-icon class="dropdown-icon">arrow_drop_down</mat-icon>
+        </button>
+        <mat-menu #columnSelectorMenu="matMenu">
+          @for (col of availableDateColumns(); track col.id) {
+            <button
+              mat-menu-item
+              (click)="onSelectColumn(col)"
+              [class.selected]="isColumnSelected(col.id)">
+              <mat-icon>{{ col.type === 'date-range' ? 'date_range' : 'event' }}</mat-icon>
+              <span>{{ col.name }}</span>
+              @if (isColumnSelected(col.id)) {
+                <mat-icon class="check-icon">check</mat-icon>
+              }
+            </button>
+          }
+        </mat-menu>
       </div>
     </div>
 

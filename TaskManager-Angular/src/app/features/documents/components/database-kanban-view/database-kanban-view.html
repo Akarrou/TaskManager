@@ -11,14 +11,22 @@
 }
 
 <!-- Empty State: No groupBy configured -->
-@else if (!groupByColumnId) {
+@else if (!groupByColumnId()) {
   <div class="empty-state">
     <mat-icon class="empty-icon">view_kanban</mat-icon>
-    <p class="empty-text">Configurez le regroupement pour afficher la vue kanban</p>
-    <button mat-raised-button color="primary" (click)="onConfigureGroupBy()">
-      <mat-icon>settings</mat-icon>
-      Configurer le regroupement
+    <p class="empty-text">Sélectionnez une colonne pour afficher la vue kanban</p>
+    <button mat-raised-button color="primary" [matMenuTriggerFor]="emptyStateColumnMenu">
+      <mat-icon>view_column</mat-icon>
+      Choisir une colonne
     </button>
+    <mat-menu #emptyStateColumnMenu="matMenu">
+      @for (col of availableSelectColumns(); track col.id) {
+        <button mat-menu-item (click)="onSelectColumn(col)">
+          <mat-icon>{{ col.type === 'multi-select' ? 'checklist' : 'list' }}</mat-icon>
+          <span>{{ col.name }}</span>
+        </button>
+      }
+    </mat-menu>
   </div>
 }
 
@@ -27,15 +35,63 @@
   <div class="empty-state">
     <mat-icon class="empty-icon">view_kanban</mat-icon>
     <p class="empty-text">La colonne sélectionnée n'a pas de choix disponibles</p>
-    <button mat-raised-button color="primary" (click)="onConfigureGroupBy()">
-      <mat-icon>settings</mat-icon>
-      Modifier la configuration
-    </button>
+    @if (availableSelectColumns().length > 1) {
+      <button mat-raised-button color="primary" [matMenuTriggerFor]="noChoicesColumnMenu">
+        <mat-icon>view_column</mat-icon>
+        Changer de colonne
+      </button>
+      <mat-menu #noChoicesColumnMenu="matMenu">
+        @for (col of availableSelectColumns(); track col.id) {
+          <button
+            mat-menu-item
+            (click)="onSelectColumn(col)"
+            [class.selected]="isColumnSelected(col.id)">
+            <mat-icon>{{ col.type === 'multi-select' ? 'checklist' : 'list' }}</mat-icon>
+            <span>{{ col.name }}</span>
+            @if (isColumnSelected(col.id)) {
+              <mat-icon class="check-icon">check</mat-icon>
+            }
+          </button>
+        }
+      </mat-menu>
+    } @else {
+      <p class="empty-hint">Ajoutez des options à la colonne "{{ selectedColumnName() }}" pour afficher le kanban</p>
+    }
   </div>
 }
 
 <!-- Kanban Board -->
 @else {
+  <!-- Kanban Header with Column Selector -->
+  <div class="kanban-header">
+    <h3 class="kanban-header__title">Vue Kanban</h3>
+    <div class="kanban-header__controls">
+      <!-- Column Selector - Always show to allow changing column -->
+      <button
+        mat-stroked-button
+        [matMenuTriggerFor]="columnSelectorMenu"
+        matTooltip="Changer la colonne de regroupement">
+        <mat-icon>view_column</mat-icon>
+        {{ selectedColumnName() }}
+        <mat-icon class="dropdown-icon">arrow_drop_down</mat-icon>
+      </button>
+      <mat-menu #columnSelectorMenu="matMenu">
+        @for (col of availableSelectColumns(); track col.id) {
+          <button
+            mat-menu-item
+            (click)="onSelectColumn(col)"
+            [class.selected]="isColumnSelected(col.id)">
+            <mat-icon>{{ col.type === 'multi-select' ? 'checklist' : 'list' }}</mat-icon>
+            <span>{{ col.name }}</span>
+            @if (isColumnSelected(col.id)) {
+              <mat-icon class="check-icon">check</mat-icon>
+            }
+          </button>
+        }
+      </mat-menu>
+    </div>
+  </div>
+
   <div class="kanban-board" cdkDropListGroup>
     @for (column of kanbanColumns(); track column.id) {
       <div class="kanban-column">

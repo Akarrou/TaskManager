@@ -1201,7 +1201,7 @@ export class DatabaseService {
     projectId?: string,
     onProgress?: (current: number, total: number) => void
   ): Observable<CsvImportResult> {
-    console.log('[importRowsWithDocuments] Starting import', { databaseId, rowCount: rows.length, projectId });
+
     const errors: CsvImportError[] = [];
     let imported = 0;
 
@@ -1209,7 +1209,7 @@ export class DatabaseService {
     return this.ensureTableExists(databaseId).pipe(
       switchMap(() => this.getDatabaseMetadata(databaseId)),
       switchMap((metadata: DocumentDatabase) => {
-        console.log('[importRowsWithDocuments] Got metadata', { columns: metadata.config.columns.map(c => c.name) });
+
 
         // Extract all column IDs used in the rows data and convert to PostgreSQL column names
         const usedColumnNames = new Set<string>();
@@ -1224,7 +1224,7 @@ export class DatabaseService {
 
         // Wait for all dynamic columns to be visible in schema cache
         const columnWaits$: Observable<boolean>[] = Array.from(usedColumnNames).map(columnName => {
-          console.log(`[importRowsWithDocuments] Waiting for column ${columnName} in schema cache`);
+
           return this.waitForColumnInSchema(tableName, columnName);
         });
 
@@ -1235,11 +1235,9 @@ export class DatabaseService {
 
         return waitForColumns$.pipe(
           switchMap(() => {
-            console.log('[importRowsWithDocuments] All columns visible in schema cache, starting import');
 
             // Find name column using the helper
             const nameColumn = findNameColumn(metadata.config.columns);
-            console.log('[importRowsWithDocuments] Name column:', nameColumn?.id, nameColumn?.name);
 
             // Create observables for each row (with document)
             const rowImports$ = rows.map((cells, rowIndex) => {
@@ -1253,7 +1251,6 @@ export class DatabaseService {
                 row_order: rowIndex,
               }).pipe(
                 switchMap((row: DatabaseRow) => {
-                  console.log(`[importRowsWithDocuments] Row ${rowIndex + 1} created:`, row.id, 'creating document...');
                   // Create linked document for this row
                   return this.documentService.createDatabaseRowDocument({
                     title,
@@ -1284,7 +1281,6 @@ export class DatabaseService {
             return concat(...rowImports$).pipe(
               toArray(),
               map(() => {
-                console.log('[importRowsWithDocuments] Import complete!', { imported, errorCount: errors.length });
                 return {
                   columnsCreated: 0,
                   rowsImported: imported,
@@ -1297,7 +1293,6 @@ export class DatabaseService {
       }),
       catchError((err: unknown) => {
         const error = err as Error;
-        console.error('[importRowsWithDocuments] Failed:', error);
         return of({
           columnsCreated: 0,
           rowsImported: 0,
@@ -1320,11 +1315,9 @@ export class DatabaseService {
       switchMap(metadata => {
         const nameColumn = findNameColumn(metadata.config.columns);
         if (!nameColumn) {
-          console.log('[syncDocumentTitleToRow] No name column found, skipping sync');
           return of(false);
         }
 
-        console.log('[syncDocumentTitleToRow] Syncing title to column:', nameColumn.name);
         return this.updateCell({
           databaseId,
           rowId,
@@ -1333,7 +1326,6 @@ export class DatabaseService {
         });
       }),
       catchError(error => {
-        console.error('[syncDocumentTitleToRow] Failed to sync:', error);
         return of(false);
       })
     );

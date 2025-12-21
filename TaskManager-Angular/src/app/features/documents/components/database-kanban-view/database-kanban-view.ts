@@ -1,14 +1,15 @@
-import { Component, Input, Output, EventEmitter, computed, signal } from '@angular/core';
+import { Component, input, output, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CdkDragDrop, DragDropModule, transferArrayItem } from '@angular/cdk/drag-drop';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import {
   DatabaseRow,
   DatabaseColumn,
   CellValue,
-  SelectChoice,
   hasSelectChoices,
 } from '../../models/database.model';
 
@@ -37,28 +38,33 @@ interface KanbanColumn {
     MatIconModule,
     MatCardModule,
     MatButtonModule,
+    MatMenuModule,
+    MatTooltipModule,
   ],
   templateUrl: './database-kanban-view.html',
   styleUrl: './database-kanban-view.scss',
 })
 export class DatabaseKanbanView {
-  @Input() rows: DatabaseRow[] = [];
-  @Input() columns: DatabaseColumn[] = [];
-  @Input() groupByColumnId?: string;
+  // Signal inputs for reactivity
+  rows = input<DatabaseRow[]>([]);
+  columns = input<DatabaseColumn[]>([]);
+  groupByColumnId = input<string | undefined>(undefined);
 
-  @Output() cellUpdate = new EventEmitter<{
+  // Signal outputs
+  cellUpdate = output<{
     rowId: string;
     columnId: string;
     value: CellValue;
   }>();
-  @Output() addSelectColumn = new EventEmitter<void>();
-  @Output() configureGroupBy = new EventEmitter<void>();
+  addSelectColumn = output<void>();
+  configureGroupBy = output<void>();
+  selectGroupByColumn = output<string>();
 
   // Computed: Find the groupBy column
   groupByColumn = computed(() => {
-    const columnId = this.groupByColumnId;
+    const columnId = this.groupByColumnId();
     if (!columnId) return null;
-    return this.columns.find((col) => col.id === columnId) || null;
+    return this.columns().find((col) => col.id === columnId) || null;
   });
 
   // Computed: Generate kanban columns from select choices
@@ -70,13 +76,14 @@ export class DatabaseKanbanView {
 
     const choices = groupColumn.options.choices;
     const columnId = groupColumn.id;
+    const rows = this.rows();
 
     // Create columns for each choice
     const columns: KanbanColumn[] = choices.map((choice) => ({
       id: choice.id,
       title: choice.label,
       color: choice.color,
-      rows: this.rows.filter((row) => row.cells[columnId] === choice.id),
+      rows: rows.filter((row) => row.cells[columnId] === choice.id),
     }));
 
     // Add "No value" column for rows without a value
@@ -84,7 +91,7 @@ export class DatabaseKanbanView {
       id: 'no-value',
       title: 'Sans valeur',
       color: 'bg-gray-200',
-      rows: this.rows.filter((row) => !row.cells[columnId]),
+      rows: rows.filter((row) => !row.cells[columnId]),
     });
 
     return columns;
@@ -92,12 +99,30 @@ export class DatabaseKanbanView {
 
   // Computed: Check if we have select columns
   hasSelectColumn = computed(() => {
-    return this.columns.some((col) => col.type === 'select' || col.type === 'multi-select');
+    return this.columns().some((col) => col.type === 'select' || col.type === 'multi-select');
   });
+
+  // Computed: Get all available select columns for grouping
+  availableSelectColumns = computed(() => {
+    return this.columns().filter((col) => col.type === 'select' || col.type === 'multi-select');
+  });
+
+  // Computed: Get the currently selected column name
+  selectedColumnName = computed(() => {
+    const columnId = this.groupByColumnId();
+    if (!columnId) return 'Sélectionner une colonne';
+    const col = this.columns().find((c) => c.id === columnId);
+    return col?.name || 'Sélectionner une colonne';
+  });
+
+  // Check if a column is currently selected
+  isColumnSelected(columnId: string): boolean {
+    return this.groupByColumnId() === columnId;
+  }
 
   // Computed: Get visible columns for card display
   visibleColumns = computed(() => {
-    return this.columns.filter((col) => col.visible !== false && col.id !== this.groupByColumnId);
+    return this.columns().filter((col) => col.visible !== false && col.id !== this.groupByColumnId());
   });
 
   /**
@@ -105,7 +130,7 @@ export class DatabaseKanbanView {
    */
   onDrop(event: CdkDragDrop<DatabaseRow[]>, targetColumnId: string): void {
     const row = event.previousContainer.data[event.previousIndex];
-    const groupColumnId = this.groupByColumnId;
+    const groupColumnId = this.groupByColumnId();
 
     if (!groupColumnId) return;
 
@@ -217,5 +242,12 @@ export class DatabaseKanbanView {
    */
   onConfigureGroupBy(): void {
     this.configureGroupBy.emit();
+  }
+
+  /**
+   * Handle column selection from menu
+   */
+  onSelectColumn(column: DatabaseColumn): void {
+    this.selectGroupByColumn.emit(column.id);
   }
 }

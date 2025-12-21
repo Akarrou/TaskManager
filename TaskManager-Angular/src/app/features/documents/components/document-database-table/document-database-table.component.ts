@@ -18,6 +18,7 @@ import {
   DEFAULT_DATABASE_CONFIG,
   DatabaseColumn,
   ViewType,
+  ViewConfig,
   SelectChoice,
   Filter,
   SortOrder,
@@ -1531,85 +1532,94 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   /**
    * Save current view configuration (filters, sort) to Supabase
    * Creates view entry dynamically if it doesn't exist
+   *
+   * IMPORTANT: This method uses immutable updates to avoid triggering
+   * unnecessary TipTap re-renders which can cause data loss.
    */
   private saveCurrentViewConfig(): void {
-    let viewToUpdate = this.getCurrentView();
+    const currentViewType = this.currentView();
 
-    // If view doesn't exist in the array, create it dynamically
-    if (!viewToUpdate) {
-      const viewType = this.currentView();
-      const newView: DatabaseView = {
-        id: `${viewType}-view`,
-        name: this.getViewDisplayName(viewType),
-        type: viewType,
-        config: {},
+    // Build the updated view config immutably
+    this.databaseConfig.update(config => {
+      // Find or create the view entry
+      let viewIndex = config.views.findIndex(v => v.type === currentViewType);
+      let views = [...config.views];
+
+      if (viewIndex === -1) {
+        // Create new view entry
+        views.push({
+          id: `${currentViewType}-view`,
+          name: this.getViewDisplayName(currentViewType),
+          type: currentViewType,
+          config: {},
+        });
+        viewIndex = views.length - 1;
+      }
+
+      // Build updated view config
+      const existingConfig = views[viewIndex].config;
+      let updatedViewConfig: ViewConfig = {
+        ...existingConfig,
+        filters: this.activeFilters(),
       };
 
-      // Add the new view to the config
-      this.databaseConfig.update(config => ({
-        ...config,
-        views: [...config.views, newView],
-      }));
-
-      // Get the newly added view
-      viewToUpdate = this.databaseConfig().views.find(v => v.type === viewType);
-    }
-
-    if (viewToUpdate) {
-      // Update the view config
-      viewToUpdate.config.filters = this.activeFilters();
-
       // Save sort config only for non-timeline views (timeline uses sortBy for legacy endDate)
-      if (this.currentView() !== 'timeline') {
+      if (currentViewType !== 'timeline') {
         const sort = this.activeSort();
         if (sort) {
-          viewToUpdate.config.sortBy = sort.columnId;
-          viewToUpdate.config.sortOrder = sort.order;
+          updatedViewConfig.sortBy = sort.columnId;
+          updatedViewConfig.sortOrder = sort.order;
         } else {
-          delete viewToUpdate.config.sortBy;
-          delete viewToUpdate.config.sortOrder;
+          // Remove sort properties if no sort is active
+          const { sortBy, sortOrder, ...rest } = updatedViewConfig;
+          updatedViewConfig = rest;
         }
       }
 
       // Save kanban groupBy
-      if (this.currentView() === 'kanban') {
-        viewToUpdate.config.groupBy = this.kanbanGroupByColumnId();
+      if (currentViewType === 'kanban') {
+        updatedViewConfig.groupBy = this.kanbanGroupByColumnId();
       }
 
       // Save calendar view config using dedicated fields
-      if (this.currentView() === 'calendar') {
-        viewToUpdate.config.calendarDateColumnId = this.calendarDateColumnId();
-        viewToUpdate.config.calendarDateRangeColumnId = this.calendarDateRangeColumnId();
+      if (currentViewType === 'calendar') {
+        updatedViewConfig.calendarDateColumnId = this.calendarDateColumnId();
+        updatedViewConfig.calendarDateRangeColumnId = this.calendarDateRangeColumnId();
         // Keep legacy groupBy for backward compatibility
-        viewToUpdate.config.groupBy = this.calendarDateColumnId() || this.calendarDateRangeColumnId();
+        updatedViewConfig.groupBy = this.calendarDateColumnId() || this.calendarDateRangeColumnId();
       }
 
       // Save timeline view config using dedicated fields
-      if (this.currentView() === 'timeline') {
-        viewToUpdate.config.timelineStartDateColumnId = this.timelineStartDateColumnId();
-        viewToUpdate.config.timelineEndDateColumnId = this.timelineEndDateColumnId();
-        viewToUpdate.config.timelineDateRangeColumnId = this.timelineDateRangeColumnId();
-        viewToUpdate.config.timelineGranularity = this.timelineGranularity();
+      if (currentViewType === 'timeline') {
+        updatedViewConfig.timelineStartDateColumnId = this.timelineStartDateColumnId();
+        updatedViewConfig.timelineEndDateColumnId = this.timelineEndDateColumnId();
+        updatedViewConfig.timelineDateRangeColumnId = this.timelineDateRangeColumnId();
+        updatedViewConfig.timelineGranularity = this.timelineGranularity();
         // Keep legacy fields for backward compatibility
-        viewToUpdate.config.groupBy = this.timelineStartDateColumnId() || this.timelineDateRangeColumnId();
-        viewToUpdate.config.sortBy = this.timelineEndDateColumnId();
+        updatedViewConfig.groupBy = this.timelineStartDateColumnId() || this.timelineDateRangeColumnId();
+        updatedViewConfig.sortBy = this.timelineEndDateColumnId();
       }
-    }
 
-    // ALWAYS persist to Supabase - even if view-specific config wasn't updated
-    // This ensures defaultView is saved when switching views
-    // IMPORTANT: Don't use takeUntil here - we want the save to complete even if user navigates away
+      // Update the view in the array immutably
+      views[viewIndex] = {
+        ...views[viewIndex],
+        config: updatedViewConfig,
+      };
+
+      return {
+        ...config,
+        views,
+      };
+    });
+
+    // Persist to Supabase only (don't sync to TipTap for view changes)
+    // View preferences are stored in Supabase, not in the TipTap document
+    // Syncing to TipTap can cause the component to be re-created, losing state
     const configToSave = this.databaseConfig();
 
     this.databaseService
       .updateDatabaseConfig(this.databaseId, configToSave)
       .subscribe({
-        next: () => {
-          // Also sync to TipTap (debounced) - only if component still alive
-          if (!this.destroy$.closed) {
-            this.changeSubject.next();
-          }
-        },
         error: (err) => {
           console.error('Failed to save view config to Supabase:', err);
         },
@@ -1666,6 +1676,14 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     const currentIndex = selectColumns.findIndex((col) => col.id === currentGroupBy);
     const nextIndex = (currentIndex + 1) % selectColumns.length;
     this.kanbanGroupByColumnId.set(selectColumns[nextIndex].id);
+    this.saveCurrentViewConfig();
+  }
+
+  /**
+   * Handle column selection from Kanban column selector menu
+   */
+  onKanbanSelectGroupByColumn(columnId: string): void {
+    this.kanbanGroupByColumnId.set(columnId);
     this.saveCurrentViewConfig();
   }
 

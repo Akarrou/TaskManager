@@ -462,7 +462,8 @@
             [groupByColumnId]="kanbanGroupByColumnId()"
             (cellUpdate)="onKanbanCellUpdate($event)"
             (addSelectColumn)="onKanbanAddSelectColumn()"
-            (configureGroupBy)="onKanbanConfigureGroupBy()">
+            (configureGroupBy)="onKanbanConfigureGroupBy()"
+            (selectGroupByColumn)="onKanbanSelectGroupByColumn($event)">
           </app-database-kanban-view>
         }
         @case ('calendar') {
