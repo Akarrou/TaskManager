@@ -12,6 +12,7 @@ import {
 } from '@angular/cdk/drag-drop';
 import { Document, DocumentStorageFile } from '../../services/document.service';
 import { DocumentTabItem } from '../../models/document-tabs.model';
+import { DocumentDatabase } from '../../models/database.model';
 import { JSONContent } from '@tiptap/core';
 
 export interface ExternalLink {
@@ -37,11 +38,13 @@ export class DocumentCardComponent {
   @Input() item?: DocumentTabItem;
   @Input() childDocuments: Document[] = [];
   @Input() storageFiles: DocumentStorageFile[] = [];
+  @Input() databases: DocumentDatabase[] = [];
   @Input() showDragHandle = true;
   @Input() sectionColor = '#6366f1';
 
   @Output() documentClick = new EventEmitter<string>();
   @Output() documentDelete = new EventEmitter<{ event: Event; documentId: string }>();
+  @Output() databaseClick = new EventEmitter<string>();
 
   /**
    * Extract external links from document content
@@ -110,7 +113,8 @@ export class DocumentCardComponent {
   get hasAttachments(): boolean {
     return this.childDocuments.length > 0 ||
            this.storageFiles.length > 0 ||
-           this.externalLinks.length > 0;
+           this.externalLinks.length > 0 ||
+           this.databases.length > 0;
   }
 
   onCardClick(): void {
@@ -135,5 +139,10 @@ export class DocumentCardComponent {
   onStorageFileClick(event: Event, url: string): void {
     event.stopPropagation();
     window.open(url, '_blank');
+  }
+
+  onDatabaseClick(event: Event, databaseId: string): void {
+    event.stopPropagation();
+    this.databaseClick.emit(databaseId);
   }
 }

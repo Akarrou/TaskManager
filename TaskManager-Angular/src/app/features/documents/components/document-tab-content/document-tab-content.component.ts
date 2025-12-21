@@ -25,6 +25,7 @@ import {
   DocumentSection,
 } from '../../models/document-tabs.model';
 import { Document, DocumentStorageFile } from '../../services/document.service';
+import { DocumentDatabase } from '../../models/database.model';
 import { DocumentSectionCardComponent } from '../document-section-card/document-section-card.component';
 import { DeleteSectionDialogComponent } from '../delete-section-dialog/delete-section-dialog.component';
 
@@ -50,10 +51,12 @@ export class DocumentTabContentComponent {
   @Input() tab: TabWithItems | null = null;
   @Input() documents: Map<string, Document> = new Map();
   @Input() storageFiles: Map<string, DocumentStorageFile[]> = new Map();
+  @Input() databases: Map<string, DocumentDatabase[]> = new Map();
   @Input() allDropListIds: string[] = [];
 
   @Output() documentClick = new EventEmitter<string>();
   @Output() documentDelete = new EventEmitter<{ event: Event; documentId: string }>();
+  @Output() databaseClick = new EventEmitter<string>();
   @Output() sectionCreate = new EventEmitter<string>(); // tabId
   @Output() sectionUpdate = new EventEmitter<{ sectionId: string; updates: UpdateDocumentSection }>();
   @Output() sectionDelete = new EventEmitter<string>();

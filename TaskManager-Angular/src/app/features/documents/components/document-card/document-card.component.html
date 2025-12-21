@@ -105,6 +105,27 @@
             </div>
           </div>
         }
+
+        <!-- Databases Column -->
+        @if (databases.length > 0) {
+          <div class="document-card__column">
+            <div class="document-card__column-title">
+              <mat-icon class="column-icon">table_chart</mat-icon>
+              Bases de données ({{ databases.length }})
+            </div>
+            <div class="document-card__column-list">
+              @for (db of databases; track db.database_id) {
+                <button
+                  class="document-card__item document-card__item--database"
+                  (click)="onDatabaseClick($event, db.database_id)"
+                  [title]="db.name">
+                  <mat-icon class="item-icon">grid_view</mat-icon>
+                  <span class="item-title">{{ db.name }}</span>
+                </button>
+              }
+            </div>
+          </div>
+        }
       </div>
     </div>
   }

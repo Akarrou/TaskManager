@@ -193,6 +193,28 @@ export class DatabaseService {
   }
 
   /**
+   * Get all databases associated with a document
+   */
+  getDatabasesByDocumentId(documentId: string): Observable<DocumentDatabase[]> {
+    return from(
+      this.client
+        .from('document_databases')
+        .select('*')
+        .eq('document_id', documentId)
+        .order('created_at', { ascending: true })
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return (response.data || []) as DocumentDatabase[];
+      }),
+      catchError(error => {
+        console.error('Failed to get databases for document:', error);
+        return of([]);
+      })
+    );
+  }
+
+  /**
    * Update database configuration (name, columns metadata, views)
    */
   updateDatabaseConfig(databaseId: string, config: DatabaseConfig): Observable<boolean> {

@@ -16,6 +16,7 @@ import {
 } from '@angular/cdk/drag-drop';
 import { DocumentSection, UpdateDocumentSection, DocumentTabItem } from '../../models/document-tabs.model';
 import { Document, DocumentStorageFile } from '../../services/document.service';
+import { DocumentDatabase } from '../../models/database.model';
 import { SectionEditDialogComponent, SectionEditDialogResult } from '../section-edit-dialog/section-edit-dialog.component';
 import { DocumentCardComponent } from '../document-card/document-card.component';
 
@@ -41,6 +42,7 @@ export class DocumentSectionCardComponent {
   @Input() items: DocumentTabItem[] = [];
   @Input() documents: Map<string, Document> = new Map();
   @Input() storageFiles: Map<string, DocumentStorageFile[]> = new Map();
+  @Input() databases: Map<string, DocumentDatabase[]> = new Map();
   @Input() dropListId = '';
   @Input() connectedDropListIds: string[] = [];
 
@@ -50,6 +52,7 @@ export class DocumentSectionCardComponent {
   @Output() delete = new EventEmitter<void>();
   @Output() documentClick = new EventEmitter<string>();
   @Output() documentDelete = new EventEmitter<{ event: Event; documentId: string }>();
+  @Output() databaseClick = new EventEmitter<string>();
   @Output() drop = new EventEmitter<CdkDragDrop<DocumentTabItem[]>>();
 
   get itemCount(): number {
@@ -74,6 +77,10 @@ export class DocumentSectionCardComponent {
     return this.storageFiles.get(documentId) || [];
   }
 
+  getDatabasesForDocument(documentId: string): DocumentDatabase[] {
+    return this.databases.get(documentId) || [];
+  }
+
   onDocumentClick(documentId: string): void {
     this.documentClick.emit(documentId);
   }
@@ -86,6 +93,10 @@ export class DocumentSectionCardComponent {
   onOpenStorageFile(event: Event, url: string): void {
     event.stopPropagation();
     window.open(url, '_blank');
+  }
+
+  onDatabaseClick(databaseId: string): void {
+    this.databaseClick.emit(databaseId);
   }
 
   onDrop(event: CdkDragDrop<DocumentTabItem[]>): void {

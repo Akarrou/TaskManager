@@ -113,6 +113,7 @@
             [items]="section.items"
             [documents]="documents"
             [storageFiles]="storageFiles"
+            [databases]="databases"
             [dropListId]="getDropListId(section.id)"
             [connectedDropListIds]="allDropListIds"
             (titleChange)="onSectionTitleChange(section.id, $event)"
@@ -121,6 +122,7 @@
             (delete)="onSectionDelete(section.id, section.title)"
             (documentClick)="onDocumentClick($event)"
             (documentDelete)="onDocumentDelete($event)"
+            (databaseClick)="databaseClick.emit($event)"
             (drop)="onDrop($event, section.id)">
           </app-document-section-card>
         </div>

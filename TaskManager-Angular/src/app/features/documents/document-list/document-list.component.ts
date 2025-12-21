@@ -14,6 +14,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { DocumentService, Document, DocumentStorageFile } from '../services/document.service';
 import { DatabaseService } from '../services/database.service';
+import { DocumentDatabase } from '../models/database.model';
 import { DeleteDocumentDialogComponent } from '../components/delete-document-dialog/delete-document-dialog.component';
 import { MarkdownImportDialogComponent } from '../components/markdown-import-dialog/markdown-import-dialog.component';
 import { DocumentTabBarComponent } from '../components/document-tab-bar/document-tab-bar.component';
@@ -144,6 +145,9 @@ export class DocumentListComponent implements OnInit, OnDestroy {
   // Map to store storage files for each document
   documentStorageFiles = signal<Map<string, DocumentStorageFile[]>>(new Map());
 
+  // Map to store databases for each document
+  documentDatabases = signal<Map<string, DocumentDatabase[]>>(new Map());
+
   constructor() {
     // Effect: load documents and tabs when selected project changes
     effect(() => {
@@ -154,11 +158,12 @@ export class DocumentListComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Effect: load storage files when documents change (for all documents including children)
+    // Effect: load storage files and databases when documents change (for all documents including children)
     effect(() => {
       const docMap = this.documentMap();
       if (docMap.size > 0) {
         this.loadStorageFilesForDocuments(Array.from(docMap.values()));
+        this.loadDatabasesForDocuments(Array.from(docMap.values()));
       }
     });
   }
@@ -177,6 +182,34 @@ export class DocumentListComponent implements OnInit, OnDestroy {
     }
 
     this.documentStorageFiles.set(filesMap);
+  }
+
+  /**
+   * Load databases for all documents
+   */
+  private loadDatabasesForDocuments(docs: Document[]): void {
+    const databasesMap = new Map<string, DocumentDatabase[]>();
+
+    // Use forkJoin to load all databases in parallel
+    const requests = docs.map(doc =>
+      this.databaseService.getDatabasesByDocumentId(doc.id).pipe(
+        catchError(() => of([]))
+      )
+    );
+
+    if (requests.length === 0) {
+      this.documentDatabases.set(databasesMap);
+      return;
+    }
+
+    forkJoin(requests).subscribe(results => {
+      results.forEach((databases, index) => {
+        if (databases.length > 0) {
+          databasesMap.set(docs[index].id, databases);
+        }
+      });
+      this.documentDatabases.set(databasesMap);
+    });
   }
 
   ngOnInit() {
