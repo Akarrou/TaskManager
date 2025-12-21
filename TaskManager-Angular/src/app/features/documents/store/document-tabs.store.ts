@@ -393,10 +393,31 @@ export const DocumentTabsStore = signalStore(
     ),
 
     /**
-     * Select a tab
+     * Select a tab and persist as default
      */
     selectTab(tabId: string | null): void {
+      // Mise à jour immédiate de l'état local
       patchState(store, { selectedTabId: tabId });
+
+      // Persister en BDD si on a un projectId et tabId valides
+      const projectId = store.currentProjectId();
+      if (projectId && tabId) {
+        // Mettre à jour is_default en arrière-plan
+        tabsService.setDefaultTab(tabId, projectId).subscribe({
+          next: () => {
+            // Mettre à jour le state local pour refléter is_default
+            patchState(store, {
+              tabs: store.tabs().map((t) => ({
+                ...t,
+                is_default: t.id === tabId,
+              })),
+            });
+          },
+          error: () => {
+            // Silencieux - l'état local reste correct, juste pas persisté
+          },
+        });
+      }
     },
 
     // =====================================================================

@@ -139,6 +139,35 @@ export class DocumentTabsService {
   }
 
   /**
+   * Set a tab as the default for the project
+   * Unsets is_default on all other tabs
+   */
+  setDefaultTab(tabId: string, projectId: string): Observable<DocumentTab> {
+    return from(
+      this.client
+        .from('document_tabs')
+        .update({ is_default: false, updated_at: new Date().toISOString() })
+        .eq('project_id', projectId)
+        .neq('id', tabId)
+    ).pipe(
+      switchMap(() =>
+        from(
+          this.client
+            .from('document_tabs')
+            .update({ is_default: true, updated_at: new Date().toISOString() })
+            .eq('id', tabId)
+            .select()
+            .single()
+        )
+      ),
+      map((response) => {
+        if (response.error) throw response.error;
+        return response.data as DocumentTab;
+      })
+    );
+  }
+
+  /**
    * Reorder tabs by updating their positions
    */
   reorderTabs(tabIds: string[]): Observable<DocumentTab[]> {
