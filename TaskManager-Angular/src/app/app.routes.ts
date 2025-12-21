@@ -42,6 +42,12 @@ export const routes: Routes = [
     title: 'Documents - Kōdo'
   },
   {
+    path: 'bdd/:id',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/documents/database-view/database-view.component').then(m => m.DatabaseViewComponent),
+    title: 'Base de données - Kōdo'
+  },
+  {
     path: 'projects/new',
     canActivate: [authGuard],
     loadComponent: () => import('./features/projects/components/project-form/project-form.component').then(m => m.ProjectFormComponent),

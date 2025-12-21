@@ -1,0 +1,196 @@
+// ============================================================================
+// DATABASE VIEW - Styles matching document-editor
+// ============================================================================
+
+:host {
+  display: block;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.document-container {
+  min-height: 100vh;
+  background-color: white;
+  padding: 2rem;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+:host-context(.dark) .document-container {
+  background-color: #030712;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+@media (min-width: 768px) {
+  .document-container {
+    padding: 4rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .document-container {
+    padding: 5rem 8rem;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// DOCUMENT HEADER (NAVIGATION)
+// ----------------------------------------------------------------------------
+
+.document-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+:host-context(.dark) .document-header {
+  border-bottom-color: #374151;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  background-color: #f3f4f6;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: #6b7280;
+
+  &:hover {
+    background-color: #e5e7eb;
+    color: #111827;
+  }
+
+  .material-icons-outlined {
+    font-size: 1.25rem;
+  }
+}
+
+:host-context(.dark) .back-button {
+  background-color: #374151;
+  color: #9ca3af;
+
+  &:hover {
+    background-color: #4b5563;
+    color: #f3f4f6;
+  }
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  flex-wrap: wrap;
+}
+
+.breadcrumb-item {
+  color: #3b82f6;
+  text-decoration: none;
+  transition: color 0.15s;
+
+  &:hover {
+    color: #2563eb;
+    text-decoration: underline;
+  }
+}
+
+.breadcrumb-separator {
+  color: #9ca3af;
+}
+
+.breadcrumb-current {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+
+  .database-icon {
+    font-size: 1.5rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    color: #10b981;
+  }
+}
+
+:host-context(.dark) .breadcrumb-item {
+  color: #60a5fa;
+
+  &:hover {
+    color: #93c5fd;
+  }
+}
+
+:host-context(.dark) .breadcrumb-current {
+  color: #f3f4f6;
+
+  .database-icon {
+    color: #34d399;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// LOADING & ERROR STATES
+// ----------------------------------------------------------------------------
+
+.database-view__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem 2rem;
+
+  p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+}
+
+:host-context(.dark) .database-view__loading p {
+  color: #9ca3af;
+}
+
+.database-view__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem 2rem;
+  text-align: center;
+
+  .error-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: #dc2626;
+  }
+
+  p {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #6b7280;
+  }
+}
+
+:host-context(.dark) .database-view__error {
+  .error-icon {
+    color: #ef4444;
+  }
+
+  p {
+    color: #9ca3af;
+  }
+}
+

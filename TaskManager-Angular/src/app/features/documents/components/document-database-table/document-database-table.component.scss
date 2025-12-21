@@ -1,10 +1,13 @@
 .database-container {
-  margin: 2rem 0;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
   background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+
+  // Remove all borders from Material buttons
+  ::ng-deep .mat-mdc-outlined-button:not(:disabled),
+  ::ng-deep .mat-mdc-icon-button,
+  ::ng-deep .mdc-icon-button {
+    border: none;
+  }
 }
 
 // Loading State
@@ -50,7 +53,6 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
   background: #f9fafb;
   flex-wrap: wrap;
   gap: 1rem;
@@ -133,7 +135,6 @@
   gap: 0.75rem;
   padding: 0.5rem 1rem;
   background: #eff6ff;
-  border: 1px solid #3b82f6;
   border-radius: 6px;
 
   .selected-count {
@@ -148,7 +149,6 @@
   gap: 0.25rem;
   padding: 0.25rem;
   background: white;
-  border: 1px solid #e5e7eb;
   border-radius: 6px;
 
   button {
@@ -214,8 +214,6 @@
 .table-wrapper {
   width: 100%;
   overflow-x: auto;
-  border: 1px solid #9ca3af;
-  border-radius: 6px;
 }
 
 .data-table {
@@ -224,21 +222,13 @@
   font-size: 0.875rem;
 
   thead {
-    background: #e5e7eb;
-    border-bottom: 2px solid #6b7280;
+    background: #f9fafb;
   }
 
   th,
   td {
     padding: 0.375rem 0.75rem;
     text-align: left;
-    border-bottom: 1px solid #9ca3af;
-    border-right: 1px solid #9ca3af;
-  }
-
-  th:last-child,
-  td:last-child {
-    border-right: none;
   }
 
   .row-select-header,
@@ -249,7 +239,7 @@
   }
 
   .row-select-header {
-    background: #e5e7eb; // Match column headers
+    background: #f9fafb;
 
     .select-all-button {
       opacity: 1;
@@ -274,13 +264,13 @@
     font-weight: 600;
     color: #1f2937;
     min-width: 150px;
-    background: #e5e7eb;
+    background: #f9fafb;
     cursor: pointer;
     user-select: none;
     transition: background-color 0.15s;
 
     &:hover {
-      background: #d1d5db;
+      background: #f3f4f6;
     }
 
     &:focus {
@@ -312,7 +302,7 @@
         color: #6b7280;
         font-weight: 400;
         padding: 0.125rem 0.5rem;
-        background: #e5e7eb;
+        background: #f3f4f6;
         border-radius: 4px;
       }
 
@@ -333,7 +323,7 @@
     }
 
     &:hover .column-menu-button {
-      background-color: #e5e7eb;
+      background-color: #f3f4f6;
       border-radius: 4px;
     }
   }
@@ -493,22 +483,20 @@
       .change-choice-select {
         width: 100%;
         max-width: 150px;
-        border: 1px solid #d1d5db;
+        border: none;
         background: white;
         padding: 0.25rem 0.5rem;
         font-size: 0.75rem;
         border-radius: 4px;
         cursor: pointer;
         outline: none;
-        transition: border-color 0.15s;
 
         &:hover {
-          border-color: #9ca3af;
+          background: #f3f4f6;
         }
 
         &:focus {
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+          background: #f3f4f6;
         }
       }
     }
@@ -575,22 +563,20 @@
       .add-choice-select {
         width: 100%;
         max-width: 150px;
-        border: 1px solid #d1d5db;
+        border: none;
         background: white;
         padding: 0.25rem 0.5rem;
         font-size: 0.75rem;
         border-radius: 4px;
         cursor: pointer;
         outline: none;
-        transition: border-color 0.15s;
 
         &:hover {
-          border-color: #9ca3af;
+          background: #f3f4f6;
         }
 
         &:focus {
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+          background: #f3f4f6;
         }
       }
     }
@@ -641,7 +627,6 @@
 
 // Pagination
 .database-paginator {
-  border-top: 1px solid #e5e7eb;
   background: #f9fafb;
 
   ::ng-deep {

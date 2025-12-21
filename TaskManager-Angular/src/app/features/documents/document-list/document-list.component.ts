@@ -398,6 +398,10 @@ export class DocumentListComponent implements OnInit, OnDestroy {
     this.router.navigate(['/documents', id]);
   }
 
+  openDatabase(databaseId: string): void {
+    this.router.navigate(['/bdd', databaseId]);
+  }
+
   createNewDocument(): void {
     const currentProject = this.currentProject();
     if (!currentProject) {

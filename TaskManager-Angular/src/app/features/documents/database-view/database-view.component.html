@@ -1,0 +1,62 @@
+<div class="document-container">
+  <!-- Navigation Header with breadcrumb -->
+  <div class="document-header">
+    <button class="back-button" (click)="navigateBack()" title="Retour">
+      <span class="material-icons-outlined">arrow_back</span>
+    </button>
+
+    <div class="breadcrumb">
+      <a routerLink="/documents" class="breadcrumb-item">Documents</a>
+      <span class="breadcrumb-separator">/</span>
+
+      <!-- Display parent hierarchy -->
+      @for (crumb of breadcrumbs(); track crumb.id; let isLast = $last) {
+        @if (!isLast) {
+          @if (crumb.type === 'document') {
+            <a [routerLink]="['/documents', crumb.id]" class="breadcrumb-item">{{ crumb.title }}</a>
+          } @else {
+            <a [routerLink]="['/bdd', crumb.id]" class="breadcrumb-item">{{ crumb.title }}</a>
+          }
+          <span class="breadcrumb-separator">/</span>
+        } @else {
+          <!-- Current item (database name) -->
+          <span class="breadcrumb-current">
+            <mat-icon class="database-icon">table_chart</mat-icon>
+            {{ crumb.title }}
+          </span>
+        }
+      }
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="database-view__loading">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Chargement de la base de données...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="database-view__error">
+      <mat-icon class="error-icon">error_outline</mat-icon>
+      <p>{{ error() }}</p>
+      <button mat-raised-button color="primary" (click)="navigateBack()">
+        Retour aux documents
+      </button>
+    </div>
+  }
+
+  <!-- Database Content -->
+  @if (!isLoading() && !error() && database()) {
+    <div class="database-content">
+      <app-document-database-table
+        [databaseId]="database()!.database_id"
+        [documentId]="documentId() || ''"
+        [config]="databaseConfig()"
+        [storageMode]="'supabase'">
+      </app-document-database-table>
+    </div>
+  }
+</div>
