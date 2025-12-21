@@ -109,6 +109,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   @Input() documentId!: string;
   @Input() config!: DatabaseConfig;
   @Input() storageMode: 'supabase' = 'supabase';
+  @Input() defaultPageSize: number = 5;
   @Input() onDataChange?: (attrs: DatabaseNodeAttributes) => void;
 
   // State signals
@@ -127,10 +128,10 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   activeSort = signal<{ columnId: string; order: SortOrder } | null>(null);
 
   // Pagination state
-  pageSize = signal<number>(50);
+  pageSize = signal<number>(5);
   pageIndex = signal<number>(0);
   totalCount = signal<number>(0);
-  pageSizeOptions = [10, 25, 50, 100];
+  pageSizeOptions = [5, 10, 20, 50, 100];
 
   // Kanban view state
   kanbanGroupByColumnId = signal<string | undefined>(undefined);
@@ -190,6 +191,9 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   private changeSubject = new Subject<void>();
 
   ngOnInit() {
+    // Set initial page size from input
+    this.pageSize.set(this.defaultPageSize);
+
     // Set initial view from input config (but don't trust column config - will be loaded from Supabase)
     if (this.config) {
       this.currentView.set(this.config.defaultView || 'table');
@@ -1213,6 +1217,15 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     this.onDeleteRows(selectedIds);
     // Clear selection after deletion
     this.selectedRowIds.set(new Set());
+  }
+
+  /**
+   * Open database in full page view
+   */
+  onOpenFullPage(): void {
+    if (this.databaseId) {
+      this.router.navigate(['/bdd', this.databaseId]);
+    }
   }
 
   /**

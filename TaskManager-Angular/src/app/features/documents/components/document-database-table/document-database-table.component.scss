@@ -702,18 +702,16 @@
   }
 }
 
-// Delete Database Button
-.delete-database-btn {
-  color: #dc2626; // Red-600
-  transition: all 0.2s ease;
+// Delete menu item styling
+.delete-menu-item {
+  color: #dc2626;
+
+  mat-icon {
+    color: #dc2626;
+  }
 
   &:hover {
     background-color: rgba(220, 38, 38, 0.08);
-    color: #b91c1c; // Red-700
-  }
-
-  mat-icon {
-    color: inherit;
   }
 }
 

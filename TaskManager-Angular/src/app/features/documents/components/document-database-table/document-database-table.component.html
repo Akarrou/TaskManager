@@ -85,11 +85,10 @@
 
         <!-- Column visibility menu -->
         <button
-          mat-stroked-button
+          mat-icon-button
           [matMenuTriggerFor]="columnVisibilityMenu"
           matTooltip="Gérer les colonnes">
           <mat-icon>view_column</mat-icon>
-          Colonnes
         </button>
 
         <mat-menu #columnVisibilityMenu="matMenu">
@@ -110,35 +109,22 @@
           </div>
         </mat-menu>
 
-        <!-- Delete Database Button -->
+        <!-- Open in Full Page Button -->
         <button
           mat-icon-button
-          (click)="onDeleteDatabase()"
-          matTooltip="Supprimer la base de données"
-          class="delete-database-btn">
-          <mat-icon>delete</mat-icon>
+          (click)="onOpenFullPage()"
+          matTooltip="Ouvrir en pleine page">
+          <mat-icon>open_in_new</mat-icon>
         </button>
 
         <!-- Bulk Actions (shown when rows are selected) -->
         @if (selectedCount() > 0) {
           <div class="bulk-actions">
             <span class="selected-count">{{ selectedCount() }} sélectionnée(s)</span>
-            <button mat-stroked-button color="warn" (click)="onDeleteSelectedRows()">
+            <button mat-icon-button color="warn" (click)="onDeleteSelectedRows()" matTooltip="Supprimer les lignes sélectionnées">
               <mat-icon>delete</mat-icon>
-              Supprimer
             </button>
           </div>
-        }
-
-        <!-- Import CSV Button (only for empty tables) -->
-        @if (canImportCsv()) {
-          <button
-            mat-stroked-button
-            (click)="openCsvImportDialog()"
-            matTooltip="Importer des données depuis un fichier CSV">
-            <mat-icon>upload_file</mat-icon>
-            Importer CSV
-          </button>
         }
 
         <!-- Add Row Button (only if there are columns) -->
@@ -148,6 +134,28 @@
             Nouvelle ligne
           </button>
         }
+
+        <!-- More Options Menu -->
+        <button
+          mat-icon-button
+          [matMenuTriggerFor]="moreOptionsMenu"
+          matTooltip="Plus d'options">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+
+        <mat-menu #moreOptionsMenu="matMenu">
+          <!-- Import CSV (only for empty tables) -->
+          @if (canImportCsv()) {
+            <button mat-menu-item (click)="openCsvImportDialog()">
+              <mat-icon>upload_file</mat-icon>
+              <span>Importer CSV</span>
+            </button>
+          }
+          <button mat-menu-item (click)="onDeleteDatabase()" class="delete-menu-item">
+            <mat-icon color="warn">delete</mat-icon>
+            <span>Supprimer la base de données</span>
+          </button>
+        </mat-menu>
       </div>
     </div>
 
