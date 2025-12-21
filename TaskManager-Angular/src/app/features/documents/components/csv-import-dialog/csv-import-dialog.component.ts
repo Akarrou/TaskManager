@@ -297,11 +297,35 @@ export class CsvImportDialogComponent {
 
   /**
    * Override manuel du type d'une colonne
+   * Régénère automatiquement les options pour les types select/multi-select
    */
   onColumnTypeChange(columnIndex: number, newType: ColumnType): void {
     const columns = this.detectedColumns();
-    if (columns[columnIndex]) {
+    const data = this.parsedData();
+
+    if (columns[columnIndex] && data) {
       columns[columnIndex].type = newType;
+
+      // Régénérer les options pour les types select/multi-select
+      if (newType === 'select' || newType === 'multi-select') {
+        const rows = data.slice(1); // Exclure les headers
+        const columnValues = rows.map(row => row[columnIndex] || '');
+        const nonEmpty = columnValues.filter(v => v?.trim() !== '');
+        const unique = new Set(nonEmpty);
+
+        // Générer les choices si entre 1 et 50 valeurs uniques
+        if (unique.size >= 1 && unique.size <= 50) {
+          columns[columnIndex].options = {
+            choices: this.generateSelectChoices(unique)
+          };
+        }
+      } else {
+        // Pour les autres types, effacer les options select
+        if (columns[columnIndex].options?.choices) {
+          columns[columnIndex].options = undefined;
+        }
+      }
+
       this.detectedColumns.set([...columns]);
     }
   }
@@ -573,5 +597,28 @@ export class CsvImportDialogComponent {
     if (confidence >= 0.9) return 'text-green-600';
     if (confidence >= 0.7) return 'text-orange-600';
     return 'text-red-600';
+  }
+
+  /**
+   * Génère des SelectChoice depuis un ensemble de valeurs uniques
+   * Utilisé lors du changement manuel de type vers select/multi-select
+   */
+  private generateSelectChoices(unique: Set<string>): SelectChoice[] {
+    const colors = [
+      'bg-gray-200',
+      'bg-blue-200',
+      'bg-green-200',
+      'bg-yellow-200',
+      'bg-red-200',
+      'bg-purple-200',
+      'bg-pink-200',
+      'bg-orange-200',
+    ];
+
+    return Array.from(unique).map((label, i) => ({
+      id: crypto.randomUUID().split('-')[0],
+      label,
+      color: colors[i % colors.length],
+    }));
   }
 }
