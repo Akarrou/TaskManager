@@ -67,7 +67,14 @@
       "mcp__context7__get-library-docs",
       "Bash(./scripts/deploy.sh:*)",
       "Bash(xargs ls:*)",
-      "Bash(npm show:*)"
+      "Bash(npm show:*)",
+      "Bash(wc:*)",
+      "Bash(node -e:*)",
+      "Bash(curl:*)",
+      "mcp__kodo__list_tasks",
+      "mcp__kodo__list_projects",
+      "mcp__kodo__list_databases",
+      "mcp__kodo__create_task"
     ],
     "deny": [],
     "ask": []

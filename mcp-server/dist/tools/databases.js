@@ -342,5 +342,430 @@ export function registerDatabaseTools(server) {
             };
         }
     });
+    // =========================================================================
+    // create_database - Create a new database
+    // =========================================================================
+    server.tool('create_database', 'Create a new Notion-like database with columns configuration.', {
+        name: z.string().min(1).max(255).describe('Name of the database'),
+        document_id: z.string().uuid().optional().describe('Parent document ID (optional for standalone database)'),
+        type: z.enum(['task', 'generic']).optional().default('generic').describe('Database type'),
+        columns: z.array(z.object({
+            name: z.string().describe('Column name'),
+            type: z.enum(['text', 'number', 'select', 'multi_select', 'date', 'checkbox', 'url', 'email', 'phone', 'formula', 'relation', 'rollup', 'created_time', 'last_edited_time', 'created_by', 'last_edited_by', 'person']).describe('Column type'),
+            options: z.array(z.object({
+                label: z.string(),
+                color: z.string().optional(),
+            })).optional().describe('Options for select/multi_select columns'),
+        })).optional().describe('Column definitions'),
+    }, async ({ name, document_id, type, columns }) => {
+        try {
+            const supabase = getSupabaseClient();
+            // Generate unique database ID
+            const uuid = crypto.randomUUID();
+            const databaseId = `db-${uuid}`;
+            const tableName = `database_${uuid.replace(/-/g, '_')}`;
+            // Build columns config with generated IDs
+            const columnsConfig = (columns || []).map(col => ({
+                id: `col_${crypto.randomUUID().replace(/-/g, '_')}`,
+                name: col.name,
+                type: col.type,
+                visible: true,
+                ...(col.options ? { options: col.options } : {}),
+            }));
+            // If task type, add default task columns
+            if (type === 'task' && (!columns || columns.length === 0)) {
+                columnsConfig.push({ id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Title', type: 'text', visible: true }, { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Description', type: 'text', visible: true }, { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Status', type: 'select', visible: true, options: [
+                        { label: 'backlog', color: 'gray' },
+                        { label: 'pending', color: 'yellow' },
+                        { label: 'in_progress', color: 'blue' },
+                        { label: 'completed', color: 'green' },
+                        { label: 'cancelled', color: 'red' },
+                    ] }, { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Priority', type: 'select', visible: true, options: [
+                        { label: 'low', color: 'gray' },
+                        { label: 'medium', color: 'yellow' },
+                        { label: 'high', color: 'orange' },
+                        { label: 'critical', color: 'red' },
+                    ] }, { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Due Date', type: 'date', visible: true }, { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Assigned To', type: 'person', visible: true });
+            }
+            const config = {
+                name,
+                type,
+                columns: columnsConfig,
+                views: [],
+            };
+            // Create database metadata
+            const { data: dbData, error: dbError } = await supabase
+                .from('document_databases')
+                .insert({
+                database_id: databaseId,
+                document_id: document_id || null,
+                table_name: tableName,
+                name,
+                config,
+            })
+                .select()
+                .single();
+            if (dbError) {
+                return {
+                    content: [{ type: 'text', text: `Error creating database: ${dbError.message}` }],
+                    isError: true,
+                };
+            }
+            // Create the actual PostgreSQL table via RPC
+            const { error: tableError } = await supabase.rpc('ensure_table_exists', {
+                p_database_id: databaseId,
+            });
+            if (tableError) {
+                // Rollback metadata
+                await supabase.from('document_databases').delete().eq('database_id', databaseId);
+                return {
+                    content: [{ type: 'text', text: `Error creating table: ${tableError.message}` }],
+                    isError: true,
+                };
+            }
+            return {
+                content: [{ type: 'text', text: `Database created successfully:\n${JSON.stringify(dbData, null, 2)}` }],
+            };
+        }
+        catch (err) {
+            return {
+                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                isError: true,
+            };
+        }
+    });
+    // =========================================================================
+    // delete_database - Delete a database
+    // =========================================================================
+    server.tool('delete_database', 'Delete a database and all its data. This action cannot be undone.', {
+        database_id: z.string().describe('The database ID (format: db-uuid)'),
+        confirm: z.boolean().describe('Must be true to confirm deletion'),
+    }, async ({ database_id, confirm }) => {
+        if (!confirm) {
+            return {
+                content: [{ type: 'text', text: 'Deletion not confirmed. Set confirm=true to proceed.' }],
+                isError: true,
+            };
+        }
+        try {
+            const supabase = getSupabaseClient();
+            // Try to use cascade delete RPC if available
+            const { error: rpcError } = await supabase.rpc('delete_database_cascade', {
+                p_database_id: database_id,
+            });
+            if (rpcError) {
+                // Fallback to manual deletion
+                // Delete linked documents
+                await supabase
+                    .from('documents')
+                    .delete()
+                    .eq('database_id', database_id);
+                // Delete metadata
+                const { error: metaError } = await supabase
+                    .from('document_databases')
+                    .delete()
+                    .eq('database_id', database_id);
+                if (metaError) {
+                    return {
+                        content: [{ type: 'text', text: `Error deleting database: ${metaError.message}` }],
+                        isError: true,
+                    };
+                }
+            }
+            return {
+                content: [{ type: 'text', text: `Database ${database_id} deleted successfully.` }],
+            };
+        }
+        catch (err) {
+            return {
+                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                isError: true,
+            };
+        }
+    });
+    // =========================================================================
+    // add_column - Add a column to a database
+    // =========================================================================
+    server.tool('add_column', 'Add a new column to an existing database.', {
+        database_id: z.string().describe('The database ID (format: db-uuid)'),
+        name: z.string().min(1).describe('Column name'),
+        type: z.enum(['text', 'number', 'select', 'multi_select', 'date', 'checkbox', 'url', 'email', 'phone', 'formula', 'relation', 'rollup', 'created_time', 'last_edited_time', 'created_by', 'last_edited_by', 'person']).describe('Column type'),
+        options: z.array(z.object({
+            label: z.string(),
+            color: z.string().optional(),
+        })).optional().describe('Options for select/multi_select columns'),
+    }, async ({ database_id, name, type, options }) => {
+        try {
+            const supabase = getSupabaseClient();
+            // Get current config
+            const { data: dbMeta, error: metaError } = await supabase
+                .from('document_databases')
+                .select('*')
+                .eq('database_id', database_id)
+                .single();
+            if (metaError || !dbMeta) {
+                return {
+                    content: [{ type: 'text', text: `Database not found: ${database_id}` }],
+                    isError: true,
+                };
+            }
+            const config = dbMeta.config;
+            const columns = config.columns || [];
+            // Check if column already exists
+            if (columns.some(c => c.name === name)) {
+                return {
+                    content: [{ type: 'text', text: `Column "${name}" already exists.` }],
+                    isError: true,
+                };
+            }
+            // Create new column
+            const newColumn = {
+                id: `col_${crypto.randomUUID().replace(/-/g, '_')}`,
+                name,
+                type,
+                visible: true,
+            };
+            if (options) {
+                newColumn.options = options;
+            }
+            columns.push(newColumn);
+            // Update config
+            const { error } = await supabase
+                .from('document_databases')
+                .update({
+                config: { ...config, columns },
+                updated_at: new Date().toISOString(),
+            })
+                .eq('database_id', database_id);
+            if (error) {
+                return {
+                    content: [{ type: 'text', text: `Error adding column: ${error.message}` }],
+                    isError: true,
+                };
+            }
+            return {
+                content: [{ type: 'text', text: `Column "${name}" added successfully:\n${JSON.stringify(newColumn, null, 2)}` }],
+            };
+        }
+        catch (err) {
+            return {
+                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                isError: true,
+            };
+        }
+    });
+    // =========================================================================
+    // update_column - Update a column in a database
+    // =========================================================================
+    server.tool('update_column', 'Update a column\'s properties in a database.', {
+        database_id: z.string().describe('The database ID (format: db-uuid)'),
+        column_id: z.string().describe('The column ID to update'),
+        name: z.string().min(1).optional().describe('New column name'),
+        visible: z.boolean().optional().describe('Column visibility'),
+        options: z.array(z.object({
+            label: z.string(),
+            color: z.string().optional(),
+        })).optional().describe('Options for select/multi_select columns'),
+    }, async ({ database_id, column_id, name, visible, options }) => {
+        try {
+            const supabase = getSupabaseClient();
+            const { data: dbMeta, error: metaError } = await supabase
+                .from('document_databases')
+                .select('*')
+                .eq('database_id', database_id)
+                .single();
+            if (metaError || !dbMeta) {
+                return {
+                    content: [{ type: 'text', text: `Database not found: ${database_id}` }],
+                    isError: true,
+                };
+            }
+            const config = dbMeta.config;
+            const columns = config.columns || [];
+            const columnIndex = columns.findIndex(c => c.id === column_id);
+            if (columnIndex === -1) {
+                return {
+                    content: [{ type: 'text', text: `Column not found: ${column_id}` }],
+                    isError: true,
+                };
+            }
+            // Update column properties
+            if (name !== undefined)
+                columns[columnIndex].name = name;
+            if (visible !== undefined)
+                columns[columnIndex].visible = visible;
+            if (options !== undefined)
+                columns[columnIndex].options = options;
+            const { error } = await supabase
+                .from('document_databases')
+                .update({
+                config: { ...config, columns },
+                updated_at: new Date().toISOString(),
+            })
+                .eq('database_id', database_id);
+            if (error) {
+                return {
+                    content: [{ type: 'text', text: `Error updating column: ${error.message}` }],
+                    isError: true,
+                };
+            }
+            return {
+                content: [{ type: 'text', text: `Column updated successfully:\n${JSON.stringify(columns[columnIndex], null, 2)}` }],
+            };
+        }
+        catch (err) {
+            return {
+                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                isError: true,
+            };
+        }
+    });
+    // =========================================================================
+    // delete_column - Delete a column from a database
+    // =========================================================================
+    server.tool('delete_column', 'Delete a column from a database. Existing cell data for this column will be lost.', {
+        database_id: z.string().describe('The database ID (format: db-uuid)'),
+        column_id: z.string().describe('The column ID to delete'),
+    }, async ({ database_id, column_id }) => {
+        try {
+            const supabase = getSupabaseClient();
+            const { data: dbMeta, error: metaError } = await supabase
+                .from('document_databases')
+                .select('*')
+                .eq('database_id', database_id)
+                .single();
+            if (metaError || !dbMeta) {
+                return {
+                    content: [{ type: 'text', text: `Database not found: ${database_id}` }],
+                    isError: true,
+                };
+            }
+            const config = dbMeta.config;
+            const columns = config.columns || [];
+            const columnIndex = columns.findIndex(c => c.id === column_id);
+            if (columnIndex === -1) {
+                return {
+                    content: [{ type: 'text', text: `Column not found: ${column_id}` }],
+                    isError: true,
+                };
+            }
+            const deletedColumn = columns[columnIndex];
+            columns.splice(columnIndex, 1);
+            const { error } = await supabase
+                .from('document_databases')
+                .update({
+                config: { ...config, columns },
+                updated_at: new Date().toISOString(),
+            })
+                .eq('database_id', database_id);
+            if (error) {
+                return {
+                    content: [{ type: 'text', text: `Error deleting column: ${error.message}` }],
+                    isError: true,
+                };
+            }
+            return {
+                content: [{ type: 'text', text: `Column "${deletedColumn.name}" deleted successfully.` }],
+            };
+        }
+        catch (err) {
+            return {
+                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                isError: true,
+            };
+        }
+    });
+    // =========================================================================
+    // import_csv - Import CSV data into a database
+    // =========================================================================
+    server.tool('import_csv', 'Import CSV data into a database. The CSV must have a header row matching column names.', {
+        database_id: z.string().describe('The database ID (format: db-uuid)'),
+        csv_content: z.string().describe('CSV content as a string with header row'),
+        skip_unknown_columns: z.boolean().optional().default(true).describe('Skip columns not found in database schema'),
+    }, async ({ database_id, csv_content, skip_unknown_columns }) => {
+        try {
+            const supabase = getSupabaseClient();
+            // Get database metadata
+            const { data: dbMeta, error: metaError } = await supabase
+                .from('document_databases')
+                .select('*')
+                .eq('database_id', database_id)
+                .single();
+            if (metaError || !dbMeta) {
+                return {
+                    content: [{ type: 'text', text: `Database not found: ${database_id}` }],
+                    isError: true,
+                };
+            }
+            const config = dbMeta.config;
+            const columns = config.columns || [];
+            // Parse CSV
+            const lines = csv_content.trim().split('\n');
+            if (lines.length < 2) {
+                return {
+                    content: [{ type: 'text', text: 'CSV must have at least a header row and one data row.' }],
+                    isError: true,
+                };
+            }
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+            const rows = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+                const cells = {};
+                for (let j = 0; j < headers.length; j++) {
+                    const column = columns.find(c => c.name === headers[j]);
+                    if (column) {
+                        cells[column.id] = values[j] || null;
+                    }
+                    else if (!skip_unknown_columns) {
+                        return {
+                            content: [{ type: 'text', text: `Unknown column in CSV: ${headers[j]}` }],
+                            isError: true,
+                        };
+                    }
+                }
+                rows.push({ cells, row_order: i });
+            }
+            if (rows.length === 0) {
+                return {
+                    content: [{ type: 'text', text: 'No valid rows to import.' }],
+                    isError: true,
+                };
+            }
+            const tableName = `database_${database_id.replace('db-', '')}`;
+            // Get current max row_order
+            const { data: maxOrderRow } = await supabase
+                .from(tableName)
+                .select('row_order')
+                .order('row_order', { ascending: false })
+                .limit(1)
+                .single();
+            const startOrder = (maxOrderRow?.row_order || 0) + 1;
+            // Adjust row orders
+            const rowsToInsert = rows.map((r, idx) => ({
+                ...r,
+                row_order: startOrder + idx,
+            }));
+            const { data, error } = await supabase
+                .from(tableName)
+                .insert(rowsToInsert)
+                .select();
+            if (error) {
+                return {
+                    content: [{ type: 'text', text: `Error importing CSV: ${error.message}` }],
+                    isError: true,
+                };
+            }
+            return {
+                content: [{ type: 'text', text: `Successfully imported ${data?.length || 0} rows.` }],
+            };
+        }
+        catch (err) {
+            return {
+                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                isError: true,
+            };
+        }
+    });
 }
 //# sourceMappingURL=databases.js.map

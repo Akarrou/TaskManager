@@ -7,33 +7,43 @@ export function registerDocumentTools(server) {
     // =========================================================================
     // list_documents - List all documents
     // =========================================================================
-    server.tool('list_documents', 'List all documents. Can filter by project or parent document for hierarchical navigation.', {
+    server.tool('list_documents', 'List all documents with pagination. Can filter by project or parent document for hierarchical navigation.', {
         project_id: z.string().uuid().optional().describe('Filter documents by project ID'),
         parent_id: z.string().uuid().optional().describe('Filter documents by parent document ID (for hierarchy)'),
         limit: z.number().min(1).max(100).optional().default(50).describe('Maximum number of documents to return'),
-    }, async ({ project_id, parent_id, limit }) => {
+        offset: z.number().min(0).optional().default(0).describe('Number of documents to skip for pagination'),
+    }, async ({ project_id, parent_id, limit, offset }) => {
         try {
             const supabase = getSupabaseClient();
             let query = supabase
                 .from('documents')
-                .select('id, title, parent_id, project_id, database_id, database_row_id, created_at, updated_at')
+                .select('id, title, parent_id, project_id, database_id, database_row_id, created_at, updated_at', { count: 'exact' })
                 .order('updated_at', { ascending: false })
-                .limit(limit);
+                .range(offset, offset + limit - 1);
             if (project_id) {
                 query = query.eq('project_id', project_id);
             }
             if (parent_id) {
                 query = query.eq('parent_id', parent_id);
             }
-            const { data, error } = await query;
+            const { data, error, count } = await query;
             if (error) {
                 return {
                     content: [{ type: 'text', text: `Error listing documents: ${error.message}` }],
                     isError: true,
                 };
             }
+            const result = {
+                documents: data,
+                pagination: {
+                    total: count || 0,
+                    limit,
+                    offset,
+                    hasMore: (count || 0) > offset + limit,
+                },
+            };
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
             };
         }
         catch (err) {
@@ -244,6 +254,187 @@ export function registerDocumentTools(server) {
             }
             return {
                 content: [{ type: 'text', text: `Found ${data.length} documents:\n${JSON.stringify(data, null, 2)}` }],
+            };
+        }
+        catch (err) {
+            return {
+                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                isError: true,
+            };
+        }
+    });
+    // =========================================================================
+    // get_document_breadcrumb - Get the navigation path of a document
+    // =========================================================================
+    server.tool('get_document_breadcrumb', 'Get the full navigation path (breadcrumb) from root to a document.', {
+        document_id: z.string().uuid().describe('The UUID of the document'),
+    }, async ({ document_id }) => {
+        try {
+            const supabase = getSupabaseClient();
+            const breadcrumb = [];
+            let currentId = document_id;
+            while (currentId) {
+                const { data: docData, error } = await supabase
+                    .from('documents')
+                    .select('id, title, parent_id')
+                    .eq('id', currentId)
+                    .single();
+                if (error || !docData)
+                    break;
+                breadcrumb.unshift({ id: docData.id, title: docData.title });
+                currentId = docData.parent_id;
+            }
+            return {
+                content: [{ type: 'text', text: JSON.stringify(breadcrumb, null, 2) }],
+            };
+        }
+        catch (err) {
+            return {
+                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                isError: true,
+            };
+        }
+    });
+    // =========================================================================
+    // get_documents_stats - Get document statistics
+    // =========================================================================
+    server.tool('get_documents_stats', 'Get statistics about documents (total count, recent documents, last modified).', {
+        project_id: z.string().uuid().optional().describe('Optional project ID to filter statistics'),
+    }, async ({ project_id }) => {
+        try {
+            const supabase = getSupabaseClient();
+            // Total count
+            let countQuery = supabase
+                .from('documents')
+                .select('id', { count: 'exact', head: true });
+            if (project_id) {
+                countQuery = countQuery.eq('project_id', project_id);
+            }
+            const { count } = await countQuery;
+            // Recent documents (last 7 days)
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            let recentQuery = supabase
+                .from('documents')
+                .select('id', { count: 'exact', head: true })
+                .gte('created_at', weekAgo.toISOString());
+            if (project_id) {
+                recentQuery = recentQuery.eq('project_id', project_id);
+            }
+            const { count: recentCount } = await recentQuery;
+            // Last modified document
+            let lastModifiedQuery = supabase
+                .from('documents')
+                .select('id, title, updated_at')
+                .order('updated_at', { ascending: false })
+                .limit(1);
+            if (project_id) {
+                lastModifiedQuery = lastModifiedQuery.eq('project_id', project_id);
+            }
+            const { data: lastModified } = await lastModifiedQuery;
+            const stats = {
+                total: count || 0,
+                recent_7_days: recentCount || 0,
+                last_modified: lastModified?.[0] || null,
+            };
+            return {
+                content: [{ type: 'text', text: JSON.stringify(stats, null, 2) }],
+            };
+        }
+        catch (err) {
+            return {
+                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                isError: true,
+            };
+        }
+    });
+    // =========================================================================
+    // link_task_to_document - Link a task to a document
+    // =========================================================================
+    server.tool('link_task_to_document', 'Create a relationship between a task and a document.', {
+        document_id: z.string().uuid().describe('The UUID of the document'),
+        task_id: z.string().uuid().describe('The UUID of the task (row ID from a task database)'),
+        relation_type: z.enum(['related', 'blocking', 'blocked_by', 'parent', 'child']).optional().default('related').describe('Type of relationship'),
+    }, async ({ document_id, task_id, relation_type }) => {
+        try {
+            const supabase = getSupabaseClient();
+            const { data, error } = await supabase
+                .from('document_task_relations')
+                .insert({
+                document_id,
+                task_id,
+                relation_type,
+            })
+                .select()
+                .single();
+            if (error) {
+                return {
+                    content: [{ type: 'text', text: `Error linking task to document: ${error.message}` }],
+                    isError: true,
+                };
+            }
+            return {
+                content: [{ type: 'text', text: `Task linked to document successfully:\n${JSON.stringify(data, null, 2)}` }],
+            };
+        }
+        catch (err) {
+            return {
+                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                isError: true,
+            };
+        }
+    });
+    // =========================================================================
+    // get_document_tasks - Get tasks linked to a document
+    // =========================================================================
+    server.tool('get_document_tasks', 'Get all tasks that are linked to a document.', {
+        document_id: z.string().uuid().describe('The UUID of the document'),
+    }, async ({ document_id }) => {
+        try {
+            const supabase = getSupabaseClient();
+            const { data, error } = await supabase
+                .from('document_task_relations')
+                .select('*')
+                .eq('document_id', document_id);
+            if (error) {
+                return {
+                    content: [{ type: 'text', text: `Error getting document tasks: ${error.message}` }],
+                    isError: true,
+                };
+            }
+            return {
+                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+            };
+        }
+        catch (err) {
+            return {
+                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                isError: true,
+            };
+        }
+    });
+    // =========================================================================
+    // unlink_task_from_document - Remove a task-document relationship
+    // =========================================================================
+    server.tool('unlink_task_from_document', 'Remove a relationship between a task and a document.', {
+        document_id: z.string().uuid().describe('The UUID of the document'),
+        task_id: z.string().uuid().describe('The UUID of the task'),
+    }, async ({ document_id, task_id }) => {
+        try {
+            const supabase = getSupabaseClient();
+            const { error } = await supabase
+                .from('document_task_relations')
+                .delete()
+                .eq('document_id', document_id)
+                .eq('task_id', task_id);
+            if (error) {
+                return {
+                    content: [{ type: 'text', text: `Error unlinking task from document: ${error.message}` }],
+                    isError: true,
+                };
+            }
+            return {
+                content: [{ type: 'text', text: 'Task unlinked from document successfully.' }],
             };
         }
         catch (err) {

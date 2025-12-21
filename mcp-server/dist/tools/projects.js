@@ -238,5 +238,78 @@ export function registerProjectTools(server) {
             };
         }
     });
+    // =========================================================================
+    // delete_project - Delete a project and all its related data
+    // =========================================================================
+    server.tool('delete_project', 'Permanently delete a project and all its related data (documents, tasks, databases, etc.). This action cannot be undone.', {
+        project_id: z.string().uuid().describe('The UUID of the project to delete'),
+        confirm: z.boolean().describe('Must be true to confirm deletion. This is a safety measure.'),
+    }, async ({ project_id, confirm }) => {
+        if (!confirm) {
+            return {
+                content: [{ type: 'text', text: 'Deletion not confirmed. Set confirm=true to proceed with deletion.' }],
+                isError: true,
+            };
+        }
+        try {
+            const supabase = getSupabaseClient();
+            // First, get the project to make sure it exists
+            const { data: project, error: projectError } = await supabase
+                .from('projects')
+                .select('id, name')
+                .eq('id', project_id)
+                .single();
+            if (projectError) {
+                return {
+                    content: [{ type: 'text', text: `Error finding project: ${projectError.message}` }],
+                    isError: true,
+                };
+            }
+            // Delete project members
+            await supabase
+                .from('project_members')
+                .delete()
+                .eq('project_id', project_id);
+            // Delete project invitations
+            await supabase
+                .from('project_invitations')
+                .delete()
+                .eq('project_id', project_id);
+            // Delete document tabs, groups, sections for this project
+            await supabase
+                .from('document_tabs')
+                .delete()
+                .eq('project_id', project_id);
+            await supabase
+                .from('document_tab_groups')
+                .delete()
+                .eq('project_id', project_id);
+            // Delete documents (this will cascade to related data via DB triggers/constraints)
+            await supabase
+                .from('documents')
+                .delete()
+                .eq('project_id', project_id);
+            // Finally delete the project itself
+            const { error: deleteError } = await supabase
+                .from('projects')
+                .delete()
+                .eq('id', project_id);
+            if (deleteError) {
+                return {
+                    content: [{ type: 'text', text: `Error deleting project: ${deleteError.message}` }],
+                    isError: true,
+                };
+            }
+            return {
+                content: [{ type: 'text', text: `Project "${project.name}" (${project_id}) has been permanently deleted along with all its related data.` }],
+            };
+        }
+        catch (err) {
+            return {
+                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                isError: true,
+            };
+        }
+    });
 }
 //# sourceMappingURL=projects.js.map

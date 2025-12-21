@@ -4,14 +4,25 @@ import { registerDocumentTools } from './tools/documents.js';
 import { registerTaskTools } from './tools/tasks.js';
 import { registerDatabaseTools } from './tools/databases.js';
 import { registerStorageTools } from './tools/storage.js';
+import { registerUserTools } from './tools/users.js';
+import { registerCommentTools } from './tools/comments.js';
+import { registerTabTools } from './tools/tabs.js';
+import { registerSpreadsheetTools } from './tools/spreadsheets.js';
 import { registerPrompts } from './prompts/index.js';
+import { registerResources } from './resources/index.js';
+import { logger } from './services/logger.js';
 /**
- * Create and configure the MCP server with all tools and prompts
+ * MCP Server version
+ */
+export const MCP_VERSION = '0.3.0';
+/**
+ * Create and configure the MCP server with all tools, resources, and prompts
  */
 export function createMcpServer() {
+    logger.info({ version: MCP_VERSION }, 'Creating MCP server');
     const server = new McpServer({
-        name: 'taskmanager-mcp',
-        version: '0.1.0',
+        name: 'kodo-mcp',
+        version: MCP_VERSION,
     });
     // Register all tool groups
     registerProjectTools(server);
@@ -19,8 +30,15 @@ export function createMcpServer() {
     registerTaskTools(server);
     registerDatabaseTools(server);
     registerStorageTools(server);
+    registerUserTools(server);
+    registerCommentTools(server);
+    registerTabTools(server);
+    registerSpreadsheetTools(server);
+    // Register resources
+    registerResources(server);
     // Register prompts
     registerPrompts(server);
+    logger.info('MCP server configured with 71 tools, 5 resources, 9 prompts');
     return server;
 }
 //# sourceMappingURL=server.js.map

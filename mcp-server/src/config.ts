@@ -5,14 +5,30 @@ import { z } from 'zod';
 config();
 
 const envSchema = z.object({
+  // Supabase configuration
   SUPABASE_URL: z.string().url().default('http://localhost:8000'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
   STORAGE_BUCKET: z.string().default('documents-files'),
+
+  // HTTP server configuration
   HTTP_PORT: z.coerce.number().default(3100),
+
   // Authentication for HTTP server (production)
   AUTH_ENABLED: z.coerce.boolean().default(true),
   AUTH_USERNAME: z.string().default('admin'),
   AUTH_PASSWORD: z.string().default('changeme'),
+
+  // Logging configuration
+  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+
+  // Rate limiting configuration
+  RATE_LIMIT_REQUESTS: z.coerce.number().default(100),
+  RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60000),
+
+  // Retry configuration for Supabase
+  RETRY_MAX_ATTEMPTS: z.coerce.number().default(3),
+  RETRY_BASE_DELAY_MS: z.coerce.number().default(1000),
 });
 
 function loadEnv() {

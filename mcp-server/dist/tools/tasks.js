@@ -375,6 +375,198 @@ export function registerTaskTools(server) {
             };
         }
     });
+    // =========================================================================
+    // get_task - Get a specific task by ID
+    // =========================================================================
+    server.tool('get_task', 'Get detailed information about a specific task by its ID.', {
+        database_id: z.string().describe('The database ID (format: db-uuid)'),
+        row_id: z.string().uuid().describe('The row/task ID'),
+    }, async ({ database_id, row_id }) => {
+        try {
+            const supabase = getSupabaseClient();
+            const { data: dbMeta, error: metaError } = await supabase
+                .from('document_databases')
+                .select('*')
+                .eq('database_id', database_id)
+                .single();
+            if (metaError || !dbMeta) {
+                return {
+                    content: [{ type: 'text', text: `Database not found: ${database_id}` }],
+                    isError: true,
+                };
+            }
+            const tableName = `database_${database_id.replace('db-', '')}`;
+            const { data: row, error } = await supabase
+                .from(tableName)
+                .select('*')
+                .eq('id', row_id)
+                .single();
+            if (error || !row) {
+                return {
+                    content: [{ type: 'text', text: `Task not found: ${row_id}` }],
+                    isError: true,
+                };
+            }
+            const task = normalizeRowToTask(row, dbMeta);
+            return {
+                content: [{ type: 'text', text: JSON.stringify(task, null, 2) }],
+            };
+        }
+        catch (err) {
+            return {
+                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                isError: true,
+            };
+        }
+    });
+    // =========================================================================
+    // update_task - Update all fields of a task
+    // =========================================================================
+    server.tool('update_task', 'Update any fields of a task in a database.', {
+        database_id: z.string().describe('The database ID (format: db-uuid)'),
+        row_id: z.string().uuid().describe('The row/task ID'),
+        title: z.string().min(1).optional().describe('New task title'),
+        description: z.string().optional().describe('New task description'),
+        status: TaskStatusEnum.optional().describe('New status'),
+        priority: TaskPriorityEnum.optional().describe('New priority'),
+        type: TaskTypeEnum.optional().describe('New type'),
+        assigned_to: z.string().optional().describe('New assignee'),
+        due_date: z.string().optional().describe('New due date (ISO format)'),
+    }, async ({ database_id, row_id, title, description, status, priority, type, assigned_to, due_date }) => {
+        try {
+            const supabase = getSupabaseClient();
+            const { data: dbMeta, error: metaError } = await supabase
+                .from('document_databases')
+                .select('*')
+                .eq('database_id', database_id)
+                .single();
+            if (metaError || !dbMeta) {
+                return {
+                    content: [{ type: 'text', text: `Database not found: ${database_id}` }],
+                    isError: true,
+                };
+            }
+            const config = dbMeta.config;
+            const columns = config.columns || [];
+            const findColumnId = (name) => columns.find(c => c.name === name)?.id;
+            const tableName = `database_${database_id.replace('db-', '')}`;
+            // Get current row
+            const { data: currentRow, error: getError } = await supabase
+                .from(tableName)
+                .select('*')
+                .eq('id', row_id)
+                .single();
+            if (getError || !currentRow) {
+                return {
+                    content: [{ type: 'text', text: `Task not found: ${row_id}` }],
+                    isError: true,
+                };
+            }
+            // Build updated cells
+            const updatedCells = { ...currentRow.cells };
+            const updates = [];
+            if (title !== undefined)
+                updates.push({ name: 'Title', value: title });
+            if (description !== undefined)
+                updates.push({ name: 'Description', value: description });
+            if (status !== undefined)
+                updates.push({ name: 'Status', value: status });
+            if (priority !== undefined)
+                updates.push({ name: 'Priority', value: priority });
+            if (type !== undefined)
+                updates.push({ name: 'Type', value: type });
+            if (assigned_to !== undefined)
+                updates.push({ name: 'Assigned To', value: assigned_to });
+            if (due_date !== undefined)
+                updates.push({ name: 'Due Date', value: due_date });
+            if (updates.length === 0) {
+                return {
+                    content: [{ type: 'text', text: 'No updates provided. Please specify at least one field to update.' }],
+                    isError: true,
+                };
+            }
+            for (const update of updates) {
+                const colId = findColumnId(update.name);
+                if (colId) {
+                    updatedCells[colId] = update.value;
+                }
+            }
+            const { data, error } = await supabase
+                .from(tableName)
+                .update({
+                cells: updatedCells,
+                updated_at: new Date().toISOString(),
+            })
+                .eq('id', row_id)
+                .select()
+                .single();
+            if (error) {
+                return {
+                    content: [{ type: 'text', text: `Error updating task: ${error.message}` }],
+                    isError: true,
+                };
+            }
+            const task = normalizeRowToTask(data, dbMeta);
+            return {
+                content: [{ type: 'text', text: `Task updated successfully:\n${JSON.stringify(task, null, 2)}` }],
+            };
+        }
+        catch (err) {
+            return {
+                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                isError: true,
+            };
+        }
+    });
+    // =========================================================================
+    // delete_task - Delete a task
+    // =========================================================================
+    server.tool('delete_task', 'Delete a task from a database.', {
+        database_id: z.string().describe('The database ID (format: db-uuid)'),
+        row_id: z.string().uuid().describe('The row/task ID to delete'),
+    }, async ({ database_id, row_id }) => {
+        try {
+            const supabase = getSupabaseClient();
+            const { data: dbMeta, error: metaError } = await supabase
+                .from('document_databases')
+                .select('*')
+                .eq('database_id', database_id)
+                .single();
+            if (metaError || !dbMeta) {
+                return {
+                    content: [{ type: 'text', text: `Database not found: ${database_id}` }],
+                    isError: true,
+                };
+            }
+            const tableName = `database_${database_id.replace('db-', '')}`;
+            // Get task info before deleting
+            const { data: taskRow } = await supabase
+                .from(tableName)
+                .select('*')
+                .eq('id', row_id)
+                .single();
+            const { error } = await supabase
+                .from(tableName)
+                .delete()
+                .eq('id', row_id);
+            if (error) {
+                return {
+                    content: [{ type: 'text', text: `Error deleting task: ${error.message}` }],
+                    isError: true,
+                };
+            }
+            const task = taskRow ? normalizeRowToTask(taskRow, dbMeta) : { id: row_id };
+            return {
+                content: [{ type: 'text', text: `Task deleted successfully:\n${JSON.stringify(task, null, 2)}` }],
+            };
+        }
+        catch (err) {
+            return {
+                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                isError: true,
+            };
+        }
+    });
 }
 /**
  * Helper: Normalize a database row to a task-like object

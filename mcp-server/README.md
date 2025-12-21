@@ -1,13 +1,15 @@
-# TaskManager MCP Server
+# Kodo MCP Server
 
-Serveur MCP (Model Context Protocol) pour TaskManager (Kōdo). Permet à Claude d'interagir avec vos projets, documents, tâches et bases de données.
+Serveur MCP (Model Context Protocol) pour Kodo. Permet à Claude d'interagir avec vos projets, documents, tâches, bases de données, spreadsheets et plus encore.
+
+**Version:** 0.2.0
 
 ## Installation
 
 ```bash
 cd mcp-server
-npm install
-npm run build
+pnpm install
+pnpm run build
 ```
 
 ## Configuration
@@ -34,7 +36,7 @@ Ajoutez à `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "taskmanager": {
+    "kodo": {
       "command": "node",
       "args": ["/chemin/vers/Task manager/mcp-server/dist/index.js"],
       "env": {
@@ -49,19 +51,19 @@ Ajoutez à `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ### Claude Code
 
 ```bash
-claude mcp add taskmanager -- node "/chemin/vers/Task manager/mcp-server/dist/index.js"
+claude mcp add kodo --scope project -- node "/chemin/vers/Task manager/mcp-server/dist/index.js"
 ```
 
 ### HTTP (Claude Web)
 
 ```bash
-npm run start:http
+pnpm run start:http
 # Endpoint: http://localhost:3100/mcp
 ```
 
-## Outils disponibles
+## Outils disponibles (71 outils)
 
-### Projects (6 outils)
+### Projects (8 outils)
 | Outil | Description |
 |-------|-------------|
 | `list_projects` | Lister tous les projets |
@@ -69,9 +71,11 @@ npm run start:http
 | `create_project` | Créer un nouveau projet |
 | `update_project` | Modifier un projet |
 | `archive_project` | Archiver un projet |
+| `restore_project` | Restaurer un projet archivé |
+| `delete_project` | Supprimer un projet (avec cascade) |
 | `list_project_members` | Lister les membres d'un projet |
 
-### Documents (6 outils)
+### Documents (11 outils)
 | Outil | Description |
 |-------|-------------|
 | `list_documents` | Lister les documents |
@@ -80,25 +84,90 @@ npm run start:http
 | `update_document` | Modifier un document |
 | `delete_document` | Supprimer un document (avec cascade) |
 | `search_documents` | Rechercher des documents |
+| `get_document_breadcrumb` | Obtenir le chemin de navigation |
+| `get_documents_stats` | Statistiques des documents |
+| `link_task_to_document` | Lier une tâche à un document |
+| `get_document_tasks` | Obtenir les tâches liées |
+| `unlink_task_from_document` | Délier une tâche |
 
-### Tasks (5 outils)
+### Tasks (8 outils)
 | Outil | Description |
 |-------|-------------|
 | `list_tasks` | Lister les tâches de toutes les bases |
+| `get_task` | Obtenir une tâche spécifique |
 | `get_task_stats` | Obtenir les statistiques des tâches |
+| `create_task` | Créer une nouvelle tâche |
+| `update_task` | Modifier tous les champs d'une tâche |
 | `update_task_status` | Modifier le statut d'une tâche |
 | `update_task_priority` | Modifier la priorité d'une tâche |
-| `create_task` | Créer une nouvelle tâche |
+| `delete_task` | Supprimer une tâche |
 
-### Databases (6 outils)
+### Databases (12 outils)
 | Outil | Description |
 |-------|-------------|
 | `list_databases` | Lister les bases de données |
 | `get_database_schema` | Obtenir le schéma d'une base |
+| `create_database` | Créer une base de données |
+| `delete_database` | Supprimer une base (cascade) |
 | `get_database_rows` | Requêter les lignes |
 | `add_database_row` | Ajouter une ligne |
 | `update_database_row` | Modifier une ligne |
 | `delete_database_rows` | Supprimer des lignes |
+| `add_column` | Ajouter une colonne |
+| `update_column` | Modifier une colonne |
+| `delete_column` | Supprimer une colonne |
+| `import_csv` | Importer des données CSV |
+
+### Tabs & Organisation (14 outils)
+| Outil | Description |
+|-------|-------------|
+| `list_tabs` | Lister les tabs d'un projet |
+| `create_tab` | Créer un tab |
+| `update_tab` | Modifier un tab |
+| `delete_tab` | Supprimer un tab |
+| `set_default_tab` | Définir le tab par défaut |
+| `reorder_tabs` | Réordonner les tabs |
+| `list_tab_groups` | Lister les groupes de tabs |
+| `create_tab_group` | Créer un groupe |
+| `update_tab_group` | Modifier un groupe |
+| `delete_tab_group` | Supprimer un groupe |
+| `list_sections` | Lister les sections d'un tab |
+| `create_section` | Créer une section |
+| `update_section` | Modifier une section |
+| `delete_section` | Supprimer une section |
+
+### Spreadsheets (12 outils)
+| Outil | Description |
+|-------|-------------|
+| `list_spreadsheets` | Lister les spreadsheets |
+| `get_spreadsheet` | Obtenir un spreadsheet |
+| `create_spreadsheet` | Créer un spreadsheet |
+| `update_spreadsheet` | Modifier la configuration |
+| `delete_spreadsheet` | Supprimer un spreadsheet |
+| `get_cells` | Obtenir les cellules d'une plage |
+| `update_cell` | Modifier une cellule |
+| `update_cells_batch` | Modifier plusieurs cellules |
+| `add_sheet` | Ajouter une feuille |
+| `rename_sheet` | Renommer une feuille |
+| `delete_sheet` | Supprimer une feuille |
+| `clear_range` | Effacer une plage |
+
+### Comments (5 outils)
+| Outil | Description |
+|-------|-------------|
+| `list_comments` | Lister les commentaires d'un document/block |
+| `add_comment` | Ajouter un commentaire |
+| `delete_comment` | Supprimer un commentaire |
+| `get_comment_count` | Compter les commentaires |
+| `get_blocks_with_comments` | Lister les blocks avec commentaires |
+
+### Users & Profiles (4 outils)
+| Outil | Description |
+|-------|-------------|
+| `list_users` | Lister tous les utilisateurs |
+| `get_user` | Obtenir un utilisateur |
+| `get_profile` | Obtenir un profil |
+| `update_profile` | Modifier un profil |
 
 ### Storage (3 outils)
 | Outil | Description |
@@ -128,16 +197,16 @@ npm run start:http
 
 ```bash
 # Mode développement (stdio)
-npm run dev
+pnpm run dev
 
 # Mode développement (HTTP)
-npm run dev:http
+pnpm run dev:http
 
 # Vérification TypeScript
-npm run typecheck
+pnpm run typecheck
 
 # Test avec MCP Inspector
-npm run inspect
+pnpm run inspect
 ```
 
 ## Architecture
@@ -150,11 +219,15 @@ mcp-server/
 │   ├── server.ts          # Configuration MCP
 │   ├── config.ts          # Gestion des variables d'env
 │   ├── tools/
-│   │   ├── projects.ts    # Outils projets
-│   │   ├── documents.ts   # Outils documents
-│   │   ├── tasks.ts       # Outils tâches
-│   │   ├── databases.ts   # Outils bases de données
-│   │   └── storage.ts     # Outils stockage
+│   │   ├── projects.ts    # Outils projets (8)
+│   │   ├── documents.ts   # Outils documents (11)
+│   │   ├── tasks.ts       # Outils tâches (8)
+│   │   ├── databases.ts   # Outils bases de données (12)
+│   │   ├── tabs.ts        # Outils tabs/organisation (14)
+│   │   ├── spreadsheets.ts# Outils spreadsheets (12)
+│   │   ├── comments.ts    # Outils commentaires (5)
+│   │   ├── users.ts       # Outils utilisateurs (4)
+│   │   └── storage.ts     # Outils stockage (3)
 │   ├── prompts/
 │   │   ├── project-prompts.ts
 │   │   ├── task-prompts.ts
