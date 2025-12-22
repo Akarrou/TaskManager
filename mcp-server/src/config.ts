@@ -1,8 +1,14 @@
 import { config } from 'dotenv';
 import { z } from 'zod';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
 
-// Load environment variables from .env file
-config();
+// Get the directory of this file
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load environment variables from .env file (with absolute path for MCP stdio mode)
+config({ path: resolve(__dirname, '..', '.env') });
 
 const envSchema = z.object({
   // Supabase configuration
