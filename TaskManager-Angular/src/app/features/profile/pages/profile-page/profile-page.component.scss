@@ -325,6 +325,160 @@
   font-weight: 500;
 }
 
+// MCP Server Section
+.c-profile-card--mcp {
+  .c-card-icon {
+    color: #059669;
+  }
+}
+
+.c-mcp-description {
+  font-size: v.$font-size-sm;
+  color: v.$text-color-medium;
+  line-height: 1.6;
+  margin: 0;
+
+  code {
+    background: rgba(v.$primary-color, 0.1);
+    color: v.$primary-color;
+    padding: 2px 6px;
+    border-radius: v.$border-radius-sm;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+    font-size: v.$font-size-xs;
+  }
+}
+
+.c-input-wrapper--copyable {
+  .c-input {
+    padding-right: 48px;
+  }
+}
+
+.c-input--mono {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+  font-size: v.$font-size-xs;
+  letter-spacing: 0.02em;
+}
+
+.c-copy-btn {
+  position: absolute;
+  right: v.$space-2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: v.$border-radius-md;
+  color: v.$text-color-light;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  .material-icons-outlined {
+    font-size: 18px;
+  }
+
+  &:hover {
+    background: rgba(v.$primary-color, 0.1);
+    color: v.$primary-color;
+  }
+}
+
+// Code Block
+.c-code-block {
+  background: #1e293b;
+  border-radius: v.$border-radius-lg;
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: v.$space-2 v.$space-4;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  &__filename {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+    font-size: v.$font-size-xs;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .c-copy-btn {
+    position: static;
+    color: rgba(255, 255, 255, 0.5);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+  }
+
+  &__content {
+    margin: 0;
+    padding: v.$space-4;
+    overflow-x: auto;
+
+    code {
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+      font-size: v.$font-size-sm;
+      color: #e2e8f0;
+      white-space: pre;
+      line-height: 1.6;
+    }
+  }
+}
+
+// MCP Instructions
+.c-mcp-instructions {
+  background: rgba(v.$primary-color, 0.05);
+  border: 1px solid rgba(v.$primary-color, 0.15);
+  border-radius: v.$border-radius-lg;
+  padding: v.$space-4;
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    font-size: v.$font-size-sm;
+    font-weight: 600;
+    color: v.$text-color-dark;
+    margin: 0 0 v.$space-3 0;
+
+    .material-icons-outlined {
+      font-size: 18px;
+      color: v.$primary-color;
+    }
+  }
+
+  &__list {
+    margin: 0;
+    padding-left: v.$space-5;
+    font-size: v.$font-size-sm;
+    color: v.$text-color-medium;
+    line-height: 1.8;
+
+    li {
+      margin-bottom: v.$space-1;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    code {
+      background: rgba(v.$primary-color, 0.1);
+      color: v.$primary-color;
+      padding: 2px 6px;
+      border-radius: v.$border-radius-sm;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+      font-size: v.$font-size-xs;
+    }
+  }
+}
+
 // Responsive
 @media (max-width: v.$breakpoint-sm) {
   .c-profile-layout {

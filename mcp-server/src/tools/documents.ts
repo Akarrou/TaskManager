@@ -1,6 +1,18 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
+import { env } from '../config.js';
+
+/**
+ * Get the current user ID from configuration
+ * Throws an error if no user is configured (required for multi-user security)
+ */
+function getCurrentUserId(): string {
+  if (!env.DEFAULT_USER_ID) {
+    throw new Error('No user configured. Set DEFAULT_USER_ID in environment.');
+  }
+  return env.DEFAULT_USER_ID;
+}
 
 /**
  * Register all document-related tools
@@ -20,10 +32,12 @@ export function registerDocumentTools(server: McpServer): void {
     },
     async ({ project_id, parent_id, limit, offset }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
         let query = supabase
           .from('documents')
           .select('id, title, parent_id, project_id, database_id, database_row_id, created_at, updated_at', { count: 'exact' })
+          .eq('user_id', userId) // Filter by current user
           .order('updated_at', { ascending: false })
           .range(offset, offset + limit - 1);
 
@@ -77,11 +91,13 @@ export function registerDocumentTools(server: McpServer): void {
     },
     async ({ document_id }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
         const { data, error } = await supabase
           .from('documents')
           .select('*')
           .eq('id', document_id)
+          .eq('user_id', userId) // Verify ownership
           .single();
 
         if (error) {
@@ -108,20 +124,24 @@ export function registerDocumentTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'create_document',
-    `Create a new document (rich-text page) in the Kodo workspace. Documents support TipTap editor content including headings, paragraphs, lists, tables, code blocks, and embedded databases. They can be organized hierarchically by setting a parent_id for wiki-like nested structure. Returns the created document with its generated UUID. Typical workflow: create document, then use update_document to add content, or link it to a tab/section for navigation. Related tools: update_document (add content), create_database (embed a table).`,
+    `Create a new document (rich-text page) in the Kodo workspace. Documents support TipTap editor content including headings, paragraphs, lists, tables, code blocks, and embedded databases. They can be organized hierarchically by setting a parent_id for wiki-like nested structure. Returns the created document with its generated UUID. Typical workflow: create document, then use update_document to add content, or link it to a tab/section for navigation. Can also be linked to a database row (Notion-style) by providing database_id and database_row_id. Related tools: update_document (add content), create_database (embed a table).`,
     {
       title: z.string().min(1).max(500).describe('The document title displayed in navigation and breadcrumbs. Should be descriptive.'),
       project_id: z.string().uuid().optional().describe('Project to associate this document with. Required for the document to appear in project navigation.'),
       parent_id: z.string().uuid().optional().describe('Parent document ID to create a nested/child document. Creates hierarchical wiki-like structure.'),
       content: z.any().optional().describe('Initial TipTap JSON content. Format: { type: "doc", content: [...nodes] }. Leave empty for a blank document.'),
+      database_id: z.string().optional().describe('Database ID if this document represents a database row (Notion-style). Format: db-uuid.'),
+      database_row_id: z.string().uuid().optional().describe('Row ID in the database this document is linked to.'),
     },
-    async ({ title, project_id, parent_id, content }) => {
+    async ({ title, project_id, parent_id, content, database_id, database_row_id }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
 
         const documentData: Record<string, unknown> = {
           title,
           content: content || { type: 'doc', content: [] },
+          user_id: userId, // Always set user_id for ownership
         };
 
         if (project_id) {
@@ -130,6 +150,14 @@ export function registerDocumentTools(server: McpServer): void {
 
         if (parent_id) {
           documentData.parent_id = parent_id;
+        }
+
+        if (database_id) {
+          documentData.database_id = database_id;
+        }
+
+        if (database_row_id) {
+          documentData.database_row_id = database_row_id;
         }
 
         const { data, error } = await supabase
@@ -170,6 +198,7 @@ export function registerDocumentTools(server: McpServer): void {
     },
     async ({ document_id, title, content }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
 
         const updates: Record<string, unknown> = {
@@ -190,6 +219,7 @@ export function registerDocumentTools(server: McpServer): void {
           .from('documents')
           .update(updates)
           .eq('id', document_id)
+          .eq('user_id', userId) // Verify ownership
           .select()
           .single();
 
@@ -224,11 +254,27 @@ export function registerDocumentTools(server: McpServer): void {
     },
     async ({ document_id, cascade }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
 
+        // First verify ownership
+        const { data: doc, error: verifyError } = await supabase
+          .from('documents')
+          .select('id')
+          .eq('id', document_id)
+          .eq('user_id', userId)
+          .single();
+
+        if (verifyError || !doc) {
+          return {
+            content: [{ type: 'text', text: 'Document not found or access denied.' }],
+            isError: true,
+          };
+        }
+
         if (cascade) {
-          // Get all descendant document IDs
-          const descendantIds = await getAllDescendantIds(supabase, document_id);
+          // Get all descendant document IDs (already filtered by user in getAllDescendantIds)
+          const descendantIds = await getAllDescendantIds(supabase, document_id, userId);
           const allDocIds = [...descendantIds, document_id];
 
           // Delete in reverse order (children first)
@@ -236,7 +282,8 @@ export function registerDocumentTools(server: McpServer): void {
             const { error } = await supabase
               .from('documents')
               .delete()
-              .eq('id', docId);
+              .eq('id', docId)
+              .eq('user_id', userId); // Extra safety
 
             if (error) {
               return {
@@ -254,7 +301,8 @@ export function registerDocumentTools(server: McpServer): void {
           const { error } = await supabase
             .from('documents')
             .delete()
-            .eq('id', document_id);
+            .eq('id', document_id)
+            .eq('user_id', userId); // Verify ownership
 
           if (error) {
             return {
@@ -289,10 +337,12 @@ export function registerDocumentTools(server: McpServer): void {
     },
     async ({ query, project_id, limit }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
         let dbQuery = supabase
           .from('documents')
           .select('id, title, parent_id, project_id, updated_at')
+          .eq('user_id', userId) // Filter by current user
           .ilike('title', `%${query}%`)
           .order('updated_at', { ascending: false })
           .limit(limit);
@@ -333,6 +383,7 @@ export function registerDocumentTools(server: McpServer): void {
     },
     async ({ document_id }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
         const breadcrumb: Array<{ id: string; title: string }> = [];
         let currentId: string | null = document_id;
@@ -342,6 +393,7 @@ export function registerDocumentTools(server: McpServer): void {
             .from('documents')
             .select('id, title, parent_id')
             .eq('id', currentId)
+            .eq('user_id', userId) // Filter by current user
             .single();
 
           if (error || !docData) break;
@@ -373,12 +425,14 @@ export function registerDocumentTools(server: McpServer): void {
     },
     async ({ project_id }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
 
         // Total count
         let countQuery = supabase
           .from('documents')
-          .select('id', { count: 'exact', head: true });
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId); // Filter by current user
 
         if (project_id) {
           countQuery = countQuery.eq('project_id', project_id);
@@ -393,6 +447,7 @@ export function registerDocumentTools(server: McpServer): void {
         let recentQuery = supabase
           .from('documents')
           .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId) // Filter by current user
           .gte('created_at', weekAgo.toISOString());
 
         if (project_id) {
@@ -405,6 +460,7 @@ export function registerDocumentTools(server: McpServer): void {
         let lastModifiedQuery = supabase
           .from('documents')
           .select('id, title, updated_at')
+          .eq('user_id', userId) // Filter by current user
           .order('updated_at', { ascending: false })
           .limit(1);
 
@@ -432,131 +488,12 @@ export function registerDocumentTools(server: McpServer): void {
     }
   );
 
-  // =========================================================================
-  // link_task_to_document - Link a task to a document
-  // =========================================================================
-  server.tool(
-    'link_task_to_document',
-    `Create a relationship between a task (from a task database) and a document. This enables cross-referencing between documentation and work items. Relation types: 'related' (general association), 'blocking' (document blocks task), 'blocked_by' (task blocks document), 'parent' (document is parent), 'child' (document is child). Use get_document_tasks to see existing links. The task_id is a row ID from a task-type database.`,
-    {
-      document_id: z.string().uuid().describe('The UUID of the document to link.'),
-      task_id: z.string().uuid().describe('The row ID of the task from a task database. Get this from list_tasks or get_database_rows on a task database.'),
-      relation_type: z.enum(['related', 'blocking', 'blocked_by', 'parent', 'child']).optional().default('related').describe('Type of relationship. Default is "related" for general association.'),
-    },
-    async ({ document_id, task_id, relation_type }) => {
-      try {
-        const supabase = getSupabaseClient();
-
-        const { data, error } = await supabase
-          .from('document_task_relations')
-          .insert({
-            document_id,
-            task_id,
-            relation_type,
-          })
-          .select()
-          .single();
-
-        if (error) {
-          return {
-            content: [{ type: 'text', text: `Error linking task to document: ${error.message}` }],
-            isError: true,
-          };
-        }
-
-        return {
-          content: [{ type: 'text', text: `Task linked to document successfully:\n${JSON.stringify(data, null, 2)}` }],
-        };
-      } catch (err) {
-        return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
-          isError: true,
-        };
-      }
-    }
-  );
-
-  // =========================================================================
-  // get_document_tasks - Get tasks linked to a document
-  // =========================================================================
-  server.tool(
-    'get_document_tasks',
-    `Get all tasks that are linked to a specific document. Returns an array of relationship records including task_id, relation_type, and timestamps. Use this to see what work items are associated with a document. To get full task details, use the task_id with get_task. Related tools: link_task_to_document (create links), unlink_task_from_document (remove links).`,
-    {
-      document_id: z.string().uuid().describe('The UUID of the document to get linked tasks for.'),
-    },
-    async ({ document_id }) => {
-      try {
-        const supabase = getSupabaseClient();
-
-        const { data, error } = await supabase
-          .from('document_task_relations')
-          .select('*')
-          .eq('document_id', document_id);
-
-        if (error) {
-          return {
-            content: [{ type: 'text', text: `Error getting document tasks: ${error.message}` }],
-            isError: true,
-          };
-        }
-
-        return {
-          content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
-        };
-      } catch (err) {
-        return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
-          isError: true,
-        };
-      }
-    }
-  );
-
-  // =========================================================================
-  // unlink_task_from_document - Remove a task-document relationship
-  // =========================================================================
-  server.tool(
-    'unlink_task_from_document',
-    `Remove the relationship between a task and a document. This does not delete either the task or the document - only the link between them. Use get_document_tasks first to see existing links and get the task_id. Returns confirmation of successful removal.`,
-    {
-      document_id: z.string().uuid().describe('The UUID of the document to unlink from.'),
-      task_id: z.string().uuid().describe('The row ID of the task to unlink. Get this from get_document_tasks.'),
-    },
-    async ({ document_id, task_id }) => {
-      try {
-        const supabase = getSupabaseClient();
-
-        const { error } = await supabase
-          .from('document_task_relations')
-          .delete()
-          .eq('document_id', document_id)
-          .eq('task_id', task_id);
-
-        if (error) {
-          return {
-            content: [{ type: 'text', text: `Error unlinking task from document: ${error.message}` }],
-            isError: true,
-          };
-        }
-
-        return {
-          content: [{ type: 'text', text: 'Task unlinked from document successfully.' }],
-        };
-      } catch (err) {
-        return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
-          isError: true,
-        };
-      }
-    }
-  );
 }
 
 /**
- * Helper: Get all descendant document IDs recursively
+ * Helper: Get all descendant document IDs recursively (filtered by user)
  */
-async function getAllDescendantIds(supabase: ReturnType<typeof getSupabaseClient>, documentId: string): Promise<string[]> {
+async function getAllDescendantIds(supabase: ReturnType<typeof getSupabaseClient>, documentId: string, userId: string): Promise<string[]> {
   const descendants: string[] = [];
   const queue: string[] = [documentId];
 
@@ -566,7 +503,8 @@ async function getAllDescendantIds(supabase: ReturnType<typeof getSupabaseClient
     const { data, error } = await supabase
       .from('documents')
       .select('id')
-      .eq('parent_id', currentId);
+      .eq('parent_id', currentId)
+      .eq('user_id', userId); // Filter by current user
 
     if (error || !data) continue;
 

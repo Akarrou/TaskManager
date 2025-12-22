@@ -1,6 +1,68 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
+import { env } from '../config.js';
+
+/**
+ * Get the current user ID from configuration
+ * Throws an error if no user is configured (required for multi-user security)
+ */
+function getCurrentUserId(): string {
+  if (!env.DEFAULT_USER_ID) {
+    throw new Error('No user configured. Set DEFAULT_USER_ID in environment.');
+  }
+  return env.DEFAULT_USER_ID;
+}
+
+/**
+ * Get task databases accessible to the current user
+ * Databases are accessible if they belong to a document owned by the user
+ */
+async function getUserTaskDatabases(supabase: ReturnType<typeof getSupabaseClient>, userId: string): Promise<Record<string, unknown>[]> {
+  // Get databases linked to documents the user owns
+  const { data: databases, error } = await supabase
+    .from('document_databases')
+    .select('*, documents!inner(user_id)')
+    .eq('documents.user_id', userId);
+
+  if (error) {
+    // Fallback: get standalone databases (no document_id) - these might be user's own
+    const { data: standaloneDbs } = await supabase
+      .from('document_databases')
+      .select('*')
+      .is('document_id', null);
+
+    return (standaloneDbs || []).filter((db: Record<string, unknown>) => {
+      const config = db.config as { type?: string } | undefined;
+      return config?.type === 'task';
+    });
+  }
+
+  return (databases || []).filter((db: Record<string, unknown>) => {
+    const config = db.config as { type?: string } | undefined;
+    return config?.type === 'task';
+  });
+}
+
+/**
+ * Check if user has access to a specific database
+ */
+async function userHasDatabaseAccess(supabase: ReturnType<typeof getSupabaseClient>, databaseId: string, userId: string): Promise<boolean> {
+  // Check if database belongs to a document owned by the user
+  const { data } = await supabase
+    .from('document_databases')
+    .select('document_id, documents(user_id)')
+    .eq('database_id', databaseId)
+    .single();
+
+  if (!data) return false;
+
+  // If no document linked, allow access (standalone database)
+  if (!data.document_id) return true;
+
+  const doc = data.documents as unknown as { user_id: string } | null;
+  return doc?.user_id === userId;
+}
 
 // Task status and priority enums
 const TaskStatusEnum = z.enum(['backlog', 'pending', 'in_progress', 'completed', 'cancelled', 'blocked', 'awaiting_info']);
@@ -25,25 +87,11 @@ export function registerTaskTools(server: McpServer): void {
     },
     async ({ status, priority, project_id, limit }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
 
-        // First, get all task-type databases
-        const { data: databases, error: dbError } = await supabase
-          .from('document_databases')
-          .select('*');
-
-        if (dbError) {
-          return {
-            content: [{ type: 'text', text: `Error fetching databases: ${dbError.message}` }],
-            isError: true,
-          };
-        }
-
-        // Filter for task-type databases
-        const taskDatabases = (databases || []).filter((db: Record<string, unknown>) => {
-          const config = db.config as { type?: string } | undefined;
-          return config?.type === 'task';
-        });
+        // Get task databases accessible to this user
+        const taskDatabases = await getUserTaskDatabases(supabase, userId);
 
         if (taskDatabases.length === 0) {
           return {
@@ -55,7 +103,7 @@ export function registerTaskTools(server: McpServer): void {
         const allTasks: Record<string, unknown>[] = [];
 
         for (const db of taskDatabases) {
-          const tableName = `database_${db.database_id.replace('db-', '')}`;
+          const tableName = `database_${(db.database_id as string).replace('db-', '').replace(/-/g, '_')}`;
 
           let query = supabase
             .from(tableName)
@@ -112,28 +160,11 @@ export function registerTaskTools(server: McpServer): void {
     },
     async ({ project_id }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
 
-        // Try to use RPC function if available
-        const { data: rpcData, error: rpcError } = await supabase.rpc('get_task_stats_aggregated', {
-          p_project_id: project_id || null,
-        });
-
-        if (!rpcError && rpcData) {
-          return {
-            content: [{ type: 'text', text: JSON.stringify(rpcData, null, 2) }],
-          };
-        }
-
-        // Fallback: calculate manually
-        const { data: databases } = await supabase
-          .from('document_databases')
-          .select('*');
-
-        const taskDatabases = (databases || []).filter((db: Record<string, unknown>) => {
-          const config = db.config as { type?: string } | undefined;
-          return config?.type === 'task';
-        });
+        // Get task databases accessible to this user
+        const taskDatabases = await getUserTaskDatabases(supabase, userId);
 
         const stats = {
           total: 0,
@@ -148,7 +179,7 @@ export function registerTaskTools(server: McpServer): void {
         };
 
         for (const db of taskDatabases) {
-          const tableName = `database_${db.database_id.replace('db-', '')}`;
+          const tableName = `database_${(db.database_id as string).replace('db-', '').replace(/-/g, '_')}`;
           const { data: rows } = await supabase.from(tableName).select('*');
 
           for (const row of rows || []) {
@@ -190,7 +221,17 @@ export function registerTaskTools(server: McpServer): void {
     },
     async ({ database_id, row_id, status }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
+
+        // Verify user has access to this database
+        const hasAccess = await userHasDatabaseAccess(supabase, database_id, userId);
+        if (!hasAccess) {
+          return {
+            content: [{ type: 'text', text: `Access denied: You do not have permission to modify this database.` }],
+            isError: true,
+          };
+        }
 
         // Get database metadata to find status column
         const { data: dbMeta, error: metaError } = await supabase
@@ -216,32 +257,15 @@ export function registerTaskTools(server: McpServer): void {
           };
         }
 
-        const tableName = `database_${database_id.replace('db-', '')}`;
+        const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
 
-        // Get current row
-        const { data: currentRow, error: getError } = await supabase
-          .from(tableName)
-          .select('*')
-          .eq('id', row_id)
-          .single();
-
-        if (getError || !currentRow) {
-          return {
-            content: [{ type: 'text', text: `Task not found: ${row_id}` }],
-            isError: true,
-          };
-        }
-
-        // Update cells with new status
-        const updatedCells = {
-          ...currentRow.cells,
-          [statusColumn.id]: status,
-        };
+        // Update status column directly (matches Angular pattern)
+        const colName = `col_${statusColumn.id.replace(/-/g, '_')}`;
 
         const { data, error } = await supabase
           .from(tableName)
           .update({
-            cells: updatedCells,
+            [colName]: status,
             updated_at: new Date().toISOString(),
           })
           .eq('id', row_id)
@@ -280,7 +304,17 @@ export function registerTaskTools(server: McpServer): void {
     },
     async ({ database_id, row_id, priority }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
+
+        // Verify user has access to this database
+        const hasAccess = await userHasDatabaseAccess(supabase, database_id, userId);
+        if (!hasAccess) {
+          return {
+            content: [{ type: 'text', text: `Access denied: You do not have permission to modify this database.` }],
+            isError: true,
+          };
+        }
 
         const { data: dbMeta, error: metaError } = await supabase
           .from('document_databases')
@@ -305,30 +339,15 @@ export function registerTaskTools(server: McpServer): void {
           };
         }
 
-        const tableName = `database_${database_id.replace('db-', '')}`;
+        const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
 
-        const { data: currentRow, error: getError } = await supabase
-          .from(tableName)
-          .select('*')
-          .eq('id', row_id)
-          .single();
-
-        if (getError || !currentRow) {
-          return {
-            content: [{ type: 'text', text: `Task not found: ${row_id}` }],
-            isError: true,
-          };
-        }
-
-        const updatedCells = {
-          ...currentRow.cells,
-          [priorityColumn.id]: priority,
-        };
+        // Update priority column directly (matches Angular pattern)
+        const colName = `col_${priorityColumn.id.replace(/-/g, '_')}`;
 
         const { data, error } = await supabase
           .from(tableName)
           .update({
-            cells: updatedCells,
+            [colName]: priority,
             updated_at: new Date().toISOString(),
           })
           .eq('id', row_id)
@@ -359,7 +378,37 @@ export function registerTaskTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'create_task',
-    `Create a new task in a task-type database. Tasks are rows with standardized columns mapped to task fields. The database must be of type "task" (created via create_database with type "task"). Returns the created task with its generated row ID. The task is added at the end of the row order. Type can be "epic" (large feature), "feature" (deliverable), or "task" (work item). Related tools: list_tasks (see all tasks), update_task (modify), get_task (details).`,
+    `Create a new task in a task-type database. A linked document is automatically created (Notion-style).
+
+⚠️ MANDATORY WORKFLOW - DO NOT SKIP ANY STEP ⚠️
+
+The AI agent MUST execute these steps IN ORDER before calling create_task:
+
+STEP 1: List task databases
+→ Call list_databases with type="task"
+→ Wait for response before proceeding
+
+STEP 2: Handle database selection
+→ If 0 databases: ASK user "Aucune base de tâches trouvée. Voulez-vous en créer une?" then use create_database
+→ If 1 database: INFORM user "J'utilise la base [name]" and proceed
+→ If 2+ databases: ASK user "Quelle base de données voulez-vous utiliser?" with numbered list
+
+STEP 3: Collect task title (REQUIRED)
+→ ASK user: "Quel est le titre de la tâche?"
+→ Wait for response - DO NOT proceed without a title
+
+STEP 4: Collect optional fields
+→ ASK user about optional fields in ONE question:
+  - Description (texte libre)
+  - Priorité (low/medium/high/critical) - défaut: medium
+  - Type (epic/feature/task) - défaut: task
+  - Assigné à (nom)
+  - Date d'échéance (format: YYYY-MM-DD)
+
+STEP 5: Create the task
+→ Only NOW call create_task with all collected information
+
+Returns: { task, document }. Related tools: list_databases, create_database.`,
     {
       database_id: z.string().describe('The task database to add to. Format: db-uuid. Get this from list_databases or the database where you want the task.'),
       title: z.string().min(1).describe('Task title - the main identifier shown in lists and Kanban cards.'),
@@ -369,10 +418,21 @@ export function registerTaskTools(server: McpServer): void {
       type: TaskTypeEnum.optional().default('task').describe('Task type for categorization. Default "task". Options: epic (large feature), feature (deliverable), task (work item).'),
       assigned_to: z.string().optional().describe('Name or identifier of the person assigned. Free text field.'),
       due_date: z.string().optional().describe('Due date in ISO format (e.g., "2024-12-31" or "2024-12-31T09:00:00Z").'),
+      user_id: z.string().uuid().optional().describe('User ID to assign ownership of the linked document. Required for RLS access. Get this from list_users or get_profile.'),
     },
-    async ({ database_id, title, description, status, priority, type, assigned_to, due_date }) => {
+    async ({ database_id, title, description, status, priority, type, assigned_to, due_date, user_id }) => {
       try {
+        const currentUserId = getCurrentUserId();
         const supabase = getSupabaseClient();
+
+        // Verify user has access to this database
+        const hasAccess = await userHasDatabaseAccess(supabase, database_id, currentUserId);
+        if (!hasAccess) {
+          return {
+            content: [{ type: 'text', text: `Access denied: You do not have permission to modify this database.` }],
+            isError: true,
+          };
+        }
 
         const { data: dbMeta, error: metaError } = await supabase
           .from('document_databases')
@@ -387,8 +447,9 @@ export function registerTaskTools(server: McpServer): void {
           };
         }
 
-        const config = dbMeta.config as { columns?: Array<{ id: string; name: string }> };
+        const config = dbMeta.config as { columns?: Array<{ id: string; name: string }>; type?: string };
         const columns = config.columns || [];
+        const isTaskDatabase = config.type === 'task';
 
         // Build cells object mapping column names to values
         const cells: Record<string, unknown> = {};
@@ -416,7 +477,18 @@ export function registerTaskTools(server: McpServer): void {
         const dueDateColId = findColumnId('Due Date');
         if (dueDateColId && due_date) cells[dueDateColId] = due_date;
 
-        const tableName = `database_${database_id.replace('db-', '')}`;
+        // Auto-generate task number for task databases
+        const taskNumberColId = findColumnId('Task Number');
+        if (isTaskDatabase && taskNumberColId) {
+          const { data: taskNumber, error: rpcError } = await supabase.rpc('get_next_task_number');
+          if (rpcError) {
+            console.error('Failed to get next task number:', rpcError.message);
+          } else if (taskNumber) {
+            cells[taskNumberColId] = taskNumber;
+          }
+        }
+
+        const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
 
         // Get max row_order
         const { data: maxOrderRow } = await supabase
@@ -428,12 +500,13 @@ export function registerTaskTools(server: McpServer): void {
 
         const newRowOrder = (maxOrderRow?.row_order || 0) + 1;
 
+        // Map cells to individual columns (matches Angular pattern)
+        const rowData = mapCellsToColumns(cells);
+        rowData['row_order'] = newRowOrder;
+
         const { data, error } = await supabase
           .from(tableName)
-          .insert({
-            cells,
-            row_order: newRowOrder,
-          })
+          .insert(rowData)
           .select()
           .single();
 
@@ -444,8 +517,29 @@ export function registerTaskTools(server: McpServer): void {
           };
         }
 
+        // Create the linked document (Notion-style) - always use current user
+        const { data: docData, error: docError } = await supabase
+          .from('documents')
+          .insert({
+            title: title,
+            database_id: database_id,
+            database_row_id: data.id,
+            project_id: (dbMeta.project_id as string) || null,
+            content: { type: 'doc', content: [] },
+            user_id: user_id || currentUserId, // Use provided user_id or current user
+          })
+          .select()
+          .single();
+
+        if (docError) {
+          // Return task with document error info
+          return {
+            content: [{ type: 'text', text: `Task created but linked document failed:\n${JSON.stringify({ task: data, document: null, document_error: docError.message }, null, 2)}` }],
+          };
+        }
+
         return {
-          content: [{ type: 'text', text: `Task created successfully:\n${JSON.stringify(data, null, 2)}` }],
+          content: [{ type: 'text', text: `Task created successfully:\n${JSON.stringify({ task: data, document: docData }, null, 2)}` }],
         };
       } catch (err) {
         return {
@@ -468,7 +562,17 @@ export function registerTaskTools(server: McpServer): void {
     },
     async ({ database_id, row_id }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
+
+        // Verify user has access to this database
+        const hasAccess = await userHasDatabaseAccess(supabase, database_id, userId);
+        if (!hasAccess) {
+          return {
+            content: [{ type: 'text', text: `Access denied: You do not have permission to access this database.` }],
+            isError: true,
+          };
+        }
 
         const { data: dbMeta, error: metaError } = await supabase
           .from('document_databases')
@@ -483,7 +587,7 @@ export function registerTaskTools(server: McpServer): void {
           };
         }
 
-        const tableName = `database_${database_id.replace('db-', '')}`;
+        const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
 
         const { data: row, error } = await supabase
           .from(tableName)
@@ -513,6 +617,64 @@ export function registerTaskTools(server: McpServer): void {
   );
 
   // =========================================================================
+  // get_task_document - Get the document linked to a task
+  // =========================================================================
+  server.tool(
+    'get_task_document',
+    `Get the document linked to a task. Each task in a task database has an associated document (Notion-style) that can contain rich content, notes, and details. The document is automatically created when the task is created. Use this to retrieve the document for viewing or editing its content. Returns the full document object including id, title, content, and metadata.`,
+    {
+      database_id: z.string().describe('The database ID where the task lives. Format: db-uuid.'),
+      row_id: z.string().uuid().describe('The task/row ID to get the document for.'),
+    },
+    async ({ database_id, row_id }) => {
+      try {
+        const userId = getCurrentUserId();
+        const supabase = getSupabaseClient();
+
+        // Verify user has access to this database
+        const hasAccess = await userHasDatabaseAccess(supabase, database_id, userId);
+        if (!hasAccess) {
+          return {
+            content: [{ type: 'text', text: `Access denied: You do not have permission to access this database.` }],
+            isError: true,
+          };
+        }
+
+        // Get the document and verify ownership
+        const { data, error } = await supabase
+          .from('documents')
+          .select('*')
+          .eq('database_id', database_id)
+          .eq('database_row_id', row_id)
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (error) {
+          return {
+            content: [{ type: 'text', text: `Error getting task document: ${error.message}` }],
+            isError: true,
+          };
+        }
+
+        if (!data) {
+          return {
+            content: [{ type: 'text', text: 'No document found for this task. The document may not have been created or may have been deleted.' }],
+          };
+        }
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+        };
+      } catch (err) {
+        return {
+          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // =========================================================================
   // update_task - Update all fields of a task
   // =========================================================================
   server.tool(
@@ -531,7 +693,17 @@ export function registerTaskTools(server: McpServer): void {
     },
     async ({ database_id, row_id, title, description, status, priority, type, assigned_to, due_date }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
+
+        // Verify user has access to this database
+        const hasAccess = await userHasDatabaseAccess(supabase, database_id, userId);
+        if (!hasAccess) {
+          return {
+            content: [{ type: 'text', text: `Access denied: You do not have permission to modify this database.` }],
+            isError: true,
+          };
+        }
 
         const { data: dbMeta, error: metaError } = await supabase
           .from('document_databases')
@@ -550,7 +722,7 @@ export function registerTaskTools(server: McpServer): void {
         const columns = config.columns || [];
         const findColumnId = (name: string) => columns.find(c => c.name === name)?.id;
 
-        const tableName = `database_${database_id.replace('db-', '')}`;
+        const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
 
         // Get current row
         const { data: currentRow, error: getError } = await supabase
@@ -566,9 +738,7 @@ export function registerTaskTools(server: McpServer): void {
           };
         }
 
-        // Build updated cells
-        const updatedCells = { ...currentRow.cells };
-
+        // Build update object with individual columns (matches Angular pattern)
         const updates: Array<{ name: string; value: unknown }> = [];
         if (title !== undefined) updates.push({ name: 'Title', value: title });
         if (description !== undefined) updates.push({ name: 'Description', value: description });
@@ -585,19 +755,22 @@ export function registerTaskTools(server: McpServer): void {
           };
         }
 
+        // Map updates to individual column names
+        const updateData: Record<string, unknown> = {
+          updated_at: new Date().toISOString(),
+        };
+
         for (const update of updates) {
           const colId = findColumnId(update.name);
           if (colId) {
-            updatedCells[colId] = update.value;
+            const colName = `col_${colId.replace(/-/g, '_')}`;
+            updateData[colName] = update.value;
           }
         }
 
         const { data, error } = await supabase
           .from(tableName)
-          .update({
-            cells: updatedCells,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updateData)
           .eq('id', row_id)
           .select()
           .single();
@@ -635,7 +808,17 @@ export function registerTaskTools(server: McpServer): void {
     },
     async ({ database_id, row_id }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
+
+        // Verify user has access to this database
+        const hasAccess = await userHasDatabaseAccess(supabase, database_id, userId);
+        if (!hasAccess) {
+          return {
+            content: [{ type: 'text', text: `Access denied: You do not have permission to modify this database.` }],
+            isError: true,
+          };
+        }
 
         const { data: dbMeta, error: metaError } = await supabase
           .from('document_databases')
@@ -650,7 +833,7 @@ export function registerTaskTools(server: McpServer): void {
           };
         }
 
-        const tableName = `database_${database_id.replace('db-', '')}`;
+        const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
 
         // Get task info before deleting
         const { data: taskRow } = await supabase
@@ -688,15 +871,17 @@ export function registerTaskTools(server: McpServer): void {
 
 /**
  * Helper: Normalize a database row to a task-like object
+ * Reads individual columns (col_xxx) matching Angular's pattern
  */
 function normalizeRowToTask(row: Record<string, unknown>, dbMeta: Record<string, unknown>): Record<string, unknown> {
   const config = dbMeta.config as { columns?: Array<{ id: string; name: string }> };
   const columns = config.columns || [];
-  const cells = row.cells as Record<string, unknown>;
 
+  // Get cell value from individual column (matches Angular pattern)
   const getCell = (name: string) => {
     const col = columns.find(c => c.name === name);
-    return col ? cells[col.id] : null;
+    if (!col) return null;
+    return getCellFromRow(row, col.id);
   };
 
   return {
@@ -729,4 +914,25 @@ function normalizePriority(value: string | null | undefined): string {
   const normalized = value.toLowerCase();
   const validPriorities = ['low', 'medium', 'high', 'critical'];
   return validPriorities.includes(normalized) ? normalized : 'medium';
+}
+
+/**
+ * Map cells object to individual column names for database insert/update
+ * Matches Angular's mapCellsToColumns pattern (database.service.ts:900-904)
+ */
+function mapCellsToColumns(cells: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  Object.entries(cells).forEach(([columnId, value]) => {
+    result[`col_${columnId.replace(/-/g, '_')}`] = value;
+  });
+  return result;
+}
+
+/**
+ * Get cell value from database row using column name
+ * Matches Angular's mapRowFromDb pattern
+ */
+function getCellFromRow(row: Record<string, unknown>, columnId: string): unknown {
+  const colName = `col_${columnId.replace(/-/g, '_')}`;
+  return row[colName];
 }

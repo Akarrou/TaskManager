@@ -7,9 +7,7 @@
         "/Users/jeromevalette/Projets/Task manager/mcp-server/dist/index.js"
       ],
       "env": {
-        "SUPABASE_URL": "http://localhost:8000",
-        "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NjU0OTQ1MzMsImV4cCI6MjA4MDg1NDUzM30.bib2zmUvC-ld8N7OY7cHzp6h--dNEXgJ_7oa3orKcwk",
-        "STORAGE_BUCKET": "documents-files"
+        "DEFAULT_USER_ID": "d17c5079-e8c6-4ad1-995b-cc26227f2729"
       }
     }
   }

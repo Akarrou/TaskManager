@@ -3,6 +3,7 @@ declare const envSchema: z.ZodObject<{
     SUPABASE_URL: z.ZodDefault<z.ZodString>;
     SUPABASE_SERVICE_ROLE_KEY: z.ZodString;
     STORAGE_BUCKET: z.ZodDefault<z.ZodString>;
+    DEFAULT_USER_ID: z.ZodOptional<z.ZodString>;
     HTTP_PORT: z.ZodDefault<z.ZodNumber>;
     AUTH_ENABLED: z.ZodDefault<z.ZodBoolean>;
     AUTH_USERNAME: z.ZodDefault<z.ZodString>;
@@ -27,10 +28,12 @@ declare const envSchema: z.ZodObject<{
     RATE_LIMIT_WINDOW_MS: number;
     RETRY_MAX_ATTEMPTS: number;
     RETRY_BASE_DELAY_MS: number;
+    DEFAULT_USER_ID?: string | undefined;
 }, {
     SUPABASE_SERVICE_ROLE_KEY: string;
     SUPABASE_URL?: string | undefined;
     STORAGE_BUCKET?: string | undefined;
+    DEFAULT_USER_ID?: string | undefined;
     HTTP_PORT?: number | undefined;
     AUTH_ENABLED?: boolean | undefined;
     AUTH_USERNAME?: string | undefined;
@@ -56,6 +59,7 @@ export declare const env: {
     RATE_LIMIT_WINDOW_MS: number;
     RETRY_MAX_ATTEMPTS: number;
     RETRY_BASE_DELAY_MS: number;
+    DEFAULT_USER_ID?: string | undefined;
 };
 export type Env = z.infer<typeof envSchema>;
 export {};

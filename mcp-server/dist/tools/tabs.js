@@ -1,5 +1,50 @@
 import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
+import { env } from '../config.js';
+/**
+ * Get the current user ID from configuration
+ * Throws an error if no user is configured (required for multi-user security)
+ */
+function getCurrentUserId() {
+    if (!env.DEFAULT_USER_ID) {
+        throw new Error('No user configured. Set DEFAULT_USER_ID in environment.');
+    }
+    return env.DEFAULT_USER_ID;
+}
+/**
+ * Check if user has access to a project (owner or member)
+ */
+async function userHasProjectAccess(supabase, projectId, userId) {
+    // Check if user is owner
+    const { data: project } = await supabase
+        .from('projects')
+        .select('owner_id')
+        .eq('id', projectId)
+        .single();
+    if (project?.owner_id === userId)
+        return true;
+    // Check if user is member
+    const { data: membership } = await supabase
+        .from('project_members')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('user_id', userId)
+        .single();
+    return !!membership;
+}
+/**
+ * Check if user has access to a tab via project ownership/membership
+ */
+async function userHasTabAccess(supabase, tabId, userId) {
+    const { data: tab } = await supabase
+        .from('document_tabs')
+        .select('project_id')
+        .eq('id', tabId)
+        .single();
+    if (!tab)
+        return false;
+    return userHasProjectAccess(supabase, tab.project_id, userId);
+}
 /**
  * Register all tab-related tools (tabs, groups, sections for document organization)
  */
@@ -11,7 +56,16 @@ export function registerTabTools(server) {
         project_id: z.string().uuid().describe('The project UUID to list tabs for.'),
     }, async ({ project_id }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to this project
+            const hasAccess = await userHasProjectAccess(supabase, project_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to access this project.` }],
+                    isError: true,
+                };
+            }
             const { data, error } = await supabase
                 .from('document_tabs')
                 .select('*')
@@ -45,7 +99,16 @@ export function registerTabTools(server) {
         tab_group_id: z.string().uuid().optional().describe('Add to this tab group. Get IDs from list_tab_groups.'),
     }, async ({ project_id, name, icon, color, tab_group_id }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to this project
+            const hasAccess = await userHasProjectAccess(supabase, project_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to modify this project.` }],
+                    isError: true,
+                };
+            }
             // Get next position
             const { data: posData } = await supabase.rpc('get_next_tab_position', {
                 p_project_id: project_id,
@@ -96,7 +159,16 @@ export function registerTabTools(server) {
         tab_group_id: z.string().uuid().nullable().optional().describe('Move to this group. Set null to remove from current group.'),
     }, async ({ tab_id, name, icon, color, tab_group_id }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to this tab
+            const hasAccess = await userHasTabAccess(supabase, tab_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to modify this tab.` }],
+                    isError: true,
+                };
+            }
             const updates = {
                 updated_at: new Date().toISOString(),
             };
@@ -144,7 +216,16 @@ export function registerTabTools(server) {
         tab_id: z.string().uuid().describe('The tab UUID to delete. Get from list_tabs.'),
     }, async ({ tab_id }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to this tab
+            const hasAccess = await userHasTabAccess(supabase, tab_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to delete this tab.` }],
+                    isError: true,
+                };
+            }
             const { error } = await supabase
                 .from('document_tabs')
                 .delete()
@@ -174,7 +255,16 @@ export function registerTabTools(server) {
         project_id: z.string().uuid().describe('The project UUID (required to unset other defaults).'),
     }, async ({ tab_id, project_id }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to this project
+            const hasAccess = await userHasProjectAccess(supabase, project_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to modify this project.` }],
+                    isError: true,
+                };
+            }
             // First, unset any existing default
             await supabase
                 .from('document_tabs')
@@ -212,7 +302,18 @@ export function registerTabTools(server) {
         tab_ids: z.array(z.string().uuid()).min(1).describe('Array of tab UUIDs in desired order. First = position 0 (top).'),
     }, async ({ tab_ids }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to at least the first tab (all should be in same project)
+            if (tab_ids.length > 0) {
+                const hasAccess = await userHasTabAccess(supabase, tab_ids[0], userId);
+                if (!hasAccess) {
+                    return {
+                        content: [{ type: 'text', text: `Access denied: You do not have permission to modify these tabs.` }],
+                        isError: true,
+                    };
+                }
+            }
             // Update each tab with its new position
             for (let i = 0; i < tab_ids.length; i++) {
                 const { error } = await supabase
@@ -244,7 +345,16 @@ export function registerTabTools(server) {
         project_id: z.string().uuid().describe('The project UUID to list tab groups for.'),
     }, async ({ project_id }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to this project
+            const hasAccess = await userHasProjectAccess(supabase, project_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to access this project.` }],
+                    isError: true,
+                };
+            }
             const { data, error } = await supabase
                 .from('document_tab_groups')
                 .select('*')
@@ -276,7 +386,16 @@ export function registerTabTools(server) {
         color: z.string().optional().describe('Group header color.'),
     }, async ({ project_id, name, color }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to this project
+            const hasAccess = await userHasProjectAccess(supabase, project_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to modify this project.` }],
+                    isError: true,
+                };
+            }
             // Get next position
             const { data: posData } = await supabase.rpc('get_next_tab_group_position', {
                 p_project_id: project_id,
@@ -322,7 +441,27 @@ export function registerTabTools(server) {
         is_collapsed: z.boolean().optional().describe('Set true to collapse (hide contained tabs in UI).'),
     }, async ({ group_id, name, color, is_collapsed }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Get group's project and verify access
+            const { data: group } = await supabase
+                .from('document_tab_groups')
+                .select('project_id')
+                .eq('id', group_id)
+                .single();
+            if (!group) {
+                return {
+                    content: [{ type: 'text', text: `Tab group not found: ${group_id}` }],
+                    isError: true,
+                };
+            }
+            const hasAccess = await userHasProjectAccess(supabase, group.project_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to modify this tab group.` }],
+                    isError: true,
+                };
+            }
             const updates = {
                 updated_at: new Date().toISOString(),
             };
@@ -368,7 +507,27 @@ export function registerTabTools(server) {
         group_id: z.string().uuid().describe('The tab group UUID to delete. Get from list_tab_groups.'),
     }, async ({ group_id }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Get group's project and verify access
+            const { data: group } = await supabase
+                .from('document_tab_groups')
+                .select('project_id')
+                .eq('id', group_id)
+                .single();
+            if (!group) {
+                return {
+                    content: [{ type: 'text', text: `Tab group not found: ${group_id}` }],
+                    isError: true,
+                };
+            }
+            const hasAccess = await userHasProjectAccess(supabase, group.project_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to delete this tab group.` }],
+                    isError: true,
+                };
+            }
             // First, ungroup all tabs in this group
             await supabase
                 .from('document_tabs')
@@ -403,7 +562,16 @@ export function registerTabTools(server) {
         tab_id: z.string().uuid().describe('The tab UUID to list sections for. Get from list_tabs.'),
     }, async ({ tab_id }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to this tab
+            const hasAccess = await userHasTabAccess(supabase, tab_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to access this tab.` }],
+                    isError: true,
+                };
+            }
             const { data, error } = await supabase
                 .from('document_sections')
                 .select('*')
@@ -436,7 +604,16 @@ export function registerTabTools(server) {
         color: z.string().optional().describe('Section header color.'),
     }, async ({ tab_id, title, icon, color }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to this tab
+            const hasAccess = await userHasTabAccess(supabase, tab_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to modify this tab.` }],
+                    isError: true,
+                };
+            }
             // Get next position
             const { data: posData } = await supabase.rpc('get_next_section_position', {
                 p_tab_id: tab_id,
@@ -485,7 +662,27 @@ export function registerTabTools(server) {
         is_collapsed: z.boolean().optional().describe('Set true to collapse (hide documents in UI).'),
     }, async ({ section_id, title, icon, color, is_collapsed }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Get section's tab and verify access
+            const { data: section } = await supabase
+                .from('document_sections')
+                .select('tab_id')
+                .eq('id', section_id)
+                .single();
+            if (!section) {
+                return {
+                    content: [{ type: 'text', text: `Section not found: ${section_id}` }],
+                    isError: true,
+                };
+            }
+            const hasAccess = await userHasTabAccess(supabase, section.tab_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to modify this section.` }],
+                    isError: true,
+                };
+            }
             const updates = {
                 updated_at: new Date().toISOString(),
             };
@@ -533,7 +730,27 @@ export function registerTabTools(server) {
         section_id: z.string().uuid().describe('The section UUID to delete. Get from list_sections.'),
     }, async ({ section_id }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Get section's tab and verify access
+            const { data: section } = await supabase
+                .from('document_sections')
+                .select('tab_id')
+                .eq('id', section_id)
+                .single();
+            if (!section) {
+                return {
+                    content: [{ type: 'text', text: `Section not found: ${section_id}` }],
+                    isError: true,
+                };
+            }
+            const hasAccess = await userHasTabAccess(supabase, section.tab_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to delete this section.` }],
+                    isError: true,
+                };
+            }
             const { error } = await supabase
                 .from('document_sections')
                 .delete()

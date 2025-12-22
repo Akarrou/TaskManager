@@ -7,6 +7,8 @@ const envSchema = z.object({
     SUPABASE_URL: z.string().url().default('http://localhost:8000'),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
     STORAGE_BUCKET: z.string().default('documents-files'),
+    // Default user for RLS ownership (required for documents created by MCP to be accessible in Angular app)
+    DEFAULT_USER_ID: z.string().uuid().optional(),
     // HTTP server configuration
     HTTP_PORT: z.coerce.number().default(3100),
     // Authentication for HTTP server (production)

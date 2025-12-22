@@ -34,6 +34,9 @@ export class ProfilePageComponent implements OnInit {
   passwordError = signal<string | null>(null);
   passwordSuccess = signal<string | null>(null);
 
+  // MCP config
+  copiedField = signal<string | null>(null);
+
   ngOnInit(): void {
     this.loadProfile();
   }
@@ -120,5 +123,34 @@ export class ProfilePageComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/dashboard']);
+  }
+
+  // MCP Server configuration methods
+  getMcpJsonConfig(): string {
+    const userId = this.profile()?.id || 'votre-user-id';
+    return `{
+  "mcpServers": {
+    "kodo": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/chemin/vers/mcp-server/dist/index.js"],
+      "env": {
+        "DEFAULT_USER_ID": "${userId}"
+      }
+    }
+  }
+}`;
+  }
+
+  async copyToClipboard(text: string, fieldName: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(text);
+      this.copiedField.set(fieldName);
+      setTimeout(() => {
+        this.copiedField.set(null);
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+    }
   }
 }

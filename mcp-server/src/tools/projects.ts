@@ -1,6 +1,18 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
+import { env } from '../config.js';
+
+/**
+ * Get the current user ID from configuration
+ * Throws an error if no user is configured (required for multi-user security)
+ */
+function getCurrentUserId(): string {
+  if (!env.DEFAULT_USER_ID) {
+    throw new Error('No user configured. Set DEFAULT_USER_ID in environment.');
+  }
+  return env.DEFAULT_USER_ID;
+}
 
 /**
  * Register all project-related tools
@@ -17,21 +29,52 @@ export function registerProjectTools(server: McpServer): void {
     },
     async ({ include_archived }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
-        let query = supabase.from('projects').select('*').order('created_at', { ascending: false });
+
+        // Get projects where user is owner
+        let ownerQuery = supabase
+          .from('projects')
+          .select('*')
+          .eq('owner_id', userId)
+          .order('created_at', { ascending: false });
 
         if (!include_archived) {
-          query = query.eq('archived', false);
+          ownerQuery = ownerQuery.eq('archived', false);
         }
 
-        const { data, error } = await query;
+        const { data: ownerProjects, error: ownerError } = await ownerQuery;
 
-        if (error) {
+        if (ownerError) {
           return {
-            content: [{ type: 'text', text: `Error listing projects: ${error.message}` }],
+            content: [{ type: 'text', text: `Error listing projects: ${ownerError.message}` }],
             isError: true,
           };
         }
+
+        // Get projects where user is a member (but not owner)
+        const { data: memberProjects, error: memberError } = await supabase
+          .from('project_members')
+          .select('project_id, projects(*)')
+          .eq('user_id', userId);
+
+        if (memberError) {
+          // If member query fails, just return owner projects
+          return {
+            content: [{ type: 'text', text: JSON.stringify(ownerProjects, null, 2) }],
+          };
+        }
+
+        // Combine and deduplicate
+        const ownerIds = new Set((ownerProjects || []).map(p => p.id));
+        const additionalProjects = (memberProjects || [])
+          .filter(m => {
+            const proj = m.projects as unknown as Record<string, unknown> | null;
+            return proj && !ownerIds.has(proj.id as string);
+          })
+          .map(m => m.projects as unknown as Record<string, unknown>);
+
+        const data = [...(ownerProjects || []), ...additionalProjects];
 
         return {
           content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],

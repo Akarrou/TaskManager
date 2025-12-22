@@ -1,5 +1,34 @@
 import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
+import { env } from '../config.js';
+/**
+ * Get the current user ID from configuration
+ * Throws an error if no user is configured (required for multi-user security)
+ */
+function getCurrentUserId() {
+    if (!env.DEFAULT_USER_ID) {
+        throw new Error('No user configured. Set DEFAULT_USER_ID in environment.');
+    }
+    return env.DEFAULT_USER_ID;
+}
+/**
+ * Check if user has access to a specific database
+ * Databases are accessible if they belong to a document owned by the user
+ */
+async function userHasDatabaseAccess(supabase, databaseId, userId) {
+    const { data } = await supabase
+        .from('document_databases')
+        .select('document_id, documents(user_id)')
+        .eq('database_id', databaseId)
+        .single();
+    if (!data)
+        return false;
+    // If no document linked, allow access (standalone database)
+    if (!data.document_id)
+        return true;
+    const doc = data.documents;
+    return doc?.user_id === userId;
+}
 /**
  * Register all database-related tools (for dynamic Notion-like databases)
  */
@@ -12,10 +41,12 @@ export function registerDatabaseTools(server) {
         type: z.enum(['task', 'generic']).optional().describe('Filter by database type: "task" for task management, "generic" for custom tables.'),
     }, async ({ document_id, type }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Get databases linked to documents the user owns
             let query = supabase
                 .from('document_databases')
-                .select('*')
+                .select('*, documents!left(user_id)')
                 .order('created_at', { ascending: false });
             if (document_id) {
                 query = query.eq('document_id', document_id);
@@ -27,8 +58,16 @@ export function registerDatabaseTools(server) {
                     isError: true,
                 };
             }
+            // Filter to only databases accessible to this user
+            let filtered = (data || []).filter((db) => {
+                // If no document linked, include it (standalone database)
+                if (!db.document_id)
+                    return true;
+                // Otherwise, check if user owns the document
+                const doc = db.documents;
+                return doc?.user_id === userId;
+            });
             // Filter by type if specified
-            let filtered = data || [];
             if (type) {
                 filtered = filtered.filter((db) => {
                     const config = db.config;
@@ -63,7 +102,16 @@ export function registerDatabaseTools(server) {
         database_id: z.string().describe('The database ID. Format: db-uuid (e.g., "db-123e4567-e89b-...").'),
     }, async ({ database_id }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to this database
+            const hasAccess = await userHasDatabaseAccess(supabase, database_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to access this database.` }],
+                    isError: true,
+                };
+            }
             const { data, error } = await supabase
                 .from('document_databases')
                 .select('*')
@@ -107,7 +155,16 @@ export function registerDatabaseTools(server) {
         sort_order: z.enum(['asc', 'desc']).optional().default('asc').describe('Sort direction: asc (ascending) or desc (descending).'),
     }, async ({ database_id, limit, offset, sort_by, sort_order }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to this database
+            const hasAccess = await userHasDatabaseAccess(supabase, database_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to access this database.` }],
+                    isError: true,
+                };
+            }
             // Get database metadata first
             const { data: dbMeta, error: metaError } = await supabase
                 .from('document_databases')
@@ -120,7 +177,7 @@ export function registerDatabaseTools(server) {
                     isError: true,
                 };
             }
-            const tableName = `database_${database_id.replace('db-', '')}`;
+            const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
             let query = supabase
                 .from(tableName)
                 .select('*', { count: 'exact' });
@@ -141,19 +198,20 @@ export function registerDatabaseTools(server) {
                     isError: true,
                 };
             }
-            // Denormalize cells using column metadata
+            // Denormalize rows using column metadata (reads individual columns col_xxx)
             const config = dbMeta.config;
             const columns = config.columns || [];
             const denormalizedRows = (data || []).map((row) => {
-                const cells = row.cells;
                 const denormalized = {
                     _id: row.id,
                     _row_order: row.row_order,
                     _created_at: row.created_at,
                     _updated_at: row.updated_at,
                 };
+                // Read individual columns (matches Angular pattern)
                 for (const col of columns) {
-                    denormalized[col.name] = cells[col.id] ?? null;
+                    const colName = `col_${col.id.replace(/-/g, '_')}`;
+                    denormalized[col.name] = row[colName] ?? null;
                 }
                 return denormalized;
             });
@@ -182,7 +240,16 @@ export function registerDatabaseTools(server) {
         cells: z.record(z.unknown()).describe('Cell values as { "ColumnName": value } object. Use get_database_schema to see available columns.'),
     }, async ({ database_id, cells }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to this database
+            const hasAccess = await userHasDatabaseAccess(supabase, database_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to modify this database.` }],
+                    isError: true,
+                };
+            }
             // Get database metadata
             const { data: dbMeta, error: metaError } = await supabase
                 .from('document_databases')
@@ -205,7 +272,7 @@ export function registerDatabaseTools(server) {
                     normalizedCells[column.id] = value;
                 }
             }
-            const tableName = `database_${database_id.replace('db-', '')}`;
+            const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
             // Get max row_order
             const { data: maxOrderRow } = await supabase
                 .from(tableName)
@@ -214,12 +281,15 @@ export function registerDatabaseTools(server) {
                 .limit(1)
                 .single();
             const newRowOrder = (maxOrderRow?.row_order || 0) + 1;
+            // Map cells to individual columns (matches Angular pattern)
+            const rowData = { row_order: newRowOrder };
+            for (const [columnId, value] of Object.entries(normalizedCells)) {
+                const colName = `col_${columnId.replace(/-/g, '_')}`;
+                rowData[colName] = value;
+            }
             const { data, error } = await supabase
                 .from(tableName)
-                .insert({
-                cells: normalizedCells,
-                row_order: newRowOrder,
-            })
+                .insert(rowData)
                 .select()
                 .single();
             if (error) {
@@ -248,7 +318,16 @@ export function registerDatabaseTools(server) {
         cells: z.record(z.unknown()).describe('Cells to update as { "ColumnName": newValue }. Unspecified columns keep current values.'),
     }, async ({ database_id, row_id, cells }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to this database
+            const hasAccess = await userHasDatabaseAccess(supabase, database_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to modify this database.` }],
+                    isError: true,
+                };
+            }
             // Get database metadata
             const { data: dbMeta, error: metaError } = await supabase
                 .from('document_databases')
@@ -263,34 +342,21 @@ export function registerDatabaseTools(server) {
             }
             const config = dbMeta.config;
             const columns = config.columns || [];
-            const tableName = `database_${database_id.replace('db-', '')}`;
-            // Get current row
-            const { data: currentRow, error: getError } = await supabase
-                .from(tableName)
-                .select('*')
-                .eq('id', row_id)
-                .single();
-            if (getError || !currentRow) {
-                return {
-                    content: [{ type: 'text', text: `Row not found: ${row_id}` }],
-                    isError: true,
-                };
-            }
-            // Merge new cells with existing
-            const existingCells = currentRow.cells;
-            const updatedCells = { ...existingCells };
+            const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
+            // Build update object with individual columns (matches Angular pattern)
+            const updateData = {
+                updated_at: new Date().toISOString(),
+            };
             for (const [name, value] of Object.entries(cells)) {
                 const column = columns.find(c => c.name === name);
                 if (column) {
-                    updatedCells[column.id] = value;
+                    const colName = `col_${column.id.replace(/-/g, '_')}`;
+                    updateData[colName] = value;
                 }
             }
             const { data, error } = await supabase
                 .from(tableName)
-                .update({
-                cells: updatedCells,
-                updated_at: new Date().toISOString(),
-            })
+                .update(updateData)
                 .eq('id', row_id)
                 .select()
                 .single();
@@ -319,8 +385,17 @@ export function registerDatabaseTools(server) {
         row_ids: z.array(z.string().uuid()).min(1).describe('Array of row UUIDs to delete. Get these from get_database_rows (_id field).'),
     }, async ({ database_id, row_ids }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
-            const tableName = `database_${database_id.replace('db-', '')}`;
+            // Verify user has access to this database
+            const hasAccess = await userHasDatabaseAccess(supabase, database_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to modify this database.` }],
+                    isError: true,
+                };
+            }
+            const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
             const { error, count } = await supabase
                 .from(tableName)
                 .delete()
@@ -385,7 +460,11 @@ export function registerDatabaseTools(server) {
                         { label: 'medium', color: 'yellow' },
                         { label: 'high', color: 'orange' },
                         { label: 'critical', color: 'red' },
-                    ] }, { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Due Date', type: 'date', visible: true }, { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Assigned To', type: 'person', visible: true });
+                    ] }, { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Due Date', type: 'date', visible: true }, { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Assigned To', type: 'person', visible: true }, { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Task Number', type: 'text', visible: true }, { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Type', type: 'select', visible: true, options: [
+                        { label: 'epic', color: 'purple' },
+                        { label: 'feature', color: 'blue' },
+                        { label: 'task', color: 'gray' },
+                    ] });
             }
             const config = {
                 name,
@@ -448,7 +527,16 @@ export function registerDatabaseTools(server) {
             };
         }
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to this database
+            const hasAccess = await userHasDatabaseAccess(supabase, database_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to delete this database.` }],
+                    isError: true,
+                };
+            }
             // Try to use cascade delete RPC if available
             const { error: rpcError } = await supabase.rpc('delete_database_cascade', {
                 p_database_id: database_id,
@@ -496,7 +584,16 @@ export function registerDatabaseTools(server) {
         })).optional().describe('Required for select/multi_select. Array of { label: "value", color?: "colorName" }.'),
     }, async ({ database_id, name, type, options }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to this database
+            const hasAccess = await userHasDatabaseAccess(supabase, database_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to modify this database.` }],
+                    isError: true,
+                };
+            }
             // Get current config
             const { data: dbMeta, error: metaError } = await supabase
                 .from('document_databases')
@@ -568,7 +665,16 @@ export function registerDatabaseTools(server) {
         })).optional().describe('Replace select/multi_select options. For other types, this is ignored.'),
     }, async ({ database_id, column_id, name, visible, options }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to this database
+            const hasAccess = await userHasDatabaseAccess(supabase, database_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to modify this database.` }],
+                    isError: true,
+                };
+            }
             const { data: dbMeta, error: metaError } = await supabase
                 .from('document_databases')
                 .select('*')
@@ -628,7 +734,16 @@ export function registerDatabaseTools(server) {
         column_id: z.string().describe('The column ID to delete. Format: col_uuid. Get from get_database_schema.'),
     }, async ({ database_id, column_id }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to this database
+            const hasAccess = await userHasDatabaseAccess(supabase, database_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to modify this database.` }],
+                    isError: true,
+                };
+            }
             const { data: dbMeta, error: metaError } = await supabase
                 .from('document_databases')
                 .select('*')
@@ -684,7 +799,16 @@ export function registerDatabaseTools(server) {
         skip_unknown_columns: z.boolean().optional().default(true).describe('If true (default), ignore columns not in schema. If false, error on unknown columns.'),
     }, async ({ database_id, csv_content, skip_unknown_columns }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify user has access to this database
+            const hasAccess = await userHasDatabaseAccess(supabase, database_id, userId);
+            if (!hasAccess) {
+                return {
+                    content: [{ type: 'text', text: `Access denied: You do not have permission to modify this database.` }],
+                    isError: true,
+                };
+            }
             // Get database metadata
             const { data: dbMeta, error: metaError } = await supabase
                 .from('document_databases')
@@ -711,11 +835,13 @@ export function registerDatabaseTools(server) {
             const rows = [];
             for (let i = 1; i < lines.length; i++) {
                 const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-                const cells = {};
+                const rowData = {};
                 for (let j = 0; j < headers.length; j++) {
                     const column = columns.find(c => c.name === headers[j]);
                     if (column) {
-                        cells[column.id] = values[j] || null;
+                        // Map to individual column (matches Angular pattern)
+                        const colName = `col_${column.id.replace(/-/g, '_')}`;
+                        rowData[colName] = values[j] || null;
                     }
                     else if (!skip_unknown_columns) {
                         return {
@@ -724,7 +850,8 @@ export function registerDatabaseTools(server) {
                         };
                     }
                 }
-                rows.push({ cells, row_order: i });
+                rowData['row_order'] = i;
+                rows.push(rowData);
             }
             if (rows.length === 0) {
                 return {
@@ -732,7 +859,7 @@ export function registerDatabaseTools(server) {
                     isError: true,
                 };
             }
-            const tableName = `database_${database_id.replace('db-', '')}`;
+            const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
             // Get current max row_order
             const { data: maxOrderRow } = await supabase
                 .from(tableName)

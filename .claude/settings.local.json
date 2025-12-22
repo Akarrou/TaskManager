@@ -74,7 +74,8 @@
       "mcp__kodo__list_tasks",
       "mcp__kodo__list_projects",
       "mcp__kodo__list_databases",
-      "mcp__kodo__create_task"
+      "mcp__kodo__create_task",
+      "Bash(docker ps:*)"
     ],
     "deny": [],
     "ask": []
