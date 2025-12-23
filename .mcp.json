@@ -1,13 +1,10 @@
 {
   "mcpServers": {
     "kodo": {
-      "type": "stdio",
-      "command": "node",
-      "args": [
-        "/Users/jeromevalette/Projets/Task manager/mcp-server/dist/index.js"
-      ],
-      "env": {
-        "DEFAULT_USER_ID": "d17c5079-e8c6-4ad1-995b-cc26227f2729"
+      "type": "http",
+      "url": "https://mcp.logicfractals.fr/mcp",
+      "headers": {
+        "Authorization": "Basic bWNwX2FkbWluOldQeW9QZ0NUbE9Sa0FOc25mc2xxOGtnbUJhOW5pWVU0"
       }
     }
   }

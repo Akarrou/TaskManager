@@ -22,3 +22,10 @@ supabase.logicfractals.fr {
     }
     reverse_proxy studio:3000
 }
+
+# MCP Server - API pour Claude Code
+mcp.logicfractals.fr {
+    reverse_proxy 172.17.0.1:3100 {
+        flush_interval -1
+    }
+}

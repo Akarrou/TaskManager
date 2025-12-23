@@ -3,17 +3,22 @@
  * Kodo MCP Server - HTTP Transport
  *
  * This is the entry point for remote HTTP access.
- * Uses SSE (Server-Sent Events) transport for MCP communication.
+ * Supports both:
+ * - StreamableHTTP transport (recommended, /mcp endpoint)
+ * - SSE transport (deprecated, /sse endpoint for backwards compatibility)
  */
 import { createServer } from 'node:http';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { createMcpServer, MCP_VERSION } from './server.js';
 import { testConnection } from './services/supabase-client.js';
 import { env } from './config.js';
 import { logger, createSessionLogger } from './services/logger.js';
 import { checkRateLimit, getRateLimitInfo, getRateLimitStats } from './middleware/rate-limiter.js';
 // Store active transports for session management
-const transports = new Map();
+const sseTransports = new Map();
+const httpTransports = new Map();
 /**
  * Get client IP from request
  */
@@ -110,7 +115,11 @@ async function handleRequest(req, res) {
             status: isConnected ? 'healthy' : 'degraded',
             version: MCP_VERSION,
             supabase: isConnected ? 'connected' : 'disconnected',
-            activeSessions: transports.size,
+            activeSessions: {
+                http: httpTransports.size,
+                sse: sseTransports.size,
+                total: httpTransports.size + sseTransports.size,
+            },
             rateLimit: rateLimitStats,
             timestamp: new Date().toISOString(),
         }));
@@ -129,8 +138,9 @@ async function handleRequest(req, res) {
             version: MCP_VERSION,
             description: 'MCP Server for Kodo - Task and document management',
             endpoints: {
-                sse: '/sse',
-                messages: '/messages',
+                mcp: '/mcp (recommended - StreamableHTTP)',
+                sse: '/sse (deprecated - SSE)',
+                messages: '/messages (for SSE)',
                 health: '/health',
             },
             capabilities: {
@@ -141,7 +151,92 @@ async function handleRequest(req, res) {
         }));
         return;
     }
-    // SSE endpoint for establishing MCP connection
+    // StreamableHTTP endpoint (recommended for Claude Code)
+    if (url.pathname === '/mcp') {
+        // Check authentication
+        if (!checkBasicAuth(req)) {
+            sendUnauthorized(res, ip);
+            return;
+        }
+        const sessionId = req.headers['mcp-session-id'];
+        // Handle GET request for SSE stream (server-to-client notifications)
+        if (method === 'GET') {
+            if (!sessionId || !httpTransports.has(sessionId)) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Invalid or missing session ID' }));
+                return;
+            }
+            const transport = httpTransports.get(sessionId);
+            await transport.handleRequest(req, res);
+            return;
+        }
+        // Handle DELETE request for session termination
+        if (method === 'DELETE') {
+            if (!sessionId || !httpTransports.has(sessionId)) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Invalid or missing session ID' }));
+                return;
+            }
+            const transport = httpTransports.get(sessionId);
+            await transport.handleRequest(req, res);
+            return;
+        }
+        // Handle POST request
+        if (method === 'POST') {
+            const body = await readBody(req);
+            let parsedBody;
+            try {
+                parsedBody = JSON.parse(body);
+            }
+            catch {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Invalid JSON' }));
+                return;
+            }
+            // Reuse existing session if valid
+            if (sessionId && httpTransports.has(sessionId)) {
+                const transport = httpTransports.get(sessionId);
+                await transport.handleRequest(req, res, parsedBody);
+                return;
+            }
+            // New session initialization
+            if (!sessionId && isInitializeRequest(parsedBody)) {
+                const newSessionId = crypto.randomUUID();
+                const sessionLogger = createSessionLogger(newSessionId);
+                sessionLogger.info({ ip }, 'New MCP HTTP session');
+                const transport = new StreamableHTTPServerTransport({
+                    sessionIdGenerator: () => newSessionId,
+                    onsessioninitialized: (id) => {
+                        httpTransports.set(id, transport);
+                        sessionLogger.info('HTTP session initialized');
+                    },
+                });
+                transport.onclose = () => {
+                    if (transport.sessionId) {
+                        httpTransports.delete(transport.sessionId);
+                        sessionLogger.info('HTTP session closed');
+                    }
+                };
+                const server = createMcpServer();
+                await server.connect(transport);
+                await transport.handleRequest(req, res, parsedBody);
+                return;
+            }
+            // Invalid request
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+                jsonrpc: '2.0',
+                error: { code: -32000, message: 'Invalid session or missing initialization' },
+                id: null,
+            }));
+            return;
+        }
+        // Method not allowed
+        res.writeHead(405, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Method not allowed' }));
+        return;
+    }
+    // SSE endpoint for establishing MCP connection (deprecated, for backwards compatibility)
     if (url.pathname === '/sse' && method === 'GET') {
         // Check authentication
         if (!checkBasicAuth(req)) {
@@ -150,21 +245,21 @@ async function handleRequest(req, res) {
         }
         const sessionId = crypto.randomUUID();
         const sessionLogger = createSessionLogger(sessionId);
-        sessionLogger.info({ ip }, 'New MCP session');
+        sessionLogger.info({ ip }, 'New MCP SSE session (deprecated)');
         const server = createMcpServer();
         const transport = new SSEServerTransport('/messages', res);
-        transports.set(sessionId, transport);
+        sseTransports.set(sessionId, transport);
         res.setHeader('X-Session-Id', sessionId);
         await server.connect(transport);
         // Clean up on close
         req.on('close', () => {
             const duration = Date.now() - startTime;
-            sessionLogger.info({ duration }, 'MCP session closed');
-            transports.delete(sessionId);
+            sessionLogger.info({ duration }, 'MCP SSE session closed');
+            sseTransports.delete(sessionId);
         });
         return;
     }
-    // Messages endpoint for client requests
+    // Messages endpoint for SSE client requests (deprecated)
     if (url.pathname === '/messages' && method === 'POST') {
         // Check authentication
         if (!checkBasicAuth(req)) {
@@ -172,15 +267,15 @@ async function handleRequest(req, res) {
             return;
         }
         const sessionId = req.headers['x-session-id'];
-        if (!sessionId || !transports.has(sessionId)) {
-            logger.warn({ ip, sessionId }, 'Invalid session ID');
+        if (!sessionId || !sseTransports.has(sessionId)) {
+            logger.warn({ ip, sessionId }, 'Invalid SSE session ID');
             res.writeHead(400, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'Invalid or missing session ID' }));
             return;
         }
-        const transport = transports.get(sessionId);
+        const transport = sseTransports.get(sessionId);
         const body = await readBody(req);
-        logger.debug({ sessionId, bodyLength: body.length }, 'Processing message');
+        logger.debug({ sessionId, bodyLength: body.length }, 'Processing SSE message');
         await transport.handlePostMessage(req, res, body);
         return;
     }

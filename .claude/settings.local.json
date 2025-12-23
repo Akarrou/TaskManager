@@ -75,7 +75,10 @@
       "mcp__kodo__list_projects",
       "mcp__kodo__list_databases",
       "mcp__kodo__create_task",
-      "Bash(docker ps:*)"
+      "Bash(docker ps:*)",
+      "Bash(openssl rand:*)",
+      "Bash(nslookup:*)",
+      "Bash(pnpm info:*)"
     ],
     "deny": [],
     "ask": []
