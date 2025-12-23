@@ -36,6 +36,8 @@ export class ProfilePageComponent implements OnInit {
 
   // MCP config
   copiedField = signal<string | null>(null);
+  mcpPassword = signal('');
+  showMcpPassword = signal(false);
 
   ngOnInit(): void {
     this.loadProfile();
@@ -126,20 +128,31 @@ export class ProfilePageComponent implements OnInit {
   }
 
   // MCP Server configuration methods
+  getMcpBasicAuthToken(): string {
+    const email = this.profile()?.email || '';
+    const password = this.mcpPassword();
+    if (!email || !password) return '';
+    return btoa(`${email}:${password}`);
+  }
+
   getMcpJsonConfig(): string {
-    const userId = this.profile()?.id || 'votre-user-id';
+    const token = this.getMcpBasicAuthToken();
+    const authHeader = token ? `Basic ${token}` : 'Basic <votre-token>';
     return `{
   "mcpServers": {
     "kodo": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["/chemin/vers/mcp-server/dist/index.js"],
-      "env": {
-        "DEFAULT_USER_ID": "${userId}"
+      "type": "http",
+      "url": "https://mcp.logicfractals.fr/mcp",
+      "headers": {
+        "Authorization": "${authHeader}"
       }
     }
   }
 }`;
+  }
+
+  toggleMcpPasswordVisibility(): void {
+    this.showMcpPassword.set(!this.showMcpPassword());
   }
 
   async copyToClipboard(text: string, fieldName: string): Promise<void> {

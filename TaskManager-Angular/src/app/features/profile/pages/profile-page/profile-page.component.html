@@ -191,33 +191,77 @@
         </div>
         <div class="c-profile-card__content">
           <p class="c-mcp-description">
-            Pour utiliser le serveur MCP Kodo avec Claude Code, ajoutez la configuration suivante à votre fichier <code>.mcp.json</code> ou <code>claude_desktop_config.json</code> :
+            Connectez Claude Code au serveur MCP Kodo pour gérer vos projets, documents et tâches directement depuis l'assistant IA.
           </p>
 
-          <!-- User ID -->
+          <!-- Email (readonly) -->
           <div class="c-form-group">
-            <label class="c-label">Votre User ID</label>
-            <div class="c-input-wrapper c-input-wrapper--copyable">
-              <span class="material-icons-outlined c-input-icon">fingerprint</span>
+            <label class="c-label">Email (identifiant)</label>
+            <div class="c-input-wrapper">
+              <span class="material-icons-outlined c-input-icon">email</span>
               <input
-                class="c-input c-input--readonly c-input--mono"
+                class="c-input c-input--readonly"
                 type="text"
-                [value]="profile()?.id"
+                [value]="profile()?.email"
                 readonly
               />
+            </div>
+            <span class="c-hint">Votre email sert d'identifiant pour l'authentification MCP</span>
+          </div>
+
+          <!-- Password input for token generation -->
+          <div class="c-form-group">
+            <label class="c-label" for="mcpPassword">Mot de passe (pour générer le token)</label>
+            <div class="c-input-wrapper">
+              <span class="material-icons-outlined c-input-icon">lock</span>
+              <input
+                class="c-input"
+                id="mcpPassword"
+                [type]="showMcpPassword() ? 'text' : 'password'"
+                [ngModel]="mcpPassword()"
+                (ngModelChange)="mcpPassword.set($event)"
+                placeholder="Entrez votre mot de passe Kodo"
+                autocomplete="current-password"
+              />
               <button
-                class="c-copy-btn"
+                class="c-visibility-btn"
                 type="button"
-                (click)="copyToClipboard(profile()?.id || '', 'userId')"
-                title="Copier l'User ID"
+                (click)="toggleMcpPasswordVisibility()"
+                title="Afficher/masquer le mot de passe"
               >
                 <span class="material-icons-outlined">
-                  {{ copiedField() === 'userId' ? 'check' : 'content_copy' }}
+                  {{ showMcpPassword() ? 'visibility_off' : 'visibility' }}
                 </span>
               </button>
             </div>
-            <span class="c-hint">Cet identifiant est requis pour que les documents créés par le MCP soient accessibles dans l'application.</span>
+            <span class="c-hint">Entrez votre mot de passe pour générer automatiquement le token d'authentification. Le mot de passe n'est pas stocké.</span>
           </div>
+
+          <!-- Generated Basic Auth Token -->
+          @if (getMcpBasicAuthToken()) {
+            <div class="c-form-group">
+              <label class="c-label">Token d'authentification</label>
+              <div class="c-input-wrapper c-input-wrapper--copyable">
+                <span class="material-icons-outlined c-input-icon">key</span>
+                <input
+                  class="c-input c-input--readonly c-input--mono"
+                  type="text"
+                  [value]="'Basic ' + getMcpBasicAuthToken()"
+                  readonly
+                />
+                <button
+                  class="c-copy-btn"
+                  type="button"
+                  (click)="copyToClipboard('Basic ' + getMcpBasicAuthToken(), 'authToken')"
+                  title="Copier le token"
+                >
+                  <span class="material-icons-outlined">
+                    {{ copiedField() === 'authToken' ? 'check' : 'content_copy' }}
+                  </span>
+                </button>
+              </div>
+            </div>
+          }
 
           <!-- Configuration mcp.json -->
           <div class="c-form-group">
@@ -230,6 +274,7 @@
                   type="button"
                   (click)="copyToClipboard(getMcpJsonConfig(), 'mcpConfig')"
                   title="Copier la configuration"
+                  [disabled]="!getMcpBasicAuthToken()"
                 >
                   <span class="material-icons-outlined">
                     {{ copiedField() === 'mcpConfig' ? 'check' : 'content_copy' }}
@@ -238,6 +283,12 @@
               </div>
               <pre class="c-code-block__content"><code>{{ getMcpJsonConfig() }}</code></pre>
             </div>
+            @if (!getMcpBasicAuthToken()) {
+              <span class="c-hint c-hint--warning">
+                <span class="material-icons-outlined">warning</span>
+                Entrez votre mot de passe ci-dessus pour générer une configuration valide
+              </span>
+            }
           </div>
 
           <!-- Instructions -->
@@ -247,11 +298,15 @@
               Instructions
             </h3>
             <ol class="c-mcp-instructions__list">
-              <li>Modifiez le chemin <code>args</code> pour pointer vers votre installation du serveur MCP</li>
-              <li>Ajoutez ou fusionnez cette configuration dans votre fichier <code>.mcp.json</code> (Claude Code) ou <code>claude_desktop_config.json</code> (Claude Desktop)</li>
+              <li>Entrez votre mot de passe Kodo ci-dessus pour générer le token d'authentification</li>
+              <li>Copiez la configuration générée</li>
+              <li>Collez-la dans votre fichier <code>.mcp.json</code> (Claude Code) ou <code>claude_desktop_config.json</code> (Claude Desktop)</li>
               <li>Redémarrez Claude Code pour appliquer les changements</li>
-              <li>Les documents et tâches créés via le MCP seront maintenant associés à votre compte</li>
             </ol>
+            <div class="c-mcp-instructions__note">
+              <span class="material-icons-outlined">security</span>
+              <span>Le serveur MCP utilise votre compte Kodo pour l'authentification. Vos données restent privées et associées à votre compte.</span>
+            </div>
           </div>
         </div>
       </div>

@@ -1,16 +1,6 @@
 import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
-import { env } from '../config.js';
-/**
- * Get the current user ID from configuration
- * Throws an error if no user is configured (required for multi-user security)
- */
-function getCurrentUserId() {
-    if (!env.DEFAULT_USER_ID) {
-        throw new Error('No user configured. Set DEFAULT_USER_ID in environment.');
-    }
-    return env.DEFAULT_USER_ID;
-}
+import { getCurrentUserId } from '../services/user-auth.js';
 /**
  * Get task databases accessible to the current user
  * Databases are accessible if they belong to a document owned by the user

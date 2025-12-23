@@ -16,9 +16,12 @@ import { testConnection } from './services/supabase-client.js';
 import { env } from './config.js';
 import { logger, createSessionLogger } from './services/logger.js';
 import { checkRateLimit, getRateLimitInfo, getRateLimitStats } from './middleware/rate-limiter.js';
+import { authenticateUser, setSessionUser, clearSessionUser, setCurrentRequestUser, } from './services/user-auth.js';
 // Store active transports for session management
 const sseTransports = new Map();
 const httpTransports = new Map();
+// Store session to user mapping for request context
+const sessionUserMap = new Map();
 /**
  * Get client IP from request
  */
@@ -30,18 +33,38 @@ function getClientIp(req) {
     return req.socket.remoteAddress || 'unknown';
 }
 /**
- * Check Basic Auth credentials
+ * Parse Basic Auth credentials from request
+ * Returns { email, password } or null if invalid
  */
-function checkBasicAuth(req) {
-    if (!env.AUTH_ENABLED)
-        return true;
+function parseBasicAuth(req) {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Basic '))
-        return false;
+        return null;
     const base64 = authHeader.slice(6);
     const decoded = Buffer.from(base64, 'base64').toString('utf-8');
-    const [username, password] = decoded.split(':');
-    return username === env.AUTH_USERNAME && password === env.AUTH_PASSWORD;
+    const colonIndex = decoded.indexOf(':');
+    if (colonIndex === -1)
+        return null;
+    const email = decoded.slice(0, colonIndex);
+    const password = decoded.slice(colonIndex + 1);
+    return { email, password };
+}
+/**
+ * Authenticate user via Basic Auth against Supabase
+ * Returns authenticated user or null
+ */
+async function authenticateRequest(req) {
+    if (!env.AUTH_ENABLED) {
+        // If auth disabled, use DEFAULT_USER_ID from env
+        if (env.DEFAULT_USER_ID) {
+            return { id: env.DEFAULT_USER_ID, email: 'default@localhost' };
+        }
+        return null;
+    }
+    const credentials = parseBasicAuth(req);
+    if (!credentials)
+        return null;
+    return await authenticateUser(credentials.email, credentials.password);
 }
 /**
  * Send 401 Unauthorized response
@@ -153,8 +176,9 @@ async function handleRequest(req, res) {
     }
     // StreamableHTTP endpoint (recommended for Claude Code)
     if (url.pathname === '/mcp') {
-        // Check authentication
-        if (!checkBasicAuth(req)) {
+        // Authenticate user via Basic Auth against Supabase
+        const user = await authenticateRequest(req);
+        if (!user) {
             sendUnauthorized(res, ip);
             return;
         }
@@ -165,6 +189,11 @@ async function handleRequest(req, res) {
                 res.writeHead(400, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: 'Invalid or missing session ID' }));
                 return;
+            }
+            // Set user context for this request
+            const sessionUser = sessionUserMap.get(sessionId);
+            if (sessionUser) {
+                setCurrentRequestUser(sessionUser);
             }
             const transport = httpTransports.get(sessionId);
             await transport.handleRequest(req, res);
@@ -177,6 +206,9 @@ async function handleRequest(req, res) {
                 res.end(JSON.stringify({ error: 'Invalid or missing session ID' }));
                 return;
             }
+            // Clean up session user mapping
+            sessionUserMap.delete(sessionId);
+            clearSessionUser(sessionId);
             const transport = httpTransports.get(sessionId);
             await transport.handleRequest(req, res);
             return;
@@ -195,6 +227,11 @@ async function handleRequest(req, res) {
             }
             // Reuse existing session if valid
             if (sessionId && httpTransports.has(sessionId)) {
+                // Set user context for this request from session
+                const sessionUser = sessionUserMap.get(sessionId);
+                if (sessionUser) {
+                    setCurrentRequestUser(sessionUser);
+                }
                 const transport = httpTransports.get(sessionId);
                 await transport.handleRequest(req, res, parsedBody);
                 return;
@@ -203,17 +240,23 @@ async function handleRequest(req, res) {
             if (!sessionId && isInitializeRequest(parsedBody)) {
                 const newSessionId = crypto.randomUUID();
                 const sessionLogger = createSessionLogger(newSessionId);
-                sessionLogger.info({ ip }, 'New MCP HTTP session');
+                sessionLogger.info({ ip, userId: user.id, email: user.email }, 'New MCP HTTP session');
+                // Store user for this session
+                sessionUserMap.set(newSessionId, user);
+                setSessionUser(newSessionId, user);
+                setCurrentRequestUser(user);
                 const transport = new StreamableHTTPServerTransport({
                     sessionIdGenerator: () => newSessionId,
                     onsessioninitialized: (id) => {
                         httpTransports.set(id, transport);
-                        sessionLogger.info('HTTP session initialized');
+                        sessionLogger.info({ userId: user.id }, 'HTTP session initialized');
                     },
                 });
                 transport.onclose = () => {
                     if (transport.sessionId) {
                         httpTransports.delete(transport.sessionId);
+                        sessionUserMap.delete(transport.sessionId);
+                        clearSessionUser(transport.sessionId);
                         sessionLogger.info('HTTP session closed');
                     }
                 };
@@ -238,14 +281,19 @@ async function handleRequest(req, res) {
     }
     // SSE endpoint for establishing MCP connection (deprecated, for backwards compatibility)
     if (url.pathname === '/sse' && method === 'GET') {
-        // Check authentication
-        if (!checkBasicAuth(req)) {
+        // Authenticate user via Basic Auth against Supabase
+        const user = await authenticateRequest(req);
+        if (!user) {
             sendUnauthorized(res, ip);
             return;
         }
         const sessionId = crypto.randomUUID();
         const sessionLogger = createSessionLogger(sessionId);
-        sessionLogger.info({ ip }, 'New MCP SSE session (deprecated)');
+        sessionLogger.info({ ip, userId: user.id, email: user.email }, 'New MCP SSE session (deprecated)');
+        // Store user for this session
+        sessionUserMap.set(sessionId, user);
+        setSessionUser(sessionId, user);
+        setCurrentRequestUser(user);
         const server = createMcpServer();
         const transport = new SSEServerTransport('/messages', res);
         sseTransports.set(sessionId, transport);
@@ -256,13 +304,16 @@ async function handleRequest(req, res) {
             const duration = Date.now() - startTime;
             sessionLogger.info({ duration }, 'MCP SSE session closed');
             sseTransports.delete(sessionId);
+            sessionUserMap.delete(sessionId);
+            clearSessionUser(sessionId);
         });
         return;
     }
     // Messages endpoint for SSE client requests (deprecated)
     if (url.pathname === '/messages' && method === 'POST') {
-        // Check authentication
-        if (!checkBasicAuth(req)) {
+        // Authenticate user via Basic Auth against Supabase
+        const user = await authenticateRequest(req);
+        if (!user) {
             sendUnauthorized(res, ip);
             return;
         }
@@ -272,6 +323,11 @@ async function handleRequest(req, res) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'Invalid or missing session ID' }));
             return;
+        }
+        // Set user context for this request from session
+        const sessionUser = sessionUserMap.get(sessionId);
+        if (sessionUser) {
+            setCurrentRequestUser(sessionUser);
         }
         const transport = sseTransports.get(sessionId);
         const body = await readBody(req);

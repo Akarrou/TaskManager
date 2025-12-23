@@ -1,18 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
-import { env } from '../config.js';
-
-/**
- * Get the current user ID from configuration
- * Throws an error if no user is configured (required for multi-user security)
- */
-function getCurrentUserId(): string {
-  if (!env.DEFAULT_USER_ID) {
-    throw new Error('No user configured. Set DEFAULT_USER_ID in environment.');
-  }
-  return env.DEFAULT_USER_ID;
-}
+import { getCurrentUserId } from '../services/user-auth.js';
 
 /**
  * Get task databases accessible to the current user

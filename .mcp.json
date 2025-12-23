@@ -4,7 +4,7 @@
       "type": "http",
       "url": "https://mcp.logicfractals.fr/mcp",
       "headers": {
-        "Authorization": "Basic bWNwX2FkbWluOldQeW9QZ0NUbE9Sa0FOc25mc2xxOGtnbUJhOW5pWVU0"
+        "Authorization": "Basic dmFsZXR0ZWplcm9tZTMxQGdtYWlsLmNvbTpIeW5hLjMyMQ=="
       }
     }
   }

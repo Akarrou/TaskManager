@@ -4,6 +4,7 @@
 # TaskManager - Full Deployment Script (from local machine)
 # ===================================================================
 # Builds, syncs, applies migrations, and rebuilds Docker on VPS
+# Also deploys the MCP server for Claude Code integration
 # Usage: ./scripts/deploy.sh
 # ===================================================================
 
@@ -14,6 +15,7 @@ VPS_USER="ubuntu"
 VPS_HOST="51.178.52.150"
 VPS_PATH="~/taskmanager"
 LOCAL_PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+MCP_SERVER_DIR="$(cd "$(dirname "$0")/../../mcp-server" && pwd)"
 
 # Colors
 RED='\033[0;31m'
@@ -27,16 +29,23 @@ echo "=================================="
 echo ""
 
 # Step 1: Build Angular application
-echo -e "${YELLOW}📦 Step 1/4: Building Angular application...${NC}"
+echo -e "${YELLOW}📦 Step 1/5: Building Angular application...${NC}"
 cd "$LOCAL_PROJECT_DIR"
 source ~/.nvm/nvm.sh 2>/dev/null || true
 nvm use 24 2>/dev/null || true
 pnpm run build
-echo -e "${GREEN}✅ Build completed${NC}"
+echo -e "${GREEN}✅ Angular build completed${NC}"
 echo ""
 
-# Step 2: Sync files to VPS
-echo -e "${YELLOW}📤 Step 2/4: Syncing files to VPS...${NC}"
+# Step 2: Build MCP server
+echo -e "${YELLOW}📦 Step 2/5: Building MCP server...${NC}"
+cd "$MCP_SERVER_DIR"
+pnpm run build
+echo -e "${GREEN}✅ MCP server build completed${NC}"
+echo ""
+
+# Step 3: Sync files to VPS
+echo -e "${YELLOW}📤 Step 3/5: Syncing files to VPS...${NC}"
 
 # Sync Angular build
 echo "   Syncing Angular build..."
