@@ -59,11 +59,19 @@ rsync -avz --delete \
     "$LOCAL_PROJECT_DIR/supabase/" \
     "$VPS_USER@$VPS_HOST:$VPS_PATH/supabase/"
 
+# Sync MCP server
+echo "   Syncing MCP server..."
+rsync -avz --delete \
+    --exclude='node_modules' \
+    --exclude='.env' \
+    "$MCP_SERVER_DIR/" \
+    "$VPS_USER@$VPS_HOST:/opt/mcp-server/"
+
 echo -e "${GREEN}✅ Files synced${NC}"
 echo ""
 
-# Step 3: Apply pending migrations
-echo -e "${YELLOW}🗄️  Step 3/4: Applying pending migrations...${NC}"
+# Step 4: Apply pending migrations
+echo -e "${YELLOW}🗄️  Step 4/5: Applying pending migrations...${NC}"
 
 # Get list of applied migrations from server
 APPLIED_MIGRATIONS=$(ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH/OBS && docker exec supabase-db psql -U postgres -d postgres -t -c \"SELECT version FROM public.schema_migrations ORDER BY version;\"" 2>/dev/null | tr -d ' ')
@@ -97,10 +105,19 @@ else
 fi
 echo ""
 
-# Step 4: Rebuild and restart Docker container
-echo -e "${YELLOW}🐳 Step 4/4: Rebuilding Docker container...${NC}"
+# Step 5: Rebuild and restart services
+echo -e "${YELLOW}🐳 Step 5/5: Rebuilding and restarting services...${NC}"
+
+# Rebuild Angular app container
+echo "   Rebuilding Angular app container..."
 ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH/OBS && docker compose build app --no-cache && docker compose up -d app"
-echo -e "${GREEN}✅ Container rebuilt and restarted${NC}"
+echo -e "${GREEN}   ✅ Angular app container restarted${NC}"
+
+# Restart MCP server
+echo "   Restarting MCP server..."
+ssh "$VPS_USER@$VPS_HOST" "sudo systemctl restart mcp-server"
+echo -e "${GREEN}   ✅ MCP server restarted${NC}"
+
 echo ""
 
 # Final status
@@ -108,6 +125,8 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
-echo "Application: https://app.logicfractals.fr"
+echo "Application:     https://kodo.logicfractals.fr"
+echo "Supabase API:    https://api.logicfractals.fr"
 echo "Supabase Studio: https://supabase.logicfractals.fr"
+echo "MCP Server:      https://mcp.logicfractals.fr"
 echo ""
