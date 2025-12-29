@@ -310,6 +310,47 @@
           </div>
         </div>
       </div>
+
+      <!-- Tokens API (Alternative plus securisee) -->
+      <div class="c-profile-card c-profile-card--tokens">
+        <div class="c-profile-card__header">
+          <span class="material-icons-outlined c-card-icon">vpn_key</span>
+          <h2 class="c-card-title">Tokens API (Alternative)</h2>
+        </div>
+        <div class="c-profile-card__content">
+          <p class="c-mcp-description">
+            Creez des tokens d'acces personnels pour vous authentifier au serveur MCP sans exposer votre mot de passe.
+            Les tokens sont plus securises car ils peuvent etre revoques individuellement et avoir une date d'expiration.
+          </p>
+
+          <!-- Token Creation -->
+          <app-api-token-create (tokenCreated)="onTokenCreated()"></app-api-token-create>
+
+          <!-- Token List -->
+          <app-api-token-list></app-api-token-list>
+
+          <!-- Usage Instructions -->
+          <div class="c-mcp-instructions">
+            <h3 class="c-mcp-instructions__title">
+              <span class="material-icons-outlined">help_outline</span>
+              Utilisation du token
+            </h3>
+            <p class="c-mcp-instructions__text">
+              Remplacez l'en-tete <code>Authorization</code> dans votre configuration MCP par:
+            </p>
+            <div class="c-code-block">
+              <div class="c-code-block__header">
+                <span class="c-code-block__filename">Bearer Token</span>
+              </div>
+              <pre class="c-code-block__content"><code>"Authorization": "Bearer kodo_votre_token_ici"</code></pre>
+            </div>
+            <div class="c-mcp-instructions__note">
+              <span class="material-icons-outlined">info</span>
+              <span>Les tokens API offrent une alternative plus securisee au Basic Auth. Vous pouvez utiliser l'une ou l'autre methode.</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

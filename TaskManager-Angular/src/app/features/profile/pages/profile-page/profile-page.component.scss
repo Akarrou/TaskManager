@@ -540,6 +540,29 @@
   }
 }
 
+// API Tokens Section
+.c-profile-card--tokens {
+  .c-card-icon {
+    color: #7c3aed;
+  }
+}
+
+.c-mcp-instructions__text {
+  font-size: v.$font-size-sm;
+  color: v.$text-color-medium;
+  line-height: 1.6;
+  margin: 0 0 v.$space-3 0;
+
+  code {
+    background: rgba(v.$primary-color, 0.1);
+    color: v.$primary-color;
+    padding: 2px 6px;
+    border-radius: v.$border-radius-sm;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+    font-size: v.$font-size-xs;
+  }
+}
+
 // Responsive
 @media (max-width: v.$breakpoint-sm) {
   .c-profile-layout {

@@ -43,4 +43,10 @@ export declare function getCurrentRequestUser(): AuthenticatedUser | null;
  * Throws if no user is authenticated (security requirement)
  */
 export declare function getCurrentUserId(): string;
+/**
+ * Authenticate a user by API token (Bearer token)
+ * Validates the token against the user_api_tokens table via RPC function
+ * Returns the user info if successful, null otherwise
+ */
+export declare function authenticateByToken(token: string): Promise<AuthenticatedUser | null>;
 //# sourceMappingURL=user-auth.d.ts.map

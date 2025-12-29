@@ -107,3 +107,46 @@ export function getCurrentUserId(): string {
   }
   return currentRequestUser.id;
 }
+
+/**
+ * Authenticate a user by API token (Bearer token)
+ * Validates the token against the user_api_tokens table via RPC function
+ * Returns the user info if successful, null otherwise
+ */
+export async function authenticateByToken(token: string): Promise<AuthenticatedUser | null> {
+  try {
+    // Quick format validation
+    if (!token || !token.startsWith('kodo_')) {
+      logger.warn('Invalid token format - must start with kodo_');
+      return null;
+    }
+
+    const supabase = getSupabaseClient();
+
+    // Call the validate_api_token function (uses service role, bypasses RLS)
+    const { data, error } = await supabase.rpc('validate_api_token', {
+      p_token: token,
+    });
+
+    if (error) {
+      logger.warn({ error: error.message }, 'Token validation RPC failed');
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      logger.warn('Token authentication failed - invalid, expired, or revoked token');
+      return null;
+    }
+
+    const result = data[0];
+    logger.info({ userId: result.user_id, tokenName: result.token_name }, 'User authenticated via API token');
+
+    return {
+      id: result.user_id,
+      email: result.email,
+    };
+  } catch (err) {
+    logger.error({ error: err instanceof Error ? err.message : 'Unknown error' }, 'Token authentication error');
+    return null;
+  }
+}

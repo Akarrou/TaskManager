@@ -1,15 +1,17 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ProfileService } from '../../services/profile.service';
 import { AuthService } from '../../../../core/services/auth';
 import { Profile } from '../../models/profile.model';
+import { ApiTokenListComponent } from '../../components/api-token-list/api-token-list.component';
+import { ApiTokenCreateComponent } from '../../components/api-token-create/api-token-create.component';
 
 @Component({
   selector: 'app-profile-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ApiTokenListComponent, ApiTokenCreateComponent],
   templateUrl: './profile-page.component.html',
   styleUrls: ['./profile-page.component.scss']
 })
@@ -17,6 +19,8 @@ export class ProfilePageComponent implements OnInit {
   private profileService = inject(ProfileService);
   private authService = inject(AuthService);
   private router = inject(Router);
+
+  @ViewChild(ApiTokenListComponent) tokenListComponent!: ApiTokenListComponent;
 
   profile = signal<Profile | null>(null);
   loading = signal(false);
@@ -164,6 +168,14 @@ export class ProfilePageComponent implements OnInit {
       }, 2000);
     } catch (err) {
       console.error('Failed to copy to clipboard:', err);
+    }
+  }
+
+  // API Token methods
+  onTokenCreated(): void {
+    // Refresh the token list when a new token is created
+    if (this.tokenListComponent) {
+      this.tokenListComponent.loadTokens();
     }
   }
 }

@@ -1,0 +1,70 @@
+<div class="c-token-list">
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="c-token-list__loading">
+      <span class="c-spinner c-spinner--small"></span>
+      <span>Chargement des tokens...</span>
+    </div>
+  }
+
+  <!-- Error -->
+  @if (error()) {
+    <div class="c-error-message">
+      <span class="material-icons-outlined">error_outline</span>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <!-- Active Tokens -->
+  @if (!loading() && getActiveTokens().length > 0) {
+    <div class="c-token-section">
+      <h4 class="c-token-section__title">Tokens actifs ({{ getActiveTokens().length }})</h4>
+      @for (token of getActiveTokens(); track token.id) {
+        <div class="c-token-item">
+          <div class="c-token-item__info">
+            <div class="c-token-item__name">
+              <span class="material-icons-outlined">key</span>
+              <span>{{ token.name }}</span>
+            </div>
+            <div class="c-token-item__details">
+              <span class="c-token-item__prefix">{{ token.token_prefix }}...</span>
+              <span class="c-token-item__separator">|</span>
+              <span class="c-token-item__scopes">{{ token.scopes.join(', ') }}</span>
+            </div>
+            <div class="c-token-item__meta">
+              <span>Cree le {{ token.created_at | date:'dd/MM/yyyy' }}</span>
+              @if (token.last_used_at) {
+                <span class="c-token-item__separator">|</span>
+                <span>Dernier usage: {{ token.last_used_at | date:'dd/MM/yyyy HH:mm' }}</span>
+              }
+              @if (token.expires_at) {
+                <span class="c-token-item__separator">|</span>
+                <span>Expire le {{ token.expires_at | date:'dd/MM/yyyy' }}</span>
+              }
+            </div>
+          </div>
+          <button
+            class="c-btn c-btn--danger c-btn--small"
+            (click)="revokeToken(token)"
+            [disabled]="revokingId() === token.id"
+          >
+            @if (revokingId() === token.id) {
+              <span class="c-spinner c-spinner--tiny"></span>
+            } @else {
+              <span class="material-icons-outlined">delete</span>
+            }
+            <span>Revoquer</span>
+          </button>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Empty State -->
+  @if (!loading() && getActiveTokens().length === 0) {
+    <div class="c-token-empty">
+      <span class="material-icons-outlined">vpn_key_off</span>
+      <span>Aucun token actif</span>
+    </div>
+  }
+</div>

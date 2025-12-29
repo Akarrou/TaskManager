@@ -16,7 +16,7 @@ import { testConnection } from './services/supabase-client.js';
 import { env } from './config.js';
 import { logger, createSessionLogger } from './services/logger.js';
 import { checkRateLimit, getRateLimitInfo, getRateLimitStats } from './middleware/rate-limiter.js';
-import { authenticateUser, setSessionUser, clearSessionUser, setCurrentRequestUser, } from './services/user-auth.js';
+import { authenticateUser, authenticateByToken, setSessionUser, clearSessionUser, setCurrentRequestUser, } from './services/user-auth.js';
 // Store active transports for session management
 const sseTransports = new Map();
 const httpTransports = new Map();
@@ -50,7 +50,21 @@ function parseBasicAuth(req) {
     return { email, password };
 }
 /**
- * Authenticate user via Basic Auth against Supabase
+ * Parse Bearer token from request
+ * Returns token string or null if invalid/not present
+ */
+function parseBearerToken(req) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer '))
+        return null;
+    const token = authHeader.slice(7).trim();
+    if (!token || !token.startsWith('kodo_'))
+        return null;
+    return token;
+}
+/**
+ * Authenticate user via Bearer Token OR Basic Auth against Supabase
+ * Tries Bearer token first (API tokens), falls back to Basic Auth (email/password)
  * Returns authenticated user or null
  */
 async function authenticateRequest(req) {
@@ -61,6 +75,12 @@ async function authenticateRequest(req) {
         }
         return null;
     }
+    // Try Bearer token first (API tokens - more secure, preferred method)
+    const bearerToken = parseBearerToken(req);
+    if (bearerToken) {
+        return await authenticateByToken(bearerToken);
+    }
+    // Fall back to Basic Auth (email/password)
     const credentials = parseBasicAuth(req);
     if (!credentials)
         return null;
@@ -71,9 +91,12 @@ async function authenticateRequest(req) {
  */
 function sendUnauthorized(res, ip) {
     logger.warn({ ip }, 'Unauthorized request');
-    res.setHeader('WWW-Authenticate', 'Basic realm="MCP Server"');
+    res.setHeader('WWW-Authenticate', 'Bearer realm="MCP Server", Basic realm="MCP Server"');
     res.writeHead(401, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Unauthorized' }));
+    res.end(JSON.stringify({
+        error: 'Unauthorized',
+        message: 'Valid Bearer token (kodo_...) or Basic Auth credentials required',
+    }));
 }
 /**
  * Send 429 Rate Limited response

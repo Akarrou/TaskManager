@@ -19,6 +19,7 @@ import { logger, createSessionLogger } from './services/logger.js';
 import { checkRateLimit, getRateLimitInfo, getRateLimitStats } from './middleware/rate-limiter.js';
 import {
   authenticateUser,
+  authenticateByToken,
   setSessionUser,
   getSessionUser,
   clearSessionUser,
@@ -64,7 +65,22 @@ function parseBasicAuth(req: IncomingMessage): { email: string; password: string
 }
 
 /**
- * Authenticate user via Basic Auth against Supabase
+ * Parse Bearer token from request
+ * Returns token string or null if invalid/not present
+ */
+function parseBearerToken(req: IncomingMessage): string | null {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) return null;
+
+  const token = authHeader.slice(7).trim();
+  if (!token || !token.startsWith('kodo_')) return null;
+
+  return token;
+}
+
+/**
+ * Authenticate user via Bearer Token OR Basic Auth against Supabase
+ * Tries Bearer token first (API tokens), falls back to Basic Auth (email/password)
  * Returns authenticated user or null
  */
 async function authenticateRequest(req: IncomingMessage): Promise<AuthenticatedUser | null> {
@@ -76,6 +92,13 @@ async function authenticateRequest(req: IncomingMessage): Promise<AuthenticatedU
     return null;
   }
 
+  // Try Bearer token first (API tokens - more secure, preferred method)
+  const bearerToken = parseBearerToken(req);
+  if (bearerToken) {
+    return await authenticateByToken(bearerToken);
+  }
+
+  // Fall back to Basic Auth (email/password)
   const credentials = parseBasicAuth(req);
   if (!credentials) return null;
 
@@ -87,9 +110,12 @@ async function authenticateRequest(req: IncomingMessage): Promise<AuthenticatedU
  */
 function sendUnauthorized(res: ServerResponse, ip: string): void {
   logger.warn({ ip }, 'Unauthorized request');
-  res.setHeader('WWW-Authenticate', 'Basic realm="MCP Server"');
+  res.setHeader('WWW-Authenticate', 'Bearer realm="MCP Server", Basic realm="MCP Server"');
   res.writeHead(401, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ error: 'Unauthorized' }));
+  res.end(JSON.stringify({
+    error: 'Unauthorized',
+    message: 'Valid Bearer token (kodo_...) or Basic Auth credentials required',
+  }));
 }
 
 /**

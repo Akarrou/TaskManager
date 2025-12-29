@@ -1,0 +1,327 @@
+@use '../../../../styles/variables' as v;
+
+:host {
+  display: block;
+}
+
+.c-token-create {
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-4;
+}
+
+// Token Reveal (after creation)
+.c-token-reveal {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: v.$border-radius-lg;
+  padding: v.$space-5;
+  margin-bottom: v.$space-4;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    margin-bottom: v.$space-3;
+
+    h4 {
+      margin: 0;
+      font-size: v.$font-size-base;
+      color: #16a34a;
+    }
+  }
+
+  &__icon {
+    font-size: 24px;
+    color: #16a34a;
+  }
+
+  &__warning {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    padding: v.$space-3;
+    background: #fef3c7;
+    border-radius: v.$border-radius-md;
+    margin-bottom: v.$space-4;
+    font-size: v.$font-size-sm;
+    color: #92400e;
+
+    .material-icons-outlined {
+      font-size: 18px;
+      color: #f59e0b;
+    }
+  }
+
+  &__value {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    padding: v.$space-3;
+    background: #1e293b;
+    border-radius: v.$border-radius-md;
+    margin-bottom: v.$space-4;
+
+    code {
+      flex: 1;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+      font-size: v.$font-size-sm;
+      color: #e2e8f0;
+      word-break: break-all;
+    }
+
+    .c-copy-btn {
+      position: static;
+      color: rgba(255, 255, 255, 0.6);
+      flex-shrink: 0;
+
+      &:hover {
+        color: white;
+        background: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+}
+
+// Form
+.c-token-form {
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-4;
+}
+
+.c-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-2;
+}
+
+.c-label {
+  font-size: v.$font-size-sm;
+  font-weight: 600;
+  color: v.$text-color-dark;
+  margin-left: 2px;
+}
+
+// Inputs
+.c-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.c-input-icon {
+  position: absolute;
+  left: v.$space-4;
+  color: v.$text-color-light;
+  font-size: 20px;
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.c-input {
+  width: 100%;
+  padding: v.$space-3 v.$space-4 v.$space-3 44px;
+  background: white;
+  border: 1px solid v.$border-color-medium;
+  border-radius: v.$border-radius-lg;
+  font-size: v.$font-size-sm;
+  color: v.$text-color-dark;
+  transition: all 0.2s ease;
+
+  &::placeholder {
+    color: v.$text-color-light;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: v.$primary-color;
+    box-shadow: 0 0 0 4px rgba(v.$primary-color, 0.1);
+  }
+
+  &:disabled {
+    background-color: v.$background-color-page;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  &--select {
+    appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+  }
+}
+
+// Scope chips
+.c-scope-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$space-2;
+}
+
+.c-scope-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: v.$space-1;
+  padding: v.$space-2 v.$space-3;
+  background: white;
+  border: 1px solid v.$border-color-medium;
+  border-radius: v.$border-radius-full;
+  font-size: v.$font-size-xs;
+  color: v.$text-color-medium;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  .material-icons-outlined {
+    font-size: 16px;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: v.$primary-color;
+    color: v.$primary-color;
+  }
+
+  &--selected {
+    background: rgba(v.$primary-color, 0.1);
+    border-color: v.$primary-color;
+    color: v.$primary-color;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Buttons
+.c-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: v.$space-3;
+  margin-top: v.$space-2;
+}
+
+.c-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: v.$space-3 v.$space-5;
+  border-radius: v.$border-radius-lg;
+  font-weight: 600;
+  font-size: v.$font-size-sm;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: v.$space-2;
+
+  .material-icons-outlined {
+    font-size: 18px;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: v.$primary-color;
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(v.$primary-color, 0.2);
+
+    &:hover:not(:disabled) {
+      background: v.$primary-color-dark;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 8px -1px rgba(v.$primary-color, 0.3);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+  }
+
+  &--secondary {
+    background: white;
+    border: 1px solid v.$border-color-medium;
+    color: v.$text-color-dark;
+
+    &:hover:not(:disabled) {
+      background: v.$background-color-light;
+    }
+  }
+}
+
+.c-copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: v.$border-radius-md;
+  color: v.$text-color-light;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  .material-icons-outlined {
+    font-size: 18px;
+  }
+
+  &:hover:not(:disabled) {
+    background: rgba(v.$primary-color, 0.1);
+    color: v.$primary-color;
+  }
+}
+
+// Error message
+.c-error-message {
+  display: flex;
+  align-items: center;
+  gap: v.$space-3;
+  padding: v.$space-3;
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: v.$border-radius-lg;
+  color: #ef4444;
+  font-size: v.$font-size-sm;
+
+  .material-icons-outlined {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+}
+
+// Spinner
+.c-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spinner 0.8s linear infinite;
+}
+
+@keyframes spinner {
+  to { transform: rotate(360deg); }
+}
+
+// Responsive
+@media (max-width: v.$breakpoint-sm) {
+  .c-token-reveal__value {
+    flex-direction: column;
+    align-items: stretch;
+
+    code {
+      padding: v.$space-2;
+      font-size: v.$font-size-xs;
+    }
+
+    .c-copy-btn {
+      align-self: flex-end;
+    }
+  }
+}

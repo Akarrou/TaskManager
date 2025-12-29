@@ -1,0 +1,120 @@
+<div class="c-token-create">
+  <!-- New Token Display (shown only once after creation) -->
+  @if (newToken()) {
+    <div class="c-token-reveal">
+      <div class="c-token-reveal__header">
+        <span class="material-icons-outlined c-token-reveal__icon">check_circle</span>
+        <h4>Token cree avec succes</h4>
+      </div>
+      <div class="c-token-reveal__warning">
+        <span class="material-icons-outlined">warning</span>
+        <span>Copiez ce token maintenant. Il ne sera plus jamais affiche.</span>
+      </div>
+      <div class="c-token-reveal__value">
+        <code>{{ newToken() }}</code>
+        <button
+          class="c-copy-btn"
+          (click)="copyToken()"
+          title="Copier le token"
+        >
+          <span class="material-icons-outlined">
+            {{ tokenCopied() ? 'check' : 'content_copy' }}
+          </span>
+        </button>
+      </div>
+      <button class="c-btn c-btn--secondary" (click)="dismissToken()">
+        <span class="material-icons-outlined">close</span>
+        <span>J'ai copie le token</span>
+      </button>
+    </div>
+  }
+
+  <!-- Creation Form -->
+  @if (!newToken()) {
+    <div class="c-token-form">
+      <!-- Token Name -->
+      <div class="c-form-group">
+        <label class="c-label" for="tokenName">Nom du token</label>
+        <div class="c-input-wrapper">
+          <span class="material-icons-outlined c-input-icon">label</span>
+          <input
+            class="c-input"
+            id="tokenName"
+            type="text"
+            [ngModel]="tokenName()"
+            (ngModelChange)="tokenName.set($event)"
+            placeholder="Ex: Claude Desktop, Production, Dev..."
+            [disabled]="isCreating()"
+            maxlength="50"
+          />
+        </div>
+      </div>
+
+      <!-- Scopes -->
+      <div class="c-form-group">
+        <label class="c-label">Permissions</label>
+        <div class="c-scope-grid">
+          @for (scope of availableScopes; track scope.value) {
+            <button
+              class="c-scope-chip"
+              [class.c-scope-chip--selected]="selectedScopes().includes(scope.value)"
+              (click)="toggleScope(scope.value)"
+              [disabled]="isCreating()"
+              type="button"
+              [title]="scope.description"
+            >
+              <span class="material-icons-outlined">
+                {{ selectedScopes().includes(scope.value) ? 'check_circle' : 'radio_button_unchecked' }}
+              </span>
+              <span>{{ scope.label }}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Expiration -->
+      <div class="c-form-group">
+        <label class="c-label" for="expiration">Expiration</label>
+        <div class="c-input-wrapper">
+          <span class="material-icons-outlined c-input-icon">schedule</span>
+          <select
+            class="c-input c-input--select"
+            id="expiration"
+            [ngModel]="expirationDays()"
+            (ngModelChange)="expirationDays.set($event)"
+            [disabled]="isCreating()"
+          >
+            @for (option of expirationOptions; track option.value) {
+              <option [ngValue]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <!-- Error -->
+      @if (error()) {
+        <div class="c-error-message">
+          <span class="material-icons-outlined">error_outline</span>
+          <span>{{ error() }}</span>
+        </div>
+      }
+
+      <!-- Submit -->
+      <div class="c-form-actions">
+        <button
+          class="c-btn c-btn--primary"
+          (click)="createToken()"
+          [disabled]="isCreating() || !tokenName().trim()"
+        >
+          @if (isCreating()) {
+            <span class="c-spinner"></span>
+            <span>Creation...</span>
+          } @else {
+            <span class="material-icons-outlined">add</span>
+            <span>Creer le token</span>
+          }
+        </button>
+      </div>
+    </div>
+  }
+</div>
