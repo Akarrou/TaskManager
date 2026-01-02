@@ -254,3 +254,12 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 COMMENT ON FUNCTION public.list_my_api_tokens IS 'Lists all API tokens for the current user (without sensitive data)';
+
+-- Grant execute permissions to authenticated users (required for Supabase RPC)
+GRANT EXECUTE ON FUNCTION public.create_api_token(text, text[], timestamp with time zone) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.validate_api_token(text) TO authenticated, anon, service_role;
+GRANT EXECUTE ON FUNCTION public.revoke_api_token(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.list_my_api_tokens() TO authenticated;
+
+-- Notify PostgREST to reload schema cache (required for new functions to be accessible via RPC)
+NOTIFY pgrst, 'reload schema';

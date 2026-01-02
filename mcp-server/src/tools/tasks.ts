@@ -606,6 +606,86 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
   );
 
   // =========================================================================
+  // get_task_by_number - Search task by number (e.g., "ID-0208")
+  // =========================================================================
+  server.tool(
+    'get_task_by_number',
+    `Search for a task by its task number (e.g., "ID-0208") and return the task with its linked document. Task numbers are auto-generated when tasks are created in task-type databases. This tool searches across all accessible task databases. Returns both the task details and the associated Notion-style document.`,
+    {
+      task_number: z.string().describe('The task number to search for (e.g., "ID-0208", "ID-0001")'),
+      include_document: z.boolean().optional().default(true).describe('Include the linked document in the response (default: true)'),
+    },
+    async ({ task_number, include_document }) => {
+      try {
+        const userId = getCurrentUserId();
+        const supabase = getSupabaseClient();
+
+        // Get task databases accessible to this user
+        const taskDatabases = await getUserTaskDatabases(supabase, userId);
+
+        if (taskDatabases.length === 0) {
+          return {
+            content: [{ type: 'text', text: 'No task databases found.' }],
+            isError: true,
+          };
+        }
+
+        // Search in each database
+        for (const db of taskDatabases) {
+          const config = db.config as { columns?: Array<{ id: string; name: string }> };
+          const columns = config.columns || [];
+
+          // Find "Task Number" column
+          const taskNumberCol = columns.find(c => c.name === 'Task Number');
+          if (!taskNumberCol) continue;
+
+          const tableName = `database_${(db.database_id as string).replace('db-', '').replace(/-/g, '_')}`;
+          const colName = `col_${taskNumberCol.id.replace(/-/g, '_')}`;
+
+          const { data: row, error } = await supabase
+            .from(tableName)
+            .select('*')
+            .eq(colName, task_number)
+            .maybeSingle();
+
+          if (error || !row) continue;
+
+          // Found the task!
+          const task = normalizeRowToTask(row, db);
+
+          // Get linked document if requested
+          let document = null;
+          if (include_document) {
+            const { data: doc } = await supabase
+              .from('documents')
+              .select('*')
+              .eq('database_id', db.database_id as string)
+              .eq('database_row_id', row.id as string)
+              .eq('user_id', userId)
+              .maybeSingle();
+            document = doc;
+          }
+
+          return {
+            content: [{ type: 'text', text: JSON.stringify({ task, document }, null, 2) }],
+          };
+        }
+
+        // Not found
+        return {
+          content: [{ type: 'text', text: `Task not found: ${task_number}` }],
+          isError: true,
+        };
+      } catch (err) {
+        return {
+          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // =========================================================================
   // get_task_document - Get the document linked to a task
   // =========================================================================
   server.tool(
@@ -877,6 +957,7 @@ function normalizeRowToTask(row: Record<string, unknown>, dbMeta: Record<string,
     id: row.id,
     database_id: dbMeta.database_id,
     database_name: dbMeta.name,
+    task_number: getCell('Task Number'),
     title: getCell('Title') || 'Untitled',
     description: getCell('Description'),
     status: normalizeStatus(getCell('Status') as string),
