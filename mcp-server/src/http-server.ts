@@ -26,6 +26,13 @@ import {
   setCurrentRequestUser,
   type AuthenticatedUser,
 } from './services/user-auth.js';
+import {
+  handleOAuthMetadata,
+  handleAuthorize,
+  handleToken,
+  handleRegister,
+} from './routes/oauth.js';
+import { validateAccessToken } from './services/oauth.js';
 
 // Store active transports for session management
 const sseTransports = new Map<string, SSEServerTransport>();
@@ -67,20 +74,26 @@ function parseBasicAuth(req: IncomingMessage): { email: string; password: string
 /**
  * Parse Bearer token from request
  * Returns token string or null if invalid/not present
+ * Supports both API tokens (kodo_...) and OAuth tokens (mcp_...)
  */
 function parseBearerToken(req: IncomingMessage): string | null {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) return null;
 
   const token = authHeader.slice(7).trim();
-  if (!token || !token.startsWith('kodo_')) return null;
+  if (!token) return null;
 
-  return token;
+  // Accept both kodo_ (API tokens) and mcp_ (OAuth tokens)
+  if (token.startsWith('kodo_') || token.startsWith('mcp_')) {
+    return token;
+  }
+
+  return null;
 }
 
 /**
  * Authenticate user via Bearer Token OR Basic Auth against Supabase
- * Tries Bearer token first (API tokens), falls back to Basic Auth (email/password)
+ * Tries Bearer token first (API tokens or OAuth tokens), falls back to Basic Auth
  * Returns authenticated user or null
  */
 async function authenticateRequest(req: IncomingMessage): Promise<AuthenticatedUser | null> {
@@ -92,9 +105,19 @@ async function authenticateRequest(req: IncomingMessage): Promise<AuthenticatedU
     return null;
   }
 
-  // Try Bearer token first (API tokens - more secure, preferred method)
+  // Try Bearer token first
   const bearerToken = parseBearerToken(req);
   if (bearerToken) {
+    // Handle OAuth tokens (mcp_...)
+    if (bearerToken.startsWith('mcp_')) {
+      const validation = validateAccessToken(bearerToken);
+      if (validation.valid && validation.user_id && validation.user_email) {
+        return { id: validation.user_id, email: validation.user_email };
+      }
+      return null;
+    }
+
+    // Handle API tokens (kodo_...)
     return await authenticateByToken(bearerToken);
   }
 
@@ -181,6 +204,12 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
     return;
   }
 
+  // OAuth metadata (no rate limit, no auth)
+  if (url.pathname === '/.well-known/oauth-authorization-server' && method === 'GET') {
+    await handleOAuthMetadata(req, res);
+    return;
+  }
+
   // Health check (no rate limit, no auth)
   if (url.pathname === '/health' && method === 'GET') {
     const isConnected = await testConnection();
@@ -208,6 +237,24 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
     return;
   }
 
+  // OAuth authorize endpoint (handles its own auth via login form)
+  if (url.pathname === '/authorize') {
+    await handleAuthorize(req, res);
+    return;
+  }
+
+  // OAuth token endpoint (no auth required - uses authorization code)
+  if (url.pathname === '/token' && method === 'POST') {
+    await handleToken(req, res);
+    return;
+  }
+
+  // OAuth client registration endpoint
+  if (url.pathname === '/register' && method === 'POST') {
+    await handleRegister(req, res);
+    return;
+  }
+
   // Server info (no auth required)
   if (url.pathname === '/' && method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -220,6 +267,12 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
         sse: '/sse (deprecated - SSE)',
         messages: '/messages (for SSE)',
         health: '/health',
+        oauth: {
+          metadata: '/.well-known/oauth-authorization-server',
+          authorize: '/authorize',
+          token: '/token',
+          register: '/register',
+        },
       },
       capabilities: {
         tools: 71,

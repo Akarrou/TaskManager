@@ -75,7 +75,16 @@
                 </thead>
                 <tbody class="c-table__body">
                   <tr class="c-table__row hover-line" *ngFor="let entry of filteredTasks()">
-                    <td class="c-table__cell c-table-column--task-number">{{ entry.task_number || '-' }}</td>
+                    <td class="c-table__cell c-table-column--task-number">
+                      <span
+                        class="task-number-copy"
+                        [class.task-number-copy--clickable]="entry.task_number"
+                        (click)="copyTaskNumber(entry.task_number)"
+                        [matTooltip]="entry.task_number ? 'Cliquer pour copier' : ''"
+                        matTooltipPosition="above">
+                        {{ entry.task_number || '-' }}
+                      </span>
+                    </td>
                     <td class="c-table__cell c-table-column--env">
                       <!-- Environment badge not available in database-based tasks -->
                       <span class="env-badge env-badge--all" aria-label="Database Task" title="Database Task">DB</span>

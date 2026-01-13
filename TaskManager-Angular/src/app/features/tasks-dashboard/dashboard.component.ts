@@ -488,6 +488,23 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
     return getPriorityLabel(priority);
   }
 
+  copyTaskNumber(taskNumber: string | null | undefined): void {
+    if (!taskNumber) {
+      return;
+    }
+    navigator.clipboard.writeText(taskNumber).then(() => {
+      this.snackBar.open(`N° ${taskNumber} copié`, 'OK', {
+        duration: 2000,
+        horizontalPosition: 'center',
+        verticalPosition: 'bottom'
+      });
+    }).catch(() => {
+      this.snackBar.open('Erreur lors de la copie', 'OK', {
+        duration: 2000
+      });
+    });
+  }
+
   private buildTaskTree(tasks: Task[]): any[] {
     const nodeMap = new Map<string, any>();
     const roots: any[] = [];

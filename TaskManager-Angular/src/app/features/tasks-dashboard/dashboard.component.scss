@@ -304,6 +304,26 @@
   width: 5%;
 }
 
+.task-number-copy {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+
+  &--clickable {
+    cursor: pointer;
+
+    &:hover {
+      background-color: rgba(var(--primary-rgb, 99, 102, 241), 0.1);
+      color: var(--primary-color, #6366f1);
+    }
+
+    &:active {
+      background-color: rgba(var(--primary-rgb, 99, 102, 241), 0.2);
+    }
+  }
+}
+
 .c-table-column--task {
   width: 35%;
   max-width: 250px;
