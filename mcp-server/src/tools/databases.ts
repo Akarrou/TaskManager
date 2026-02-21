@@ -533,50 +533,117 @@ export function registerDatabaseTools(server: McpServer): void {
         const databaseId = `db-${uuid}`;
         const tableName = `database_${uuid.replace(/-/g, '_')}`;
 
-        // Build columns config with generated IDs
-        const columnsConfig = (columns || []).map(col => ({
-          id: `col_${crypto.randomUUID().replace(/-/g, '_')}`,
+        // Build columns config with generated IDs (UUIDs standard, sans prefixe col_)
+        const columnsConfig: Record<string, unknown>[] = (columns || []).map((col, index) => ({
+          id: crypto.randomUUID(),
           name: col.name,
-          type: col.type,
+          type: col.type === 'multi_select' ? 'multi-select' : col.type,
           visible: true,
-          ...(col.options ? { options: col.options } : {}),
+          order: index,
+          ...(col.options && (col.type === 'select' || col.type === 'multi_select')
+            ? {
+                options: {
+                  choices: col.options.map(opt => ({
+                    id: opt.label.toLowerCase().replace(/\s+/g, '_'),
+                    label: opt.label,
+                    color: opt.color || 'bg-gray-200',
+                  })),
+                },
+              }
+            : {}),
         }));
 
-        // If task type, add default task columns
+        // Variable pour stocker le statusColumnId (utilisee pour views/pinnedColumns)
+        let statusColumnId: string | undefined;
+
+        // If task type, add default task columns (15 colonnes, identique au template Angular)
         if (type === 'task' && (!columns || columns.length === 0)) {
+          const titleId = crypto.randomUUID();
+          const descriptionId = crypto.randomUUID();
+          statusColumnId = crypto.randomUUID();
+          const priorityId = crypto.randomUUID();
+          const typeId = crypto.randomUUID();
+          const assignedToId = crypto.randomUUID();
+          const dueDateId = crypto.randomUUID();
+          const tagsId = crypto.randomUUID();
+          const estimatedHoursId = crypto.randomUUID();
+          const actualHoursId = crypto.randomUUID();
+          const parentTaskId = crypto.randomUUID();
+          const epicId = crypto.randomUUID();
+          const featureId = crypto.randomUUID();
+          const projectId = crypto.randomUUID();
+          const taskNumberId = crypto.randomUUID();
+
           columnsConfig.push(
-            { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Title', type: 'text', visible: true },
-            { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Description', type: 'text', visible: true },
-            { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Status', type: 'select', visible: true, options: [
-              { label: 'backlog', color: 'gray' },
-              { label: 'pending', color: 'yellow' },
-              { label: 'in_progress', color: 'blue' },
-              { label: 'completed', color: 'green' },
-              { label: 'cancelled', color: 'red' },
-            ]},
-            { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Priority', type: 'select', visible: true, options: [
-              { label: 'low', color: 'gray' },
-              { label: 'medium', color: 'yellow' },
-              { label: 'high', color: 'orange' },
-              { label: 'critical', color: 'red' },
-            ]},
-            { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Due Date', type: 'date', visible: true },
-            { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Assigned To', type: 'person', visible: true },
-            { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Task Number', type: 'text', visible: true },
-            { id: `col_${crypto.randomUUID().replace(/-/g, '_')}`, name: 'Type', type: 'select', visible: true, options: [
-              { label: 'epic', color: 'purple' },
-              { label: 'feature', color: 'blue' },
-              { label: 'task', color: 'gray' },
-            ]},
+            { id: titleId, name: 'Title', type: 'text', visible: true, required: true, readonly: true, order: 0, width: 200, color: 'blue' },
+            { id: descriptionId, name: 'Description', type: 'text', visible: true, readonly: true, order: 1, width: 300, color: 'green' },
+            { id: statusColumnId, name: 'Status', type: 'select', visible: true, readonly: true, order: 2, width: 180, color: 'yellow', options: {
+              choices: [
+                { id: 'backlog', label: 'Backlog', color: 'bg-gray-200' },
+                { id: 'pending', label: 'À faire', color: 'bg-yellow-200' },
+                { id: 'in_progress', label: 'En cours', color: 'bg-blue-200' },
+                { id: 'completed', label: 'Terminée', color: 'bg-green-200' },
+                { id: 'cancelled', label: 'Annulée', color: 'bg-gray-300' },
+                { id: 'blocked', label: 'Bloquée', color: 'bg-red-200' },
+                { id: 'awaiting_info', label: "En attente d'infos", color: 'bg-purple-200' },
+              ],
+            }},
+            { id: priorityId, name: 'Priority', type: 'select', visible: true, readonly: true, order: 3, width: 180, color: 'red', options: {
+              choices: [
+                { id: 'low', label: 'Faible', color: 'bg-gray-100' },
+                { id: 'medium', label: 'Moyenne', color: 'bg-yellow-200' },
+                { id: 'high', label: 'Haute', color: 'bg-orange-200' },
+                { id: 'critical', label: 'Critique', color: 'bg-red-300' },
+              ],
+            }},
+            { id: typeId, name: 'Type', type: 'select', visible: true, readonly: true, order: 4, width: 180, color: 'purple', options: {
+              choices: [
+                { id: 'epic', label: 'Epic', color: 'bg-purple-200' },
+                { id: 'feature', label: 'Feature', color: 'bg-blue-200' },
+                { id: 'task', label: 'Task', color: 'bg-green-200' },
+              ],
+            }},
+            { id: assignedToId, name: 'Assigned To', type: 'text', visible: true, readonly: true, order: 5, width: 200, color: 'pink' },
+            { id: dueDateId, name: 'Due Date', type: 'date', visible: true, readonly: true, order: 6, width: 150, color: 'orange', options: { dateFormat: 'DD/MM/YYYY' } },
+            { id: tagsId, name: 'Tags', type: 'multi-select', visible: true, readonly: true, order: 7, width: 220, color: 'gray', options: {
+              choices: [
+                { id: 'frontend', label: 'Frontend', color: 'bg-cyan-200' },
+                { id: 'backend', label: 'Backend', color: 'bg-indigo-200' },
+                { id: 'ops', label: 'OPS', color: 'bg-orange-200' },
+                { id: 'bug', label: 'Bug', color: 'bg-red-200' },
+                { id: 'enhancement', label: 'Enhancement', color: 'bg-green-200' },
+              ],
+            }},
+            { id: estimatedHoursId, name: 'Estimated Hours', type: 'number', visible: true, readonly: true, order: 8, width: 120, color: 'blue', options: { format: 'decimal' } },
+            { id: actualHoursId, name: 'Actual Hours', type: 'number', visible: true, readonly: true, order: 9, width: 120, color: 'green', options: { format: 'decimal' } },
+            { id: parentTaskId, name: 'Parent Task ID', type: 'text', visible: false, order: 10, width: 200, color: 'yellow' },
+            { id: epicId, name: 'Epic ID', type: 'text', visible: false, order: 11, width: 200, color: 'red' },
+            { id: featureId, name: 'Feature ID', type: 'text', visible: false, order: 12, width: 200, color: 'purple' },
+            { id: projectId, name: 'Project ID', type: 'text', visible: false, order: 13, width: 200, color: 'pink' },
+            { id: taskNumberId, name: 'Task Number', type: 'text', visible: true, readonly: true, required: false, order: 14, width: 120, color: 'gray' },
           );
         }
 
-        const config = {
+        // Build config with views
+        const config: Record<string, unknown> = {
           name,
           type,
           columns: columnsConfig,
-          views: [],
+          defaultView: 'table',
         };
+
+        if (type === 'task' && statusColumnId) {
+          config.views = [
+            { id: 'view-table', name: 'Vue tableau', type: 'table', config: {} },
+            { id: 'view-kanban', name: 'Vue Kanban', type: 'kanban', config: { groupBy: statusColumnId } },
+            { id: 'view-calendar', name: 'Vue calendrier', type: 'calendar', config: {} },
+          ];
+          config.pinnedColumns = [statusColumnId];
+        } else {
+          config.views = [
+            { id: 'view-table', name: 'Vue tableau', type: 'table', config: {} },
+          ];
+        }
 
         // Create database metadata
         const { data: dbData, error: dbError } = await supabase
@@ -748,15 +815,25 @@ export function registerDatabaseTools(server: McpServer): void {
           };
         }
 
-        // Create new column
+        // Create new column (UUID standard, sans prefixe col_)
+        const normalizedType = type === 'multi_select' ? 'multi-select' : type;
         const newColumn: Record<string, unknown> = {
-          id: `col_${crypto.randomUUID().replace(/-/g, '_')}`,
+          id: crypto.randomUUID(),
           name,
-          type,
+          type: normalizedType,
           visible: true,
+          order: columns.length,
         };
 
-        if (options) {
+        if (options && (type === 'select' || type === 'multi_select')) {
+          newColumn.options = {
+            choices: options.map(opt => ({
+              id: opt.label.toLowerCase().replace(/\s+/g, '_'),
+              label: opt.label,
+              color: opt.color || 'bg-gray-200',
+            })),
+          };
+        } else if (options) {
           newColumn.options = options;
         }
 
