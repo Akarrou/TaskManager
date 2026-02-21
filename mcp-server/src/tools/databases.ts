@@ -106,7 +106,13 @@ export function registerDatabaseTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'get_database_schema',
-    `Get the complete schema of a database including all column definitions. Returns: database_id, name, type, columns array (with id, name, type, options for selects, visibility), and views configuration. Column types include: text, number, select, multi_select, date, checkbox, url, email, phone, person, formula, relation, rollup, created_time, last_edited_time, created_by, last_edited_by. Essential for understanding how to query and update database rows. Related tools: add_column, update_column.`,
+    `Get the complete schema of a database including all column definitions. Returns: database_id, name, type, columns array, views, defaultView, and pinnedColumns.
+
+Each column has: id (UUID), name, type, visible, order, and optionally: width, color, readonly, required, options. Column types: text, number, select, multi-select, date, checkbox, url, email, phone, person, formula, relation, rollup, created_time, last_edited_time, created_by, last_edited_by. Note: multi-select uses a hyphen (not underscore).
+
+For select/multi-select columns, options follow the format: { choices: [{ id, label, color }] }. The choice "id" is the value to use when setting cell data (e.g., "in_progress", "high").
+
+Column IDs are standard UUIDs (e.g., "a1b2c3d4-e5f6-..."). Essential for understanding how to query and update database rows. Related tools: add_column, update_column, add_database_row.`,
     {
       database_id: z.string().describe('The database ID. Format: db-uuid (e.g., "db-123e4567-e89b-...").'),
     },
@@ -147,8 +153,14 @@ export function registerDatabaseTools(server: McpServer): void {
             options?: unknown;
             visible?: boolean;
             required?: boolean;
+            readonly?: boolean;
+            order?: number;
+            width?: number;
+            color?: string;
           }>;
           views?: unknown[];
+          defaultView?: string;
+          pinnedColumns?: string[];
         };
 
         return {
@@ -160,6 +172,8 @@ export function registerDatabaseTools(server: McpServer): void {
               type: config.type || 'generic',
               columns: config.columns || [],
               views: config.views || [],
+              defaultView: config.defaultView || 'table',
+              pinnedColumns: config.pinnedColumns || [],
             }, null, 2),
           }],
         };
@@ -283,7 +297,11 @@ export function registerDatabaseTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'add_database_row',
-    `Add a new row to a database. Use column names (not IDs) as keys in the cells object - they are automatically mapped to column IDs. For task databases, use create_task instead which provides a typed interface. The new row is added at the end (highest row_order). Returns the created row with its generated UUID. Example cells: { "Title": "My Item", "Status": "active", "Count": 42 }. Related tools: get_database_schema (column names), update_database_row.`,
+    `Add a new row to a database. Use column names (not IDs) as keys in the cells object - they are automatically mapped to column IDs. For task databases, use create_task instead which provides a typed interface. The new row is added at the end (highest row_order). Returns the created row with its generated UUID.
+
+IMPORTANT for select/multi-select columns: use the choice ID as value, not the label. Example: use "in_progress" not "En cours", "high" not "Haute". Get available choice IDs from get_database_schema (options.choices[].id).
+
+Example cells: { "Title": "My Item", "Status": "pending", "Priority": "high", "Count": 42 }. Related tools: get_database_schema (column names and choice IDs), update_database_row.`,
     {
       database_id: z.string().describe('The database ID to add a row to. Format: db-uuid.'),
       cells: z.record(z.unknown()).describe('Cell values as { "ColumnName": value } object. Use get_database_schema to see available columns.'),
@@ -377,7 +395,11 @@ export function registerDatabaseTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'update_database_row',
-    `Update specific cells in an existing database row. Only provide the columns you want to change - existing values are preserved for unspecified columns. Uses column names (not IDs) in the cells object. For task databases, use update_task instead. Returns the updated row. Example: { "Status": "completed", "Progress": 100 }. Related tools: get_database_rows (find row IDs), add_database_row, delete_database_rows.`,
+    `Update specific cells in an existing database row. Only provide the columns you want to change - existing values are preserved for unspecified columns. Uses column names (not IDs) in the cells object. For task databases, use update_task instead. Returns the updated row.
+
+IMPORTANT for select/multi-select columns: use the choice ID as value (e.g., "completed", "critical"), not the display label. Get available choice IDs from get_database_schema.
+
+Example: { "Status": "completed", "Priority": "high", "Progress": 100 }. Related tools: get_database_rows (find row IDs), add_database_row, delete_database_rows.`,
     {
       database_id: z.string().describe('The database ID containing the row. Format: db-uuid.'),
       row_id: z.string().uuid().describe('The row UUID to update. Get this from get_database_rows (_id field).'),
@@ -510,7 +532,17 @@ export function registerDatabaseTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'create_database',
-    `Create a new Notion-like database with custom columns. Databases are structured tables that can be embedded in documents or exist standalone. Type "task" creates a database with predefined columns (Title, Description, Status, Priority, Due Date, Assigned To) suitable for task management - use with list_tasks/create_task. Type "generic" creates an empty schema that you define with columns. Returns the created database with its generated database_id. Column IDs are auto-generated. Related tools: add_column (add more columns later), add_database_row (add data).`,
+    `Create a new Notion-like database with custom columns. Databases are structured tables that can be embedded in documents or exist standalone.
+
+Type "task" creates a complete task management database with 15 predefined columns: Title, Description, Status (select: backlog/pending/in_progress/completed/cancelled/blocked/awaiting_info), Priority (select: low/medium/high/critical), Type (select: epic/feature/task), Assigned To, Due Date, Tags (multi-select), Estimated Hours, Actual Hours, Parent Task ID, Epic ID, Feature ID, Project ID, Task Number. It also creates 3 views (table, kanban grouped by Status, calendar), sets defaultView to "table", and pins the Status column. Use with list_tasks/create_task tools.
+
+Type "generic" creates a database with your custom columns and a single table view.
+
+For generic databases with select/multi_select columns, provide options as [{label, color?}] — they are automatically converted to the frontend format {choices: [{id, label, color}]}.
+
+Column IDs are standard UUIDs (e.g., "a1b2c3d4-e5f6-..."), NOT prefixed with "col_". The "col_" prefix is only added at the PostgreSQL column level by the ensure_table_exists RPC.
+
+Returns the created database with its generated database_id. Related tools: add_column (add more columns later), add_database_row (add data), list_tasks/create_task (for task databases).`,
     {
       name: z.string().min(1).max(255).describe('Display name for the database.'),
       document_id: z.string().uuid().optional().describe('Parent document to embed the database in. Omit for standalone database.'),
@@ -766,7 +798,11 @@ export function registerDatabaseTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'add_column',
-    `Add a new column to an existing database. The column is added to the end of the column list. Column ID is auto-generated. Existing rows will have null values for the new column until updated. For select/multi_select types, you must provide options. Column names must be unique within the database. Returns the created column with its generated ID. Related tools: update_column, delete_column, get_database_schema.`,
+    `Add a new column to an existing database. The column is added at the end with auto-generated UUID as ID and auto-assigned order. Existing rows will have null values for the new column until updated.
+
+For select/multi_select types, provide options as [{label, color?}] — they are automatically converted to {choices: [{id, label, color}]} format. The type "multi_select" is stored as "multi-select" (with hyphen) for frontend compatibility.
+
+Column names must be unique within the database. Returns the created column with its generated UUID. Related tools: update_column, delete_column, get_database_schema.`,
     {
       database_id: z.string().describe('The database ID to add a column to. Format: db-uuid.'),
       name: z.string().min(1).describe('Column display name. Must be unique within this database.'),
@@ -872,16 +908,16 @@ export function registerDatabaseTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'update_column',
-    `Update a column's properties (name, visibility, select options). Column type cannot be changed. Only provide the properties you want to change. For select/multi_select, updating options replaces the entire options array. Hidden columns (visible=false) don't appear in default table views but data is preserved. Get column_id from get_database_schema. Related tools: add_column, delete_column.`,
+    `Update a column's properties (name, visibility, select options). Column type cannot be changed. Only provide the properties you want to change. For select/multi-select, provide options as [{label, color?}] — they are automatically converted to {choices: [{id, label, color}]} format. Hidden columns (visible=false) don't appear in default table views but data is preserved. Get column_id from get_database_schema. Related tools: add_column, delete_column.`,
     {
       database_id: z.string().describe('The database ID. Format: db-uuid.'),
-      column_id: z.string().describe('The column ID to update. Format: col_uuid. Get from get_database_schema.'),
+      column_id: z.string().describe('The column UUID to update. Format: standard UUID (e.g., "a1b2c3d4-e5f6-..."). Get from get_database_schema.'),
       name: z.string().min(1).optional().describe('New display name. Leave undefined to keep current.'),
       visible: z.boolean().optional().describe('Set to false to hide column in views. Data is preserved.'),
       options: z.array(z.object({
         label: z.string(),
         color: z.string().optional(),
-      })).optional().describe('Replace select/multi_select options. For other types, this is ignored.'),
+      })).optional().describe('Replace select/multi-select options as [{label, color?}]. Automatically converted to {choices: [...]} format.'),
     },
     async ({ database_id, column_id, name, visible, options }) => {
       try {
@@ -924,7 +960,20 @@ export function registerDatabaseTools(server: McpServer): void {
         // Update column properties
         if (name !== undefined) columns[columnIndex].name = name;
         if (visible !== undefined) columns[columnIndex].visible = visible;
-        if (options !== undefined) columns[columnIndex].options = options;
+        if (options !== undefined) {
+          const colType = columns[columnIndex].type as string;
+          if (colType === 'select' || colType === 'multi-select') {
+            columns[columnIndex].options = {
+              choices: options.map(opt => ({
+                id: opt.label.toLowerCase().replace(/\s+/g, '_'),
+                label: opt.label,
+                color: opt.color || 'bg-gray-200',
+              })),
+            };
+          } else {
+            columns[columnIndex].options = options;
+          }
+        }
 
         const { error } = await supabase
           .from('document_databases')
@@ -961,7 +1010,7 @@ export function registerDatabaseTools(server: McpServer): void {
     `Delete a column from a database. WARNING: All cell data for this column in existing rows is permanently lost. The column is removed from the schema and cannot be recovered. Consider using update_column with visible=false to hide instead of delete. Get column_id from get_database_schema. Returns the name of the deleted column.`,
     {
       database_id: z.string().describe('The database ID. Format: db-uuid.'),
-      column_id: z.string().describe('The column ID to delete. Format: col_uuid. Get from get_database_schema.'),
+      column_id: z.string().describe('The column UUID to delete. Format: standard UUID (e.g., "a1b2c3d4-e5f6-..."). Get from get_database_schema.'),
     },
     async ({ database_id, column_id }) => {
       try {
