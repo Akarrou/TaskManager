@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
+import { getCurrentUserId } from '../services/user-auth.js';
+import { saveSnapshot } from '../services/snapshot.js';
 /**
  * Register all spreadsheet-related tools (Excel-like spreadsheets embedded in documents)
  */
@@ -142,11 +144,13 @@ export function registerSpreadsheetTools(server) {
         config: z.record(z.unknown()).describe('Config fields to merge. Example: { name: "New Name", activeSheet: "sheet2" }.'),
     }, async ({ spreadsheet_id, config }) => {
         try {
+            const userId = getCurrentUserId();
+            let snapshotToken = '';
             const supabase = getSupabaseClient();
-            // Get current config
+            // Get current full row for snapshot
             const { data: current, error: getError } = await supabase
                 .from('document_spreadsheets')
-                .select('config')
+                .select('*')
                 .eq('spreadsheet_id', spreadsheet_id)
                 .single();
             if (getError || !current) {
@@ -155,6 +159,17 @@ export function registerSpreadsheetTools(server) {
                     isError: true,
                 };
             }
+            // Snapshot before modification
+            const snapshot = await saveSnapshot({
+                entityType: 'spreadsheet',
+                entityId: spreadsheet_id,
+                tableName: 'document_spreadsheets',
+                toolName: 'update_spreadsheet',
+                operation: 'update',
+                data: current,
+                userId,
+            });
+            snapshotToken = snapshot.token;
             // Merge configs
             const mergedConfig = { ...current.config, ...config };
             const { data, error } = await supabase
@@ -173,7 +188,7 @@ export function registerSpreadsheetTools(server) {
                 };
             }
             return {
-                content: [{ type: 'text', text: `Spreadsheet updated successfully:\n${JSON.stringify(data, null, 2)}` }],
+                content: [{ type: 'text', text: `Spreadsheet updated (snapshot: ${snapshotToken}) successfully:\n${JSON.stringify(data, null, 2)}` }],
             };
         }
         catch (err) {
@@ -197,7 +212,27 @@ export function registerSpreadsheetTools(server) {
             };
         }
         try {
+            const userId = getCurrentUserId();
+            let snapshotToken = '';
             const supabase = getSupabaseClient();
+            // Snapshot before deletion
+            const { data: currentSpreadsheet } = await supabase
+                .from('document_spreadsheets')
+                .select('*')
+                .eq('spreadsheet_id', spreadsheet_id)
+                .single();
+            if (currentSpreadsheet) {
+                const snapshot = await saveSnapshot({
+                    entityType: 'spreadsheet',
+                    entityId: spreadsheet_id,
+                    tableName: 'document_spreadsheets',
+                    toolName: 'delete_spreadsheet',
+                    operation: 'delete',
+                    data: currentSpreadsheet,
+                    userId,
+                });
+                snapshotToken = snapshot.token;
+            }
             // Try cascade delete RPC
             const { error: rpcError } = await supabase.rpc('delete_spreadsheet_cascade', {
                 p_spreadsheet_id: spreadsheet_id,
@@ -216,7 +251,7 @@ export function registerSpreadsheetTools(server) {
                 }
             }
             return {
-                content: [{ type: 'text', text: `Spreadsheet ${spreadsheet_id} deleted successfully.` }],
+                content: [{ type: 'text', text: `Spreadsheet ${spreadsheet_id} deleted (snapshot: ${snapshotToken}) successfully.` }],
             };
         }
         catch (err) {
@@ -288,6 +323,8 @@ export function registerSpreadsheetTools(server) {
         value: z.unknown().describe('Cell value: string, number, or formula (start with "="). Examples: "Hello", 42, "=SUM(A1:A10)".'),
     }, async ({ spreadsheet_id, sheet_id, row, col, value }) => {
         try {
+            const userId = getCurrentUserId();
+            let snapshotToken = '';
             const supabase = getSupabaseClient();
             const { data: spreadsheet, error: ssError } = await supabase
                 .from('document_spreadsheets')
@@ -301,6 +338,27 @@ export function registerSpreadsheetTools(server) {
                 };
             }
             const tableName = spreadsheet.table_name;
+            // Snapshot existing cell before modification
+            const { data: currentCell } = await supabase
+                .from(tableName)
+                .select('*')
+                .eq('spreadsheet_id', spreadsheet_id)
+                .eq('sheet_id', sheet_id)
+                .eq('row', row)
+                .eq('col', col)
+                .maybeSingle();
+            if (currentCell) {
+                const snapshot = await saveSnapshot({
+                    entityType: 'spreadsheet_cell',
+                    entityId: `${spreadsheet_id}_${sheet_id}_${row}_${col}`,
+                    tableName: tableName,
+                    toolName: 'update_cell',
+                    operation: 'update',
+                    data: currentCell,
+                    userId,
+                });
+                snapshotToken = snapshot.token;
+            }
             // Upsert cell
             const { error } = await supabase
                 .from(tableName)
@@ -322,7 +380,7 @@ export function registerSpreadsheetTools(server) {
                 };
             }
             return {
-                content: [{ type: 'text', text: `Cell (${row}, ${col}) updated to: ${JSON.stringify(value)}` }],
+                content: [{ type: 'text', text: `Cell (${row}, ${col}) updated (snapshot: ${snapshotToken}) to: ${JSON.stringify(value)}` }],
             };
         }
         catch (err) {
@@ -345,7 +403,39 @@ export function registerSpreadsheetTools(server) {
         })).min(1).describe('Array of { row, col, value } objects to update.'),
     }, async ({ spreadsheet_id, sheet_id, cells }) => {
         try {
+            const userId = getCurrentUserId();
+            let snapshotToken = '';
             const supabase = getSupabaseClient();
+            // Snapshot existing cells before batch update
+            const { data: spreadsheet } = await supabase
+                .from('document_spreadsheets')
+                .select('table_name')
+                .eq('spreadsheet_id', spreadsheet_id)
+                .single();
+            if (spreadsheet) {
+                // Only snapshot the cells that will actually be modified (not the entire sheet)
+                const targetRows = [...new Set(cells.map(c => c.row))];
+                const targetCols = [...new Set(cells.map(c => c.col))];
+                const { data: existingCells } = await supabase
+                    .from(spreadsheet.table_name)
+                    .select('*')
+                    .eq('spreadsheet_id', spreadsheet_id)
+                    .eq('sheet_id', sheet_id)
+                    .in('row', targetRows)
+                    .in('col', targetCols);
+                if (existingCells && existingCells.length > 0) {
+                    const snapshot = await saveSnapshot({
+                        entityType: 'spreadsheet_cells_batch',
+                        entityId: spreadsheet_id,
+                        tableName: spreadsheet.table_name,
+                        toolName: 'update_cells_batch',
+                        operation: 'update',
+                        data: existingCells,
+                        userId,
+                    });
+                    snapshotToken = snapshot.token;
+                }
+            }
             // Use batch update RPC
             const updates = cells.map(cell => ({
                 spreadsheet_id,
@@ -365,7 +455,7 @@ export function registerSpreadsheetTools(server) {
                 };
             }
             return {
-                content: [{ type: 'text', text: `Successfully updated ${cells.length} cells.` }],
+                content: [{ type: 'text', text: `Successfully updated ${cells.length} cells (snapshot: ${snapshotToken}).` }],
             };
         }
         catch (err) {
@@ -443,6 +533,8 @@ export function registerSpreadsheetTools(server) {
         name: z.string().min(1).max(100).describe('New tab name.'),
     }, async ({ spreadsheet_id, sheet_id, name }) => {
         try {
+            const userId = getCurrentUserId();
+            let snapshotToken = '';
             const supabase = getSupabaseClient();
             const { data: spreadsheet, error: ssError } = await supabase
                 .from('document_spreadsheets')
@@ -464,6 +556,17 @@ export function registerSpreadsheetTools(server) {
                     isError: true,
                 };
             }
+            // Snapshot after validation
+            const snapshot = await saveSnapshot({
+                entityType: 'spreadsheet',
+                entityId: spreadsheet_id,
+                tableName: 'document_spreadsheets',
+                toolName: 'rename_sheet',
+                operation: 'update',
+                data: spreadsheet,
+                userId,
+            });
+            snapshotToken = snapshot.token;
             sheets[sheetIndex].name = name;
             const { error } = await supabase
                 .from('document_spreadsheets')
@@ -479,7 +582,7 @@ export function registerSpreadsheetTools(server) {
                 };
             }
             return {
-                content: [{ type: 'text', text: `Sheet renamed to "${name}" successfully.` }],
+                content: [{ type: 'text', text: `Sheet renamed (snapshot: ${snapshotToken}) to "${name}" successfully.` }],
             };
         }
         catch (err) {
@@ -497,6 +600,8 @@ export function registerSpreadsheetTools(server) {
         sheet_id: z.string().describe('The sheet ID to delete (e.g., "sheet1").'),
     }, async ({ spreadsheet_id, sheet_id }) => {
         try {
+            const userId = getCurrentUserId();
+            let snapshotToken = '';
             const supabase = getSupabaseClient();
             const { data: spreadsheet, error: ssError } = await supabase
                 .from('document_spreadsheets')
@@ -524,6 +629,17 @@ export function registerSpreadsheetTools(server) {
                     isError: true,
                 };
             }
+            // Snapshot after validation
+            const snapshot = await saveSnapshot({
+                entityType: 'spreadsheet',
+                entityId: spreadsheet_id,
+                tableName: 'document_spreadsheets',
+                toolName: 'delete_sheet',
+                operation: 'update',
+                data: spreadsheet,
+                userId,
+            });
+            snapshotToken = snapshot.token;
             const deletedSheet = sheets.splice(sheetIndex, 1)[0];
             // If active sheet was deleted, set first remaining sheet as active
             if (config.activeSheet === sheet_id) {
@@ -550,7 +666,7 @@ export function registerSpreadsheetTools(server) {
                 };
             }
             return {
-                content: [{ type: 'text', text: `Sheet "${deletedSheet.name}" deleted successfully.` }],
+                content: [{ type: 'text', text: `Sheet "${deletedSheet.name}" deleted (snapshot: ${snapshotToken}) successfully.` }],
             };
         }
         catch (err) {
@@ -572,7 +688,38 @@ export function registerSpreadsheetTools(server) {
         end_col: z.number().min(0).describe('Ending column, inclusive.'),
     }, async ({ spreadsheet_id, sheet_id, start_row, start_col, end_row, end_col }) => {
         try {
+            const userId = getCurrentUserId();
+            let snapshotToken = '';
             const supabase = getSupabaseClient();
+            // Snapshot existing cells in range before clearing
+            const { data: spreadsheet } = await supabase
+                .from('document_spreadsheets')
+                .select('table_name')
+                .eq('spreadsheet_id', spreadsheet_id)
+                .single();
+            if (spreadsheet) {
+                const { data: existingCells } = await supabase
+                    .from(spreadsheet.table_name)
+                    .select('*')
+                    .eq('spreadsheet_id', spreadsheet_id)
+                    .eq('sheet_id', sheet_id)
+                    .gte('row', start_row)
+                    .lte('row', end_row)
+                    .gte('col', start_col)
+                    .lte('col', end_col);
+                if (existingCells && existingCells.length > 0) {
+                    const snapshot = await saveSnapshot({
+                        entityType: 'spreadsheet_cells_range',
+                        entityId: spreadsheet_id,
+                        tableName: spreadsheet.table_name,
+                        toolName: 'clear_range',
+                        operation: 'delete',
+                        data: existingCells,
+                        userId,
+                    });
+                    snapshotToken = snapshot.token;
+                }
+            }
             // Try RPC first
             const { data, error } = await supabase.rpc('clear_spreadsheet_range', {
                 p_spreadsheet_id: spreadsheet_id,
@@ -590,7 +737,7 @@ export function registerSpreadsheetTools(server) {
             }
             const clearedCount = data || 0;
             return {
-                content: [{ type: 'text', text: `Cleared ${clearedCount} cells in range (${start_row},${start_col}) to (${end_row},${end_col}).` }],
+                content: [{ type: 'text', text: `Cleared ${clearedCount} cells (snapshot: ${snapshotToken}) in range (${start_row},${start_col}) to (${end_row},${end_col}).` }],
             };
         }
         catch (err) {

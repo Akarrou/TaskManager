@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
 import { getCurrentUserId } from '../services/user-auth.js';
+import { saveSnapshot } from '../services/snapshot.js';
 
 /**
  * Register all document-related tools
@@ -204,6 +205,28 @@ export function registerDocumentTools(server: McpServer): void {
           };
         }
 
+        // Fetch current state and snapshot before modification
+        const { data: currentDoc } = await supabase
+          .from('documents')
+          .select('*')
+          .eq('id', document_id)
+          .eq('user_id', userId)
+          .single();
+
+        let snapshotToken = '';
+        if (currentDoc) {
+          const snapshot = await saveSnapshot({
+            entityType: 'document',
+            entityId: document_id,
+            tableName: 'documents',
+            toolName: 'update_document',
+            operation: 'update',
+            data: currentDoc,
+            userId,
+          });
+          snapshotToken = snapshot.token;
+        }
+
         const { data, error } = await supabase
           .from('documents')
           .update(updates)
@@ -220,7 +243,7 @@ export function registerDocumentTools(server: McpServer): void {
         }
 
         return {
-          content: [{ type: 'text', text: `Document updated successfully:\n${JSON.stringify(data, null, 2)}` }],
+          content: [{ type: 'text', text: `Document updated (snapshot: ${snapshotToken}):\n${JSON.stringify(data, null, 2)}` }],
         };
       } catch (err) {
         return {
@@ -266,6 +289,30 @@ export function registerDocumentTools(server: McpServer): void {
           const descendantIds = await getAllDescendantIds(supabase, document_id, userId);
           const allDocIds = [...descendantIds, document_id];
 
+          // Snapshot all documents before deletion
+          const snapshotTokens: string[] = [];
+          for (const docId of allDocIds) {
+            const { data: docData } = await supabase
+              .from('documents')
+              .select('*')
+              .eq('id', docId)
+              .eq('user_id', userId)
+              .single();
+
+            if (docData) {
+              const snapshot = await saveSnapshot({
+                entityType: 'document',
+                entityId: docId,
+                tableName: 'documents',
+                toolName: 'delete_document',
+                operation: 'delete',
+                data: docData,
+                userId,
+              });
+              snapshotTokens.push(snapshot.token);
+            }
+          }
+
           // Delete in reverse order (children first)
           for (const docId of allDocIds.reverse()) {
             const { error } = await supabase
@@ -283,10 +330,31 @@ export function registerDocumentTools(server: McpServer): void {
           }
 
           return {
-            content: [{ type: 'text', text: `Document and ${descendantIds.length} child documents deleted successfully.` }],
+            content: [{ type: 'text', text: `Document and ${descendantIds.length} child documents deleted (snapshots: ${snapshotTokens.join(', ')}).` }],
           };
         } else {
-          // Simple delete
+          // Snapshot before simple delete
+          const { data: currentDoc } = await supabase
+            .from('documents')
+            .select('*')
+            .eq('id', document_id)
+            .eq('user_id', userId)
+            .single();
+
+          let snapshotToken = '';
+          if (currentDoc) {
+            const snapshot = await saveSnapshot({
+              entityType: 'document',
+              entityId: document_id,
+              tableName: 'documents',
+              toolName: 'delete_document',
+              operation: 'delete',
+              data: currentDoc,
+              userId,
+            });
+            snapshotToken = snapshot.token;
+          }
+
           const { error } = await supabase
             .from('documents')
             .delete()
@@ -301,7 +369,7 @@ export function registerDocumentTools(server: McpServer): void {
           }
 
           return {
-            content: [{ type: 'text', text: 'Document deleted successfully.' }],
+            content: [{ type: 'text', text: `Document deleted (snapshot: ${snapshotToken}).` }],
           };
         }
       } catch (err) {

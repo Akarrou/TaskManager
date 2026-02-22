@@ -8,6 +8,8 @@ import { registerUserTools } from './tools/users.js';
 import { registerCommentTools } from './tools/comments.js';
 import { registerTabTools } from './tools/tabs.js';
 import { registerSpreadsheetTools } from './tools/spreadsheets.js';
+import { registerSnapshotTools } from './tools/snapshots.js';
+import { registerTiptapDocsTools } from './tools/tiptap-docs.js';
 import { registerPrompts } from './prompts/index.js';
 import { registerResources } from './resources/index.js';
 import { logger } from './services/logger.js';
@@ -34,11 +36,13 @@ export function createMcpServer() {
     registerCommentTools(server);
     registerTabTools(server);
     registerSpreadsheetTools(server);
+    registerSnapshotTools(server);
+    registerTiptapDocsTools(server);
     // Register resources
     registerResources(server);
     // Register prompts
     registerPrompts(server);
-    logger.info('MCP server configured with 71 tools, 5 resources, 9 prompts');
+    logger.info('MCP server configured with 76 tools, 5 resources, 9 prompts');
     return server;
 }
 //# sourceMappingURL=server.js.map

@@ -14,6 +14,7 @@ declare const envSchema: z.ZodObject<{
     RATE_LIMIT_WINDOW_MS: z.ZodDefault<z.ZodNumber>;
     RETRY_MAX_ATTEMPTS: z.ZodDefault<z.ZodNumber>;
     RETRY_BASE_DELAY_MS: z.ZodDefault<z.ZodNumber>;
+    SNAPSHOT_RETENTION_DAYS: z.ZodDefault<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
     SUPABASE_URL: string;
     SUPABASE_SERVICE_ROLE_KEY: string;
@@ -28,6 +29,7 @@ declare const envSchema: z.ZodObject<{
     RATE_LIMIT_WINDOW_MS: number;
     RETRY_MAX_ATTEMPTS: number;
     RETRY_BASE_DELAY_MS: number;
+    SNAPSHOT_RETENTION_DAYS: number;
     DEFAULT_USER_ID?: string | undefined;
 }, {
     SUPABASE_SERVICE_ROLE_KEY: string;
@@ -44,6 +46,7 @@ declare const envSchema: z.ZodObject<{
     RATE_LIMIT_WINDOW_MS?: number | undefined;
     RETRY_MAX_ATTEMPTS?: number | undefined;
     RETRY_BASE_DELAY_MS?: number | undefined;
+    SNAPSHOT_RETENTION_DAYS?: number | undefined;
 }>;
 export declare const env: {
     SUPABASE_URL: string;
@@ -59,6 +62,7 @@ export declare const env: {
     RATE_LIMIT_WINDOW_MS: number;
     RETRY_MAX_ATTEMPTS: number;
     RETRY_BASE_DELAY_MS: number;
+    SNAPSHOT_RETENTION_DAYS: number;
     DEFAULT_USER_ID?: string | undefined;
 };
 export type Env = z.infer<typeof envSchema>;

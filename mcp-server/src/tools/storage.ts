@@ -1,7 +1,9 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
+import { getCurrentUserId } from '../services/user-auth.js';
 import { env } from '../config.js';
+import { saveSnapshot } from '../services/snapshot.js';
 
 /**
  * Register all storage-related tools
@@ -137,13 +139,24 @@ export function registerStorageTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'delete_file',
-    `Permanently delete a file from Supabase Storage. This action cannot be undone. Get the file path from list_document_files. Returns confirmation of deletion. WARNING: The file and any links to it will stop working immediately.`,
+    `Permanently delete a file from Supabase Storage. A metadata snapshot is saved for audit purposes, but file content CANNOT be restored (storage files are not database rows). Get the file path from list_document_files. Returns confirmation of deletion with snapshot token. WARNING: The file and any links to it will stop working immediately.`,
     {
       file_path: z.string().describe('Full storage path to delete (e.g., "documents/uuid/files/old-report.pdf").'),
     },
     async ({ file_path }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
+
+        // Snapshot file metadata before deletion (audit only — file content cannot be restored)
+        const snapshot = await saveSnapshot({
+          entityType: 'file_metadata',
+          entityId: file_path,
+          toolName: 'delete_file',
+          operation: 'delete',
+          data: { file_path, bucket: env.STORAGE_BUCKET, note: 'metadata only — file content not restorable' },
+          userId,
+        });
 
         const { error } = await supabase.storage
           .from(env.STORAGE_BUCKET)
@@ -157,7 +170,7 @@ export function registerStorageTools(server: McpServer): void {
         }
 
         return {
-          content: [{ type: 'text', text: `File deleted successfully: ${file_path}` }],
+          content: [{ type: 'text', text: `File deleted (snapshot: ${snapshot.token}): ${file_path}` }],
         };
       } catch (err) {
         return {

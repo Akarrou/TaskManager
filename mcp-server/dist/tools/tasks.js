@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
 import { getCurrentUserId } from '../services/user-auth.js';
+import { saveSnapshot } from '../services/snapshot.js';
 /**
  * Get task databases accessible to the current user
  * Databases are accessible if they belong to a document owned by the user
@@ -203,6 +204,21 @@ export function registerTaskTools(server) {
                 };
             }
             const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
+            // Fetch current row for snapshot
+            const { data: currentRow } = await supabase.from(tableName).select('*').eq('id', row_id).single();
+            let snapshotToken = '';
+            if (currentRow) {
+                const snapshot = await saveSnapshot({
+                    entityType: 'task_row',
+                    entityId: row_id,
+                    tableName,
+                    toolName: 'update_task_status',
+                    operation: 'update',
+                    data: currentRow,
+                    userId,
+                });
+                snapshotToken = snapshot.token;
+            }
             // Update status column directly (matches Angular pattern)
             const colName = `col_${statusColumn.id.replace(/-/g, '_')}`;
             const { data, error } = await supabase
@@ -221,7 +237,7 @@ export function registerTaskTools(server) {
                 };
             }
             return {
-                content: [{ type: 'text', text: `Task status updated to "${status}":\n${JSON.stringify(data, null, 2)}` }],
+                content: [{ type: 'text', text: `Task status updated to "${status}" (snapshot: ${snapshotToken}):\n${JSON.stringify(data, null, 2)}` }],
             };
         }
         catch (err) {
@@ -270,6 +286,21 @@ export function registerTaskTools(server) {
                 };
             }
             const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
+            // Fetch current row for snapshot
+            const { data: currentRow } = await supabase.from(tableName).select('*').eq('id', row_id).single();
+            let snapshotToken = '';
+            if (currentRow) {
+                const snapshot = await saveSnapshot({
+                    entityType: 'task_row',
+                    entityId: row_id,
+                    tableName,
+                    toolName: 'update_task_priority',
+                    operation: 'update',
+                    data: currentRow,
+                    userId,
+                });
+                snapshotToken = snapshot.token;
+            }
             // Update priority column directly (matches Angular pattern)
             const colName = `col_${priorityColumn.id.replace(/-/g, '_')}`;
             const { data, error } = await supabase
@@ -288,7 +319,7 @@ export function registerTaskTools(server) {
                 };
             }
             return {
-                content: [{ type: 'text', text: `Task priority updated to "${priority}":\n${JSON.stringify(data, null, 2)}` }],
+                content: [{ type: 'text', text: `Task priority updated to "${priority}" (snapshot: ${snapshotToken}):\n${JSON.stringify(data, null, 2)}` }],
             };
         }
         catch (err) {
@@ -637,6 +668,28 @@ Returns: { task, document }. Related tools: list_databases, create_database.`, {
         due_date: z.string().optional().describe('New due date in ISO format.'),
     }, async ({ database_id, row_id, title, description, status, priority, type, assigned_to, due_date }) => {
         try {
+            // Check for updates early to avoid unnecessary DB calls and snapshots
+            const updates = [];
+            if (title !== undefined)
+                updates.push({ name: 'Title', value: title });
+            if (description !== undefined)
+                updates.push({ name: 'Description', value: description });
+            if (status !== undefined)
+                updates.push({ name: 'Status', value: status });
+            if (priority !== undefined)
+                updates.push({ name: 'Priority', value: priority });
+            if (type !== undefined)
+                updates.push({ name: 'Type', value: type });
+            if (assigned_to !== undefined)
+                updates.push({ name: 'Assigned To', value: assigned_to });
+            if (due_date !== undefined)
+                updates.push({ name: 'Due Date', value: due_date });
+            if (updates.length === 0) {
+                return {
+                    content: [{ type: 'text', text: 'No updates provided. Please specify at least one field to update.' }],
+                    isError: true,
+                };
+            }
             const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
             // Verify user has access to this database
@@ -674,28 +727,17 @@ Returns: { task, document }. Related tools: list_databases, create_database.`, {
                     isError: true,
                 };
             }
-            // Build update object with individual columns (matches Angular pattern)
-            const updates = [];
-            if (title !== undefined)
-                updates.push({ name: 'Title', value: title });
-            if (description !== undefined)
-                updates.push({ name: 'Description', value: description });
-            if (status !== undefined)
-                updates.push({ name: 'Status', value: status });
-            if (priority !== undefined)
-                updates.push({ name: 'Priority', value: priority });
-            if (type !== undefined)
-                updates.push({ name: 'Type', value: type });
-            if (assigned_to !== undefined)
-                updates.push({ name: 'Assigned To', value: assigned_to });
-            if (due_date !== undefined)
-                updates.push({ name: 'Due Date', value: due_date });
-            if (updates.length === 0) {
-                return {
-                    content: [{ type: 'text', text: 'No updates provided. Please specify at least one field to update.' }],
-                    isError: true,
-                };
-            }
+            // Snapshot before modification
+            const snapshot = await saveSnapshot({
+                entityType: 'task_row',
+                entityId: row_id,
+                tableName,
+                toolName: 'update_task',
+                operation: 'update',
+                data: currentRow,
+                userId,
+            });
+            const snapshotToken = snapshot.token;
             // Map updates to individual column names
             const updateData = {
                 updated_at: new Date().toISOString(),
@@ -721,7 +763,7 @@ Returns: { task, document }. Related tools: list_databases, create_database.`, {
             }
             const task = normalizeRowToTask(data, dbMeta);
             return {
-                content: [{ type: 'text', text: `Task updated successfully:\n${JSON.stringify(task, null, 2)}` }],
+                content: [{ type: 'text', text: `Task updated (snapshot: ${snapshotToken}):\n${JSON.stringify(task, null, 2)}` }],
             };
         }
         catch (err) {
@@ -767,6 +809,19 @@ Returns: { task, document }. Related tools: list_databases, create_database.`, {
                 .select('*')
                 .eq('id', row_id)
                 .single();
+            let snapshotToken = '';
+            if (taskRow) {
+                const snapshot = await saveSnapshot({
+                    entityType: 'task_row',
+                    entityId: row_id,
+                    tableName,
+                    toolName: 'delete_task',
+                    operation: 'delete',
+                    data: taskRow,
+                    userId,
+                });
+                snapshotToken = snapshot.token;
+            }
             const { error } = await supabase
                 .from(tableName)
                 .delete()
@@ -779,7 +834,7 @@ Returns: { task, document }. Related tools: list_databases, create_database.`, {
             }
             const task = taskRow ? normalizeRowToTask(taskRow, dbMeta) : { id: row_id };
             return {
-                content: [{ type: 'text', text: `Task deleted successfully:\n${JSON.stringify(task, null, 2)}` }],
+                content: [{ type: 'text', text: `Task deleted (snapshot: ${snapshotToken}):\n${JSON.stringify(task, null, 2)}` }],
             };
         }
         catch (err) {

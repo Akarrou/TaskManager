@@ -686,6 +686,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     // Listen for accordion icon edit events
     this.setupAccordionIconEditListener();
 
+    // Listen for accordion delete item events
+    this.setupAccordionDeleteListener();
+
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
       if (params['id']) {
         this.loadDocument(params['id']);
@@ -718,6 +721,36 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         }) as EventListener);
       }
     }, 500);
+  }
+
+  private setupAccordionDeleteListener() {
+    setTimeout(() => {
+      const editorDom = this.editor?.view?.dom;
+      if (editorDom) {
+        editorDom.addEventListener('accordion-delete-item', ((event: CustomEvent) => {
+          const { itemPos } = event.detail;
+          if (itemPos >= 0) {
+            this.confirmDeleteAccordionItem(itemPos);
+          }
+        }) as EventListener);
+      }
+    }, 500);
+  }
+
+  private confirmDeleteAccordionItem(itemPos: number) {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Supprimer l\'élément',
+        message: 'Voulez-vous vraiment supprimer cet élément de l\'accordéon ?'
+      } as ConfirmDialogData
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) {
+        this.editor.commands.deleteAccordionItem(itemPos);
+      }
+    });
   }
 
   onAccordionSettingsChanged(settings: AccordionSettings) {

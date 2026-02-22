@@ -125,7 +125,7 @@ echo "🏥 Health check..."
 HEALTHY=0
 TOTAL=0
 
-for service in db kong auth rest storage app; do
+for service in db kong auth rest storage app backup; do
     TOTAL=$((TOTAL + 1))
     if docker compose ps | grep "$service" | grep -q "healthy\|Up"; then
         echo "   ✅ $service"
@@ -161,12 +161,19 @@ if [ $HEALTHY -eq $TOTAL ]; then
         echo ""
     fi
 
+    echo "💾 Automated backups:"
+    echo "   Schedule: daily at 2:00 AM (Europe/Paris)"
+    echo "   Retention: ${BACKUP_RETENTION_DAYS:-3} days"
+    echo "   Location: ./backups/auto_*"
+    echo "   Logs: docker compose logs backup"
+    echo ""
     echo "📊 Useful commands:"
     echo "   View logs: docker compose logs -f"
     echo "   Check status: docker compose ps"
     echo "   Restart: docker compose restart"
     echo "   Stop: docker compose down"
-    echo "   Backup: ./scripts/backup.sh"
+    echo "   Manual backup: ./scripts/backup.sh"
+    echo "   Test auto backup: docker compose exec backup /scripts/backup-cron.sh"
     echo ""
 else
     echo "⚠️  Some services failed to start properly"

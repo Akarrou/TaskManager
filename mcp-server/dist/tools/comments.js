@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
+import { getCurrentUserId } from '../services/user-auth.js';
+import { saveSnapshot } from '../services/snapshot.js';
 /**
  * Register all comment-related tools (block comments for documents)
  */
@@ -101,7 +103,27 @@ export function registerCommentTools(server) {
         comment_id: z.string().uuid().describe('The comment UUID to delete. Get this from list_comments.'),
     }, async ({ comment_id }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Snapshot before deletion
+            const { data: currentComment } = await supabase
+                .from('block_comments')
+                .select('*')
+                .eq('id', comment_id)
+                .single();
+            let snapshotToken = '';
+            if (currentComment) {
+                const snapshot = await saveSnapshot({
+                    entityType: 'comment',
+                    entityId: comment_id,
+                    tableName: 'block_comments',
+                    toolName: 'delete_comment',
+                    operation: 'delete',
+                    data: currentComment,
+                    userId,
+                });
+                snapshotToken = snapshot.token;
+            }
             const { error } = await supabase
                 .from('block_comments')
                 .delete()
@@ -113,7 +135,7 @@ export function registerCommentTools(server) {
                 };
             }
             return {
-                content: [{ type: 'text', text: `Comment ${comment_id} deleted successfully.` }],
+                content: [{ type: 'text', text: `Comment ${comment_id} deleted (snapshot: ${snapshotToken}).` }],
             };
         }
         catch (err) {

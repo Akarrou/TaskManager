@@ -13,6 +13,7 @@ declare module '@tiptap/core' {
     accordionGroup: {
       insertAccordion: (items?: number) => ReturnType;
       addAccordionItemAt: (groupPos: number) => ReturnType;
+      deleteAccordionItem: (itemPos: number) => ReturnType;
     };
   }
 }
@@ -187,6 +188,48 @@ export const AccordionGroup = Node.create<AccordionGroupOptions>({
 
           if (dispatch) {
             tr.insert(insertPos, newItem);
+            dispatch(tr);
+          }
+          return true;
+        },
+
+      deleteAccordionItem:
+        (itemPos: number) =>
+        ({ state, tr, dispatch }) => {
+          const resolved = state.doc.resolve(itemPos);
+          const itemNode = state.doc.nodeAt(itemPos);
+          if (!itemNode || itemNode.type.name !== 'accordionItem') {
+            return false;
+          }
+
+          // Find the parent accordionGroup
+          let groupDepth = -1;
+          for (let d = resolved.depth; d >= 0; d--) {
+            if (resolved.node(d).type.name === 'accordionGroup') {
+              groupDepth = d;
+              break;
+            }
+          }
+
+          if (groupDepth < 0) {
+            return false;
+          }
+
+          const groupNode = resolved.node(groupDepth);
+          const groupPos = resolved.before(groupDepth);
+          const itemCount = groupNode.childCount;
+
+          if (dispatch) {
+            if (itemCount <= 1) {
+              // Last item: replace the entire group with a paragraph
+              const paragraph = state.schema.nodes['paragraph'].create();
+              tr.replaceWith(groupPos, groupPos + groupNode.nodeSize, paragraph);
+            } else {
+              // Multiple items: delete only this item
+              const from = itemPos;
+              const to = itemPos + itemNode.nodeSize;
+              tr.delete(from, to);
+            }
             dispatch(tr);
           }
           return true;
@@ -395,6 +438,51 @@ export const AccordionTitle = Node.create({
       contentDOM.classList.add('accordion-title-text');
       contentDOM.style.color = titleColor;
       dom.appendChild(contentDOM);
+
+      // Delete button
+      const deleteButton = document.createElement('button');
+      deleteButton.classList.add('accordion-delete-button');
+      deleteButton.setAttribute('type', 'button');
+      deleteButton.contentEditable = 'false';
+
+      const deleteIcon = document.createElement('span');
+      deleteIcon.classList.add('material-icons-outlined');
+      deleteIcon.textContent = 'delete_outline';
+      deleteButton.appendChild(deleteIcon);
+      dom.appendChild(deleteButton);
+
+      // Prevent ProseMirror from handling mousedown on delete button
+      deleteButton.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      });
+
+      // Dispatch custom event on click to open confirm dialog in Angular
+      deleteButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        const titlePos = typeof getPos === 'function' ? getPos() : undefined;
+        if (titlePos === undefined) return;
+
+        // Resolve position to find the parent accordionItem
+        const resolvedPos = nodeEditor.state.doc.resolve(titlePos);
+        let itemPos = -1;
+        for (let d = resolvedPos.depth; d >= 0; d--) {
+          if (resolvedPos.node(d).type.name === 'accordionItem') {
+            itemPos = resolvedPos.before(d);
+            break;
+          }
+        }
+
+        if (itemPos >= 0) {
+          const customEvent = new CustomEvent('accordion-delete-item', {
+            bubbles: true,
+            detail: { itemPos },
+          });
+          nodeEditor.view.dom.dispatchEvent(customEvent);
+        }
+      });
 
       return {
         dom,

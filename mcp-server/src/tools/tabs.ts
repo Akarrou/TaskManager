@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
 import { getCurrentUserId } from '../services/user-auth.js';
+import { saveSnapshot } from '../services/snapshot.js';
 
 /**
  * Check if user has access to a project (owner or member)
@@ -207,6 +208,22 @@ export function registerTabTools(server: McpServer): void {
           };
         }
 
+        // Snapshot before modification
+        let snapshotToken = '';
+        const { data: currentTab } = await supabase.from('document_tabs').select('*').eq('id', tab_id).single();
+        if (currentTab) {
+          const snapshot = await saveSnapshot({
+            entityType: 'tab',
+            entityId: tab_id,
+            tableName: 'document_tabs',
+            toolName: 'update_tab',
+            operation: 'update',
+            data: currentTab,
+            userId,
+          });
+          snapshotToken = snapshot.token;
+        }
+
         const { data, error } = await supabase
           .from('document_tabs')
           .update(updates)
@@ -222,7 +239,7 @@ export function registerTabTools(server: McpServer): void {
         }
 
         return {
-          content: [{ type: 'text', text: `Tab updated successfully:\n${JSON.stringify(data, null, 2)}` }],
+          content: [{ type: 'text', text: `Tab updated (snapshot: ${snapshotToken}):\n${JSON.stringify(data, null, 2)}` }],
         };
       } catch (err) {
         return {
@@ -256,6 +273,43 @@ export function registerTabTools(server: McpServer): void {
           };
         }
 
+        // Snapshot before modification
+        const snapshotTokens: string[] = [];
+        const { data: currentTab } = await supabase.from('document_tabs').select('*').eq('id', tab_id).single();
+        if (currentTab) {
+          const snapshot = await saveSnapshot({
+            entityType: 'tab',
+            entityId: tab_id,
+            tableName: 'document_tabs',
+            toolName: 'delete_tab',
+            operation: 'delete',
+            data: currentTab,
+            userId,
+          });
+          snapshotTokens.push(snapshot.token);
+        }
+
+        // Snapshot sections that will be cascade-deleted with the tab
+        const { data: affectedSections } = await supabase
+          .from('document_sections')
+          .select('*')
+          .eq('tab_id', tab_id);
+
+        if (affectedSections) {
+          for (const section of affectedSections) {
+            const snapshot = await saveSnapshot({
+              entityType: 'section',
+              entityId: section.id,
+              tableName: 'document_sections',
+              toolName: 'delete_tab',
+              operation: 'delete',
+              data: section,
+              userId,
+            });
+            snapshotTokens.push(snapshot.token);
+          }
+        }
+
         const { error } = await supabase
           .from('document_tabs')
           .delete()
@@ -269,7 +323,7 @@ export function registerTabTools(server: McpServer): void {
         }
 
         return {
-          content: [{ type: 'text', text: `Tab ${tab_id} deleted successfully.` }],
+          content: [{ type: 'text', text: `Tab ${tab_id} deleted (snapshots: ${snapshotTokens.join(', ')}).` }],
         };
       } catch (err) {
         return {
@@ -304,7 +358,45 @@ export function registerTabTools(server: McpServer): void {
           };
         }
 
-        // First, unset any existing default
+        // Snapshot before modification (target tab + previous default tab)
+        const snapshotTokens: string[] = [];
+        const { data: currentTab } = await supabase.from('document_tabs').select('*').eq('id', tab_id).single();
+        if (currentTab) {
+          const snapshot = await saveSnapshot({
+            entityType: 'tab',
+            entityId: tab_id,
+            tableName: 'document_tabs',
+            toolName: 'set_default_tab',
+            operation: 'update',
+            data: currentTab,
+            userId,
+          });
+          snapshotTokens.push(snapshot.token);
+        }
+
+        // Snapshot the previous default tab before unsetting it
+        const { data: previousDefault } = await supabase
+          .from('document_tabs')
+          .select('*')
+          .eq('project_id', project_id)
+          .eq('is_default', true)
+          .neq('id', tab_id)
+          .maybeSingle();
+
+        if (previousDefault) {
+          const snapshot = await saveSnapshot({
+            entityType: 'tab',
+            entityId: previousDefault.id,
+            tableName: 'document_tabs',
+            toolName: 'set_default_tab',
+            operation: 'update',
+            data: previousDefault,
+            userId,
+          });
+          snapshotTokens.push(snapshot.token);
+        }
+
+        // Unset any existing default
         await supabase
           .from('document_tabs')
           .update({ is_default: false })
@@ -327,7 +419,7 @@ export function registerTabTools(server: McpServer): void {
         }
 
         return {
-          content: [{ type: 'text', text: `Tab set as default:\n${JSON.stringify(data, null, 2)}` }],
+          content: [{ type: 'text', text: `Tab set as default (snapshots: ${snapshotTokens.join(', ')}):\n${JSON.stringify(data, null, 2)}` }],
         };
       } catch (err) {
         return {
@@ -363,6 +455,24 @@ export function registerTabTools(server: McpServer): void {
           }
         }
 
+        // Snapshot before modification
+        const tokens: string[] = [];
+        const { data: currentTabs } = await supabase.from('document_tabs').select('*').in('id', tab_ids);
+        if (currentTabs) {
+          for (const tab of currentTabs) {
+            const snapshot = await saveSnapshot({
+              entityType: 'tab',
+              entityId: tab.id,
+              tableName: 'document_tabs',
+              toolName: 'reorder_tabs',
+              operation: 'update',
+              data: tab,
+              userId,
+            });
+            tokens.push(snapshot.token);
+          }
+        }
+
         // Update each tab with its new position
         for (let i = 0; i < tab_ids.length; i++) {
           const { error } = await supabase
@@ -379,7 +489,7 @@ export function registerTabTools(server: McpServer): void {
         }
 
         return {
-          content: [{ type: 'text', text: `Successfully reordered ${tab_ids.length} tabs.` }],
+          content: [{ type: 'text', text: `Successfully reordered ${tab_ids.length} tabs (snapshots: ${tokens.join(', ')}).` }],
         };
       } catch (err) {
         return {
@@ -558,6 +668,22 @@ export function registerTabTools(server: McpServer): void {
           };
         }
 
+        // Snapshot before modification
+        let snapshotToken = '';
+        const { data: currentGroup } = await supabase.from('document_tab_groups').select('*').eq('id', group_id).single();
+        if (currentGroup) {
+          const snapshot = await saveSnapshot({
+            entityType: 'tab_group',
+            entityId: group_id,
+            tableName: 'document_tab_groups',
+            toolName: 'update_tab_group',
+            operation: 'update',
+            data: currentGroup,
+            userId,
+          });
+          snapshotToken = snapshot.token;
+        }
+
         const { data, error } = await supabase
           .from('document_tab_groups')
           .update(updates)
@@ -573,7 +699,7 @@ export function registerTabTools(server: McpServer): void {
         }
 
         return {
-          content: [{ type: 'text', text: `Tab group updated successfully:\n${JSON.stringify(data, null, 2)}` }],
+          content: [{ type: 'text', text: `Tab group updated (snapshot: ${snapshotToken}):\n${JSON.stringify(data, null, 2)}` }],
         };
       } catch (err) {
         return {
@@ -620,6 +746,43 @@ export function registerTabTools(server: McpServer): void {
           };
         }
 
+        // Snapshot before modification
+        const snapshotTokens: string[] = [];
+        const { data: currentGroup } = await supabase.from('document_tab_groups').select('*').eq('id', group_id).single();
+        if (currentGroup) {
+          const snapshot = await saveSnapshot({
+            entityType: 'tab_group',
+            entityId: group_id,
+            tableName: 'document_tab_groups',
+            toolName: 'delete_tab_group',
+            operation: 'delete',
+            data: currentGroup,
+            userId,
+          });
+          snapshotTokens.push(snapshot.token);
+        }
+
+        // Snapshot affected tabs before ungrouping them
+        const { data: affectedTabs } = await supabase
+          .from('document_tabs')
+          .select('*')
+          .eq('tab_group_id', group_id);
+
+        if (affectedTabs) {
+          for (const tab of affectedTabs) {
+            const snapshot = await saveSnapshot({
+              entityType: 'tab',
+              entityId: tab.id,
+              tableName: 'document_tabs',
+              toolName: 'delete_tab_group',
+              operation: 'update',
+              data: tab,
+              userId,
+            });
+            snapshotTokens.push(snapshot.token);
+          }
+        }
+
         // First, ungroup all tabs in this group
         await supabase
           .from('document_tabs')
@@ -640,7 +803,7 @@ export function registerTabTools(server: McpServer): void {
         }
 
         return {
-          content: [{ type: 'text', text: `Tab group ${group_id} deleted successfully.` }],
+          content: [{ type: 'text', text: `Tab group ${group_id} deleted (snapshots: ${snapshotTokens.join(', ')}).` }],
         };
       } catch (err) {
         return {
@@ -823,6 +986,22 @@ export function registerTabTools(server: McpServer): void {
           };
         }
 
+        // Snapshot before modification
+        let snapshotToken = '';
+        const { data: currentSection } = await supabase.from('document_sections').select('*').eq('id', section_id).single();
+        if (currentSection) {
+          const snapshot = await saveSnapshot({
+            entityType: 'section',
+            entityId: section_id,
+            tableName: 'document_sections',
+            toolName: 'update_section',
+            operation: 'update',
+            data: currentSection,
+            userId,
+          });
+          snapshotToken = snapshot.token;
+        }
+
         const { data, error } = await supabase
           .from('document_sections')
           .update(updates)
@@ -838,7 +1017,7 @@ export function registerTabTools(server: McpServer): void {
         }
 
         return {
-          content: [{ type: 'text', text: `Section updated successfully:\n${JSON.stringify(data, null, 2)}` }],
+          content: [{ type: 'text', text: `Section updated (snapshot: ${snapshotToken}):\n${JSON.stringify(data, null, 2)}` }],
         };
       } catch (err) {
         return {
@@ -885,6 +1064,22 @@ export function registerTabTools(server: McpServer): void {
           };
         }
 
+        // Snapshot before modification
+        let snapshotToken = '';
+        const { data: currentSection } = await supabase.from('document_sections').select('*').eq('id', section_id).single();
+        if (currentSection) {
+          const snapshot = await saveSnapshot({
+            entityType: 'section',
+            entityId: section_id,
+            tableName: 'document_sections',
+            toolName: 'delete_section',
+            operation: 'delete',
+            data: currentSection,
+            userId,
+          });
+          snapshotToken = snapshot.token;
+        }
+
         const { error } = await supabase
           .from('document_sections')
           .delete()
@@ -898,7 +1093,7 @@ export function registerTabTools(server: McpServer): void {
         }
 
         return {
-          content: [{ type: 'text', text: `Section ${section_id} deleted successfully.` }],
+          content: [{ type: 'text', text: `Section ${section_id} deleted (snapshot: ${snapshotToken}).` }],
         };
       } catch (err) {
         return {

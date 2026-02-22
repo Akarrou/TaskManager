@@ -1,1 +1,1 @@
-{"version":3,"file":"spreadsheets.d.ts","sourceRoot":"","sources":["../../src/tools/spreadsheets.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,SAAS,EAAE,MAAM,yCAAyC,CAAC;AAIpE;;GAEG;AACH,wBAAgB,wBAAwB,CAAC,MAAM,EAAE,SAAS,GAAG,IAAI,CAstBhE"}
+{"version":3,"file":"spreadsheets.d.ts","sourceRoot":"","sources":["../../src/tools/spreadsheets.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,SAAS,EAAE,MAAM,yCAAyC,CAAC;AAMpE;;GAEG;AACH,wBAAgB,wBAAwB,CAAC,MAAM,EAAE,SAAS,GAAG,IAAI,CAq3BhE"}

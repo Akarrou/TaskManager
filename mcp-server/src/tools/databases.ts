@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
 import { getCurrentUserId } from '../services/user-auth.js';
+import { saveSnapshot } from '../services/snapshot.js';
 
 /**
  * Check if user has access to a specific database
@@ -438,6 +439,22 @@ Example: { "Status": "completed", "Priority": "high", "Progress": 100 }. Related
 
         const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
 
+        // Snapshot before update
+        const { data: currentRow } = await supabase.from(tableName).select('*').eq('id', row_id).single();
+        let snapshotToken = '';
+        if (currentRow) {
+          const snapshot = await saveSnapshot({
+            entityType: 'database_row',
+            entityId: row_id,
+            tableName,
+            toolName: 'update_database_row',
+            operation: 'update',
+            data: currentRow,
+            userId,
+          });
+          snapshotToken = snapshot.token;
+        }
+
         // Build update object with individual columns (matches Angular pattern)
         const updateData: Record<string, unknown> = {
           updated_at: new Date().toISOString(),
@@ -466,7 +483,7 @@ Example: { "Status": "completed", "Priority": "high", "Progress": 100 }. Related
         }
 
         return {
-          content: [{ type: 'text', text: `Row updated successfully:\n${JSON.stringify(data, null, 2)}` }],
+          content: [{ type: 'text', text: `Row updated (snapshot: ${snapshotToken}):\n${JSON.stringify(data, null, 2)}` }],
         };
       } catch (err) {
         return {
@@ -503,6 +520,24 @@ Example: { "Status": "completed", "Priority": "high", "Progress": 100 }. Related
 
         const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
 
+        // Snapshot before delete
+        const { data: currentRows } = await supabase.from(tableName).select('*').in('id', row_ids);
+        const snapshotTokens: string[] = [];
+        if (currentRows) {
+          for (const row of currentRows) {
+            const snapshot = await saveSnapshot({
+              entityType: 'database_row',
+              entityId: row.id as string,
+              tableName,
+              toolName: 'delete_database_rows',
+              operation: 'delete',
+              data: row,
+              userId,
+            });
+            snapshotTokens.push(snapshot.token);
+          }
+        }
+
         const { error, count } = await supabase
           .from(tableName)
           .delete()
@@ -516,7 +551,7 @@ Example: { "Status": "completed", "Priority": "high", "Progress": 100 }. Related
         }
 
         return {
-          content: [{ type: 'text', text: `Successfully deleted ${count || row_ids.length} row(s).` }],
+          content: [{ type: 'text', text: `Successfully deleted ${count || row_ids.length} row(s) (snapshots: ${snapshotTokens.join(', ')}).` }],
         };
       } catch (err) {
         return {
@@ -754,6 +789,22 @@ Returns the created database with its generated database_id. Related tools: add_
           };
         }
 
+        // Snapshot before delete
+        const { data: currentDb } = await supabase.from('document_databases').select('*').eq('database_id', database_id).single();
+        let snapshotToken = '';
+        if (currentDb) {
+          const snapshot = await saveSnapshot({
+            entityType: 'database_config',
+            entityId: database_id,
+            tableName: 'document_databases',
+            toolName: 'delete_database',
+            operation: 'delete',
+            data: currentDb,
+            userId,
+          });
+          snapshotToken = snapshot.token;
+        }
+
         // Try to use cascade delete RPC if available
         const { error: rpcError } = await supabase.rpc('delete_database_cascade', {
           p_database_id: database_id,
@@ -782,7 +833,7 @@ Returns the created database with its generated database_id. Related tools: add_
         }
 
         return {
-          content: [{ type: 'text', text: `Database ${database_id} deleted successfully.` }],
+          content: [{ type: 'text', text: `Database ${database_id} deleted (snapshot: ${snapshotToken}).` }],
         };
       } catch (err) {
         return {
@@ -843,13 +894,26 @@ Column names must be unique within the database. Returns the created column with
         const config = dbMeta.config as { columns?: Array<Record<string, unknown>> };
         const columns = config.columns || [];
 
-        // Check if column already exists
+        // Check if column already exists (before snapshot to avoid unnecessary snapshots)
         if (columns.some(c => c.name === name)) {
           return {
             content: [{ type: 'text', text: `Column "${name}" already exists.` }],
             isError: true,
           };
         }
+
+        // Snapshot before update
+        let snapshotToken = '';
+        const snapshot = await saveSnapshot({
+          entityType: 'database_config',
+          entityId: database_id,
+          tableName: 'document_databases',
+          toolName: 'add_column',
+          operation: 'update',
+          data: dbMeta,
+          userId,
+        });
+        snapshotToken = snapshot.token;
 
         // Create new column (UUID standard, sans prefixe col_)
         const normalizedType = type === 'multi_select' ? 'multi-select' : type;
@@ -892,7 +956,7 @@ Column names must be unique within the database. Returns the created column with
         }
 
         return {
-          content: [{ type: 'text', text: `Column "${name}" added successfully:\n${JSON.stringify(newColumn, null, 2)}` }],
+          content: [{ type: 'text', text: `Column "${name}" added (snapshot: ${snapshotToken}):\n${JSON.stringify(newColumn, null, 2)}` }],
         };
       } catch (err) {
         return {
@@ -957,6 +1021,19 @@ Column names must be unique within the database. Returns the created column with
           };
         }
 
+        // Snapshot before update (after validation)
+        let snapshotToken = '';
+        const snapshot = await saveSnapshot({
+          entityType: 'database_config',
+          entityId: database_id,
+          tableName: 'document_databases',
+          toolName: 'update_column',
+          operation: 'update',
+          data: dbMeta,
+          userId,
+        });
+        snapshotToken = snapshot.token;
+
         // Update column properties
         if (name !== undefined) columns[columnIndex].name = name;
         if (visible !== undefined) columns[columnIndex].visible = visible;
@@ -991,7 +1068,7 @@ Column names must be unique within the database. Returns the created column with
         }
 
         return {
-          content: [{ type: 'text', text: `Column updated successfully:\n${JSON.stringify(columns[columnIndex], null, 2)}` }],
+          content: [{ type: 'text', text: `Column updated (snapshot: ${snapshotToken}):\n${JSON.stringify(columns[columnIndex], null, 2)}` }],
         };
       } catch (err) {
         return {
@@ -1050,6 +1127,19 @@ Column names must be unique within the database. Returns the created column with
           };
         }
 
+        // Snapshot before update (after validation)
+        let snapshotToken = '';
+        const snapshot = await saveSnapshot({
+          entityType: 'database_config',
+          entityId: database_id,
+          tableName: 'document_databases',
+          toolName: 'delete_column',
+          operation: 'update',
+          data: dbMeta,
+          userId,
+        });
+        snapshotToken = snapshot.token;
+
         const deletedColumn = columns[columnIndex];
         columns.splice(columnIndex, 1);
 
@@ -1069,7 +1159,7 @@ Column names must be unique within the database. Returns the created column with
         }
 
         return {
-          content: [{ type: 'text', text: `Column "${deletedColumn.name}" deleted successfully.` }],
+          content: [{ type: 'text', text: `Column "${deletedColumn.name}" deleted (snapshot: ${snapshotToken}).` }],
         };
       } catch (err) {
         return {

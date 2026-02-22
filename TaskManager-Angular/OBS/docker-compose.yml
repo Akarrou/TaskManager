@@ -463,6 +463,31 @@ services:
     networks:
       - supabase_network
 
+  # ===================================================================
+  # Automated Backup Service (daily at 2:00 AM)
+  # ===================================================================
+
+  backup:
+    container_name: taskmanager-backup
+    profiles: ["local", "production"]
+    image: postgres:15-alpine
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./scripts/backup-cron.sh:/scripts/backup-cron.sh:ro
+      - ./scripts/crontab:/etc/crontabs/root:ro
+      - ./backups:/backups
+      - storage_data:/storage-data:ro
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-3}
+      TZ: ${BACKUP_TIMEZONE:-Europe/Paris}
+    entrypoint: ["crond", "-f", "-l", "2"]
+    networks:
+      - supabase_network
+
   vector:
     container_name: supabase-vector
     profiles: ["local", "production"]

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
 import { getCurrentUserId } from '../services/user-auth.js';
+import { saveSnapshot } from '../services/snapshot.js';
 /**
  * Register all project-related tools
  */
@@ -138,6 +139,7 @@ export function registerProjectTools(server) {
         description: z.string().optional().describe('New description for the project. Leave undefined to keep current description.'),
     }, async ({ project_id, name, description }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
             const updates = {};
             if (name !== undefined)
@@ -149,6 +151,25 @@ export function registerProjectTools(server) {
                     content: [{ type: 'text', text: 'No updates provided. Please specify at least one field to update.' }],
                     isError: true,
                 };
+            }
+            // Snapshot before modification
+            const { data: currentProject } = await supabase
+                .from('projects')
+                .select('*')
+                .eq('id', project_id)
+                .single();
+            let snapshotToken = '';
+            if (currentProject) {
+                const snapshot = await saveSnapshot({
+                    entityType: 'project',
+                    entityId: project_id,
+                    tableName: 'projects',
+                    toolName: 'update_project',
+                    operation: 'update',
+                    data: currentProject,
+                    userId,
+                });
+                snapshotToken = snapshot.token;
             }
             const { data, error } = await supabase
                 .from('projects')
@@ -163,7 +184,7 @@ export function registerProjectTools(server) {
                 };
             }
             return {
-                content: [{ type: 'text', text: `Project updated successfully:\n${JSON.stringify(data, null, 2)}` }],
+                content: [{ type: 'text', text: `Project updated (snapshot: ${snapshotToken}):\n${JSON.stringify(data, null, 2)}` }],
             };
         }
         catch (err) {
@@ -180,7 +201,27 @@ export function registerProjectTools(server) {
         project_id: z.string().uuid().describe('The UUID of the project to archive. The project will be hidden from default listings but not deleted.'),
     }, async ({ project_id }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Snapshot before archiving
+            const { data: currentProject } = await supabase
+                .from('projects')
+                .select('*')
+                .eq('id', project_id)
+                .single();
+            let snapshotToken = '';
+            if (currentProject) {
+                const snapshot = await saveSnapshot({
+                    entityType: 'project',
+                    entityId: project_id,
+                    tableName: 'projects',
+                    toolName: 'archive_project',
+                    operation: 'update',
+                    data: currentProject,
+                    userId,
+                });
+                snapshotToken = snapshot.token;
+            }
             const { data, error } = await supabase
                 .from('projects')
                 .update({ archived: true })
@@ -194,7 +235,7 @@ export function registerProjectTools(server) {
                 };
             }
             return {
-                content: [{ type: 'text', text: `Project archived successfully:\n${JSON.stringify(data, null, 2)}` }],
+                content: [{ type: 'text', text: `Project archived (snapshot: ${snapshotToken}):\n${JSON.stringify(data, null, 2)}` }],
             };
         }
         catch (err) {
@@ -279,11 +320,12 @@ export function registerProjectTools(server) {
             };
         }
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
             // First, get the project to make sure it exists
             const { data: project, error: projectError } = await supabase
                 .from('projects')
-                .select('id, name')
+                .select('*')
                 .eq('id', project_id)
                 .single();
             if (projectError) {
@@ -291,6 +333,20 @@ export function registerProjectTools(server) {
                     content: [{ type: 'text', text: `Error finding project: ${projectError.message}` }],
                     isError: true,
                 };
+            }
+            // Snapshot before deletion
+            let snapshotToken = '';
+            if (project) {
+                const snapshot = await saveSnapshot({
+                    entityType: 'project',
+                    entityId: project_id,
+                    tableName: 'projects',
+                    toolName: 'delete_project',
+                    operation: 'delete',
+                    data: project,
+                    userId,
+                });
+                snapshotToken = snapshot.token;
             }
             // Delete project members
             await supabase
@@ -328,7 +384,7 @@ export function registerProjectTools(server) {
                 };
             }
             return {
-                content: [{ type: 'text', text: `Project "${project.name}" (${project_id}) has been permanently deleted along with all its related data.` }],
+                content: [{ type: 'text', text: `Project "${project.name}" (${project_id}) deleted (snapshot: ${snapshotToken}).` }],
             };
         }
         catch (err) {

@@ -29,6 +29,8 @@ const envSchema = z.object({
     // Retry configuration for Supabase
     RETRY_MAX_ATTEMPTS: z.coerce.number().default(3),
     RETRY_BASE_DELAY_MS: z.coerce.number().default(1000),
+    // Snapshot configuration
+    SNAPSHOT_RETENTION_DAYS: z.coerce.number().default(5),
 });
 function loadEnv() {
     const result = envSchema.safeParse(process.env);

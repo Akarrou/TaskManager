@@ -8,3 +8,5 @@ export { registerUserTools } from './users.js';
 export { registerCommentTools } from './comments.js';
 export { registerTabTools } from './tabs.js';
 export { registerSpreadsheetTools } from './spreadsheets.js';
+export { registerSnapshotTools } from './snapshots.js';
+export { registerTiptapDocsTools } from './tiptap-docs.js';
