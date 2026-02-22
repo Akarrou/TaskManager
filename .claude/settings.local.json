@@ -69,7 +69,9 @@
       "mcp__chrome-devtools__click",
       "mcp__chrome-devtools__press_key",
       "Bash(grep:*)",
-      "mcp__chrome-devtools__evaluate_script"
+      "mcp__chrome-devtools__evaluate_script",
+      "Bash(tail:*)",
+      "mcp__chrome-devtools__fill"
     ],
     "deny": [],
     "ask": []

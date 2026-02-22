@@ -164,7 +164,7 @@
   min-width: 380px;
   border-left: 1px solid v.$border-color-light;
   background-color: v.$background-color-form;
-  overflow-y: auto;
+  overflow: hidden;
   box-shadow: -4px 0 12px rgba(0, 0, 0, 0.05);
   animation: slide-in-right 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }

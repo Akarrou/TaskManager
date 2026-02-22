@@ -253,7 +253,14 @@ export class EventFormDialogComponent implements OnInit {
         this.form.controls.startDate.setValue(start);
         this.form.controls.startTime.setValue(this.formatTime(start));
       } else {
-        this.form.controls.startDate.setValue(new Date());
+        const now = new Date();
+        // Round to next half-hour for a cleaner default
+        const minutes = now.getMinutes();
+        now.setMinutes(minutes < 30 ? 30 : 0);
+        if (minutes >= 30) now.setHours(now.getHours() + 1);
+        now.setSeconds(0, 0);
+        this.form.controls.startDate.setValue(now);
+        this.form.controls.startTime.setValue(this.formatTime(now));
       }
 
       if (this.data.endDate) {
@@ -262,8 +269,10 @@ export class EventFormDialogComponent implements OnInit {
         this.form.controls.endTime.setValue(this.formatTime(end));
       } else {
         // Default: 1 hour after start
-        const defaultEnd = new Date();
-        defaultEnd.setHours(defaultEnd.getHours() + 1);
+        const startDate = this.form.controls.startDate.value!;
+        const [h, m] = this.form.controls.startTime.value.split(':').map(Number);
+        const defaultEnd = new Date(startDate);
+        defaultEnd.setHours((h ?? 0) + 1, m ?? 0, 0, 0);
         this.form.controls.endDate.setValue(defaultEnd);
         this.form.controls.endTime.setValue(this.formatTime(defaultEnd));
       }
