@@ -3,13 +3,13 @@
 
     <!-- Header -->
     <div class="panel-header">
-      <div class="flex-1 min-w-0">
+      <div class="panel-header__info">
         @if (event.event_number) {
           <span class="event-badge">#{{ event.event_number }}</span>
         }
         <h2 class="panel-title">{{ event.title }}</h2>
       </div>
-      <button mat-icon-button (click)="onClose()" class="close-btn">
+      <button mat-icon-button (click)="onClose()" class="close-btn" aria-label="Fermer">
         <mat-icon>close</mat-icon>
       </button>
     </div>

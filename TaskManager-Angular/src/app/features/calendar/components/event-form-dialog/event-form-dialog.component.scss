@@ -1,138 +1,205 @@
+@use '../../../../styles/variables' as v;
+@use '../../../../styles/mixins' as m;
+
 :host {
   display: block;
 }
 
 // ============================================================================
-// Dialog title
+// Dialog title — ensure icon + text are vertically centered
 // ============================================================================
 
-.dialog-title {
+::ng-deep .mat-mdc-dialog-title.dialog-title-default {
   display: flex !important;
-  align-items: center;
-  gap: 12px;
-  padding: 20px 24px 12px;
-  margin: 0;
+  align-items: center !important;
 
-  &__icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background-color: #eef2ff;
-    flex-shrink: 0;
-
-    mat-icon {
-      color: #4f46e5;
-      font-size: 22px;
-      width: 22px;
-      height: 22px;
-    }
-  }
-
-  &__text {
-    font-size: 18px;
-    font-weight: 600;
-    color: #111827;
-    line-height: 1.3;
+  mat-icon {
+    line-height: 1;
   }
 }
 
 // ============================================================================
-// Dialog sizing
-// ============================================================================
-
-mat-dialog-content {
-  max-height: 65vh;
-  overflow-y: auto;
-
-  // Subtle scrollbar
-  &::-webkit-scrollbar {
-    width: 5px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: #d1d5db;
-    border-radius: 8px;
-  }
-}
-
-// ============================================================================
-// Form layout
+// Form Layout
 // ============================================================================
 
 .event-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-
-  // ALL mat-form-fields take full width
-  mat-form-field {
-    width: 100%;
-  }
+  gap: 1rem;
 }
 
-// Date row: date picker + time picker side by side
-.date-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-
-  .date-field {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .time-field {
-    width: 120px;
-    flex-shrink: 0;
-  }
-}
-
-// Category + Location side by side
-.two-col-row {
-  display: flex;
-  gap: 12px;
-
-  mat-form-field {
-    flex: 1;
-    min-width: 0;
-  }
-}
-
-// ============================================================================
-// Section blocks (Recurrence, Linked Items)
-// ============================================================================
-
-.section-block {
+.form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px 14px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background-color: #fafbfc;
-}
+  gap: 0;
 
-.section-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: #6b7280;
-}
-
-// ============================================================================
-// Material overrides within dialog
-// ============================================================================
-
-// Reduce mat-form-field vertical density
-::ng-deep {
-  .mdc-notched-outline__notch {
-    border-right: none;
+  &--inline {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
   }
 }
+
+.form-label {
+  display: block;
+  font-size: v.$font-size-sm;
+  font-weight: v.$font-weight-medium;
+  color: v.$text-color-medium;
+
+  .required {
+    color: v.$error-color;
+  }
+}
+
+.form-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.flex-1 {
+  flex: 1;
+  min-width: 0;
+}
+
+.date-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.time-field {
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.location-icon {
+  color: v.$text-color-light !important;
+  font-size: 20px !important;
+  margin-right: 4px !important;
+}
+
+// ============================================================================
+// Mat-form-field overrides to match login input style
+// ============================================================================
+
+::ng-deep {
+  // Hide the floating label inside mat-form-field
+  .event-form .mat-mdc-form-field {
+    .mdc-floating-label {
+      display: none !important;
+    }
+
+    .mdc-notched-outline__notch {
+      display: none !important;
+    }
+  }
+
+  // Style the outline to match login inputs
+  .event-form .mdc-notched-outline__leading {
+    border-radius: v.$border-radius-md 0 0 v.$border-radius-md !important;
+    border-color: v.$border-color-medium !important;
+    border-width: 1px !important;
+  }
+
+  .event-form .mdc-notched-outline__trailing {
+    border-radius: 0 v.$border-radius-md v.$border-radius-md 0 !important;
+    border-color: v.$border-color-medium !important;
+    border-width: 1px !important;
+  }
+
+  // Focus state matching login
+  .event-form .mat-mdc-form-field.mat-focused {
+    .mdc-notched-outline__leading,
+    .mdc-notched-outline__trailing {
+      border-color: v.$primary-color !important;
+      border-width: 1px !important;
+    }
+  }
+
+  // Input sizing
+  .event-form .mat-mdc-form-field-infix {
+    min-height: 44px;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    display: flex;
+    align-items: center;
+  }
+
+  .event-form .mat-mdc-text-field-wrapper {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  // Input text style
+  .event-form .mat-mdc-input-element {
+    font-size: v.$font-size-base !important;
+    color: v.$text-color-dark !important;
+
+    &::placeholder {
+      color: v.$text-color-light !important;
+      opacity: 1 !important;
+    }
+  }
+
+  // Select value text
+  .event-form .mat-mdc-select-value {
+    font-size: v.$font-size-base !important;
+    color: v.$text-color-dark !important;
+  }
+
+  .event-form .mat-mdc-select-placeholder {
+    color: v.$text-color-light !important;
+  }
+
+  // Checkbox alignment — compact checkbox with repositioned background
+  .event-form .mat-mdc-checkbox {
+    .mdc-form-field {
+      display: inline-flex;
+      align-items: center;
+      vertical-align: middle;
+      gap: 0;
+    }
+
+    .mdc-checkbox {
+      margin: 0;
+      padding: 0;
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    // Reposition the visible square: default is top:11px/left:11px
+    // for a 40x40 container. We shrunk to 18x18, so reset to 0,0.
+    .mdc-checkbox__background {
+      top: 0 !important;
+      left: 0 !important;
+    }
+
+    .mdc-form-field > label {
+      font-size: v.$font-size-sm;
+      font-weight: v.$font-weight-medium;
+      color: v.$text-color-medium;
+      padding-left: 6px;
+      line-height: 1;
+      margin: 0;
+      cursor: pointer;
+    }
+  }
+
+  // Datepicker toggle
+  .event-form .mat-datepicker-toggle {
+    color: v.$text-color-light;
+  }
+
+  // Remove subscript extra space
+  .event-form .mat-mdc-form-field-subscript-wrapper {
+    margin-bottom: 0;
+  }
+}
+
+// ============================================================================
+// Mat-spinner
+// ============================================================================
 
 mat-spinner {
   display: inline-block;

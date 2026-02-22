@@ -24,6 +24,11 @@
   gap: 12px;
   padding: 20px 20px 16px;
   border-bottom: 1px solid #f0f0f0;
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 .event-badge {
@@ -51,8 +56,7 @@
 .close-btn {
   flex-shrink: 0;
   color: #9ca3af;
-  margin-top: -4px;
-  margin-right: -8px;
+  margin-left: auto;
 
   &:hover {
     color: #6b7280;
@@ -218,8 +222,13 @@
 
 .panel-footer {
   display: flex;
+  justify-content: stretch;
   gap: 10px;
   padding: 14px 20px;
   border-top: 1px solid #f0f0f0;
   background-color: #fafbfc;
+
+  button {
+    flex: 1;
+  }
 }

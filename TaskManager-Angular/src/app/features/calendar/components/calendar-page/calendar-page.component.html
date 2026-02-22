@@ -43,18 +43,57 @@
       </mat-button-toggle-group>
 
       <!-- Project filter -->
-      <mat-form-field appearance="outline" class="calendar-toolbar__filter" subscriptSizing="dynamic">
-        <mat-label>Projet</mat-label>
-        <mat-select
-          [value]="selectedProjectId()"
-          (selectionChange)="onProjectFilter($event.value)"
-          placeholder="Tous les projets">
-          <mat-option [value]="null">Tous les projets</mat-option>
-          @for (project of projects(); track project.id) {
-            <mat-option [value]="project.id">{{ project.name }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+      <div class="project-filter">
+        <button
+          type="button"
+          class="project-filter__btn"
+          (click)="toggleProjectDropdown()"
+          [class.is-open]="isProjectDropdownOpen()">
+          <span class="project-filter__label">{{ selectedProjectLabel() }}</span>
+          <mat-icon class="project-filter__icon">
+            {{ isProjectDropdownOpen() ? 'expand_less' : 'expand_more' }}
+          </mat-icon>
+        </button>
+
+        @if (isProjectDropdownOpen()) {
+          <div class="project-filter__dropdown">
+            <div class="project-filter__header">
+              <span class="project-filter__title">Filtrer par projet</span>
+            </div>
+            <ul class="project-filter__list">
+              <li>
+                <button
+                  type="button"
+                  class="project-filter__item"
+                  [class.is-selected]="selectedProjectId() === null"
+                  (click)="selectProjectFilter(null)">
+                  <mat-icon class="project-filter__item-icon">folder_open</mat-icon>
+                  <span class="project-filter__item-name">Tous les projets</span>
+                  @if (selectedProjectId() === null) {
+                    <mat-icon class="project-filter__check">check</mat-icon>
+                  }
+                </button>
+              </li>
+              @for (project of projects(); track project.id) {
+                <li>
+                  <button
+                    type="button"
+                    class="project-filter__item"
+                    [class.is-selected]="selectedProjectId() === project.id"
+                    (click)="selectProjectFilter(project.id)">
+                    <mat-icon class="project-filter__item-icon">folder</mat-icon>
+                    <span class="project-filter__item-name">{{ project.name }}</span>
+                    @if (selectedProjectId() === project.id) {
+                      <mat-icon class="project-filter__check">check</mat-icon>
+                    }
+                  </button>
+                </li>
+              }
+            </ul>
+          </div>
+          <div class="project-filter__overlay" (click)="closeProjectDropdown()"></div>
+        }
+      </div>
 
       <!-- Create event button -->
       <button

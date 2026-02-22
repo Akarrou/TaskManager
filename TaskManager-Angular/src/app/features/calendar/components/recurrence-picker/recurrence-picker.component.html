@@ -1,4 +1,4 @@
-<div class="recurrence-picker flex flex-col gap-3">
+<div class="recurrence-picker">
   <!-- Toggle: enabled / disabled -->
   <mat-button-toggle-group
     [value]="enabled() ? 'enabled' : 'disabled'"
@@ -11,25 +11,27 @@
   </mat-button-toggle-group>
 
   @if (enabled()) {
-    <div class="flex flex-col gap-3 pl-2 border-l-2 border-indigo-200">
+    <div class="recurrence-options">
       <!-- Frequency selector -->
-      <mat-form-field appearance="outline" class="w-full">
-        <mat-label>Fréquence</mat-label>
-        <mat-select
-          [value]="frequency()"
-          (selectionChange)="onFrequencyChange($event.value)"
-          [disabled]="isDisabled()"
-        >
-          @for (option of frequencyChoices; track option.value) {
-            <mat-option [value]="option.value">{{ option.label }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+      <div class="recurrence-row">
+        <label class="recurrence-label">Fréquence</label>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="recurrence-select">
+          <mat-select
+            [value]="frequency()"
+            (selectionChange)="onFrequencyChange($event.value)"
+            [disabled]="isDisabled()"
+          >
+            @for (option of frequencyChoices; track option.value) {
+              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
 
       <!-- Interval -->
-      <div class="flex items-center gap-2">
-        <span class="text-sm text-gray-600 whitespace-nowrap">Tous les</span>
-        <mat-form-field appearance="outline" class="interval-field">
+      <div class="recurrence-row recurrence-row--inline">
+        <span class="recurrence-text">Tous les</span>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="recurrence-number">
           <input
             matInput
             type="number"
@@ -39,18 +41,18 @@
             [disabled]="isDisabled()"
           />
         </mat-form-field>
-        <span class="text-sm text-gray-600 whitespace-nowrap">{{ currentUnitLabel() }}</span>
+        <span class="recurrence-text">{{ currentUnitLabel() }}</span>
       </div>
 
       <!-- Weekly: day checkboxes -->
       @if (frequency() === 'weekly') {
-        <div class="flex flex-wrap gap-2">
+        <div class="recurrence-days">
           @for (day of dayLabels; track day; let i = $index) {
             <mat-checkbox
               [checked]="weekDays()[i]"
               (change)="onWeekDayToggle(i)"
               [disabled]="isDisabled()"
-              class="day-checkbox"
+              class="recurrence-day"
             >
               {{ day }}
             </mat-checkbox>
@@ -59,27 +61,25 @@
       }
 
       <!-- End condition -->
-      <div class="flex flex-col gap-2">
-        <span class="text-sm font-medium text-gray-700">Fin de la récurrence</span>
+      <div class="recurrence-end">
+        <label class="recurrence-label">Fin de la récurrence</label>
 
         <mat-radio-group
           [value]="endType()"
           (change)="onEndTypeChange($event.value)"
           [disabled]="isDisabled()"
-          class="flex flex-col gap-2"
+          class="recurrence-end-options"
         >
-          <!-- Never -->
           <mat-radio-button value="never">
-            <span class="text-sm">Jamais</span>
+            <span class="recurrence-text">Jamais</span>
           </mat-radio-button>
 
-          <!-- After N occurrences -->
-          <div class="flex items-center gap-2">
+          <div class="recurrence-end-row">
             <mat-radio-button value="count">
-              <span class="text-sm">Après</span>
+              <span class="recurrence-text">Après</span>
             </mat-radio-button>
             @if (endType() === 'count') {
-              <mat-form-field appearance="outline" class="count-field">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="recurrence-number">
                 <input
                   matInput
                   type="number"
@@ -89,17 +89,16 @@
                   [disabled]="isDisabled()"
                 />
               </mat-form-field>
-              <span class="text-sm text-gray-600">occurrences</span>
+              <span class="recurrence-text">occurrences</span>
             }
           </div>
 
-          <!-- Until date -->
-          <div class="flex items-center gap-2">
+          <div class="recurrence-end-row">
             <mat-radio-button value="until">
-              <span class="text-sm">À une date</span>
+              <span class="recurrence-text">À une date</span>
             </mat-radio-button>
             @if (endType() === 'until') {
-              <mat-form-field appearance="outline" class="date-field">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="recurrence-date">
                 <input
                   matInput
                   [matDatepicker]="endDatePicker"

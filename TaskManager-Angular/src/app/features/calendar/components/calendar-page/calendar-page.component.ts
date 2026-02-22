@@ -1,10 +1,10 @@
-import { Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, inject, OnInit, ViewChild } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, computed, inject, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSelectModule } from '@angular/material/select';
 import { MatDialog } from '@angular/material/dialog';
+import { Store } from '@ngrx/store';
 import { FullCalendarModule, FullCalendarComponent } from '@fullcalendar/angular';
 import { CalendarOptions, EventInput, DateSelectArg, EventClickArg, EventDropArg } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -17,6 +17,8 @@ import { EventEntry } from '../../../../core/services/event-database.service';
 import { FullCalendarAdapterService } from '../../services/fullcalendar-adapter.service';
 import { EventFormDialogComponent } from '../event-form-dialog/event-form-dialog.component';
 import { EventDetailPanelComponent } from '../event-detail-panel/event-detail-panel.component';
+import { selectActiveProjects } from '../../../projects/store/project.selectors';
+import { loadProjects } from '../../../projects/store/project.actions';
 
 @Component({
   selector: 'app-calendar-page',
@@ -27,7 +29,6 @@ import { EventDetailPanelComponent } from '../event-detail-panel/event-detail-pa
     MatButtonModule,
     MatButtonToggleModule,
     MatIconModule,
-    MatSelectModule,
     EventDetailPanelComponent,
   ],
   templateUrl: './calendar-page.component.html',
@@ -39,6 +40,7 @@ export class CalendarPageComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
   private dialog = inject(MatDialog);
   private adapter = inject(FullCalendarAdapterService);
+  private store = inject(Store);
 
   @ViewChild('calendar') calendarComponent!: FullCalendarComponent;
 
@@ -53,6 +55,12 @@ export class CalendarPageComponent implements OnInit {
   // Project filter
   projects = signal<Array<{ id: string; name: string }>>([]);
   selectedProjectId = signal<string | null>(null);
+  isProjectDropdownOpen = signal(false);
+  selectedProjectLabel = computed(() => {
+    const id = this.selectedProjectId();
+    if (!id) return 'Tous les projets';
+    return this.projects().find(p => p.id === id)?.name ?? 'Tous les projets';
+  });
 
   calendarOptions = signal<CalendarOptions>({
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, rrulePlugin],
@@ -69,7 +77,6 @@ export class CalendarPageComponent implements OnInit {
     slotMinTime: '06:00:00',
     slotMaxTime: '22:00:00',
     events: [],
-    dateClick: this.handleDateClick.bind(this),
     select: this.handleSelect.bind(this),
     eventClick: this.handleEventClick.bind(this),
     eventDrop: this.handleEventDrop.bind(this),
@@ -103,8 +110,17 @@ export class CalendarPageComponent implements OnInit {
     this.calendarStore.changeView(calendarView);
   }
 
-  onProjectFilter(projectId: string | null): void {
+  toggleProjectDropdown(): void {
+    this.isProjectDropdownOpen.set(!this.isProjectDropdownOpen());
+  }
+
+  closeProjectDropdown(): void {
+    this.isProjectDropdownOpen.set(false);
+  }
+
+  selectProjectFilter(projectId: string | null): void {
     this.selectedProjectId.set(projectId);
+    this.closeProjectDropdown();
     this.reloadEvents();
   }
 
@@ -127,33 +143,6 @@ export class CalendarPageComponent implements OnInit {
   // =====================================================================
   // FullCalendar Callbacks
   // =====================================================================
-
-  handleDateClick(info: { dateStr: string; allDay: boolean }): void {
-    const startDate = info.dateStr;
-    const endDate = info.allDay
-      ? startDate
-      : new Date(new Date(startDate).getTime() + 60 * 60 * 1000).toISOString();
-
-    const dialogRef = this.dialog.open(EventFormDialogComponent, {
-      width: '600px',
-      data: {
-        mode: 'create',
-        startDate,
-        endDate,
-        allDay: info.allDay,
-      },
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.calendarStore.createEvent({
-          databaseId: result.databaseId,
-          event: result,
-        });
-      }
-    });
-    this.cdr.markForCheck();
-  }
 
   handleSelect(selectInfo: DateSelectArg): void {
     const dialogRef = this.dialog.open(EventFormDialogComponent, {
@@ -290,7 +279,10 @@ export class CalendarPageComponent implements OnInit {
   }
 
   private loadProjects(): void {
-    // Projects are loaded from the store — we'll use the project selector
-    // For now, keep this simple
+    this.store.dispatch(loadProjects());
+    this.store.select(selectActiveProjects).subscribe(projects => {
+      this.projects.set(projects.map(p => ({ id: p.id, name: p.name })));
+      this.cdr.markForCheck();
+    });
   }
 }

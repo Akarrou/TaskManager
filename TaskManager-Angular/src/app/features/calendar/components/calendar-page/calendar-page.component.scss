@@ -47,7 +47,18 @@
   &__today-btn {
     font-size: v.$font-size-sm;
     font-weight: v.$font-weight-medium;
-    border-color: v.$border-color-medium;
+    color: v.$text-color-light;
+    border: 1px solid v.$border-color-light !important;
+    border-radius: v.$border-radius-md !important;
+    background-color: v.$background-color-form;
+    line-height: 34px;
+    padding: 0 14px;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background-color: v.$background-color-hover;
+      color: v.$text-color-dark;
+    }
   }
 
   &__title {
@@ -67,32 +78,51 @@
   }
 
   &__view-toggle {
-    ::ng-deep .mat-button-toggle-appearance-standard {
-      font-size: v.$font-size-sm;
-      font-weight: v.$font-weight-medium;
-    }
-  }
+    border-radius: v.$border-radius-md;
+    overflow: hidden;
 
-  &__filter {
-    width: 180px;
+    ::ng-deep {
+      .mat-button-toggle-group {
+        border: 1px solid v.$border-color-light;
+        border-radius: v.$border-radius-md;
+        overflow: hidden;
+      }
 
-    ::ng-deep .mat-mdc-form-field-infix {
-      min-height: 36px;
-      padding-top: 6px;
-      padding-bottom: 6px;
-    }
+      .mat-button-toggle-appearance-standard {
+        font-size: v.$font-size-sm;
+        font-weight: v.$font-weight-medium;
+        background-color: v.$background-color-form;
+        color: v.$text-color-light;
+        transition: all 0.15s ease;
 
-    ::ng-deep .mat-mdc-text-field-wrapper {
-      height: 40px;
-    }
+        &:hover {
+          background-color: v.$background-color-hover;
+        }
+      }
 
-    ::ng-deep .mat-mdc-form-field-flex {
-      height: 40px;
-      align-items: center;
-    }
+      .mat-button-toggle-checked .mat-button-toggle-label-content {
+        color: v.$primary-color;
+        font-weight: v.$font-weight-semibold;
+      }
 
-    ::ng-deep .mdc-notched-outline__notch {
-      border-right: none;
+      .mat-button-toggle-checked {
+        background-color: rgba(v.$primary-color, 0.08);
+      }
+
+      .mat-button-toggle-label-content {
+        padding: 0 14px;
+        line-height: 36px;
+      }
+
+      // Hide pseudo-checkbox: selected state is clear from color
+      .mat-button-toggle-checkbox-wrapper {
+        display: none !important;
+      }
+
+      // Remove default separator borders
+      .mat-button-toggle + .mat-button-toggle {
+        border-left: 1px solid v.$border-color-light;
+      }
     }
   }
 
@@ -106,6 +136,162 @@
 
   &__create-label {
     font-size: v.$font-size-sm;
+  }
+}
+
+// ============================================================================
+// Project Filter Dropdown (mirrors header project-selector style)
+// ============================================================================
+
+.project-filter {
+  position: relative;
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: v.$space-1;
+    padding: 0 v.$space-3;
+    height: 36px;
+    background-color: v.$background-color-form;
+    border: 1px solid v.$border-color-light;
+    border-radius: v.$border-radius-md;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    color: v.$text-color-light;
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-medium;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: v.$background-color-hover;
+      color: v.$text-color-dark;
+    }
+
+    &.is-open {
+      border-color: v.$primary-color;
+      color: v.$primary-color;
+      background-color: rgba(v.$primary-color, 0.06);
+    }
+  }
+
+  &__label {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__icon {
+    font-size: 20px !important;
+    width: 20px !important;
+    height: 20px !important;
+    color: inherit;
+    transition: color 0.15s ease;
+  }
+
+  &__dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 220px;
+    background: v.$background-color-form;
+    border: 1px solid v.$border-color-light;
+    border-radius: v.$border-radius-lg;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+    z-index: 1002;
+    overflow: hidden;
+    animation: dropdownFadeIn 0.15s ease-out;
+  }
+
+  &__header {
+    padding: v.$space-2 v.$space-3;
+    border-bottom: 1px solid v.$border-color-light;
+    background: v.$background-color-light;
+  }
+
+  &__title {
+    font-size: v.$font-size-xs;
+    font-weight: v.$font-weight-semibold;
+    color: v.$text-color-light;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: v.$space-1 0;
+    max-height: 280px;
+    overflow-y: auto;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    width: 100%;
+    padding: v.$space-2 v.$space-3;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: left;
+    color: v.$text-color-dark;
+    font-size: v.$font-size-sm;
+
+    &:hover {
+      background: v.$background-color-hover;
+    }
+
+    &.is-selected {
+      background: rgba(v.$primary-color, 0.06);
+      color: v.$primary-color;
+
+      .project-filter__item-icon {
+        color: v.$primary-color;
+      }
+    }
+  }
+
+  &__item-icon {
+    font-size: 18px !important;
+    width: 18px !important;
+    height: 18px !important;
+    color: v.$text-color-light;
+  }
+
+  &__item-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__check {
+    font-size: 18px !important;
+    width: 18px !important;
+    height: 18px !important;
+    color: v.$primary-color;
+  }
+
+  &__overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1001;
+  }
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -244,18 +430,21 @@
 
   // Today highlight
   .fc .fc-day-today {
-    background-color: rgba(v.$primary-color, 0.04) !important;
+    background-color: rgba(v.$primary-color, 0.03) !important;
+    border: 2px solid rgba(v.$primary-color, 0.25) !important;
 
     .fc-daygrid-day-number {
       background-color: v.$primary-color;
       color: v.$text-color-inverted;
       border-radius: v.$border-radius-full;
-      width: 28px;
-      height: 28px;
+      width: 30px;
+      height: 30px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       font-weight: v.$font-weight-bold;
+      font-size: v.$font-size-sm;
+      margin: 2px;
     }
   }
 
@@ -303,48 +492,57 @@
 
   // -----------------------------------------------------------------------
   // Event Category Colors
+  // Each category: light pastel background, dark text, colored left border
   // -----------------------------------------------------------------------
 
-  // Meeting (blue)
+  @mixin event-category($bg, $border, $text) {
+    background-color: $bg !important;
+    border-left-color: $border !important;
+    color: $text !important;
+
+    // Block events (all-day / multi-day in month view)
+    .fc-event-main {
+      color: $text !important;
+    }
+
+    // Dot indicator in month view
+    .fc-daygrid-event-dot {
+      border-color: $border !important;
+    }
+
+    // Time grid events (week / day views)
+    &.fc-timegrid-event {
+      background-color: $bg !important;
+      border-color: $border !important;
+
+      .fc-event-main {
+        color: $text !important;
+      }
+    }
+  }
+
   .fc-event.category-meeting {
-    background-color: #dbeafe;
-    border-left-color: #3b82f6;
-    color: #1e40af;
+    @include event-category(#dbeafe, #3b82f6, #1e40af);
   }
 
-  // Deadline (red)
   .fc-event.category-deadline {
-    background-color: #fee2e2;
-    border-left-color: #ef4444;
-    color: #991b1b;
+    @include event-category(#fee2e2, #ef4444, #991b1b);
   }
 
-  // Milestone (purple)
   .fc-event.category-milestone {
-    background-color: #ede9fe;
-    border-left-color: #8b5cf6;
-    color: #5b21b6;
+    @include event-category(#ede9fe, #8b5cf6, #5b21b6);
   }
 
-  // Reminder (yellow)
   .fc-event.category-reminder {
-    background-color: #fef9c3;
-    border-left-color: #eab308;
-    color: #854d0e;
+    @include event-category(#fef9c3, #eab308, #854d0e);
   }
 
-  // Personal (green)
   .fc-event.category-personal {
-    background-color: #dcfce7;
-    border-left-color: #22c55e;
-    color: #166534;
+    @include event-category(#dcfce7, #22c55e, #166534);
   }
 
-  // Other (gray)
   .fc-event.category-other {
-    background-color: #f3f4f6;
-    border-left-color: #6b7280;
-    color: #374151;
+    @include event-category(#f3f4f6, #6b7280, #374151);
   }
 
   // -----------------------------------------------------------------------
@@ -500,10 +698,6 @@
       gap: v.$space-2;
     }
 
-    &__filter {
-      width: 160px;
-    }
-
     &__create-label {
       display: none;
     }
@@ -547,8 +741,8 @@
       }
     }
 
-    &__filter {
-      width: 140px;
+    .project-filter__label {
+      max-width: 100px;
     }
   }
 }

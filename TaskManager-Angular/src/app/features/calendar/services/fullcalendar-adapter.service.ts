@@ -14,14 +14,14 @@ export class FullCalendarAdapterService {
   }
 
   private eventEntryToCalendarEvent(entry: EventEntry): EventInput {
-    const color = CATEGORY_HEX_COLORS[entry.category as EventCategory] || CATEGORY_HEX_COLORS.other;
+    const category = (entry.category as EventCategory) || 'other';
+    const color = CATEGORY_HEX_COLORS[category] || CATEGORY_HEX_COLORS.other;
 
     const event: EventInput = {
       id: entry.id,
       title: entry.title,
       allDay: entry.all_day,
-      backgroundColor: color,
-      borderColor: color,
+      classNames: [`category-${category}`],
       extendedProps: {
         databaseId: entry.databaseId,
         category: entry.category,

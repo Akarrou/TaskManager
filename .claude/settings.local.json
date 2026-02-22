@@ -71,7 +71,8 @@
       "Bash(grep:*)",
       "mcp__chrome-devtools__evaluate_script",
       "Bash(tail:*)",
-      "mcp__chrome-devtools__fill"
+      "mcp__chrome-devtools__fill",
+      "mcp__chrome-devtools__wait_for"
     ],
     "deny": [],
     "ask": []
