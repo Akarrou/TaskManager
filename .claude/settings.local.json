@@ -78,7 +78,8 @@
       "Bash(docker ps:*)",
       "Bash(openssl rand:*)",
       "Bash(nslookup:*)",
-      "Bash(pnpm info:*)"
+      "Bash(pnpm info:*)",
+      "Bash(kill:*)"
     ],
     "deny": [],
     "ask": []

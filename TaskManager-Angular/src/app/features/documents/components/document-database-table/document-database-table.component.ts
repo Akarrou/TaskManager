@@ -199,6 +199,10 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   dragOverColumnId = signal<string | null>(null);
   dropPosition = signal<'before' | 'after' | null>(null);
 
+  // Cell tooltip state
+  tooltipState = signal<{ text: string; x: number; y: number; visible: boolean }>({ text: '', x: 0, y: 0, visible: false });
+  private tooltipTimeout: ReturnType<typeof setTimeout> | null = null;
+
   // Database name editing
   isEditingName = signal(false);
   tempDatabaseName = signal('');
@@ -2314,7 +2318,44 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
       });
   }
 
+  // ── Cell tooltip ──
+
+  onCellMouseEnter(event: MouseEvent, value: CellValue): void {
+    if (!value || typeof value !== 'string' || value.trim() === '') {
+      return;
+    }
+
+    const target = event.target as HTMLInputElement;
+    // Only show tooltip if text is actually truncated
+    if (target.scrollWidth <= target.clientWidth) {
+      return;
+    }
+
+    this.tooltipTimeout = setTimeout(() => {
+      const rect = target.getBoundingClientRect();
+      this.tooltipState.set({
+        text: value,
+        x: rect.left,
+        y: rect.bottom + 6,
+        visible: true,
+      });
+    }, 400);
+  }
+
+  onCellMouseLeave(): void {
+    if (this.tooltipTimeout) {
+      clearTimeout(this.tooltipTimeout);
+      this.tooltipTimeout = null;
+    }
+    if (this.tooltipState().visible) {
+      this.tooltipState.set({ text: '', x: 0, y: 0, visible: false });
+    }
+  }
+
   ngOnDestroy() {
+    if (this.tooltipTimeout) {
+      clearTimeout(this.tooltipTimeout);
+    }
     this.destroy$.next();
     this.destroy$.complete();
   }

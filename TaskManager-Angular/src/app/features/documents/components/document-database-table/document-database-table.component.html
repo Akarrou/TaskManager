@@ -439,6 +439,8 @@
                                 (blur)="onUpdateCell(row.id, column.id, $any($event.target).value)"
                                 (keydown.enter)="$any($event.target).blur()"
                                 (click)="$event.stopPropagation()"
+                                (mouseenter)="column.type === 'text' ? onCellMouseEnter($event, row.cells[column.id]) : null"
+                                (mouseleave)="onCellMouseLeave()"
                                 placeholder="-" />
                             }
                           </td>
@@ -521,6 +523,15 @@
           </app-database-timeline-view>
         }
       }
+    </div>
+  }
+
+  <!-- Custom tooltip for truncated text cells -->
+  @if (tooltipState().visible) {
+    <div class="cell-tooltip"
+         [style.left.px]="tooltipState().x"
+         [style.top.px]="tooltipState().y">
+      {{ tooltipState().text }}
     </div>
   }
 </div>
