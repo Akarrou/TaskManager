@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { EventEntry } from '../../../../core/services/event-database.service';
 import { CATEGORY_LABELS, CATEGORY_COLORS, EventCategory } from '../../../../shared/models/event-constants';
 import { RruleToTextPipe } from '../../pipes/rrule-to-text.pipe';
@@ -17,6 +18,7 @@ import { RruleToTextPipe } from '../../pipes/rrule-to-text.pipe';
     MatIconModule,
     MatChipsModule,
     MatDividerModule,
+    MatTooltipModule,
     RruleToTextPipe,
   ],
   templateUrl: './event-detail-panel.component.html',
@@ -32,6 +34,7 @@ export class EventDetailPanelComponent {
   @Output() edit = new EventEmitter<EventEntry>();
   @Output() deleted = new EventEmitter<{ databaseId: string; rowId: string }>();
   @Output() updated = new EventEmitter<{ databaseId: string; rowId: string; updates: Partial<EventEntry> }>();
+  @Output() navigateToSource = new EventEmitter<string>();
 
   protected eventSignal = signal<EventEntry | null>(null);
 
@@ -82,6 +85,13 @@ export class EventDetailPanelComponent {
     const ev = this.eventSignal();
     if (ev) {
       this.deleted.emit({ databaseId: ev.databaseId, rowId: ev.id });
+    }
+  }
+
+  onNavigateToSource(): void {
+    const ev = this.eventSignal();
+    if (ev) {
+      this.navigateToSource.emit(ev.databaseId);
     }
   }
 

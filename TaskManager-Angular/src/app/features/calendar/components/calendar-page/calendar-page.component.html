@@ -137,7 +137,8 @@
           (close)="closeDetailPanel()"
           (edit)="onEditEvent($event)"
           (updated)="onEventUpdated($event)"
-          (deleted)="onEventDeleted($event)">
+          (deleted)="onEventDeleted($event)"
+          (navigateToSource)="onNavigateToSource($event)">
         </app-event-detail-panel>
       </aside>
     }

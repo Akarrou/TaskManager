@@ -232,8 +232,8 @@ $database-color-text: #5b21b6;
 
 .linked-item-card__info {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 2px;
   flex: 1;
   min-width: 0;
 }
@@ -245,8 +245,6 @@ $database-color-text: #5b21b6;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1;
-  min-width: 0;
 }
 
 .linked-item-card__badge {
@@ -255,7 +253,7 @@ $database-color-text: #5b21b6;
   padding: 1px 6px;
   border-radius: v.$border-radius-sm;
   white-space: nowrap;
-  flex-shrink: 0;
+  align-self: flex-start;
 
   &--task {
     background-color: $task-color-light;

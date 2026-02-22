@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, computed, inject, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
@@ -19,6 +20,7 @@ import { EventFormDialogComponent } from '../event-form-dialog/event-form-dialog
 import { EventDetailPanelComponent } from '../event-detail-panel/event-detail-panel.component';
 import { selectActiveProjects } from '../../../projects/store/project.selectors';
 import { loadProjects } from '../../../projects/store/project.actions';
+import { DatabaseService } from '../../../documents/services/database.service';
 
 @Component({
   selector: 'app-calendar-page',
@@ -41,6 +43,8 @@ export class CalendarPageComponent implements OnInit {
   private dialog = inject(MatDialog);
   private adapter = inject(FullCalendarAdapterService);
   private store = inject(Store);
+  private router = inject(Router);
+  private databaseService = inject(DatabaseService);
 
   @ViewChild('calendar') calendarComponent!: FullCalendarComponent;
 
@@ -126,7 +130,7 @@ export class CalendarPageComponent implements OnInit {
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(EventFormDialogComponent, {
-      width: '900px',
+      width: '1000px',
       maxWidth: '95vw',
       data: { mode: 'create' },
     });
@@ -147,7 +151,7 @@ export class CalendarPageComponent implements OnInit {
 
   handleSelect(selectInfo: DateSelectArg): void {
     const dialogRef = this.dialog.open(EventFormDialogComponent, {
-      width: '900px',
+      width: '1000px',
       maxWidth: '95vw',
       data: {
         mode: 'create',
@@ -239,9 +243,17 @@ export class CalendarPageComponent implements OnInit {
     this.closeDetailPanel();
   }
 
+  onNavigateToSource(databaseId: string): void {
+    this.databaseService.getDatabaseMetadata(databaseId).subscribe(metadata => {
+      if (metadata.document_id) {
+        this.router.navigate(['/documents', metadata.document_id]);
+      }
+    });
+  }
+
   onEditEvent(event: EventEntry): void {
     const dialogRef = this.dialog.open(EventFormDialogComponent, {
-      width: '900px',
+      width: '1000px',
       maxWidth: '95vw',
       data: { mode: 'edit', event },
     });

@@ -124,8 +124,15 @@
       <mat-divider></mat-divider>
       <div class="panel-section">
         <mat-icon class="section-icon">calendar_today</mat-icon>
-        <div class="section-content">
+        <div class="section-content section-content--row">
           <span class="section-meta">{{ event.databaseName }}</span>
+          <button
+            mat-icon-button
+            class="source-open-btn"
+            matTooltip="Ouvrir le document"
+            (click)="onNavigateToSource()">
+            <mat-icon>open_in_new</mat-icon>
+          </button>
         </div>
       </div>
     </div>
