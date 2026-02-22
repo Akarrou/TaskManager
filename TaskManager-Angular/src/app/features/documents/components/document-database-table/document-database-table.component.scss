@@ -1,3 +1,25 @@
+// Host-level styles for drag and resize states
+:host.column-dragging {
+  user-select: none;
+
+  .column-header {
+    cursor: grabbing !important;
+  }
+}
+
+:host.column-resizing {
+  user-select: none;
+
+  .column-header {
+    cursor: col-resize !important;
+  }
+
+  .resize-handle {
+    opacity: 1 !important;
+    background-color: #3b82f6 !important;
+  }
+}
+
 .database-container {
   background: white;
   overflow: hidden;
@@ -217,7 +239,9 @@
 }
 
 .data-table {
-  width: 100%;
+  table-layout: fixed;
+  width: max-content;
+  min-width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
 
@@ -263,11 +287,12 @@
     position: relative;
     font-weight: 600;
     color: #1f2937;
-    min-width: 150px;
+    min-width: 80px;
     background: #f9fafb;
     cursor: pointer;
     user-select: none;
     transition: background-color 0.15s;
+    overflow: hidden;
 
     &:hover {
       background: #f3f4f6;
@@ -276,6 +301,55 @@
     &:focus {
       outline: 2px solid #3b82f6;
       outline-offset: -2px;
+    }
+
+    // Drag states
+    &.dragging {
+      opacity: 0.5;
+    }
+
+    &.drag-over-before::before {
+      content: '';
+      position: absolute;
+      left: -1px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background-color: #3b82f6;
+      z-index: 3;
+    }
+
+    &.drag-over-after::after {
+      content: '';
+      position: absolute;
+      right: -1px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background-color: #3b82f6;
+      z-index: 3;
+    }
+
+    // Resize handle
+    .resize-handle {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      cursor: col-resize;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 0.15s;
+
+      &:hover {
+        opacity: 1;
+        background-color: #3b82f6;
+      }
+    }
+
+    &:hover .resize-handle {
+      opacity: 0.5;
     }
 
     .column-header-content {
@@ -362,6 +436,8 @@
     color: #111827;
     padding: 0.375rem 0.75rem;
     vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
 
     .cell-content {
       min-height: 1.5rem;

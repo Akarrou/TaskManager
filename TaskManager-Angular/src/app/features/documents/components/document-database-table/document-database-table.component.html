@@ -247,8 +247,17 @@
                         </button>
                       </th>
                       @for (column of sortedColumns(); track column.id) {
-                        @if (column.visible !== false) {
-                          <th class="column-header" (click)="onColumnHeaderClick(column.id)" (keydown.enter)="onColumnHeaderClick(column.id)" (keydown.space)="onColumnHeaderClick(column.id)" tabindex="0">
+                          <th class="column-header"
+                              [attr.data-column-id]="column.id"
+                              [style.width.px]="getColumnWidth(column.id)"
+                              [class.dragging]="draggingColumn()?.columnId === column.id && draggingColumn()?.isDragging"
+                              [class.drag-over-before]="dragOverColumnId() === column.id && dropPosition() === 'before'"
+                              [class.drag-over-after]="dragOverColumnId() === column.id && dropPosition() === 'after'"
+                              (mousedown)="startColumnDrag($event, column.id)"
+                              (click)="onColumnHeaderClick(column.id)"
+                              (keydown.enter)="onColumnHeaderClick(column.id)"
+                              (keydown.space)="onColumnHeaderClick(column.id)"
+                              tabindex="0">
                             <div class="column-header-content">
                             <span class="column-name">{{ column.name }}</span>
 
@@ -292,8 +301,12 @@
                               }
                             </mat-menu>
                           </div>
+                          <!-- Resize handle -->
+                          <div class="resize-handle"
+                               (mousedown)="startColumnResize($event, column.id)"
+                               (click)="$event.stopPropagation()">
+                          </div>
                         </th>
-                        }
                       }
                       <th class="add-column-header">
                         <button
@@ -321,8 +334,7 @@
                           </button>
                         </td>
                         @for (column of sortedColumns(); track column.id) {
-                          @if (column.visible !== false) {
-                            <td class="data-cell" (click)="onCellClick(row.id, column.id, $event)">
+                            <td class="data-cell" [style.width.px]="getColumnWidth(column.id)" (click)="onCellClick(row.id, column.id, $event)">
                             @if (column.type === 'checkbox') {
                               <!-- Checkbox type -->
                               <mat-checkbox
@@ -430,7 +442,6 @@
                                 placeholder="-" />
                             }
                           </td>
-                          }
                         }
                         <td class="row-actions-cell">
                           <button

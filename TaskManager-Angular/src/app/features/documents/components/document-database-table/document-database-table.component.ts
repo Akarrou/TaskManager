@@ -16,6 +16,7 @@ import {
   DatabaseNodeAttributes,
   CellValue,
   DEFAULT_DATABASE_CONFIG,
+  DEFAULT_COLUMN_WIDTHS,
   DatabaseColumn,
   ViewType,
   ViewConfig,
@@ -101,6 +102,10 @@ import { DateRangeFormatPipe } from '../../../../shared/pipes/date-range-format.
   ],
   templateUrl: './document-database-table.component.html',
   styleUrl: './document-database-table.component.scss',
+  host: {
+    '[class.column-dragging]': 'draggingColumn() !== null',
+    '[class.column-resizing]': 'resizing() !== null',
+  },
 })
 export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   private databaseService = inject(DatabaseService);
@@ -165,18 +170,10 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     return config.type === 'task';
   });
 
-  // Sorted columns with Task Number first (for table display)
+  // Sorted columns by order property, filtered to visible only
   sortedColumns = computed(() => {
-    const columns = this.databaseConfig().columns;
-    const taskNumberColumn = columns.find((col: DatabaseColumn) => col.name === 'Task Number');
-
-    if (!taskNumberColumn) {
-      return columns;
-    }
-
-    // Place Task Number first, then all other columns in their original order
-    const otherColumns = columns.filter((col: DatabaseColumn) => col.name !== 'Task Number');
-    return [taskNumberColumn, ...otherColumns];
+    const columns = this.databaseConfig().columns.filter(col => col.visible !== false);
+    return [...columns].sort((a, b) => a.order - b.order);
   });
 
   // Row selection state
@@ -191,6 +188,16 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     return selected.size > 0 && !this.isAllSelected();
   });
   selectedCount = computed(() => this.selectedRowIds().size);
+
+  // Column resize state
+  columnWidths = signal<Record<string, number>>({});
+  resizing = signal<{ columnId: string; startX: number; startWidth: number } | null>(null);
+  isResizing = computed(() => this.resizing() !== null);
+
+  // Column drag-and-drop state
+  draggingColumn = signal<{ columnId: string; startX: number; currentX: number; isDragging: boolean } | null>(null);
+  dragOverColumnId = signal<string | null>(null);
+  dropPosition = signal<'before' | 'after' | null>(null);
 
   // Database name editing
   isEditingName = signal(false);
@@ -240,6 +247,9 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
 
         // Load config from Supabase (source of truth)
         this.databaseConfig.set(metadata.config);
+
+        // Initialize column widths from config
+        this.initializeColumnWidths(metadata.config.columns);
 
         // Clean up view configs: remove references to deleted columns
         const validColumnIds = new Set(metadata.config.columns.map(col => col.id));
@@ -2054,6 +2064,254 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     const column = this.databaseConfig().columns.find((col: DatabaseColumn) => col.id === columnId);
     if (!column) return false;
     return column.type === 'select' || column.type === 'multi-select';
+  }
+
+  // =====================================================================
+  // Column Resize Methods
+  // =====================================================================
+
+  /**
+   * Initialize column widths from database config
+   */
+  private initializeColumnWidths(columns: DatabaseColumn[]): void {
+    const widths: Record<string, number> = {};
+    columns.forEach(col => {
+      widths[col.id] = col.width ?? DEFAULT_COLUMN_WIDTHS[col.type] ?? 200;
+    });
+    this.columnWidths.set(widths);
+  }
+
+  /**
+   * Get the width of a column
+   */
+  getColumnWidth(columnId: string): number {
+    return this.columnWidths()[columnId] ?? 200;
+  }
+
+  /**
+   * Start resizing a column
+   */
+  startColumnResize(event: MouseEvent, columnId: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const startWidth = this.getColumnWidth(columnId);
+    this.resizing.set({ columnId, startX: event.clientX, startWidth });
+
+    const onMouseMove = (e: MouseEvent) => this.onResizeMove(e);
+    const onMouseUp = () => {
+      this.onResizeEnd();
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }
+
+  /**
+   * Handle resize mouse move
+   */
+  private onResizeMove(event: MouseEvent): void {
+    const state = this.resizing();
+    if (!state) return;
+
+    const delta = event.clientX - state.startX;
+    const newWidth = Math.max(80, state.startWidth + delta);
+
+    this.columnWidths.update(widths => ({
+      ...widths,
+      [state.columnId]: newWidth,
+    }));
+  }
+
+  /**
+   * Handle resize end — persist to Supabase
+   */
+  private onResizeEnd(): void {
+    const state = this.resizing();
+    if (!state) return;
+
+    const newWidth = this.getColumnWidth(state.columnId);
+
+    // Update local config
+    this.databaseConfig.update(config => ({
+      ...config,
+      columns: config.columns.map(col =>
+        col.id === state.columnId ? { ...col, width: newWidth } : col
+      ),
+    }));
+
+    // Persist to Supabase
+    this.databaseService
+      .updateDatabaseConfig(this.databaseId, this.databaseConfig())
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => this.syncToTipTap(),
+        error: (err) => console.error('Failed to persist column width:', err),
+      });
+
+    this.resizing.set(null);
+  }
+
+  // =====================================================================
+  // Column Drag-and-Drop Methods
+  // =====================================================================
+
+  /**
+   * Start dragging a column header
+   */
+  startColumnDrag(event: MouseEvent, columnId: string): void {
+    // Don't start drag if resizing
+    if (this.isResizing()) return;
+
+    // Don't drag Task Number column in task databases
+    if (this.isTaskDatabase()) {
+      const col = this.databaseConfig().columns.find(c => c.id === columnId);
+      if (col?.name === 'Task Number') return;
+    }
+
+    // Only start on left click
+    if (event.button !== 0) return;
+
+    event.preventDefault();
+
+    this.draggingColumn.set({
+      columnId,
+      startX: event.clientX,
+      currentX: event.clientX,
+      isDragging: false,
+    });
+
+    const onMouseMove = (e: MouseEvent) => this.onDragMove(e);
+    const onMouseUp = () => {
+      this.onDragEnd();
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }
+
+  /**
+   * Handle drag mouse move
+   */
+  private onDragMove(event: MouseEvent): void {
+    const state = this.draggingColumn();
+    if (!state) return;
+
+    // Activate drag only after a 5px threshold
+    if (!state.isDragging && Math.abs(event.clientX - state.startX) < 5) {
+      return;
+    }
+
+    if (!state.isDragging) {
+      this.draggingColumn.update(s => s ? { ...s, isDragging: true } : null);
+    }
+
+    this.draggingColumn.update(s => s ? { ...s, currentX: event.clientX } : null);
+
+    // Find which column we're over
+    const elements = document.elementsFromPoint(event.clientX, event.clientY);
+    const headerEl = elements.find(el => el.classList.contains('column-header')) as HTMLElement | undefined;
+
+    if (headerEl) {
+      const colId = headerEl.getAttribute('data-column-id');
+      if (colId && colId !== state.columnId) {
+        const rect = headerEl.getBoundingClientRect();
+        const midX = rect.left + rect.width / 2;
+        const position: 'before' | 'after' = event.clientX < midX ? 'before' : 'after';
+
+        this.dragOverColumnId.set(colId);
+        this.dropPosition.set(position);
+      } else {
+        this.dragOverColumnId.set(null);
+        this.dropPosition.set(null);
+      }
+    } else {
+      this.dragOverColumnId.set(null);
+      this.dropPosition.set(null);
+    }
+  }
+
+  /**
+   * Handle drag end — reorder and persist
+   */
+  private onDragEnd(): void {
+    const state = this.draggingColumn();
+    const targetColumnId = this.dragOverColumnId();
+    const position = this.dropPosition();
+
+    // Reset drag state
+    this.draggingColumn.set(null);
+    this.dragOverColumnId.set(null);
+    this.dropPosition.set(null);
+
+    // If no valid drop target or drag wasn't activated, trigger header click for sorting
+    if (!state?.isDragging || !targetColumnId || !position) {
+      if (state && !state.isDragging) {
+        // Was just a click, let the header click handler deal with it
+        return;
+      }
+      return;
+    }
+
+    // Reorder columns
+    this.reorderColumns(state.columnId, targetColumnId, position);
+  }
+
+  /**
+   * Reorder columns: move source before/after target, then recalculate all orders
+   */
+  private reorderColumns(sourceId: string, targetId: string, position: 'before' | 'after'): void {
+    const columns = [...this.sortedColumns()];
+    const allColumns = [...this.databaseConfig().columns];
+
+    const sourceIndex = columns.findIndex(c => c.id === sourceId);
+    let targetIndex = columns.findIndex(c => c.id === targetId);
+
+    if (sourceIndex === -1 || targetIndex === -1 || sourceIndex === targetIndex) return;
+
+    // Remove source from array
+    const [movedCol] = columns.splice(sourceIndex, 1);
+
+    // Recalculate target index after removal
+    targetIndex = columns.findIndex(c => c.id === targetId);
+    const insertIndex = position === 'before' ? targetIndex : targetIndex + 1;
+
+    // Insert at new position
+    columns.splice(insertIndex, 0, movedCol);
+
+    // Recalculate order values for visible columns
+    const orderMap = new Map<string, number>();
+    columns.forEach((col, index) => {
+      orderMap.set(col.id, index);
+    });
+
+    // Update all columns (visible and hidden) with new order values
+    const updatedColumns = allColumns.map(col => {
+      const newOrder = orderMap.get(col.id);
+      if (newOrder !== undefined) {
+        return { ...col, order: newOrder };
+      }
+      return col;
+    });
+
+    // Update local config
+    this.databaseConfig.update(config => ({
+      ...config,
+      columns: updatedColumns,
+    }));
+
+    // Persist to Supabase
+    this.databaseService
+      .updateDatabaseConfig(this.databaseId, this.databaseConfig())
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => this.syncToTipTap(),
+        error: (err) => console.error('Failed to persist column order:', err),
+      });
   }
 
   ngOnDestroy() {
