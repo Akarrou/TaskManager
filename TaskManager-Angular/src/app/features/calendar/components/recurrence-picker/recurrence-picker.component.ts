@@ -19,7 +19,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
 import { MatRadioModule } from '@angular/material/radio';
 import { RRule, Frequency, Weekday } from 'rrule';
 
@@ -77,7 +76,6 @@ const REVERSE_FREQUENCY_MAP: Record<number, FrequencyOption> = {
     MatCheckboxModule,
     MatButtonToggleModule,
     MatDatepickerModule,
-    MatNativeDateModule,
     MatRadioModule,
   ],
   templateUrl: './recurrence-picker.component.html',
