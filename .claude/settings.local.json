@@ -85,7 +85,7 @@
       "Bash(cat:*)",
       "Bash(grep:*)",
       "Bash(pwd:*)",
-      "Bash(ls:*)", 
+      "Bash(ls:*)",
       "Bash(grep -c:*)",
       "Bash(grep -r:*)",
       "Bash(cd:*)",
@@ -96,7 +96,9 @@
       "mcp__kodo__get_document",
       "mcp__kodo__create_document",
       "WebSearch",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(cd \"/Users/jeromevalette/Projets/Task manager/mcp-server\" && npx tsc --noEmit src/routes/oauth.ts 2>&1)",
+      "WebFetch(domain:fullcalendar.io)"
     ],
     "deny": [],
     "ask": []
