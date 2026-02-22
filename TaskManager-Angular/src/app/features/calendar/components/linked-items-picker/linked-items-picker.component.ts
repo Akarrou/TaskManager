@@ -1,14 +1,18 @@
-import { Component, ChangeDetectionStrategy, forwardRef, signal, OnInit, OnDestroy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, forwardRef, signal, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
-import { MatTabsModule } from '@angular/material/tabs';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+
+import { Subject, forkJoin, of, debounceTime, distinctUntilChanged, takeUntil, catchError, map } from 'rxjs';
+
 import { LinkedItem } from '../../../../features/documents/models/database.model';
-import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { TaskDatabaseService } from '../../../../core/services/task-database.service';
+import { DocumentService } from '../../../../features/documents/services/document.service';
+import { DatabaseService } from '../../../../features/documents/services/database.service';
 
 type LinkedItemTab = 'all' | 'tasks' | 'documents' | 'databases';
 
@@ -21,9 +25,8 @@ type LinkedItemTab = 'all' | 'tasks' | 'documents' | 'databases';
     MatFormFieldModule,
     MatInputModule,
     MatAutocompleteModule,
-    MatChipsModule,
     MatIconModule,
-    MatTabsModule,
+    MatProgressSpinnerModule,
   ],
   templateUrl: './linked-items-picker.component.html',
   styleUrls: ['./linked-items-picker.component.scss'],
@@ -37,10 +40,15 @@ type LinkedItemTab = 'all' | 'tasks' | 'documents' | 'databases';
   ],
 })
 export class LinkedItemsPickerComponent implements ControlValueAccessor, OnInit, OnDestroy {
+  private taskDatabaseService = inject(TaskDatabaseService);
+  private documentService = inject(DocumentService);
+  private databaseService = inject(DatabaseService);
+
   protected selectedItems = signal<LinkedItem[]>([]);
   protected searchResults = signal<LinkedItem[]>([]);
   protected activeTab = signal<LinkedItemTab>('all');
   protected isDisabled = signal(false);
+  protected isSearching = signal(false);
 
   searchControl = new FormControl<string>('', { nonNullable: true });
 
@@ -50,7 +58,7 @@ export class LinkedItemsPickerComponent implements ControlValueAccessor, OnInit,
 
   readonly tabs: { value: LinkedItemTab; label: string }[] = [
     { value: 'all', label: 'Tous' },
-    { value: 'tasks', label: 'Taches' },
+    { value: 'tasks', label: 'Tâches' },
     { value: 'documents', label: 'Documents' },
     { value: 'databases', label: 'Bases' },
   ];
@@ -108,7 +116,6 @@ export class LinkedItemsPickerComponent implements ControlValueAccessor, OnInit,
       this.onTouched();
     }
 
-    // Clear search after selection
     this.searchControl.setValue('');
     this.searchResults.set([]);
   }
@@ -125,7 +132,6 @@ export class LinkedItemsPickerComponent implements ControlValueAccessor, OnInit,
 
   setActiveTab(tab: LinkedItemTab): void {
     this.activeTab.set(tab);
-    // Re-run search with current query and new tab filter
     const query = this.searchControl.value;
     if (query) {
       this.performSearch(query);
@@ -141,12 +147,12 @@ export class LinkedItemsPickerComponent implements ControlValueAccessor, OnInit,
     }
   }
 
-  getItemIconColor(type: string): string {
+  getItemTypeLabel(type: string): string {
     switch (type) {
-      case 'task': return 'text-green-600';
-      case 'document': return 'text-blue-600';
-      case 'database': return 'text-purple-600';
-      default: return 'text-gray-600';
+      case 'task': return 'Tâche';
+      case 'document': return 'Document';
+      case 'database': return 'Base';
+      default: return type;
     }
   }
 
@@ -157,7 +163,6 @@ export class LinkedItemsPickerComponent implements ControlValueAccessor, OnInit,
 
     let filtered = results;
 
-    // Filter by tab
     if (tab !== 'all') {
       const typeMap: Record<string, string> = {
         tasks: 'task',
@@ -167,7 +172,6 @@ export class LinkedItemsPickerComponent implements ControlValueAccessor, OnInit,
       filtered = filtered.filter(item => item.type === typeMap[tab]);
     }
 
-    // Exclude already selected items
     filtered = filtered.filter(
       item => !selected.some(s => s.id === item.id && s.type === item.type)
     );
@@ -175,20 +179,88 @@ export class LinkedItemsPickerComponent implements ControlValueAccessor, OnInit,
     return filtered;
   };
 
-  /**
-   * Perform search across tasks, documents, and databases.
-   * Currently a stub returning empty results.
-   * Wire up TaskDatabaseService, DocumentService, DatabaseService later.
-   */
   private performSearch(query: string): void {
     if (!query || query.trim().length < 2) {
       this.searchResults.set([]);
+      this.isSearching.set(false);
       return;
     }
 
-    // Stub: return empty results for now.
-    // In production, this would call services to search across
-    // tasks, documents, and databases, then merge results.
-    this.searchResults.set([]);
+    this.isSearching.set(true);
+    const lowerQuery = query.toLowerCase();
+
+    const tasksByTitle$ = this.taskDatabaseService.getAllTaskEntries({
+      filters: [{ property: 'title', operator: 'contains', value: query }],
+      limit: 20,
+    }).pipe(
+      map(result => result.entries),
+      catchError(() => of([])),
+    );
+
+    const tasksByNumber$ = this.taskDatabaseService.getAllTaskEntries({
+      filters: [{ property: 'task_number', operator: 'contains', value: query }],
+      limit: 20,
+    }).pipe(
+      map(result => result.entries),
+      catchError(() => of([])),
+    );
+
+    const tasks$ = forkJoin([tasksByTitle$, tasksByNumber$]).pipe(
+      map(([byTitle, byNumber]) => {
+        const seen = new Set<string>();
+        const merged: LinkedItem[] = [];
+        for (const entry of [...byTitle, ...byNumber]) {
+          if (!seen.has(entry.id)) {
+            seen.add(entry.id);
+            merged.push({
+              type: 'task' as const,
+              id: entry.id,
+              databaseId: entry.databaseId,
+              label: entry.task_number ? `${entry.task_number} — ${entry.title}` : entry.title,
+            });
+          }
+        }
+        return merged;
+      }),
+    );
+
+    const documents$ = this.documentService.getDocuments().pipe(
+      map(docs => docs
+        .filter(doc => doc.title?.toLowerCase().includes(lowerQuery))
+        .slice(0, 20)
+        .map(doc => ({
+          type: 'document' as const,
+          id: doc.id,
+          label: doc.title,
+        }))
+      ),
+      catchError(() => of([] as LinkedItem[])),
+    );
+
+    const databases$ = this.databaseService.getAllDatabases().pipe(
+      map(dbs => dbs
+        .filter(db => db.name?.toLowerCase().includes(lowerQuery))
+        .slice(0, 20)
+        .map(db => ({
+          type: 'database' as const,
+          id: db.database_id,
+          label: db.name,
+        }))
+      ),
+      catchError(() => of([] as LinkedItem[])),
+    );
+
+    forkJoin([tasks$, documents$, databases$]).pipe(
+      takeUntil(this.destroy$),
+    ).subscribe({
+      next: ([tasks, documents, databases]) => {
+        this.searchResults.set([...tasks, ...documents, ...databases]);
+        this.isSearching.set(false);
+      },
+      error: () => {
+        this.searchResults.set([]);
+        this.isSearching.set(false);
+      },
+    });
   }
 }

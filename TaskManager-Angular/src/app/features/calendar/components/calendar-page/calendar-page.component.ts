@@ -126,7 +126,8 @@ export class CalendarPageComponent implements OnInit {
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(EventFormDialogComponent, {
-      width: '600px',
+      width: '900px',
+      maxWidth: '95vw',
       data: { mode: 'create' },
     });
 
@@ -146,7 +147,8 @@ export class CalendarPageComponent implements OnInit {
 
   handleSelect(selectInfo: DateSelectArg): void {
     const dialogRef = this.dialog.open(EventFormDialogComponent, {
-      width: '600px',
+      width: '900px',
+      maxWidth: '95vw',
       data: {
         mode: 'create',
         startDate: selectInfo.startStr,
@@ -239,7 +241,8 @@ export class CalendarPageComponent implements OnInit {
 
   onEditEvent(event: EventEntry): void {
     const dialogRef = this.dialog.open(EventFormDialogComponent, {
-      width: '600px',
+      width: '900px',
+      maxWidth: '95vw',
       data: { mode: 'edit', event },
     });
 

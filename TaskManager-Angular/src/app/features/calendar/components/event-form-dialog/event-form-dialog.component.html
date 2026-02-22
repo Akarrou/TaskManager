@@ -4,126 +4,136 @@
 </h2>
 
 <mat-dialog-content class="dialog-content">
-  <form [formGroup]="form" class="event-form">
+  <form [formGroup]="form" class="event-form event-form--two-col">
 
-    <!-- Title -->
-    <div class="form-group">
-      <label class="form-label">Titre <span class="required">*</span></label>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <input matInput formControlName="title" placeholder="Titre de l'événement" />
-        @if (form.controls.title.hasError('required') && form.controls.title.touched) {
-          <mat-error>Le titre est obligatoire</mat-error>
-        }
-      </mat-form-field>
-    </div>
+    <!-- Left Column: Form Fields -->
+    <div class="event-form__left">
 
-    <!-- Database selector (only shown if multiple event databases exist) -->
-    @if (showDatabaseSelector()) {
+      <!-- Title -->
       <div class="form-group">
-        <label class="form-label">Calendrier</label>
+        <label class="form-label">Titre <span class="required">*</span></label>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-select formControlName="databaseId">
-            @for (db of eventDatabases(); track db.database_id) {
-              <mat-option [value]="db.database_id">{{ db.name }}</mat-option>
-            }
-          </mat-select>
+          <input matInput formControlName="title" placeholder="Titre de l'événement" />
+          @if (form.controls.title.hasError('required') && form.controls.title.touched) {
+            <mat-error>Le titre est obligatoire</mat-error>
+          }
         </mat-form-field>
       </div>
-    }
 
-    <!-- All Day toggle -->
-    <div class="form-group form-group--inline">
-      <mat-checkbox formControlName="allDay">
-        Journée entière
-      </mat-checkbox>
-    </div>
-
-    <!-- Date/Time Row: Start -->
-    <div class="form-group">
-      <label class="form-label">Date de début <span class="required">*</span></label>
-      <div class="form-row">
-        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="date-field">
-          <input matInput [matDatepicker]="startPicker" formControlName="startDate" placeholder="Choisir une date" />
-          <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
-          <mat-datepicker #startPicker></mat-datepicker>
-        </mat-form-field>
-        @if (!isAllDay) {
-          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="time-field">
-            <input matInput type="time" formControlName="startTime" />
+      <!-- Database selector (only shown if multiple event databases exist) -->
+      @if (showDatabaseSelector()) {
+        <div class="form-group">
+          <label class="form-label">Calendrier</label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-select formControlName="databaseId">
+              @for (db of eventDatabases(); track db.database_id) {
+                <mat-option [value]="db.database_id">{{ db.name }}</mat-option>
+              }
+            </mat-select>
           </mat-form-field>
-        }
-      </div>
-    </div>
+        </div>
+      }
 
-    <!-- Date/Time Row: End -->
-    <div class="form-group">
-      <label class="form-label">Date de fin <span class="required">*</span></label>
-      <div class="form-row">
-        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="date-field">
-          <input matInput [matDatepicker]="endPicker" formControlName="endDate" placeholder="Choisir une date" />
-          <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
-          <mat-datepicker #endPicker></mat-datepicker>
-        </mat-form-field>
-        @if (!isAllDay) {
-          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="time-field">
-            <input matInput type="time" formControlName="endTime" />
+      <!-- All Day toggle -->
+      <div class="form-group form-group--inline">
+        <mat-checkbox formControlName="allDay">
+          Journée entière
+        </mat-checkbox>
+      </div>
+
+      <!-- Date/Time Row: Start -->
+      <div class="form-group">
+        <label class="form-label">Date de début <span class="required">*</span></label>
+        <div class="form-row">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="date-field">
+            <input matInput [matDatepicker]="startPicker" formControlName="startDate" placeholder="Choisir une date" />
+            <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+            <mat-datepicker #startPicker></mat-datepicker>
           </mat-form-field>
-        }
+          @if (!isAllDay) {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="time-field">
+              <input matInput type="time" formControlName="startTime" />
+            </mat-form-field>
+          }
+        </div>
       </div>
-    </div>
 
-    <!-- Category + Location -->
-    <div class="form-row">
-      <div class="form-group flex-1">
-        <label class="form-label">Catégorie</label>
+      <!-- Date/Time Row: End -->
+      <div class="form-group">
+        <label class="form-label">Date de fin <span class="required">*</span></label>
+        <div class="form-row">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="date-field">
+            <input matInput [matDatepicker]="endPicker" formControlName="endDate" placeholder="Choisir une date" />
+            <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+            <mat-datepicker #endPicker></mat-datepicker>
+          </mat-form-field>
+          @if (!isAllDay) {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="time-field">
+              <input matInput type="time" formControlName="endTime" />
+            </mat-form-field>
+          }
+        </div>
+      </div>
+
+      <!-- Category + Location -->
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label">Catégorie</label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-select formControlName="category">
+              @for (option of categoryOptions; track option.value) {
+                <mat-option [value]="option.value">
+                  <span class="flex items-center gap-2">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full" [ngClass]="option.colors.bg"></span>
+                    <span>{{ option.label }}</span>
+                  </span>
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="form-group flex-1">
+          <label class="form-label">Lieu</label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-icon matPrefix class="location-icon">location_on</mat-icon>
+            <input matInput formControlName="location" placeholder="Ajouter un lieu" />
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="form-group">
+        <label class="form-label">Description</label>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-select formControlName="category">
-            @for (option of categoryOptions; track option.value) {
-              <mat-option [value]="option.value">
-                <span class="flex items-center gap-2">
-                  <span class="inline-block w-2.5 h-2.5 rounded-full" [ngClass]="option.colors.bg"></span>
-                  <span>{{ option.label }}</span>
-                </span>
-              </mat-option>
-            }
-          </mat-select>
+          <textarea
+            matInput
+            formControlName="description"
+            placeholder="Ajouter une description..."
+            rows="3"
+            cdkTextareaAutosize
+            cdkAutosizeMinRows="2"
+            cdkAutosizeMaxRows="5"
+          ></textarea>
         </mat-form-field>
       </div>
-      <div class="form-group flex-1">
-        <label class="form-label">Lieu</label>
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-icon matPrefix class="location-icon">location_on</mat-icon>
-          <input matInput formControlName="location" placeholder="Ajouter un lieu" />
-        </mat-form-field>
+
+      <!-- Recurrence -->
+      <div class="form-group">
+        <label class="form-label">Récurrence</label>
+        <app-recurrence-picker formControlName="recurrence"></app-recurrence-picker>
       </div>
+
     </div>
 
-    <!-- Description -->
-    <div class="form-group">
-      <label class="form-label">Description</label>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <textarea
-          matInput
-          formControlName="description"
-          placeholder="Ajouter une description..."
-          rows="3"
-          cdkTextareaAutosize
-          cdkAutosizeMinRows="2"
-          cdkAutosizeMaxRows="5"
-        ></textarea>
-      </mat-form-field>
-    </div>
-
-    <!-- Recurrence -->
-    <div class="form-group">
-      <label class="form-label">Récurrence</label>
-      <app-recurrence-picker formControlName="recurrence"></app-recurrence-picker>
-    </div>
-
-    <!-- Linked Items -->
-    <div class="form-group">
-      <label class="form-label">Éléments liés</label>
-      <app-linked-items-picker formControlName="linkedItems"></app-linked-items-picker>
+    <!-- Right Column: Linked Items -->
+    <div class="event-form__right">
+      <div class="linked-items-panel">
+        <h3 class="linked-items-panel__title">
+          <mat-icon class="linked-items-panel__icon">link</mat-icon>
+          Éléments liés
+        </h3>
+        <app-linked-items-picker formControlName="linkedItems"></app-linked-items-picker>
+      </div>
     </div>
 
   </form>
