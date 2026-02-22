@@ -71,6 +71,10 @@ const BLOCK_TYPES = [
   'column',
   'databaseTable',
   'taskSection',
+  'accordionGroup',
+  'accordionItem',
+  'accordionTitle',
+  'accordionContent',
 ];
 
 export interface BlockIdOptions {

@@ -79,7 +79,10 @@
       "Bash(openssl rand:*)",
       "Bash(nslookup:*)",
       "Bash(pnpm info:*)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "mcp__mcp-postgres__execute_sql",
+      "Bash(tail:*)",
+      "mcp__kodo__get_database_schema"
     ],
     "deny": [],
     "ask": []

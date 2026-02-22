@@ -89,7 +89,7 @@ export class SlashMenuComponent implements OnChanges {
       {
         title: 'Structure',
         commands: items.filter(item =>
-          ['columns2', 'columns3', 'divider', 'newDocument'].includes(item.id)
+          ['columns2', 'columns3', 'accordion', 'divider', 'newDocument'].includes(item.id)
         )
       },
       {

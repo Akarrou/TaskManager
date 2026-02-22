@@ -27,6 +27,8 @@ import { FabStore } from '../../../core/stores/fab.store';
 import { debounceTime, Subject, takeUntil, map, catchError, throwError, take, forkJoin } from 'rxjs';
 import { DocumentState, DocumentSnapshot, createSnapshot, hasChanges } from '../models/document-content.types';
 import { Columns, Column } from '../extensions/columns.extension';
+import { AccordionGroup, AccordionItem, AccordionTitle, AccordionContent } from '../extensions/accordion.extension';
+import { AccordionSettingsPopoverComponent, AccordionSettings } from '../components/accordion-settings-popover/accordion-settings-popover.component';
 import { DatabaseRow, DatabaseColumn, DocumentDatabase, CellValue, createTaskDatabaseConfig, PROPERTY_COLORS, PropertyColor, getDefaultColumnColor } from '../models/database.model';
 import { FontSize } from '../extensions/font-size.extension';
 import { TextStyle } from '@tiptap/extension-text-style';
@@ -70,7 +72,7 @@ const lowlight = createLowlight(all);
 @Component({
   selector: 'app-document-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, ImageBubbleMenuComponent, TaskSectionRendererDirective, DatabaseTableRendererDirective, CommentThreadPanelComponent, CommentIndicatorDirective, MindmapRendererDirective, SpreadsheetRendererDirective],
+  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, ImageBubbleMenuComponent, TaskSectionRendererDirective, DatabaseTableRendererDirective, CommentThreadPanelComponent, CommentIndicatorDirective, MindmapRendererDirective, SpreadsheetRendererDirective, AccordionSettingsPopoverComponent],
   templateUrl: './document-editor.component.html',
   styleUrl: './document-editor.component.scss',
   encapsulation: ViewEncapsulation.None
@@ -100,6 +102,14 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   slashMenuPosition = signal({ top: 0, left: 0 });
   slashMenuIndex = signal(0);
   slashFilterText = signal<string>('');
+
+  // Accordion settings popover
+  showAccordionPopover = signal(false);
+  accordionPopoverPosition = signal({ top: 0, left: 0 });
+  accordionEditingTitlePos = signal<number>(-1);
+  accordionCurrentIcon = signal('description');
+  accordionCurrentIconColor = signal('#3b82f6');
+  accordionCurrentTitleColor = signal('#1f2937');
 
   // Bubble menu (text selection)
   showBubbleMenu = signal(false);
@@ -212,6 +222,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     { id: 'link', label: 'Lien externe', icon: 'link', action: () => this.addExternalLink() },
     { id: 'columns2', label: '2 Colonnes', icon: 'view_column', action: () => this.editor.chain().focus().setColumns(2).run() },
     { id: 'columns3', label: '3 Colonnes', icon: 'view_week', action: () => this.editor.chain().focus().setColumns(3).run() },
+    { id: 'accordion', label: 'Accordéon', icon: 'expand_circle_down', action: () => this.editor.chain().focus().insertAccordion(1).run() },
     { id: 'newDocument', label: 'Nouvelle page', icon: 'note_add', action: () => this.createLinkedDocument() },
 
     // Base de données
@@ -275,6 +286,10 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         CodeBlockLowlight.configure({ lowlight }),
         Columns,
         Column,
+        AccordionGroup,
+        AccordionItem,
+        AccordionTitle,
+        AccordionContent,
         TextStyle,
         FontFamily,
         FontSize,
@@ -668,11 +683,67 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       this.openCommentPanel(blockId);
     });
 
+    // Listen for accordion icon edit events
+    this.setupAccordionIconEditListener();
+
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
       if (params['id']) {
         this.loadDocument(params['id']);
       }
     });
+  }
+
+  private setupAccordionIconEditListener() {
+    // Delay setup to ensure editor DOM is ready
+    setTimeout(() => {
+      const editorDom = this.editor?.view?.dom;
+      if (editorDom) {
+        editorDom.addEventListener('accordion-icon-edit', ((event: CustomEvent) => {
+          const { pos, rect } = event.detail;
+          if (pos >= 0) {
+            // Read current attributes from the node
+            const node = this.editor.state.doc.nodeAt(pos);
+            if (node && node.type.name === 'accordionTitle') {
+              this.accordionCurrentIcon.set(node.attrs['icon'] || 'description');
+              this.accordionCurrentIconColor.set(node.attrs['iconColor'] || '#3b82f6');
+              this.accordionCurrentTitleColor.set(node.attrs['titleColor'] || '#1f2937');
+            }
+            this.accordionEditingTitlePos.set(pos);
+            this.accordionPopoverPosition.set({
+              top: rect.bottom + 4,
+              left: rect.left,
+            });
+            this.showAccordionPopover.set(true);
+          }
+        }) as EventListener);
+      }
+    }, 500);
+  }
+
+  onAccordionSettingsChanged(settings: AccordionSettings) {
+    const pos = this.accordionEditingTitlePos();
+    if (pos < 0) return;
+
+    const node = this.editor.state.doc.nodeAt(pos);
+    if (!node || node.type.name !== 'accordionTitle') return;
+
+    this.editor.view.dispatch(
+      this.editor.state.tr.setNodeMarkup(pos, undefined, {
+        ...node.attrs,
+        icon: settings.icon,
+        iconColor: settings.iconColor,
+        titleColor: settings.titleColor,
+      })
+    );
+
+    this.accordionCurrentIcon.set(settings.icon);
+    this.accordionCurrentIconColor.set(settings.iconColor);
+    this.accordionCurrentTitleColor.set(settings.titleColor);
+  }
+
+  closeAccordionPopover() {
+    this.showAccordionPopover.set(false);
+    this.accordionEditingTitlePos.set(-1);
   }
 
   /**

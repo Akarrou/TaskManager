@@ -611,6 +611,191 @@ tiptap-editor .spreadsheet-container,
 }
 
 // ============================================================================
+// TIPTAP - ACCORDION (Collapsible content blocks)
+// ============================================================================
+
+// Accordion group container
+.ProseMirror .tiptap-accordion-group {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  margin: 1rem 0;
+}
+
+// Accordion item
+.ProseMirror .tiptap-accordion-item {
+  border-bottom: 1px solid #e5e7eb;
+
+  &:last-of-type {
+    border-bottom: none;
+  }
+}
+
+// Accordion title bar
+.ProseMirror .tiptap-accordion-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: #fafafa;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: #f3f4f6;
+  }
+}
+
+// Chevron toggle icon
+.ProseMirror .accordion-toggle-icon {
+  font-size: 1.25rem;
+  color: #6b7280;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+// Icon badge
+.ProseMirror .accordion-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 0.375rem;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+
+  .material-icons-outlined {
+    font-size: 1rem;
+  }
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+// Editable title text
+.ProseMirror .accordion-title-text {
+  flex: 1;
+  cursor: text;
+  font-weight: 500;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  min-height: 1.5em;
+
+  &:empty::before {
+    content: 'Titre de l\'accordéon...';
+    color: #9ca3af;
+    pointer-events: none;
+  }
+}
+
+// Accordion content
+.ProseMirror .tiptap-accordion-content {
+  padding: 0.75rem 1rem 0.75rem 3rem;
+  transition: max-height 0.25s ease, padding 0.25s ease, opacity 0.2s ease;
+  overflow: hidden;
+}
+
+// Accordion content inner spacing
+.ProseMirror .tiptap-accordion-content > * {
+  margin: 0.5rem 0;
+}
+
+.ProseMirror .tiptap-accordion-content > *:first-child {
+  margin-top: 0;
+}
+
+.ProseMirror .tiptap-accordion-content > *:last-child {
+  margin-bottom: 0;
+}
+
+// Collapsed state
+.ProseMirror .tiptap-accordion-item.accordion-collapsed {
+  > .tiptap-accordion-title .accordion-toggle-icon {
+    transform: rotate(-90deg);
+  }
+
+  > .tiptap-accordion-content {
+    max-height: 0 !important;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+    overflow: hidden;
+  }
+}
+
+// Add button at the bottom of the group
+.ProseMirror .accordion-add-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  width: 100%;
+  padding: 0.5rem;
+  border: none;
+  border-top: 1px dashed #d1d5db;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  .accordion-add-icon {
+    font-size: 1rem;
+  }
+
+  &:hover {
+    background-color: #f9fafb;
+    color: #6b7280;
+  }
+}
+
+// Dark mode
+:host-context(.dark) .ProseMirror .tiptap-accordion-group {
+  border-color: #374151;
+}
+
+:host-context(.dark) .ProseMirror .tiptap-accordion-item {
+  border-bottom-color: #374151;
+}
+
+:host-context(.dark) .ProseMirror .tiptap-accordion-title {
+  background-color: #1f2937;
+
+  &:hover {
+    background-color: #263244;
+  }
+}
+
+:host-context(.dark) .ProseMirror .accordion-toggle-icon {
+  color: #9ca3af;
+}
+
+:host-context(.dark) .ProseMirror .accordion-title-text {
+  &:empty::before {
+    color: #6b7280;
+  }
+}
+
+:host-context(.dark) .ProseMirror .tiptap-accordion-content {
+  background-color: transparent;
+}
+
+:host-context(.dark) .ProseMirror .accordion-add-button {
+  border-top-color: #374151;
+  color: #6b7280;
+
+  &:hover {
+    background-color: #1f2937;
+    color: #9ca3af;
+  }
+}
+
+// ============================================================================
 // DRAG & DROP - Node Selection & Movement (GlobalDragHandle Extension)
 // ============================================================================
 
@@ -692,6 +877,7 @@ tiptap-editor .spreadsheet-container,
 .ProseMirror pre:hover ~ .drag-handle,
 .ProseMirror table:hover ~ .drag-handle,
 .ProseMirror .tiptap-columns:hover ~ .drag-handle,
+.ProseMirror .tiptap-accordion-group:hover ~ .drag-handle,
 .ProseMirror .task-section-block:hover ~ .drag-handle {
   opacity: 1 !important;
 }

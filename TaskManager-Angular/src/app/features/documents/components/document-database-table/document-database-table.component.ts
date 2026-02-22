@@ -2169,12 +2169,6 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     // Don't start drag if resizing
     if (this.isResizing()) return;
 
-    // Don't drag Task Number column in task databases
-    if (this.isTaskDatabase()) {
-      const col = this.databaseConfig().columns.find(c => c.id === columnId);
-      if (col?.name === 'Task Number') return;
-    }
-
     // Only start on left click
     if (event.button !== 0) return;
 

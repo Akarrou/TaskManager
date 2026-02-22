@@ -1,0 +1,62 @@
+<div
+  class="accordion-settings-popover"
+  [style.top.px]="positionTop"
+  [style.left.px]="positionLeft"
+>
+  <!-- Icon Selection -->
+  <div class="popover-section">
+    <span class="popover-section-title">Icône</span>
+    <div class="icon-grid">
+      @for (icon of icons; track icon) {
+        <button
+          class="icon-option"
+          [class.selected]="selectedIcon === icon"
+          (click)="selectIcon(icon); $event.stopPropagation()"
+          [title]="icon"
+        >
+          <mat-icon>{{ icon }}</mat-icon>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Icon Color -->
+  <div class="popover-section">
+    <span class="popover-section-title">Couleur icône</span>
+    <div class="color-palette">
+      @for (color of colors; track color.value) {
+        <button
+          class="color-option"
+          [class.selected]="selectedIconColor === color.value"
+          [style.background-color]="color.value"
+          (click)="selectIconColor(color.value); $event.stopPropagation()"
+          [title]="color.name"
+        >
+          @if (selectedIconColor === color.value) {
+            <mat-icon class="color-check">check</mat-icon>
+          }
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Title Color -->
+  <div class="popover-section">
+    <span class="popover-section-title">Couleur titre</span>
+    <div class="color-palette">
+      @for (color of colors; track color.value) {
+        <button
+          class="color-option"
+          [class.selected]="selectedTitleColor === color.value"
+          [style.background-color]="color.value"
+          (click)="selectTitleColor(color.value); $event.stopPropagation()"
+          [title]="color.name"
+        >
+          @if (selectedTitleColor === color.value) {
+            <mat-icon class="color-check">check</mat-icon>
+          }
+        </button>
+      }
+    </div>
+  </div>
+</div>

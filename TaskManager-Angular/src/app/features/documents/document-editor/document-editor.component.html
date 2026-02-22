@@ -277,6 +277,19 @@
     </div>
   }
 
+  <!-- Accordion Settings Popover -->
+  @if (showAccordionPopover()) {
+    <app-accordion-settings-popover
+      [currentIcon]="accordionCurrentIcon()"
+      [currentIconColor]="accordionCurrentIconColor()"
+      [currentTitleColor]="accordionCurrentTitleColor()"
+      [positionTop]="accordionPopoverPosition().top"
+      [positionLeft]="accordionPopoverPosition().left"
+      (settingsChanged)="onAccordionSettingsChanged($event)"
+      (closePopover)="closeAccordionPopover()"
+    />
+  }
+
   <!-- Comment Thread Panel -->
   <app-comment-thread-panel
     [isOpen]="commentPanelOpen()"

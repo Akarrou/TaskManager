@@ -25,7 +25,7 @@ import {
   DatabaseColumn,
   CellValue,
   createTaskDatabaseConfig,
-  TASK_DATABASE_TEMPLATE_COLUMNS,
+  createTaskDatabaseTemplateColumns,
 } from '../../../documents/models/database.model';
 import {
   TaskCsvImportDialogData,
@@ -209,7 +209,7 @@ export class TaskCsvImportDialogComponent {
     if (isCreating) {
       // Clear selection and use template columns for mapping
       this.selectedDatabaseId.set(null);
-      this.targetColumns.set([...TASK_DATABASE_TEMPLATE_COLUMNS]);
+      this.targetColumns.set(createTaskDatabaseTemplateColumns());
     } else {
       this.targetColumns.set([]);
     }
