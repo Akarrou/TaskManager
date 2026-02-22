@@ -1,0 +1,140 @@
+:host {
+  display: block;
+}
+
+// ============================================================================
+// Dialog title
+// ============================================================================
+
+.dialog-title {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px 12px;
+  margin: 0;
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background-color: #eef2ff;
+    flex-shrink: 0;
+
+    mat-icon {
+      color: #4f46e5;
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+    }
+  }
+
+  &__text {
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.3;
+  }
+}
+
+// ============================================================================
+// Dialog sizing
+// ============================================================================
+
+mat-dialog-content {
+  max-height: 65vh;
+  overflow-y: auto;
+
+  // Subtle scrollbar
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 8px;
+  }
+}
+
+// ============================================================================
+// Form layout
+// ============================================================================
+
+.event-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  // ALL mat-form-fields take full width
+  mat-form-field {
+    width: 100%;
+  }
+}
+
+// Date row: date picker + time picker side by side
+.date-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  .date-field {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .time-field {
+    width: 120px;
+    flex-shrink: 0;
+  }
+}
+
+// Category + Location side by side
+.two-col-row {
+  display: flex;
+  gap: 12px;
+
+  mat-form-field {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+// ============================================================================
+// Section blocks (Recurrence, Linked Items)
+// ============================================================================
+
+.section-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #fafbfc;
+}
+
+.section-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+// ============================================================================
+// Material overrides within dialog
+// ============================================================================
+
+// Reduce mat-form-field vertical density
+::ng-deep {
+  .mdc-notched-outline__notch {
+    border-right: none;
+  }
+}
+
+mat-spinner {
+  display: inline-block;
+  vertical-align: middle;
+}

@@ -1,0 +1,156 @@
+<div mat-dialog-title class="dialog-title">
+  <div class="dialog-title__icon">
+    <mat-icon>event</mat-icon>
+  </div>
+  <span class="dialog-title__text">{{ dialogTitle }}</span>
+</div>
+
+<mat-dialog-content class="!px-6 !py-4">
+  <form [formGroup]="form" class="event-form">
+
+    <!-- Title -->
+    <mat-form-field appearance="outline">
+      <mat-label>Titre</mat-label>
+      <input matInput formControlName="title" placeholder="Titre de l'événement" />
+      @if (form.controls.title.hasError('required') && form.controls.title.touched) {
+        <mat-error>Le titre est obligatoire</mat-error>
+      }
+    </mat-form-field>
+
+    <!-- Database selector (only shown if multiple event databases exist) -->
+    @if (showDatabaseSelector()) {
+      <mat-form-field appearance="outline">
+        <mat-label>Calendrier</mat-label>
+        <mat-select formControlName="databaseId">
+          @for (db of eventDatabases(); track db.database_id) {
+            <mat-option [value]="db.database_id">{{ db.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+
+    <!-- All Day toggle -->
+    <mat-checkbox formControlName="allDay" class="!-mt-1 !mb-1">
+      Journée entière
+    </mat-checkbox>
+
+    <!-- Date/Time Row: Start -->
+    <div class="date-row">
+      <mat-form-field appearance="outline" class="date-field">
+        <mat-label>Date de début</mat-label>
+        <input
+          matInput
+          [matDatepicker]="startPicker"
+          formControlName="startDate"
+        />
+        <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+        <mat-datepicker #startPicker></mat-datepicker>
+        @if (form.controls.startDate.hasError('required') && form.controls.startDate.touched) {
+          <mat-error>Obligatoire</mat-error>
+        }
+      </mat-form-field>
+
+      @if (!isAllDay) {
+        <mat-form-field appearance="outline" class="time-field">
+          <mat-label>Heure</mat-label>
+          <input matInput type="time" formControlName="startTime" />
+        </mat-form-field>
+      }
+    </div>
+
+    <!-- Date/Time Row: End -->
+    <div class="date-row">
+      <mat-form-field appearance="outline" class="date-field">
+        <mat-label>Date de fin</mat-label>
+        <input
+          matInput
+          [matDatepicker]="endPicker"
+          formControlName="endDate"
+        />
+        <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+        <mat-datepicker #endPicker></mat-datepicker>
+        @if (form.controls.endDate.hasError('required') && form.controls.endDate.touched) {
+          <mat-error>Obligatoire</mat-error>
+        }
+      </mat-form-field>
+
+      @if (!isAllDay) {
+        <mat-form-field appearance="outline" class="time-field">
+          <mat-label>Heure</mat-label>
+          <input matInput type="time" formControlName="endTime" />
+        </mat-form-field>
+      }
+    </div>
+
+    <!-- Category + Location row -->
+    <div class="two-col-row">
+      <mat-form-field appearance="outline" class="flex-1">
+        <mat-label>Catégorie</mat-label>
+        <mat-select formControlName="category">
+          @for (option of categoryOptions; track option.value) {
+            <mat-option [value]="option.value">
+              <span class="flex items-center gap-2">
+                <span
+                  class="inline-block w-2.5 h-2.5 rounded-full"
+                  [ngClass]="option.colors.bg"
+                ></span>
+                <span>{{ option.label }}</span>
+              </span>
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="flex-1">
+        <mat-label>Lieu</mat-label>
+        <input matInput formControlName="location" placeholder="Lieu" />
+        <mat-icon matPrefix class="!text-gray-400 !mr-1">location_on</mat-icon>
+      </mat-form-field>
+    </div>
+
+    <!-- Description -->
+    <mat-form-field appearance="outline">
+      <mat-label>Description</mat-label>
+      <textarea
+        matInput
+        formControlName="description"
+        placeholder="Ajouter une description..."
+        rows="3"
+        cdkTextareaAutosize
+        cdkAutosizeMinRows="2"
+        cdkAutosizeMaxRows="5"
+      ></textarea>
+    </mat-form-field>
+
+    <!-- Recurrence -->
+    <div class="section-block">
+      <span class="section-label">Récurrence</span>
+      <app-recurrence-picker formControlName="recurrence"></app-recurrence-picker>
+    </div>
+
+    <!-- Linked Items -->
+    <div class="section-block">
+      <span class="section-label">Éléments liés</span>
+      <app-linked-items-picker formControlName="linkedItems"></app-linked-items-picker>
+    </div>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions class="!px-6 !pb-5 !pt-3 !flex !justify-end !gap-3">
+  <button mat-button (click)="onCancel()" [disabled]="isLoading()" class="!text-gray-600">
+    Annuler
+  </button>
+  <button
+    mat-flat-button
+    color="primary"
+    (click)="onSubmit()"
+    [disabled]="isLoading() || form.invalid"
+    class="!px-6"
+  >
+    @if (isLoading()) {
+      <mat-spinner diameter="18" class="!inline-block !mr-2"></mat-spinner>
+    }
+    {{ isEditMode ? 'Enregistrer' : 'Créer l\'événement' }}
+  </button>
+</mat-dialog-actions>

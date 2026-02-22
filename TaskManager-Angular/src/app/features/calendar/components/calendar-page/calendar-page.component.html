@@ -1,0 +1,106 @@
+<div class="calendar-page">
+  <!-- ================================================================== -->
+  <!-- Custom Toolbar                                                      -->
+  <!-- ================================================================== -->
+  <div class="calendar-toolbar">
+    <!-- Left: Navigation -->
+    <div class="calendar-toolbar__left">
+      <button
+        mat-icon-button
+        (click)="navigatePrev()"
+        aria-label="Période précédente"
+        class="calendar-toolbar__nav-btn">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        (click)="navigateNext()"
+        aria-label="Période suivante"
+        class="calendar-toolbar__nav-btn">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+      <button
+        mat-stroked-button
+        (click)="navigateToday()"
+        class="calendar-toolbar__today-btn">
+        Aujourd'hui
+      </button>
+    </div>
+
+    <!-- Center: Title -->
+    <h2 class="calendar-toolbar__title">{{ calendarTitle() }}</h2>
+
+    <!-- Right: View toggle + filter + create -->
+    <div class="calendar-toolbar__right">
+      <mat-button-toggle-group
+        [value]="currentView()"
+        (change)="changeView($event.value)"
+        class="calendar-toolbar__view-toggle"
+        aria-label="Vue du calendrier">
+        <mat-button-toggle value="dayGridMonth">Mois</mat-button-toggle>
+        <mat-button-toggle value="timeGridWeek">Semaine</mat-button-toggle>
+        <mat-button-toggle value="timeGridDay">Jour</mat-button-toggle>
+      </mat-button-toggle-group>
+
+      <!-- Project filter -->
+      <mat-form-field appearance="outline" class="calendar-toolbar__filter" subscriptSizing="dynamic">
+        <mat-label>Projet</mat-label>
+        <mat-select
+          [value]="selectedProjectId()"
+          (selectionChange)="onProjectFilter($event.value)"
+          placeholder="Tous les projets">
+          <mat-option [value]="null">Tous les projets</mat-option>
+          @for (project of projects(); track project.id) {
+            <mat-option [value]="project.id">{{ project.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Create event button -->
+      <button
+        mat-flat-button
+        color="primary"
+        (click)="openCreateDialog()"
+        class="calendar-toolbar__create-btn">
+        <mat-icon>add</mat-icon>
+        <span class="calendar-toolbar__create-label">Nouvel événement</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- Loading Bar                                                         -->
+  <!-- ================================================================== -->
+  @if (loading()) {
+    <div class="calendar-loading">
+      <div class="calendar-loading__bar"></div>
+    </div>
+  }
+
+  <!-- ================================================================== -->
+  <!-- Main Content: Calendar + Detail Panel                               -->
+  <!-- ================================================================== -->
+  <div class="calendar-content" [class.calendar-content--panel-open]="showDetailPanel()">
+    <!-- FullCalendar -->
+    <div class="calendar-wrapper">
+      <full-calendar
+        #calendar
+        [options]="calendarOptions()"
+        [events]="calendarEvents">
+      </full-calendar>
+    </div>
+
+    <!-- Detail Panel (slide-in from right) -->
+    @if (showDetailPanel() && selectedEvent()) {
+      <aside class="detail-panel" role="complementary" aria-label="Détail de l'événement">
+        <app-event-detail-panel
+          [event]="selectedEvent()!"
+          (close)="closeDetailPanel()"
+          (edit)="onEditEvent($event)"
+          (updated)="onEventUpdated($event)"
+          (deleted)="onEventDeleted($event)">
+        </app-event-detail-panel>
+      </aside>
+    }
+  </div>
+</div>

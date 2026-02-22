@@ -31,6 +31,11 @@
             Tâches
           </a>
         </li>
+        <li class="nav-item">
+          <a routerLink="/calendar" routerLinkActive="active" class="nav-link">
+            Calendrier
+          </a>
+        </li>
       </ul>
     </nav>
 
@@ -88,7 +93,12 @@
   <div class="mobile-nav" *ngIf="showMobileMenu()">
     <nav class="mobile-menu" role="navigation" aria-label="Navigation mobile">
       <ul class="mobile-nav-list">
-        <li><a href="/profile" class="mobile-nav-link" (click)="closeMobileMenu()">Profil</a></li>
+        <li><a routerLink="/dashboard" class="mobile-nav-link" (click)="closeMobileMenu()">Dashboard</a></li>
+        <li><a routerLink="/projects" class="mobile-nav-link" (click)="closeMobileMenu()">Projets</a></li>
+        <li><a routerLink="/documents" class="mobile-nav-link" (click)="closeMobileMenu()">Documents</a></li>
+        <li><a routerLink="/dashboard/tasks" class="mobile-nav-link" (click)="closeMobileMenu()">Tâches</a></li>
+        <li><a routerLink="/calendar" class="mobile-nav-link" (click)="closeMobileMenu()">Calendrier</a></li>
+        <li><a routerLink="/profile" class="mobile-nav-link" (click)="closeMobileMenu()">Profil</a></li>
       </ul>
     </nav>
   </div>

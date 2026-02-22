@@ -60,6 +60,12 @@ export const routes: Routes = [
     title: 'Modifier le Projet - Kōdo'
   },
   {
+    path: 'calendar',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/calendar/components/calendar-page/calendar-page.component').then(m => m.CalendarPageComponent),
+    title: 'Calendrier - Kōdo'
+  },
+  {
     path: 'profile',
     canActivate: [authGuard],
     loadComponent: () => import('./features/profile/pages/profile-page/profile-page.component').then(m => m.ProfilePageComponent),

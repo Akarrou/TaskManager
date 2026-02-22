@@ -1,0 +1,554 @@
+@use 'sass:color';
+@use '../../../../styles/variables' as v;
+@use '../../../../styles/mixins' as m;
+
+// ============================================================================
+// Calendar Page Layout
+// ============================================================================
+
+.calendar-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: calc(100vh - 70px); // Subtract header-nav height
+  background-color: v.$background-color-page;
+  font-family: v.$font-family-sans;
+}
+
+// ============================================================================
+// Toolbar
+// ============================================================================
+
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$space-4;
+  padding: v.$space-4 v.$space-6;
+  background-color: v.$background-color-form;
+  border-bottom: 1px solid v.$border-color-light;
+  flex-wrap: wrap;
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+  }
+
+  &__nav-btn {
+    color: v.$text-color-light;
+    transition: color v.$transition-duration v.$transition-timing-function;
+
+    &:hover {
+      color: v.$text-color-dark;
+    }
+  }
+
+  &__today-btn {
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-medium;
+    border-color: v.$border-color-medium;
+  }
+
+  &__title {
+    font-size: v.$font-size-xl;
+    font-weight: v.$font-weight-bold;
+    color: v.$text-color-dark;
+    text-transform: capitalize;
+    margin: 0;
+    min-width: 200px;
+    text-align: center;
+  }
+
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: v.$space-3;
+  }
+
+  &__view-toggle {
+    ::ng-deep .mat-button-toggle-appearance-standard {
+      font-size: v.$font-size-sm;
+      font-weight: v.$font-weight-medium;
+    }
+  }
+
+  &__filter {
+    width: 180px;
+
+    ::ng-deep .mat-mdc-form-field-infix {
+      min-height: 36px;
+      padding-top: 6px;
+      padding-bottom: 6px;
+    }
+
+    ::ng-deep .mat-mdc-text-field-wrapper {
+      height: 40px;
+    }
+
+    ::ng-deep .mat-mdc-form-field-flex {
+      height: 40px;
+      align-items: center;
+    }
+
+    ::ng-deep .mdc-notched-outline__notch {
+      border-right: none;
+    }
+  }
+
+  &__create-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: v.$space-1;
+    font-weight: v.$font-weight-medium;
+    white-space: nowrap;
+  }
+
+  &__create-label {
+    font-size: v.$font-size-sm;
+  }
+}
+
+// ============================================================================
+// Loading Bar
+// ============================================================================
+
+.calendar-loading {
+  height: 3px;
+  width: 100%;
+  overflow: hidden;
+  background-color: v.$primary-color-lightest;
+
+  &__bar {
+    height: 100%;
+    width: 30%;
+    background-color: v.$primary-color;
+    border-radius: v.$border-radius-full;
+    animation: loading-slide 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes loading-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+// ============================================================================
+// Main Content Area
+// ============================================================================
+
+.calendar-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.calendar-wrapper {
+  flex: 1;
+  min-width: 0;
+  padding: v.$space-4 v.$space-6;
+  overflow-y: auto;
+}
+
+// ============================================================================
+// Detail Panel (slide-in from right)
+// ============================================================================
+
+.detail-panel {
+  width: 380px;
+  min-width: 380px;
+  border-left: 1px solid v.$border-color-light;
+  background-color: v.$background-color-form;
+  overflow-y: auto;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.05);
+  animation: slide-in-right 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+// ============================================================================
+// FullCalendar Overrides (::ng-deep)
+// ============================================================================
+
+::ng-deep {
+  // -----------------------------------------------------------------------
+  // General Table / Container
+  // -----------------------------------------------------------------------
+  .fc {
+    font-family: v.$font-family-sans;
+    font-size: v.$font-size-sm;
+  }
+
+  .fc-theme-standard td,
+  .fc-theme-standard th {
+    border-color: v.$border-color-light;
+  }
+
+  .fc-theme-standard .fc-scrollgrid {
+    border: 1px solid v.$border-color-light;
+    border-radius: v.$border-radius-lg;
+    overflow: hidden;
+  }
+
+  // -----------------------------------------------------------------------
+  // Day Headers (Mon, Tue, etc.)
+  // -----------------------------------------------------------------------
+  .fc .fc-col-header-cell {
+    background-color: v.$background-color-light;
+    border-bottom: 1px solid v.$border-color-light;
+    padding: v.$space-2 0;
+  }
+
+  .fc .fc-col-header-cell-cushion {
+    font-size: v.$font-size-xs;
+    font-weight: v.$font-weight-bold;
+    color: v.$text-color-light;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    padding: v.$space-1 v.$space-2;
+  }
+
+  // -----------------------------------------------------------------------
+  // Day Cells
+  // -----------------------------------------------------------------------
+  .fc .fc-daygrid-day {
+    transition: background-color 0.15s ease;
+
+    &:hover {
+      background-color: rgba(v.$primary-color, 0.02);
+    }
+  }
+
+  .fc .fc-daygrid-day-number {
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-medium;
+    color: v.$text-color-dark;
+    text-decoration: none;
+    padding: v.$space-2;
+  }
+
+  // Today highlight
+  .fc .fc-day-today {
+    background-color: rgba(v.$primary-color, 0.04) !important;
+
+    .fc-daygrid-day-number {
+      background-color: v.$primary-color;
+      color: v.$text-color-inverted;
+      border-radius: v.$border-radius-full;
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: v.$font-weight-bold;
+    }
+  }
+
+  // Other month days
+  .fc .fc-day-other {
+    background-color: v.$background-color-light;
+
+    .fc-daygrid-day-number {
+      color: v.$text-color-disabled;
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Events
+  // -----------------------------------------------------------------------
+  .fc .fc-event {
+    border: none;
+    border-radius: v.$border-radius-sm;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: v.$font-weight-medium;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    border-left: 3px solid;
+    margin-bottom: 1px;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: v.$shadow-sm;
+    }
+  }
+
+  .fc .fc-event-title {
+    font-weight: v.$font-weight-medium;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .fc .fc-event-time {
+    font-size: 10px;
+    font-weight: v.$font-weight-regular;
+    opacity: 0.8;
+  }
+
+  // -----------------------------------------------------------------------
+  // Event Category Colors
+  // -----------------------------------------------------------------------
+
+  // Meeting (blue)
+  .fc-event.category-meeting {
+    background-color: #dbeafe;
+    border-left-color: #3b82f6;
+    color: #1e40af;
+  }
+
+  // Deadline (red)
+  .fc-event.category-deadline {
+    background-color: #fee2e2;
+    border-left-color: #ef4444;
+    color: #991b1b;
+  }
+
+  // Milestone (purple)
+  .fc-event.category-milestone {
+    background-color: #ede9fe;
+    border-left-color: #8b5cf6;
+    color: #5b21b6;
+  }
+
+  // Reminder (yellow)
+  .fc-event.category-reminder {
+    background-color: #fef9c3;
+    border-left-color: #eab308;
+    color: #854d0e;
+  }
+
+  // Personal (green)
+  .fc-event.category-personal {
+    background-color: #dcfce7;
+    border-left-color: #22c55e;
+    color: #166534;
+  }
+
+  // Other (gray)
+  .fc-event.category-other {
+    background-color: #f3f4f6;
+    border-left-color: #6b7280;
+    color: #374151;
+  }
+
+  // -----------------------------------------------------------------------
+  // Time Grid (Week / Day views)
+  // -----------------------------------------------------------------------
+  .fc .fc-timegrid-slot {
+    height: 48px;
+  }
+
+  .fc .fc-timegrid-slot-label-cushion {
+    font-size: v.$font-size-xs;
+    color: v.$text-color-light;
+    padding: 0 v.$space-2;
+  }
+
+  .fc .fc-timegrid-axis-cushion {
+    font-size: v.$font-size-xs;
+    color: v.$text-color-light;
+  }
+
+  // Now indicator (red line for current time)
+  .fc .fc-timegrid-now-indicator-line {
+    border-color: v.$error-color;
+    border-width: 2px;
+  }
+
+  .fc .fc-timegrid-now-indicator-arrow {
+    border-color: v.$error-color;
+    border-top-color: transparent;
+    border-bottom-color: transparent;
+  }
+
+  // Time grid events
+  .fc .fc-timegrid-event {
+    border-radius: v.$border-radius-sm;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+    .fc-event-main {
+      padding: v.$space-1 v.$space-2;
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Day Max Events ("+ N more" popover)
+  // -----------------------------------------------------------------------
+  .fc .fc-daygrid-more-link {
+    font-size: 11px;
+    font-weight: v.$font-weight-bold;
+    color: v.$primary-color;
+    padding: 2px v.$space-1;
+    border-radius: v.$border-radius-sm;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+      background-color: v.$primary-color-lightest;
+    }
+  }
+
+  .fc .fc-popover {
+    border-radius: v.$border-radius-lg;
+    box-shadow: v.$shadow-lg;
+    border: 1px solid v.$border-color-light;
+    overflow: hidden;
+  }
+
+  .fc .fc-popover-header {
+    background-color: v.$background-color-light;
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-bold;
+    padding: v.$space-2 v.$space-3;
+    border-bottom: 1px solid v.$border-color-light;
+  }
+
+  .fc .fc-popover-body {
+    padding: v.$space-2;
+  }
+
+  // -----------------------------------------------------------------------
+  // Selection Highlight
+  // -----------------------------------------------------------------------
+  .fc .fc-highlight {
+    background-color: rgba(v.$primary-color, 0.08);
+    border-radius: v.$border-radius-sm;
+  }
+
+  // -----------------------------------------------------------------------
+  // Drag & Drop Mirror
+  // -----------------------------------------------------------------------
+  .fc .fc-event-mirror {
+    opacity: 0.7;
+    box-shadow: v.$shadow-md;
+  }
+
+  // -----------------------------------------------------------------------
+  // Scrollbar styling inside the calendar
+  // -----------------------------------------------------------------------
+  .fc .fc-scroller::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .fc .fc-scroller::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .fc .fc-scroller::-webkit-scrollbar-thumb {
+    background-color: v.$border-color-medium;
+    border-radius: v.$border-radius-full;
+  }
+}
+
+// ============================================================================
+// Responsive
+// ============================================================================
+
+@media (max-width: v.$breakpoint-lg) {
+  .detail-panel {
+    position: fixed;
+    top: 70px; // Below header-nav
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    width: 380px;
+    min-width: 380px;
+  }
+
+  .calendar-content--panel-open .calendar-wrapper {
+    // Keep calendar full width; panel overlays
+    flex: 1;
+  }
+}
+
+@media (max-width: v.$breakpoint-md) {
+  .calendar-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: v.$space-3;
+    padding: v.$space-3 v.$space-4;
+
+    &__left {
+      justify-content: center;
+    }
+
+    &__title {
+      font-size: v.$font-size-lg;
+      min-width: auto;
+      order: -1;
+    }
+
+    &__right {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: v.$space-2;
+    }
+
+    &__filter {
+      width: 160px;
+    }
+
+    &__create-label {
+      display: none;
+    }
+  }
+
+  .calendar-wrapper {
+    padding: v.$space-2 v.$space-3;
+  }
+
+  .detail-panel {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  ::ng-deep {
+    .fc .fc-daygrid-day {
+      min-height: 60px;
+    }
+
+    .fc .fc-col-header-cell-cushion {
+      font-size: 10px;
+    }
+
+    .fc .fc-daygrid-day-number {
+      font-size: v.$font-size-xs;
+      padding: v.$space-1;
+    }
+
+    .fc .fc-event {
+      font-size: 10px;
+      padding: 1px 4px;
+    }
+  }
+}
+
+@media (max-width: v.$breakpoint-sm) {
+  .calendar-toolbar {
+    &__view-toggle {
+      ::ng-deep .mat-button-toggle-appearance-standard {
+        font-size: v.$font-size-xs;
+      }
+    }
+
+    &__filter {
+      width: 140px;
+    }
+  }
+}

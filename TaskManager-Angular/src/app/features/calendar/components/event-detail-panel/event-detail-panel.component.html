@@ -1,0 +1,145 @@
+@if (eventSignal(); as event) {
+  <div class="detail-panel-inner">
+
+    <!-- Header -->
+    <div class="panel-header">
+      <div class="flex-1 min-w-0">
+        @if (event.event_number) {
+          <span class="event-badge">#{{ event.event_number }}</span>
+        }
+        <h2 class="panel-title">{{ event.title }}</h2>
+      </div>
+      <button mat-icon-button (click)="onClose()" class="close-btn">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="panel-body">
+
+      <!-- Category -->
+      <div class="panel-section">
+        <mat-icon class="section-icon">label</mat-icon>
+        <mat-chip
+          [ngClass]="[categoryColors().bg, categoryColors().text, categoryColors().border]"
+          class="!text-xs !font-semibold !min-h-[24px] !px-3 !rounded-full border">
+          {{ categoryLabel() }}
+        </mat-chip>
+      </div>
+
+      <mat-divider></mat-divider>
+
+      <!-- Dates -->
+      <div class="panel-section">
+        <mat-icon class="section-icon">schedule</mat-icon>
+        <div class="section-content">
+          @if (isMultiDay()) {
+            <div class="date-range">
+              <div class="date-item">
+                <span class="date-label">Début</span>
+                <span class="date-value">{{ formattedStartDate() }}</span>
+              </div>
+              <div class="date-item">
+                <span class="date-label">Fin</span>
+                <span class="date-value">{{ formattedEndDate() }}</span>
+              </div>
+            </div>
+          } @else {
+            <span class="date-value">{{ formattedStartDate() }}</span>
+          }
+          @if (event.all_day) {
+            <span class="all-day-badge">
+              <mat-icon class="!text-[14px] !w-[14px] !h-[14px]">wb_sunny</mat-icon>
+              Journée entière
+            </span>
+          }
+        </div>
+      </div>
+
+      <!-- Location -->
+      @if (event.location) {
+        <mat-divider></mat-divider>
+        <div class="panel-section">
+          <mat-icon class="section-icon">location_on</mat-icon>
+          <div class="section-content">
+            <span class="section-value">{{ event.location }}</span>
+          </div>
+        </div>
+      }
+
+      <!-- Description -->
+      @if (event.description) {
+        <mat-divider></mat-divider>
+        <div class="panel-section">
+          <mat-icon class="section-icon">notes</mat-icon>
+          <div class="section-content">
+            <p class="description-text">{{ event.description }}</p>
+          </div>
+        </div>
+      }
+
+      <!-- Recurrence -->
+      @if (event.recurrence) {
+        <mat-divider></mat-divider>
+        <div class="panel-section">
+          <mat-icon class="section-icon">repeat</mat-icon>
+          <div class="section-content">
+            <span class="section-value">{{ event.recurrence | rruleToText }}</span>
+          </div>
+        </div>
+      }
+
+      <!-- Linked Items -->
+      @if (event.linked_items && event.linked_items.length > 0) {
+        <mat-divider></mat-divider>
+        <div class="panel-section panel-section--top">
+          <mat-icon class="section-icon">link</mat-icon>
+          <div class="section-content">
+            <span class="section-label">Éléments liés</span>
+            <div class="linked-chips">
+              @for (item of event.linked_items; track item.id) {
+                <mat-chip
+                  class="!text-xs !min-h-[26px] !px-2.5 !rounded-lg cursor-pointer hover:!bg-gray-200"
+                  (click)="onLinkedItemClick(item)">
+                  @switch (item.type) {
+                    @case ('task') {
+                      <mat-icon class="chip-icon text-green-600">task_alt</mat-icon>
+                    }
+                    @case ('document') {
+                      <mat-icon class="chip-icon text-blue-600">article</mat-icon>
+                    }
+                    @case ('database') {
+                      <mat-icon class="chip-icon text-purple-600">storage</mat-icon>
+                    }
+                  }
+                  {{ item.label }}
+                </mat-chip>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Source -->
+      <mat-divider></mat-divider>
+      <div class="panel-section">
+        <mat-icon class="section-icon">calendar_today</mat-icon>
+        <div class="section-content">
+          <span class="section-meta">{{ event.databaseName }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="panel-footer">
+      <button mat-stroked-button color="warn" (click)="onDelete()" class="!text-sm !flex-1">
+        <mat-icon class="!text-[18px] !w-[18px] !h-[18px]">delete</mat-icon>
+        Supprimer
+      </button>
+      <button mat-flat-button color="primary" (click)="onEdit()" class="!text-sm !flex-1">
+        <mat-icon class="!text-[18px] !w-[18px] !h-[18px]">edit</mat-icon>
+        Modifier
+      </button>
+    </div>
+  </div>
+}

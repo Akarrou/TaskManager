@@ -22,7 +22,7 @@ import { documentReducer } from '../../features/documents/store/document.reducer
 
 export const reducers: ActionReducerMap<AppState> = {
   projects: projectReducer,
-  documents: documentReducer
+  documents: documentReducer,
 };
 
 export const metaReducers: MetaReducer<AppState>[] = isDevMode() ? [logger] : [];

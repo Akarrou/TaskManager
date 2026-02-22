@@ -38,6 +38,17 @@ function setCorsHeaders(res) {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization');
 }
 // ============================================================================
+// HTML Helpers
+// ============================================================================
+function escapeHtml(str) {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+// ============================================================================
 // Login Page HTML
 // ============================================================================
 function getLoginPageHtml(params) {
@@ -193,13 +204,140 @@ function getLoginPageHtml(params) {
 </body>
 </html>`;
 }
-function escapeHtml(str) {
-    return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+function getSuccessPageHtml(params) {
+    const { redirectUrl, userEmail, delaySeconds } = params;
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="refresh" content="${delaySeconds};url=${escapeHtml(redirectUrl)}">
+  <title>Kodo MCP - Authorization Successful</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    .success-icon {
+      margin-bottom: 24px;
+    }
+    .success-icon svg {
+      width: 72px;
+      height: 72px;
+    }
+    h1 {
+      font-size: 24px;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    .user-email {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .countdown-text {
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    .progress-bar-container {
+      width: 100%;
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 3px;
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+    .btn-continue {
+      display: inline-block;
+      padding: 14px 32px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-continue:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+    .btn-continue:active {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="success-icon">
+      <svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="36" cy="36" r="36" fill="#dcfce7"/>
+        <circle cx="36" cy="36" r="28" fill="#bbf7d0"/>
+        <path d="M24 36l8 8 16-16" stroke="#16a34a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h1>Authorization Successful</h1>
+    <p class="user-email">Signed in as <strong>${escapeHtml(userEmail)}</strong></p>
+    <p class="countdown-text">Redirecting in <span id="countdown">${delaySeconds} seconds</span>...</p>
+    <div class="progress-bar-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <a href="${escapeHtml(redirectUrl)}" class="btn-continue">Continue Now</a>
+  </div>
+  <script>
+    (function() {
+      var total = ${delaySeconds} * 1000;
+      var start = Date.now();
+      var countdownEl = document.getElementById('countdown');
+      var progressBar = document.getElementById('progressBar');
+      var redirectUrl = ${JSON.stringify(redirectUrl).replace(/</g, '\\u003c')};
+
+      function tick() {
+        var elapsed = Date.now() - start;
+        var remaining = Math.max(0, total - elapsed);
+        var pct = Math.min(100, (elapsed / total) * 100);
+
+        var secs = Math.ceil(remaining / 1000);
+        countdownEl.textContent = secs > 0 ? secs + ' seconds' : '';
+        progressBar.style.width = pct + '%';
+
+        if (remaining <= 0) {
+          window.location.href = redirectUrl;
+        } else {
+          requestAnimationFrame(tick);
+        }
+      }
+
+      requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>`;
 }
 // ============================================================================
 // Route Handlers
@@ -326,10 +464,18 @@ export async function handleAuthorize(req, res) {
         if (state) {
             redirectUrl.searchParams.set('state', state);
         }
-        logger.info({ client_id, user_id: user.user_id }, 'OAuth authorization successful, redirecting');
-        // Redirect to callback
-        res.writeHead(302, { Location: redirectUrl.toString() });
-        res.end();
+        logger.info({ client_id, user_id: user.user_id }, 'OAuth authorization successful, showing success page');
+        // Show success page with delayed client-side redirect
+        const html = getSuccessPageHtml({
+            redirectUrl: redirectUrl.toString(),
+            userEmail: user.email,
+            delaySeconds: 3,
+        });
+        res.writeHead(200, {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'no-store',
+        });
+        res.end(html);
         return;
     }
     // Method not allowed

@@ -206,6 +206,18 @@ export class DatabaseFiltersComponent {
         'is_empty',
         'is_not_empty',
       ],
+      datetime: [
+        'equals',
+        'not_equals',
+        'greater_than',
+        'less_than',
+        'is_empty',
+        'is_not_empty',
+      ],
+      'linked-items': [
+        'is_empty',
+        'is_not_empty',
+      ],
     };
 
     return type ? operatorsByType[type] : [];
@@ -220,11 +232,13 @@ export class DatabaseFiltersComponent {
       number: 'equals',
       date: 'equals',
       'date-range': 'is_not_empty',
+      datetime: 'equals',
       checkbox: 'equals',
       select: 'equals',
       'multi-select': 'contains',
       url: 'contains',
       email: 'contains',
+      'linked-items': 'is_not_empty',
     };
 
     return defaultOperators[type];

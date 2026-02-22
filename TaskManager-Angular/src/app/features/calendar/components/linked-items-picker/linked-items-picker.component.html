@@ -1,0 +1,76 @@
+<!-- Selected Items as removable chips -->
+@if (selectedItems().length > 0) {
+  <div class="flex flex-wrap gap-2 mb-3">
+    @for (item of selectedItems(); track item.id) {
+      <mat-chip
+        class="!text-xs !min-h-[28px] !rounded-lg"
+        [removable]="!isDisabled()"
+        (removed)="removeItem(item)">
+        <mat-icon
+          class="!text-[14px] !w-[14px] !h-[14px] mr-1"
+          [ngClass]="getItemIconColor(item.type)">
+          {{ getItemIcon(item.type) }}
+        </mat-icon>
+        {{ item.label }}
+        @if (!isDisabled()) {
+          <mat-icon matChipRemove class="!text-[16px]">cancel</mat-icon>
+        }
+      </mat-chip>
+    }
+  </div>
+}
+
+<!-- Search Input with Autocomplete -->
+<mat-form-field appearance="outline" class="w-full">
+  <mat-label>Rechercher un element a lier</mat-label>
+  <input
+    matInput
+    [formControl]="searchControl"
+    [matAutocomplete]="auto"
+    placeholder="Tapez pour rechercher..." />
+  <mat-icon matPrefix class="!text-gray-400">search</mat-icon>
+  <mat-autocomplete #auto="matAutocomplete" class="linked-items-autocomplete">
+    <!-- Tab Bar inside autocomplete -->
+    @if (searchControl.value && searchControl.value.length >= 2) {
+      <div class="px-3 pt-2 pb-1 border-b border-gray-100">
+        <div class="flex gap-1">
+          @for (tab of tabs; track tab.value) {
+            <button
+              type="button"
+              class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors"
+              [class.bg-blue-100]="activeTab() === tab.value"
+              [class.text-blue-700]="activeTab() === tab.value"
+              [class.text-gray-500]="activeTab() !== tab.value"
+              [class.hover:bg-gray-100]="activeTab() !== tab.value"
+              (click)="$event.stopPropagation(); setActiveTab(tab.value)">
+              {{ tab.label }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Results -->
+    @if (filteredResults().length > 0) {
+      @for (result of filteredResults(); track result.id) {
+        <mat-option [value]="result.label" (onSelectionChange)="addItem(result)">
+          <div class="flex items-center gap-2">
+            <mat-icon
+              class="!text-[18px] !w-[18px] !h-[18px]"
+              [ngClass]="getItemIconColor(result.type)">
+              {{ getItemIcon(result.type) }}
+            </mat-icon>
+            <div class="flex flex-col min-w-0">
+              <span class="text-sm truncate">{{ result.label }}</span>
+              <span class="text-xs text-gray-400 capitalize">{{ result.type }}</span>
+            </div>
+          </div>
+        </mat-option>
+      }
+    } @else if (searchControl.value && searchControl.value.length >= 2) {
+      <mat-option disabled>
+        <span class="text-sm text-gray-400">Aucun resultat trouve</span>
+      </mat-option>
+    }
+  </mat-autocomplete>
+</mat-form-field>

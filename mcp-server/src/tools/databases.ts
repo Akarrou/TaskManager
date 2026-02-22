@@ -36,7 +36,7 @@ export function registerDatabaseTools(server: McpServer): void {
     `List all Notion-like databases in the workspace. Databases are structured tables with typed columns that can be embedded in documents or exist standalone. They support two types: "task" (with predefined columns for task management, used by task tools) and "generic" (custom columns). Returns simplified view with database_id, name, type, column_count, and document_id. Use get_database_schema for full column details. Related tools: create_database, get_database_rows, add_database_row.`,
     {
       document_id: z.string().uuid().optional().describe('Filter to databases embedded in a specific document.'),
-      type: z.enum(['task', 'generic']).optional().describe('Filter by database type: "task" for task management, "generic" for custom tables.'),
+      type: z.enum(['task', 'generic', 'event']).optional().describe('Filter by database type: "task" for task management, "event" for calendar events, "generic" for custom tables.'),
     },
     async ({ document_id, type }) => {
       try {
@@ -581,7 +581,7 @@ Returns the created database with its generated database_id. Related tools: add_
     {
       name: z.string().min(1).max(255).describe('Display name for the database.'),
       document_id: z.string().uuid().optional().describe('Parent document to embed the database in. Omit for standalone database.'),
-      type: z.enum(['task', 'generic']).optional().default('generic').describe('"task" creates predefined task columns. "generic" (default) starts empty.'),
+      type: z.enum(['task', 'generic', 'event']).optional().default('generic').describe('"task" creates predefined task columns. "event" creates predefined calendar event columns. "generic" (default) starts empty.'),
       columns: z.array(z.object({
         name: z.string().describe('Column display name.'),
         type: z.enum(['text', 'number', 'select', 'multi_select', 'date', 'checkbox', 'url', 'email', 'phone', 'formula', 'relation', 'rollup', 'created_time', 'last_edited_time', 'created_by', 'last_edited_by', 'person']).describe('Column data type.'),
@@ -691,12 +691,54 @@ Returns the created database with its generated database_id. Related tools: add_
           );
         }
 
+        // Variable pour stocker le startDateColumnId (utilisée pour event views)
+        let startDateColumnId: string | undefined;
+
+        // If event type, add default event columns (11 colonnes)
+        if (type === 'event' && (!columns || columns.length === 0)) {
+          const titleId = crypto.randomUUID();
+          const descriptionId = crypto.randomUUID();
+          const startDateId = crypto.randomUUID();
+          startDateColumnId = startDateId;
+          const endDateId = crypto.randomUUID();
+          const allDayId = crypto.randomUUID();
+          const categoryId = crypto.randomUUID();
+          const locationId = crypto.randomUUID();
+          const recurrenceId = crypto.randomUUID();
+          const linkedItemsId = crypto.randomUUID();
+          const projectId = crypto.randomUUID();
+          const eventNumberId = crypto.randomUUID();
+
+          columnsConfig.push(
+            { id: titleId, name: 'Title', type: 'text', visible: true, required: true, readonly: true, isNameColumn: true, order: 0, width: 200, color: 'blue' },
+            { id: descriptionId, name: 'Description', type: 'text', visible: true, readonly: true, order: 1, width: 300, color: 'green' },
+            { id: startDateId, name: 'Start Date', type: 'datetime', visible: true, readonly: true, order: 2, width: 200, color: 'orange', options: { dateFormat: 'DD/MM/YYYY HH:mm' } },
+            { id: endDateId, name: 'End Date', type: 'datetime', visible: true, readonly: true, order: 3, width: 200, color: 'orange', options: { dateFormat: 'DD/MM/YYYY HH:mm' } },
+            { id: allDayId, name: 'All Day', type: 'checkbox', visible: true, readonly: true, order: 4, width: 80, color: 'yellow' },
+            { id: categoryId, name: 'Category', type: 'select', visible: true, readonly: true, order: 5, width: 180, color: 'purple', options: {
+              choices: [
+                { id: 'meeting', label: 'Réunion', color: 'bg-blue-200' },
+                { id: 'deadline', label: 'Échéance', color: 'bg-red-200' },
+                { id: 'milestone', label: 'Jalon', color: 'bg-purple-200' },
+                { id: 'reminder', label: 'Rappel', color: 'bg-yellow-200' },
+                { id: 'personal', label: 'Personnel', color: 'bg-green-200' },
+                { id: 'other', label: 'Autre', color: 'bg-gray-200' },
+              ],
+            }},
+            { id: locationId, name: 'Location', type: 'text', visible: true, order: 6, width: 200, color: 'pink' },
+            { id: recurrenceId, name: 'Recurrence', type: 'text', visible: false, order: 7, width: 200, color: 'gray' },
+            { id: linkedItemsId, name: 'Linked Items', type: 'linked-items', visible: true, order: 8, width: 300, color: 'blue' },
+            { id: projectId, name: 'Project ID', type: 'text', visible: false, order: 9, width: 200, color: 'pink' },
+            { id: eventNumberId, name: 'Event Number', type: 'text', visible: true, readonly: true, required: false, order: 10, width: 120, color: 'gray' },
+          );
+        }
+
         // Build config with views
         const config: Record<string, unknown> = {
           name,
           type,
           columns: columnsConfig,
-          defaultView: 'table',
+          defaultView: type === 'event' ? 'calendar' : 'table',
         };
 
         if (type === 'task' && statusColumnId) {
@@ -706,6 +748,11 @@ Returns the created database with its generated database_id. Related tools: add_
             { id: 'view-calendar', name: 'Vue calendrier', type: 'calendar', config: {} },
           ];
           config.pinnedColumns = [statusColumnId];
+        } else if (type === 'event') {
+          config.views = [
+            { id: 'view-calendar', name: 'Vue calendrier', type: 'calendar', config: { calendarDateColumnId: startDateColumnId } },
+            { id: 'view-table', name: 'Vue tableau', type: 'table', config: {} },
+          ];
         } else {
           config.views = [
             { id: 'view-table', name: 'Vue tableau', type: 'table', config: {} },

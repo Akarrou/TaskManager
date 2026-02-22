@@ -17,11 +17,13 @@ export type ColumnType =
   | 'number'
   | 'date'
   | 'date-range'
+  | 'datetime'
   | 'checkbox'
   | 'select'
   | 'multi-select'
   | 'url'
-  | 'email';
+  | 'email'
+  | 'linked-items';
 
 /**
  * Predefined colors for pinned properties
@@ -71,6 +73,16 @@ export interface ColumnOptions {
 
   // For date-range columns
   includeTime?: boolean; // Whether to include time in the date range
+}
+
+/**
+ * Value for linked-items column type
+ */
+export interface LinkedItem {
+  type: 'task' | 'document' | 'database';
+  id: string;
+  databaseId?: string;
+  label: string;
 }
 
 /**
@@ -206,7 +218,7 @@ export interface DatabaseConfig {
 /**
  * Cell value types
  */
-export type CellValue = string | number | boolean | string[] | DateRangeValue | null;
+export type CellValue = string | number | boolean | string[] | DateRangeValue | LinkedItem[] | null;
 
 /**
  * Database row (stored in PostgreSQL table)
@@ -495,11 +507,13 @@ export const COLUMN_TYPE_TO_PG_TYPE: Record<ColumnType, string> = {
   number: 'NUMERIC',
   date: 'DATE',
   'date-range': 'JSONB',
+  datetime: 'TIMESTAMPTZ',
   checkbox: 'BOOLEAN',
   select: 'TEXT',
   'multi-select': 'TEXT[]',
   url: 'TEXT',
   email: 'TEXT',
+  'linked-items': 'JSONB',
 };
 
 /**
@@ -510,11 +524,13 @@ export const DEFAULT_COLUMN_WIDTHS: Record<ColumnType, number> = {
   number: 120,
   date: 150,
   'date-range': 250,
+  datetime: 200,
   checkbox: 80,
   select: 180,
   'multi-select': 220,
   url: 250,
   email: 200,
+  'linked-items': 300,
 };
 
 // =====================================================================
@@ -560,7 +576,7 @@ export const DEFAULT_DATABASE_CONFIG: DatabaseConfig = {
  * Extended database configuration with optional type marker
  */
 export interface DatabaseConfigExtended extends DatabaseConfig {
-  type?: 'generic' | 'task';
+  type?: 'generic' | 'task' | 'event';
 }
 
 /**
@@ -802,5 +818,177 @@ export function createTaskDatabaseConfig(name: string = 'Task Database'): Databa
     ],
     defaultView: 'table',
     pinnedColumns: statusColumnId ? [statusColumnId] : [], // Pin Status column by default
+  };
+}
+
+// =====================================================================
+// Event Database Template
+// =====================================================================
+
+/**
+ * Pre-defined columns for Event Databases (Calendar feature)
+ * Creates a database with all standard event/calendar fields
+ */
+export function createEventDatabaseTemplateColumns(): DatabaseColumn[] {
+  return [
+    {
+      id: crypto.randomUUID(),
+      name: 'Title',
+      type: 'text',
+      visible: true,
+      required: true,
+      readonly: true,
+      isNameColumn: true,
+      order: 0,
+      width: DEFAULT_COLUMN_WIDTHS.text,
+      color: 'blue',
+    },
+    {
+      id: crypto.randomUUID(),
+      name: 'Description',
+      type: 'text',
+      visible: true,
+      readonly: true,
+      order: 1,
+      width: 300,
+      color: 'green',
+    },
+    {
+      id: crypto.randomUUID(),
+      name: 'Start Date',
+      type: 'datetime',
+      visible: true,
+      readonly: true,
+      order: 2,
+      width: DEFAULT_COLUMN_WIDTHS.datetime,
+      color: 'orange',
+      options: {
+        dateFormat: 'DD/MM/YYYY HH:mm',
+      },
+    },
+    {
+      id: crypto.randomUUID(),
+      name: 'End Date',
+      type: 'datetime',
+      visible: true,
+      readonly: true,
+      order: 3,
+      width: DEFAULT_COLUMN_WIDTHS.datetime,
+      color: 'orange',
+      options: {
+        dateFormat: 'DD/MM/YYYY HH:mm',
+      },
+    },
+    {
+      id: crypto.randomUUID(),
+      name: 'All Day',
+      type: 'checkbox',
+      visible: true,
+      readonly: true,
+      order: 4,
+      width: DEFAULT_COLUMN_WIDTHS.checkbox,
+      color: 'yellow',
+    },
+    {
+      id: crypto.randomUUID(),
+      name: 'Category',
+      type: 'select',
+      visible: true,
+      readonly: true,
+      order: 5,
+      width: DEFAULT_COLUMN_WIDTHS.select,
+      color: 'purple',
+      options: {
+        choices: [
+          { id: 'meeting', label: 'Réunion', color: 'bg-blue-200' },
+          { id: 'deadline', label: 'Échéance', color: 'bg-red-200' },
+          { id: 'milestone', label: 'Jalon', color: 'bg-purple-200' },
+          { id: 'reminder', label: 'Rappel', color: 'bg-yellow-200' },
+          { id: 'personal', label: 'Personnel', color: 'bg-green-200' },
+          { id: 'other', label: 'Autre', color: 'bg-gray-200' },
+        ],
+      },
+    },
+    {
+      id: crypto.randomUUID(),
+      name: 'Location',
+      type: 'text',
+      visible: true,
+      order: 6,
+      width: DEFAULT_COLUMN_WIDTHS.text,
+      color: 'pink',
+    },
+    {
+      id: crypto.randomUUID(),
+      name: 'Recurrence',
+      type: 'text',
+      visible: false,
+      order: 7,
+      width: DEFAULT_COLUMN_WIDTHS.text,
+      color: 'gray',
+    },
+    {
+      id: crypto.randomUUID(),
+      name: 'Linked Items',
+      type: 'linked-items',
+      visible: true,
+      order: 8,
+      width: DEFAULT_COLUMN_WIDTHS['linked-items'],
+      color: 'blue',
+    },
+    {
+      id: crypto.randomUUID(),
+      name: 'Project ID',
+      type: 'text',
+      visible: false,
+      order: 9,
+      width: DEFAULT_COLUMN_WIDTHS.text,
+      color: 'pink',
+    },
+    {
+      id: crypto.randomUUID(),
+      name: 'Event Number',
+      type: 'text',
+      visible: true,
+      readonly: true,
+      required: false,
+      order: 10,
+      width: 120,
+      color: 'gray',
+    },
+  ];
+}
+
+/**
+ * Creates a pre-configured event database configuration
+ * @param name - Optional custom name for the event database
+ * @returns Complete database configuration with event-specific columns and views
+ */
+export function createEventDatabaseConfig(name: string = 'Event Database'): DatabaseConfigExtended {
+  const columns = createEventDatabaseTemplateColumns();
+  const startDateColumnId = columns.find(col => col.name === 'Start Date')?.id;
+  const endDateColumnId = columns.find(col => col.name === 'End Date')?.id;
+
+  return {
+    name,
+    type: 'event',
+    columns,
+    views: [
+      {
+        id: 'view-calendar',
+        name: 'Vue calendrier',
+        type: 'calendar',
+        config: {
+          calendarDateColumnId: startDateColumnId,
+        },
+      },
+      {
+        id: 'view-table',
+        name: 'Vue tableau',
+        type: 'table',
+        config: {},
+      },
+    ],
+    defaultView: 'calendar',
   };
 }
