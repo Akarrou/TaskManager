@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ElementRef, HostListener, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ElementRef, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -35,7 +35,7 @@ const COLOR_PALETTE = [
   templateUrl: './accordion-settings-popover.component.html',
   styleUrl: './accordion-settings-popover.component.scss',
 })
-export class AccordionSettingsPopoverComponent implements OnInit {
+export class AccordionSettingsPopoverComponent implements OnInit, OnDestroy {
   @Input() currentIcon = 'description';
   @Input() currentIconColor = '#3b82f6';
   @Input() currentTitleColor = '#1f2937';
@@ -52,12 +52,33 @@ export class AccordionSettingsPopoverComponent implements OnInit {
   selectedIconColor = '#3b82f6';
   selectedTitleColor = '#1f2937';
 
-  constructor(private elementRef: ElementRef) {}
+  private active = false;
+  private onDocumentMouseDown = (event: MouseEvent) => {
+    if (!this.active) return;
+    if (!this.elementRef.nativeElement.contains(event.target)) {
+      this.ngZone.run(() => this.closePopover.emit());
+    }
+  };
+
+  constructor(
+    private elementRef: ElementRef,
+    private ngZone: NgZone,
+  ) {}
 
   ngOnInit() {
     this.selectedIcon = this.currentIcon;
     this.selectedIconColor = this.currentIconColor;
     this.selectedTitleColor = this.currentTitleColor;
+
+    // Delay activation so the opening click doesn't immediately close the popover
+    setTimeout(() => {
+      this.active = true;
+      document.addEventListener('mousedown', this.onDocumentMouseDown, true);
+    }, 100);
+  }
+
+  ngOnDestroy() {
+    document.removeEventListener('mousedown', this.onDocumentMouseDown, true);
   }
 
   selectIcon(icon: string) {
@@ -81,12 +102,5 @@ export class AccordionSettingsPopoverComponent implements OnInit {
       iconColor: this.selectedIconColor,
       titleColor: this.selectedTitleColor,
     });
-  }
-
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent) {
-    if (!this.elementRef.nativeElement.contains(event.target)) {
-      this.closePopover.emit();
-    }
   }
 }

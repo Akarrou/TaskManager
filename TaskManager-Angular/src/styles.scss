@@ -713,19 +713,18 @@ tiptap-editor .spreadsheet-container,
   margin-bottom: 0;
 }
 
-// Collapsed state
-.ProseMirror .tiptap-accordion-item.accordion-collapsed {
-  > .tiptap-accordion-title .accordion-toggle-icon {
-    transform: rotate(-90deg);
-  }
+// Collapsed state — driven by data-collapsed attribute on AccordionTitle node.
+// Uses CSS adjacent sibling selector to hide the following AccordionContent.
+.ProseMirror .tiptap-accordion-title[data-collapsed="true"] + .tiptap-accordion-content {
+  max-height: 0 !important;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+  overflow: hidden;
+}
 
-  > .tiptap-accordion-content {
-    max-height: 0 !important;
-    padding-top: 0;
-    padding-bottom: 0;
-    opacity: 0;
-    overflow: hidden;
-  }
+.ProseMirror .tiptap-accordion-title[data-collapsed="true"] .accordion-toggle-icon {
+  transform: rotate(-90deg);
 }
 
 // Add button at the bottom of the group

@@ -1,5 +1,4 @@
 import { Node, mergeAttributes } from '@tiptap/core';
-import { Plugin, PluginKey } from '@tiptap/pm/state';
 
 // ============================================================================
 // Type declarations
@@ -13,16 +12,10 @@ declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     accordionGroup: {
       insertAccordion: (items?: number) => ReturnType;
-      addAccordionItem: () => ReturnType;
+      addAccordionItemAt: (groupPos: number) => ReturnType;
     };
   }
 }
-
-// ============================================================================
-// Plugin key for accordion interactions
-// ============================================================================
-
-const accordionPluginKey = new PluginKey('accordionPlugin');
 
 // ============================================================================
 // AccordionGroup Node
@@ -61,22 +54,70 @@ export const AccordionGroup = Node.create<AccordionGroupOptions>({
         class: 'tiptap-accordion-group',
       }),
       0,
-      [
-        'button',
-        {
-          'data-accordion-add': 'true',
-          class: 'accordion-add-button',
-          contenteditable: 'false',
-          type: 'button',
-        },
-        [
-          'span',
-          { class: 'material-icons-outlined accordion-add-icon' },
-          'add',
-        ],
-        ['span', {}, 'Ajouter un élément'],
-      ],
     ];
+  },
+
+  addNodeView() {
+    const editor = this.editor;
+
+    return ({ HTMLAttributes, getPos }) => {
+      const dom = document.createElement('div');
+      dom.setAttribute('data-type', 'accordion-group');
+      dom.classList.add('tiptap-accordion-group');
+
+      const mergedAttrs = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes);
+      Object.entries(mergedAttrs).forEach(([key, value]) => {
+        if (key === 'class') {
+          String(value).split(' ').filter(Boolean).forEach(cls => dom.classList.add(cls));
+        } else if (value !== null && value !== undefined) {
+          dom.setAttribute(key, String(value));
+        }
+      });
+
+      // Content area
+      const contentDOM = document.createElement('div');
+      contentDOM.classList.add('accordion-group-content');
+      dom.appendChild(contentDOM);
+
+      // Add button
+      const addButton = document.createElement('button');
+      addButton.classList.add('accordion-add-button');
+      addButton.setAttribute('type', 'button');
+      addButton.contentEditable = 'false';
+
+      const addIcon = document.createElement('span');
+      addIcon.classList.add('material-icons-outlined', 'accordion-add-icon');
+      addIcon.textContent = 'add';
+      addButton.appendChild(addIcon);
+
+      const addLabel = document.createElement('span');
+      addLabel.textContent = 'Ajouter un élément';
+      addButton.appendChild(addLabel);
+
+      dom.appendChild(addButton);
+
+      addButton.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      });
+
+      addButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        const pos = typeof getPos === 'function' ? getPos() : undefined;
+        if (pos !== undefined) {
+          editor.commands.addAccordionItemAt(pos);
+        }
+      });
+
+      return {
+        dom,
+        contentDOM,
+        update: (updatedNode) => {
+          return updatedNode.type.name === 'accordionGroup';
+        },
+      };
+    };
   },
 
   addCommands() {
@@ -86,7 +127,7 @@ export const AccordionGroup = Node.create<AccordionGroupOptions>({
         ({ chain, state }) => {
           const { $from } = state.selection;
 
-          // Prevent nesting accordions inside accordions
+          // Prevent nesting
           for (let d = $from.depth; d > 0; d--) {
             const node = $from.node(d);
             if (
@@ -124,139 +165,38 @@ export const AccordionGroup = Node.create<AccordionGroupOptions>({
             .run();
         },
 
-      addAccordionItem:
-        () =>
-        ({ state, chain }) => {
-          const { $from } = state.selection;
-
-          // Find the accordionGroup ancestor
-          let groupPos = -1;
-          let groupNode = null;
-          for (let d = $from.depth; d > 0; d--) {
-            const node = $from.node(d);
-            if (node.type.name === 'accordionGroup') {
-              groupPos = $from.before(d);
-              groupNode = node;
-              break;
-            }
-          }
-
-          if (groupPos === -1 || !groupNode) {
+      addAccordionItemAt:
+        (groupPos: number) =>
+        ({ state, tr, dispatch }) => {
+          const groupNode = state.doc.nodeAt(groupPos);
+          if (!groupNode || groupNode.type.name !== 'accordionGroup') {
             return false;
           }
 
-          // Insert new item at the end of the group
           const insertPos = groupPos + groupNode.nodeSize - 1;
 
-          return chain()
-            .command(({ tr }) => {
-              const newItem = state.schema.nodes['accordionItem'].create(
-                null,
-                [
-                  state.schema.nodes['accordionTitle'].create(),
-                  state.schema.nodes['accordionContent'].create(null, [
-                    state.schema.nodes['paragraph'].create(),
-                  ]),
-                ]
-              );
-              tr.insert(insertPos, newItem);
-              return true;
-            })
-            .run();
+          const newItem = state.schema.nodes['accordionItem'].create(
+            null,
+            [
+              state.schema.nodes['accordionTitle'].create(),
+              state.schema.nodes['accordionContent'].create(null, [
+                state.schema.nodes['paragraph'].create(),
+              ]),
+            ]
+          );
+
+          if (dispatch) {
+            tr.insert(insertPos, newItem);
+            dispatch(tr);
+          }
+          return true;
         },
     };
-  },
-
-  addProseMirrorPlugins() {
-    const editor = this.editor;
-
-    return [
-      new Plugin({
-        key: accordionPluginKey,
-        props: {
-          handleClickOn(view, pos, node, nodePos, event) {
-            const target = event.target as HTMLElement;
-
-            // Handle click on add button
-            if (
-              target.closest('[data-accordion-add]')
-            ) {
-              event.preventDefault();
-              event.stopPropagation();
-              editor.commands.addAccordionItem();
-              return true;
-            }
-
-            // Handle click on toggle chevron
-            if (target.closest('.accordion-toggle-icon')) {
-              event.preventDefault();
-              event.stopPropagation();
-              const itemEl = target.closest('.tiptap-accordion-item');
-              if (itemEl) {
-                itemEl.classList.toggle('accordion-collapsed');
-              }
-              return true;
-            }
-
-            // Handle click on accordion title bar (but not on editable text)
-            if (
-              target.closest('.tiptap-accordion-title') &&
-              !target.closest('.accordion-title-text')
-            ) {
-              // If clicking on the icon badge, emit event for popover
-              if (target.closest('.accordion-icon')) {
-                event.preventDefault();
-                event.stopPropagation();
-
-                // Find the accordionTitle node position
-                const $pos = view.state.doc.resolve(pos);
-                let titlePos = -1;
-                for (let d = $pos.depth; d > 0; d--) {
-                  if ($pos.node(d).type.name === 'accordionTitle') {
-                    titlePos = $pos.before(d);
-                    break;
-                  }
-                }
-
-                // Dispatch custom event for Angular component to handle
-                const iconEl = target.closest('.accordion-icon') as HTMLElement;
-                const rect = iconEl.getBoundingClientRect();
-                const customEvent = new CustomEvent('accordion-icon-edit', {
-                  bubbles: true,
-                  detail: {
-                    pos: titlePos,
-                    rect: {
-                      top: rect.top,
-                      left: rect.left,
-                      bottom: rect.bottom,
-                      right: rect.right,
-                    },
-                  },
-                });
-                view.dom.dispatchEvent(customEvent);
-                return true;
-              }
-
-              // Otherwise toggle collapse
-              event.preventDefault();
-              event.stopPropagation();
-              const itemEl = target.closest('.tiptap-accordion-item');
-              if (itemEl) {
-                itemEl.classList.toggle('accordion-collapsed');
-              }
-              return true;
-            }
-
-            return false;
-          },
-        },
-      }),
-    ];
   },
 });
 
 // ============================================================================
-// AccordionItem Node
+// AccordionItem Node — plain renderHTML (no nodeView)
 // ============================================================================
 
 export const AccordionItem = Node.create({
@@ -288,6 +228,9 @@ export const AccordionItem = Node.create({
 
 // ============================================================================
 // AccordionTitle Node
+// Collapsed state is stored as a ProseMirror node ATTRIBUTE so it survives
+// nodeView destroy/recreate cycles. CSS handles the visual collapse via the
+// adjacent sibling selector: [data-collapsed="true"] + .tiptap-accordion-content
 // ============================================================================
 
 export const AccordionTitle = Node.create({
@@ -320,6 +263,13 @@ export const AccordionTitle = Node.create({
           'data-title-color': attributes['titleColor'],
         }),
       },
+      collapsed: {
+        default: false,
+        parseHTML: (element) => element.getAttribute('data-collapsed') === 'true',
+        renderHTML: (attributes) => ({
+          'data-collapsed': attributes['collapsed'] ? 'true' : 'false',
+        }),
+      },
     };
   },
 
@@ -331,46 +281,153 @@ export const AccordionTitle = Node.create({
     ];
   },
 
-  renderHTML({ HTMLAttributes, node }) {
-    const icon = node.attrs['icon'] || 'description';
-    const iconColor = node.attrs['iconColor'] || '#3b82f6';
-    const titleColor = node.attrs['titleColor'] || '#1f2937';
-
+  renderHTML({ HTMLAttributes }) {
     return [
       'div',
       mergeAttributes(HTMLAttributes, {
         'data-type': 'accordion-title',
         class: 'tiptap-accordion-title',
       }),
-      // Chevron toggle (non-editable)
-      [
-        'span',
-        {
-          class: 'accordion-toggle-icon material-icons-outlined',
-          contenteditable: 'false',
-        },
-        'expand_more',
-      ],
-      // Icon badge (non-editable)
-      [
-        'span',
-        {
-          class: 'accordion-icon',
-          contenteditable: 'false',
-          style: `background-color: ${iconColor}20; color: ${iconColor};`,
-        },
-        ['span', { class: 'material-icons-outlined' }, icon],
-      ],
-      // Editable title text (content hole)
-      [
-        'span',
-        {
-          class: 'accordion-title-text',
-          style: `color: ${titleColor};`,
-        },
-        0,
-      ],
+      0,
     ];
+  },
+
+  addNodeView() {
+    return ({ node, HTMLAttributes, getPos, editor: nodeEditor }) => {
+      // Read collapsed state from the node attribute (persists across recreations)
+      const collapsed = !!node.attrs['collapsed'];
+
+      const dom = document.createElement('div');
+      dom.setAttribute('data-type', 'accordion-title');
+      dom.classList.add('tiptap-accordion-title');
+      dom.setAttribute('data-collapsed', collapsed ? 'true' : 'false');
+
+      const mergedAttrs = mergeAttributes(HTMLAttributes);
+      Object.entries(mergedAttrs).forEach(([key, value]) => {
+        if (key === 'class') {
+          String(value).split(' ').filter(Boolean).forEach(cls => dom.classList.add(cls));
+        } else if (value !== null && value !== undefined) {
+          dom.setAttribute(key, String(value));
+        }
+      });
+
+      const icon = node.attrs['icon'] || 'description';
+      const iconColor = node.attrs['iconColor'] || '#3b82f6';
+      const titleColor = node.attrs['titleColor'] || '#1f2937';
+
+      // Chevron toggle
+      const chevron = document.createElement('span');
+      chevron.classList.add('accordion-toggle-icon', 'material-icons-outlined');
+      chevron.contentEditable = 'false';
+      chevron.textContent = 'expand_more';
+      chevron.style.transform = collapsed ? 'rotate(-90deg)' : '';
+      dom.appendChild(chevron);
+
+      // Prevent ProseMirror from handling mousedown on chevron
+      chevron.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      });
+
+      // Toggle collapse via ProseMirror transaction (state stored in document)
+      chevron.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        const pos = typeof getPos === 'function' ? getPos() : undefined;
+        if (pos !== undefined) {
+          const currentNode = nodeEditor.state.doc.nodeAt(pos);
+          if (currentNode) {
+            const currentCollapsed = !!currentNode.attrs['collapsed'];
+            nodeEditor.view.dispatch(
+              nodeEditor.state.tr.setNodeMarkup(pos, undefined, {
+                ...currentNode.attrs,
+                collapsed: !currentCollapsed,
+              })
+            );
+          }
+        }
+      });
+
+      // Icon badge
+      const iconBadge = document.createElement('span');
+      iconBadge.classList.add('accordion-icon');
+      iconBadge.contentEditable = 'false';
+      iconBadge.style.backgroundColor = `${iconColor}20`;
+      iconBadge.style.color = iconColor;
+
+      const iconInner = document.createElement('span');
+      iconInner.classList.add('material-icons-outlined');
+      iconInner.textContent = icon;
+      iconBadge.appendChild(iconInner);
+      dom.appendChild(iconBadge);
+
+      // Prevent ProseMirror from handling mousedown on icon badge
+      iconBadge.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      });
+
+      // Open popover on click
+      iconBadge.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        const pos = typeof getPos === 'function' ? getPos() : undefined;
+        const rect = iconBadge.getBoundingClientRect();
+
+        const customEvent = new CustomEvent('accordion-icon-edit', {
+          bubbles: true,
+          detail: {
+            pos: pos !== undefined ? pos : -1,
+            rect: {
+              top: rect.top,
+              left: rect.left,
+              bottom: rect.bottom,
+              right: rect.right,
+            },
+          },
+        });
+        nodeEditor.view.dom.dispatchEvent(customEvent);
+      });
+
+      // Editable title text (content hole)
+      const contentDOM = document.createElement('span');
+      contentDOM.classList.add('accordion-title-text');
+      contentDOM.style.color = titleColor;
+      dom.appendChild(contentDOM);
+
+      return {
+        dom,
+        contentDOM,
+        update: (updatedNode) => {
+          if (updatedNode.type.name !== 'accordionTitle') {
+            return false;
+          }
+
+          const newCollapsed = !!updatedNode.attrs['collapsed'];
+          const newIcon = updatedNode.attrs['icon'] || 'description';
+          const newIconColor = updatedNode.attrs['iconColor'] || '#3b82f6';
+          const newTitleColor = updatedNode.attrs['titleColor'] || '#1f2937';
+
+          // Update collapsed visual state
+          dom.setAttribute('data-collapsed', newCollapsed ? 'true' : 'false');
+          chevron.style.transform = newCollapsed ? 'rotate(-90deg)' : '';
+
+          // Update icon/color attrs
+          iconInner.textContent = newIcon;
+          iconBadge.style.backgroundColor = `${newIconColor}20`;
+          iconBadge.style.color = newIconColor;
+          contentDOM.style.color = newTitleColor;
+
+          dom.setAttribute('data-icon', newIcon);
+          dom.setAttribute('data-icon-color', newIconColor);
+          dom.setAttribute('data-title-color', newTitleColor);
+
+          return true;
+        },
+        destroy: () => {},
+      };
+    };
   },
 });
 
