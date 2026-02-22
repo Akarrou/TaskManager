@@ -27,6 +27,7 @@ interface FabState {
   saveCallback: (() => void | Promise<void>) | null;
   navigateCallback: ((route: string) => boolean | Promise<boolean>) | null;
   isDirtySignal: Signal<boolean> | null;
+  hidden: boolean;
 }
 
 /**
@@ -65,7 +66,8 @@ export const FabStore = signalStore(
     currentPageId: null,
     saveCallback: null,
     navigateCallback: null,
-    isDirtySignal: null
+    isDirtySignal: null,
+    hidden: false
   }),
 
   // Computed for reactive isDirty (reads from signal if provided, else from context)
@@ -150,6 +152,16 @@ export const FabStore = signalStore(
         return await callback(route);
       }
       return true;
+    },
+
+    /**
+     * Contrôle la visibilité du FAB
+     *
+     * Permet aux composants de masquer/afficher le FAB
+     * (ex: panneau de détail calendrier ouvert)
+     */
+    setHidden(hidden: boolean): void {
+      patchState(store, { hidden });
     }
   }))
 );

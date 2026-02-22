@@ -1,5 +1,6 @@
-<div class="navigation-fab-container" 
+<div class="navigation-fab-container"
      [class]="'fab-position-' + position"
+     [class.fab-hidden]="hidden()"
      [class.fab-size-small]="size === 'small'"
      [class.fab-size-medium]="size === 'medium'"
      [class.fab-size-large]="size === 'large'">

@@ -43,6 +43,7 @@ export class NavigationFabComponent implements OnInit {
   // Utiliser signal inputs pour la réactivité
   context = input<NavigationContext>({});
   customActions = input<NavigationAction[]>([]);
+  hidden = input(false);
   @Input() position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' = 'bottom-right';
   @Input() size: 'small' | 'medium' | 'large' = 'medium';
 

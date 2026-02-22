@@ -1,6 +1,7 @@
-import { Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, computed, inject, OnInit, ViewChild } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, computed, inject, OnInit, OnDestroy, ViewChild, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { trigger, transition, style, animate } from '@angular/animations';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
@@ -25,6 +26,7 @@ import { of } from 'rxjs';
 import { DatabaseService } from '../../../documents/services/database.service';
 import { DocumentService } from '../../../documents/services/document.service';
 import { LinkedItem } from '../../../documents/models/database.model';
+import { FabStore } from '../../../../core/stores/fab.store';
 
 @Component({
   selector: 'app-calendar-page',
@@ -40,8 +42,19 @@ import { LinkedItem } from '../../../documents/models/database.model';
   templateUrl: './calendar-page.component.html',
   styleUrls: ['./calendar-page.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  animations: [
+    trigger('slidePanel', [
+      transition(':enter', [
+        style({ transform: 'translateX(100%)', opacity: 0 }),
+        animate('300ms cubic-bezier(0.4, 0, 0.2, 1)', style({ transform: 'translateX(0)', opacity: 1 })),
+      ]),
+      transition(':leave', [
+        animate('300ms cubic-bezier(0.4, 0, 0.2, 1)', style({ transform: 'translateX(100%)', opacity: 0 })),
+      ]),
+    ]),
+  ],
 })
-export class CalendarPageComponent implements OnInit {
+export class CalendarPageComponent implements OnInit, OnDestroy {
   private calendarStore = inject(CalendarStore);
   private cdr = inject(ChangeDetectorRef);
   private dialog = inject(MatDialog);
@@ -50,6 +63,12 @@ export class CalendarPageComponent implements OnInit {
   private router = inject(Router);
   private databaseService = inject(DatabaseService);
   private documentService = inject(DocumentService);
+  private fabStore = inject(FabStore);
+
+  // Synchronise la visibilité du FAB avec le panneau de détail
+  private fabHiddenEffect = effect(() => {
+    this.fabStore.setHidden(this.showDetailPanel());
+  });
 
   @ViewChild('calendar') calendarComponent!: FullCalendarComponent;
 
@@ -95,6 +114,10 @@ export class CalendarPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadProjects();
+  }
+
+  ngOnDestroy(): void {
+    this.fabStore.setHidden(false);
   }
 
   // =====================================================================
@@ -235,8 +258,15 @@ export class CalendarPageComponent implements OnInit {
 
   closeDetailPanel(): void {
     this.showDetailPanel.set(false);
-    this.selectedEvent.set(null);
     this.calendarStore.selectEvent(null);
+    // selectedEvent is cleared in onPanelAnimationDone() after the :leave animation
+  }
+
+  onPanelAnimationDone(): void {
+    if (!this.showDetailPanel()) {
+      this.selectedEvent.set(null);
+      this.calendarComponent?.getApi()?.updateSize();
+    }
   }
 
   onEventUpdated(updates: { databaseId: string; rowId: string; updates: Partial<EventEntry> }): void {

@@ -29,6 +29,7 @@ import { FabStore } from './core/stores/fab.store';
       <app-navigation-fab
         [context]="fabStore.context()"
         [customActions]="fabStore.actions()"
+        [hidden]="fabStore.hidden()"
         (saveRequested)="handleSaveRequest()"
         (navigateRequested)="handleNavigateRequest($event)">
       </app-navigation-fab>

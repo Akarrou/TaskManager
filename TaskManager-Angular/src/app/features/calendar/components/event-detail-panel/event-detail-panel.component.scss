@@ -237,7 +237,7 @@
   transition: filter 0.15s ease;
 
   &:hover {
-    filter: brightness(0.95);
+    filter: brightness(0.93);
   }
 
   &__icon {
@@ -250,7 +250,7 @@
 
   // Task — green
   &--task {
-    --mdc-chip-elevated-container-color: #ecfdf5;
+    --mdc-chip-elevated-container-color: #d1fae5;
     --mdc-chip-label-text-color: #065f46;
 
     .linked-chip__icon {
@@ -260,7 +260,7 @@
 
   // Document — blue
   &--document {
-    --mdc-chip-elevated-container-color: #eff6ff;
+    --mdc-chip-elevated-container-color: #dbeafe;
     --mdc-chip-label-text-color: #1e40af;
 
     .linked-chip__icon {
@@ -270,7 +270,7 @@
 
   // Database — purple
   &--database {
-    --mdc-chip-elevated-container-color: #f5f3ff;
+    --mdc-chip-elevated-container-color: #ede9fe;
     --mdc-chip-label-text-color: #5b21b6;
 
     .linked-chip__icon {

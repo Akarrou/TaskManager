@@ -3,6 +3,14 @@
 .navigation-fab-container {
   position: fixed;
   z-index: 1000;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.fab-hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.5);
+  }
   
   // Positions
   &.fab-position-bottom-right {

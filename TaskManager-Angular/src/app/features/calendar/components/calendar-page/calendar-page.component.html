@@ -129,9 +129,13 @@
       </full-calendar>
     </div>
 
-    <!-- Detail Panel (slide-in from right) -->
+    <!-- Detail Panel (slide-in/out from right) -->
     @if (showDetailPanel() && selectedEvent()) {
-      <aside class="detail-panel" role="complementary" aria-label="Détail de l'événement">
+      <aside class="detail-panel"
+             @slidePanel
+             (@slidePanel.done)="onPanelAnimationDone()"
+             role="complementary"
+             aria-label="Détail de l'événement">
         <app-event-detail-panel
           [event]="selectedEvent()!"
           (close)="closeDetailPanel()"
