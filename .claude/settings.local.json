@@ -98,7 +98,8 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "Bash(cd \"/Users/jeromevalette/Projets/Task manager/mcp-server\" && npx tsc --noEmit src/routes/oauth.ts 2>&1)",
-      "WebFetch(domain:fullcalendar.io)"
+      "WebFetch(domain:fullcalendar.io)",
+      "Bash(cd \"/Users/jeromevalette/Projets/Task manager/mcp-server\" && npx tsc --noEmit 2>&1)"
     ],
     "deny": [],
     "ask": []

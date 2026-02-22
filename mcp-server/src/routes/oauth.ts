@@ -56,6 +56,19 @@ function setCorsHeaders(res: ServerResponse): void {
 }
 
 // ============================================================================
+// HTML Helpers
+// ============================================================================
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// ============================================================================
 // Login Page HTML
 // ============================================================================
 
@@ -326,7 +339,7 @@ function getSuccessPageHtml(params: {
     </div>
     <h1>Authorization Successful</h1>
     <p class="user-email">Signed in as <strong>${escapeHtml(userEmail)}</strong></p>
-    <p class="countdown-text">Redirecting in <span id="countdown">${delaySeconds}</span> seconds...</p>
+    <p class="countdown-text">Redirecting in <span id="countdown">${delaySeconds} seconds</span>...</p>
     <div class="progress-bar-container">
       <div class="progress-bar" id="progressBar"></div>
     </div>
@@ -338,14 +351,15 @@ function getSuccessPageHtml(params: {
       var start = Date.now();
       var countdownEl = document.getElementById('countdown');
       var progressBar = document.getElementById('progressBar');
-      var redirectUrl = ${JSON.stringify(redirectUrl)};
+      var redirectUrl = ${JSON.stringify(redirectUrl).replace(/</g, '\\u003c')};
 
       function tick() {
         var elapsed = Date.now() - start;
         var remaining = Math.max(0, total - elapsed);
         var pct = Math.min(100, (elapsed / total) * 100);
 
-        countdownEl.textContent = Math.ceil(remaining / 1000);
+        var secs = Math.ceil(remaining / 1000);
+        countdownEl.textContent = secs > 0 ? secs + ' seconds' : '';
         progressBar.style.width = pct + '%';
 
         if (remaining <= 0) {
@@ -360,15 +374,6 @@ function getSuccessPageHtml(params: {
   </script>
 </body>
 </html>`;
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }
 
 // ============================================================================
@@ -531,7 +536,10 @@ export async function handleAuthorize(req: IncomingMessage, res: ServerResponse)
       userEmail: user.email,
       delaySeconds: 3,
     });
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+    });
     res.end(html);
     return;
   }
