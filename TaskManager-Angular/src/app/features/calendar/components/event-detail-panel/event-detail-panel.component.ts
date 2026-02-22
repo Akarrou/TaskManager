@@ -7,6 +7,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { EventEntry } from '../../../../core/services/event-database.service';
 import { CATEGORY_LABELS, CATEGORY_COLORS, EventCategory } from '../../../../shared/models/event-constants';
+import { LinkedItem } from '../../../documents/models/database.model';
 import { RruleToTextPipe } from '../../pipes/rrule-to-text.pipe';
 
 @Component({
@@ -34,7 +35,8 @@ export class EventDetailPanelComponent {
   @Output() edit = new EventEmitter<EventEntry>();
   @Output() deleted = new EventEmitter<{ databaseId: string; rowId: string }>();
   @Output() updated = new EventEmitter<{ databaseId: string; rowId: string; updates: Partial<EventEntry> }>();
-  @Output() navigateToSource = new EventEmitter<string>();
+  @Output() navigateToSource = new EventEmitter<{ databaseId: string; rowId: string; title: string }>();
+  @Output() linkedItemClick = new EventEmitter<LinkedItem>();
 
   protected eventSignal = signal<EventEntry | null>(null);
 
@@ -91,13 +93,12 @@ export class EventDetailPanelComponent {
   onNavigateToSource(): void {
     const ev = this.eventSignal();
     if (ev) {
-      this.navigateToSource.emit(ev.databaseId);
+      this.navigateToSource.emit({ databaseId: ev.databaseId, rowId: ev.id, title: ev.title });
     }
   }
 
-  onLinkedItemClick(item: { type: string; id: string; label: string }): void {
-    // Navigation can be handled by the parent component via the updated output
-    // For now, this is a placeholder for linked item navigation
+  onLinkedItemClick(item: LinkedItem): void {
+    this.linkedItemClick.emit(item);
   }
 
   private formatDateTime(isoDate: string, allDay: boolean): string {

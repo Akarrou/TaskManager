@@ -6,7 +6,7 @@
     </button>
 
     <div class="breadcrumb">
-      <a routerLink="/documents" class="breadcrumb-item">Documents</a>
+      <a [routerLink]="breadcrumbRoot().route" class="breadcrumb-item">{{ breadcrumbRoot().label }}</a>
       <span class="breadcrumb-separator">/</span>
 
       <!-- Display parent hierarchy -->

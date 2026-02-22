@@ -8,6 +8,10 @@
           <span class="event-badge">#{{ event.event_number }}</span>
         }
         <h2 class="panel-title">{{ event.title }}</h2>
+        <a class="open-doc-link" (click)="onNavigateToSource()">
+          Ouvrir le document
+          <mat-icon class="open-doc-link__icon">north_east</mat-icon>
+        </a>
       </div>
       <button mat-icon-button (click)="onClose()" class="close-btn" aria-label="Fermer">
         <mat-icon>close</mat-icon>
@@ -99,17 +103,17 @@
             <div class="linked-chips">
               @for (item of event.linked_items; track item.id) {
                 <mat-chip
-                  class="!text-xs !min-h-[26px] !px-2.5 !rounded-lg cursor-pointer hover:!bg-gray-200"
+                  class="linked-chip linked-chip--{{ item.type }}"
                   (click)="onLinkedItemClick(item)">
                   @switch (item.type) {
                     @case ('task') {
-                      <mat-icon class="chip-icon text-green-600">task_alt</mat-icon>
+                      <mat-icon class="linked-chip__icon">task_alt</mat-icon>
                     }
                     @case ('document') {
-                      <mat-icon class="chip-icon text-blue-600">article</mat-icon>
+                      <mat-icon class="linked-chip__icon">article</mat-icon>
                     }
                     @case ('database') {
-                      <mat-icon class="chip-icon text-purple-600">storage</mat-icon>
+                      <mat-icon class="linked-chip__icon">storage</mat-icon>
                     }
                   }
                   {{ item.label }}
@@ -124,15 +128,8 @@
       <mat-divider></mat-divider>
       <div class="panel-section">
         <mat-icon class="section-icon">calendar_today</mat-icon>
-        <div class="section-content section-content--row">
+        <div class="section-content">
           <span class="section-meta">{{ event.databaseName }}</span>
-          <button
-            mat-icon-button
-            class="source-open-btn"
-            matTooltip="Ouvrir le document"
-            (click)="onNavigateToSource()">
-            <mat-icon>open_in_new</mat-icon>
-          </button>
         </div>
       </div>
     </div>

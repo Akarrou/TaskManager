@@ -64,6 +64,28 @@
   }
 }
 
+.open-doc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: #4f46e5;
+  }
+
+  &__icon {
+    font-size: 13px !important;
+    width: 13px !important;
+    height: 13px !important;
+  }
+}
+
 // ============================================================================
 // Scrollable body
 // ============================================================================
@@ -143,30 +165,6 @@
   color: #9ca3af;
 }
 
-.section-content--row {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.source-open-btn {
-  width: 28px;
-  height: 28px;
-  line-height: 28px;
-  color: #9ca3af;
-  flex-shrink: 0;
-
-  mat-icon {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-  }
-
-  &:hover {
-    color: #4f46e5;
-    background-color: #eef2ff;
-  }
-}
 
 // ============================================================================
 // Dates
@@ -234,11 +232,51 @@
   margin-top: 4px;
 }
 
-.chip-icon {
-  font-size: 14px !important;
-  width: 14px !important;
-  height: 14px !important;
-  margin-right: 4px;
+.linked-chip {
+  cursor: pointer;
+  transition: filter 0.15s ease;
+
+  &:hover {
+    filter: brightness(0.95);
+  }
+
+  &__icon {
+    font-size: 15px !important;
+    width: 15px !important;
+    height: 15px !important;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+
+  // Task — green
+  &--task {
+    --mdc-chip-elevated-container-color: #ecfdf5;
+    --mdc-chip-label-text-color: #065f46;
+
+    .linked-chip__icon {
+      color: #059669;
+    }
+  }
+
+  // Document — blue
+  &--document {
+    --mdc-chip-elevated-container-color: #eff6ff;
+    --mdc-chip-label-text-color: #1e40af;
+
+    .linked-chip__icon {
+      color: #2563eb;
+    }
+  }
+
+  // Database — purple
+  &--database {
+    --mdc-chip-elevated-container-color: #f5f3ff;
+    --mdc-chip-label-text-color: #5b21b6;
+
+    .linked-chip__icon {
+      color: #7c3aed;
+    }
+  }
 }
 
 // ============================================================================

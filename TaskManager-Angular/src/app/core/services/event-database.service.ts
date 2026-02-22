@@ -267,13 +267,8 @@ export class EventDatabaseService {
 
         return this.databaseService.updateRow(databaseId, rowId, cells).pipe(
           // After update, fetch the updated row to return normalized entry
-          switchMap(() => this.databaseService.getRows({
-            databaseId,
-            limit: 1,
-            offset: 0,
-          })),
-          map(rows => {
-            const updatedRow = rows.find(r => r.id === rowId);
+          switchMap(() => this.databaseService.getRowById(databaseId, rowId)),
+          map(updatedRow => {
             if (!updatedRow) {
               throw new Error(`Updated row ${rowId} not found`);
             }

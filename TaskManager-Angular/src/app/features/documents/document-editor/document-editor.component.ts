@@ -132,6 +132,15 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   // Breadcrumb hierarchy
   breadcrumbs = signal<DocumentBreadcrumb[]>([]);
 
+  // Origin context for breadcrumb root
+  breadcrumbRoot = computed(() => {
+    const from = this.route.snapshot.queryParamMap.get('from');
+    if (from === 'calendar') {
+      return { label: 'Calendrier', route: '/calendar' };
+    }
+    return { label: 'Documents', route: '/documents' };
+  });
+
   // Database row properties (for Notion-style database pages)
   isDatabaseRowDocument = computed(() => {
     const doc = this.documentState();
@@ -1613,6 +1622,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   navigateBack() {
+    const backRoute = this.breadcrumbRoot().route;
     // Check if there are unsaved changes
     if (this.isDirty()) {
       const confirmLeave = window.confirm(
@@ -1622,13 +1632,12 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         this.saveDocument();
         // Wait a bit for save to complete before navigating
         setTimeout(() => {
-          this.router.navigate(['/documents']);
+          this.router.navigate([backRoute]);
         }, 500);
         return;
       }
     }
-    // Navigate back to documents list
-    this.router.navigate(['/documents']);
+    this.router.navigate([backRoute]);
   }
 
   // Task integration methods

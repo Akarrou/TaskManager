@@ -59,7 +59,8 @@
       "mcp__chrome-devtools__fill",
       "mcp__chrome-devtools__wait_for",
       "mcp__chrome-devtools__list_pages",
-      "mcp__chrome-devtools__new_page"
+      "mcp__chrome-devtools__new_page",
+      "WebFetch(domain:linear.app)"
     ],
     "deny": [
       "Read(./.env)",

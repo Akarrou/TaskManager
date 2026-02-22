@@ -561,6 +561,29 @@ export class DatabaseService {
   }
 
   /**
+   * Get a single row by ID
+   */
+  getRowById(databaseId: string, rowId: string): Observable<DatabaseRow | null> {
+    return this.getDatabaseMetadata(databaseId).pipe(
+      switchMap(metadata => {
+        const tableName = metadata.table_name;
+        return from(
+          this.client.from(tableName).select('*').eq('id', rowId).maybeSingle()
+        );
+      }),
+      map(response => {
+        if (response.error) throw response.error;
+        if (!response.data) return null;
+        return this.mapRowFromDb(response.data as Record<string, unknown>);
+      }),
+      catchError(error => {
+        console.error('Failed to fetch row by ID:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
    * Delete rows
    */
   deleteRows(request: DeleteRowsRequest): Observable<boolean> {

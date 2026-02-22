@@ -20,7 +20,11 @@ import { EventFormDialogComponent } from '../event-form-dialog/event-form-dialog
 import { EventDetailPanelComponent } from '../event-detail-panel/event-detail-panel.component';
 import { selectActiveProjects } from '../../../projects/store/project.selectors';
 import { loadProjects } from '../../../projects/store/project.actions';
+import { switchMap } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { DatabaseService } from '../../../documents/services/database.service';
+import { DocumentService } from '../../../documents/services/document.service';
+import { LinkedItem } from '../../../documents/models/database.model';
 
 @Component({
   selector: 'app-calendar-page',
@@ -45,6 +49,7 @@ export class CalendarPageComponent implements OnInit {
   private store = inject(Store);
   private router = inject(Router);
   private databaseService = inject(DatabaseService);
+  private documentService = inject(DocumentService);
 
   @ViewChild('calendar') calendarComponent!: FullCalendarComponent;
 
@@ -243,12 +248,50 @@ export class CalendarPageComponent implements OnInit {
     this.closeDetailPanel();
   }
 
-  onNavigateToSource(databaseId: string): void {
-    this.databaseService.getDatabaseMetadata(databaseId).subscribe(metadata => {
-      if (metadata.document_id) {
-        this.router.navigate(['/documents', metadata.document_id]);
-      }
+  onNavigateToSource(data: { databaseId: string; rowId: string; title: string }): void {
+    this.databaseService.getRowDocument(data.databaseId, data.rowId).pipe(
+      switchMap(document => {
+        if (document) {
+          return of(document);
+        }
+        return this.documentService.createDatabaseRowDocument({
+          title: data.title,
+          database_id: data.databaseId,
+          database_row_id: data.rowId,
+        });
+      }),
+    ).subscribe(document => {
+      this.router.navigate(['/documents', document.id], { queryParams: { from: 'calendar' } });
     });
+  }
+
+  onLinkedItemClick(item: LinkedItem): void {
+    switch (item.type) {
+      case 'document':
+        this.router.navigate(['/documents', item.id]);
+        break;
+      case 'database':
+        this.router.navigate(['/bdd', item.id]);
+        break;
+      case 'task':
+        if (item.databaseId) {
+          this.databaseService.getRowDocument(item.databaseId, item.id).pipe(
+            switchMap(document => {
+              if (document) {
+                return of(document);
+              }
+              return this.documentService.createDatabaseRowDocument({
+                title: item.label,
+                database_id: item.databaseId!,
+                database_row_id: item.id,
+              });
+            }),
+          ).subscribe(document => {
+            this.router.navigate(['/documents', document.id]);
+          });
+        }
+        break;
+    }
   }
 
   onEditEvent(event: EventEntry): void {
