@@ -70,7 +70,9 @@
       "Bash(echo Endpoint not available:*)",
       "Bash(cp:*)",
       "Bash(printf:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(.:*)",
+      "Bash(find:*)"
     ],
     "deny": [
       "Read(./.env)",

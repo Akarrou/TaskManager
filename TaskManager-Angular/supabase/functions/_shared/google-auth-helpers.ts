@@ -3,10 +3,18 @@
 
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const GOOGLE_CLIENT_ID = Deno.env.get('GOOGLE_CLIENT_ID')!
-const GOOGLE_CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET')!
-const GOOGLE_REDIRECT_URI = Deno.env.get('GOOGLE_REDIRECT_URI')!
-const TOKEN_ENCRYPTION_KEY = Deno.env.get('TOKEN_ENCRYPTION_KEY')!
+export function requireEnv(name: string): string {
+  const value = Deno.env.get(name)
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`)
+  }
+  return value
+}
+
+const GOOGLE_CLIENT_ID = requireEnv('GOOGLE_CLIENT_ID')
+const GOOGLE_CLIENT_SECRET = requireEnv('GOOGLE_CLIENT_SECRET')
+const GOOGLE_REDIRECT_URI = requireEnv('GOOGLE_REDIRECT_URI')
+const TOKEN_ENCRYPTION_KEY = requireEnv('TOKEN_ENCRYPTION_KEY')
 
 export interface GoogleCalendarConnection {
   id: string
@@ -21,18 +29,19 @@ export interface GoogleCalendarConnection {
 
 // --- CORS ---
 
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? 'http://localhost:4200'
 export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 // --- Supabase Admin Client ---
 
 export function createSupabaseAdmin(): SupabaseClient {
   return createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    requireEnv('SUPABASE_URL'),
+    requireEnv('SUPABASE_SERVICE_ROLE_KEY')
   )
 }
 
@@ -281,4 +290,33 @@ export async function getConnectionForUser(
   }
 
   return data as GoogleCalendarConnection
+}
+
+// --- Error Handling Helpers ---
+
+export function errorResponse(
+  statusCode: number,
+  publicMessage: string,
+  internalError?: unknown,
+): Response {
+  if (internalError) {
+    console.error(`[Edge Function Error] ${publicMessage}:`, internalError)
+  }
+  return new Response(
+    JSON.stringify({ error: publicMessage }),
+    {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: statusCode,
+    }
+  )
+}
+
+export function validateMethod(req: Request, allowed: string): Response | null {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+  if (req.method !== allowed) {
+    return errorResponse(405, `Method ${req.method} not allowed`)
+  }
+  return null
 }

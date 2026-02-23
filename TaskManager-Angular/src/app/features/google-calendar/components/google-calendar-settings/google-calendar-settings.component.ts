@@ -30,13 +30,14 @@ export class GoogleCalendarSettingsComponent implements OnInit {
 
   protected readonly hasCalendars = computed(() => this.availableCalendars().length > 0);
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    await this.store.loadConnection();
     this.store.loadCalendars();
     this.store.loadSyncConfigs();
   }
 
   isCalendarEnabled(calendarId: string): boolean {
-    return this.syncConfigs().some(c => c.google_calendar_id === calendarId);
+    return this.syncConfigs().some(c => c.google_calendar_id === calendarId && c.is_enabled);
   }
 
   getConfigForCalendar(calendarId: string): GoogleCalendarSyncConfig | undefined {
@@ -45,17 +46,25 @@ export class GoogleCalendarSettingsComponent implements OnInit {
 
   toggleCalendar(calendar: GoogleCalendarInfo, enabled: boolean): void {
     const existing = this.getConfigForCalendar(calendar.id);
-    if (enabled && !existing) {
-      this.store.createSyncConfig({
-        connection_id: '',
-        google_calendar_id: calendar.id,
-        google_calendar_name: calendar.summary,
-        kodo_database_id: null,
-        sync_direction: 'bidirectional',
-        is_enabled: true,
-        last_sync_at: null,
-      });
-    } else if (!enabled && existing) {
+    if (enabled) {
+      if (existing) {
+        this.store.updateSyncConfig(existing.id, { is_enabled: true });
+      } else {
+        const connectionId = this.store.connection()?.id;
+        if (!connectionId) {
+          return;
+        }
+        this.store.createSyncConfig({
+          connection_id: connectionId,
+          google_calendar_id: calendar.id,
+          google_calendar_name: calendar.summary,
+          kodo_database_id: null,
+          sync_direction: 'bidirectional',
+          is_enabled: true,
+          last_sync_at: null,
+        });
+      }
+    } else if (existing) {
       this.store.updateSyncConfig(existing.id, { is_enabled: false });
     }
   }

@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
-import { GoogleCalendarAuthService } from '../../services/google-calendar-auth.service';
+import { GoogleCalendarStore } from '../../store/google-calendar.store';
 
 @Component({
   selector: 'app-google-calendar-callback',
@@ -24,7 +24,7 @@ import { GoogleCalendarAuthService } from '../../services/google-calendar-auth.s
 export class GoogleCalendarCallbackComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly authService = inject(GoogleCalendarAuthService);
+  private readonly store = inject(GoogleCalendarStore);
   private readonly snackBar = inject(MatSnackBar);
 
   protected readonly processing = signal(true);
@@ -45,7 +45,7 @@ export class GoogleCalendarCallbackComponent implements OnInit {
 
   private async handleCallback(code: string, state: string): Promise<void> {
     try {
-      await this.authService.handleCallback(code, state);
+      await this.store.handleOAuthCallback(code, state);
       this.snackBar.open('Google Calendar connecté avec succès', 'OK', { duration: 3000 });
       this.router.navigate(['/profile']);
     } catch (err) {

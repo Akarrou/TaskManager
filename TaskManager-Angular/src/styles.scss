@@ -1080,3 +1080,11 @@ body.dragging .bubble-menu-wrapper {
     padding: 0 !important;
   }
 }
+
+// ============================================================================
+// GOOGLE CALENDAR - Direction Toggle Button Override
+// ============================================================================
+
+.gcal-direction-toggle .mat-button-toggle-button {
+  padding: 0 8px;
+}

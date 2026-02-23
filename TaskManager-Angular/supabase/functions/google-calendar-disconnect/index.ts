@@ -7,12 +7,13 @@ import {
   authenticateUser,
   getConnectionForUser,
   decryptToken,
+  validateMethod,
+  errorResponse,
 } from "../_shared/google-auth-helpers.ts"
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  const methodError = validateMethod(req, 'POST')
+  if (methodError) return methodError
 
   try {
     const supabaseAdmin = createSupabaseAdmin()
@@ -49,13 +50,6 @@ Deno.serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error disconnecting:', error)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    )
+    return errorResponse(500, 'Failed to disconnect', error)
   }
 })

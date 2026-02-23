@@ -1,7 +1,13 @@
 import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { DatePipe } from '@angular/common';
 
+import { MatDialog } from '@angular/material/dialog';
+
 import { GoogleCalendarStore } from '../../store/google-calendar.store';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-google-calendar-connect',
@@ -15,6 +21,7 @@ import { GoogleCalendarStore } from '../../store/google-calendar.store';
 })
 export class GoogleCalendarConnectComponent {
   private readonly store = inject(GoogleCalendarStore);
+  private readonly dialog = inject(MatDialog);
 
   protected readonly connection = this.store.connection;
   protected readonly isConnected = this.store.isConnected;
@@ -25,8 +32,18 @@ export class GoogleCalendarConnectComponent {
   }
 
   disconnect(): void {
-    if (confirm('Voulez-vous vraiment déconnecter Google Calendar ?')) {
-      this.store.disconnect();
-    }
+    this.dialog
+      .open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
+        data: {
+          title: 'Déconnecter Google Calendar',
+          message: 'Voulez-vous vraiment déconnecter Google Calendar ? Les configurations de synchronisation seront supprimées.',
+        },
+      })
+      .afterClosed()
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          this.store.disconnect();
+        }
+      });
   }
 }

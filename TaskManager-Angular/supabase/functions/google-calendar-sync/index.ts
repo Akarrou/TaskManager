@@ -7,6 +7,8 @@ import {
   authenticateUser,
   getValidAccessToken,
   GoogleCalendarConnection,
+  validateMethod,
+  errorResponse,
 } from "../_shared/google-auth-helpers.ts"
 
 interface SyncConfig {
@@ -20,17 +22,18 @@ interface SyncConfig {
 }
 
 interface SyncResult {
-  created: number
-  updated: number
-  deleted: number
-  errors: string[]
+  events_created: number
+  events_updated: number
+  events_deleted: number
+  events_skipped: number
+  errors: Array<{ event_id: string; message: string; timestamp: string }>
+  status: 'success' | 'partial' | 'error'
   sync_token: string | null
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  const methodError = validateMethod(req, 'POST')
+  if (methodError) return methodError
 
   try {
     const supabaseAdmin = createSupabaseAdmin()
@@ -38,21 +41,22 @@ Deno.serve(async (req) => {
 
     const { sync_config_id } = await req.json()
     if (!sync_config_id) {
-      throw new Error('Missing sync_config_id')
+      return errorResponse(400, 'Missing sync_config_id')
     }
 
-    // Get sync config
+    // C10: Get sync config with user_id check via join
     const { data: syncConfig, error: configError } = await supabaseAdmin
       .from('google_calendar_sync_config')
-      .select('*')
+      .select('*, google_calendar_connections!inner(user_id)')
       .eq('id', sync_config_id)
+      .eq('google_calendar_connections.user_id', user.id)
       .single()
 
     if (configError || !syncConfig) {
-      throw new Error('Sync configuration not found')
+      return errorResponse(404, 'Sync configuration not found')
     }
 
-    const config = syncConfig as SyncConfig
+    const config = syncConfig as unknown as SyncConfig
 
     // Get connection
     const { data: connection, error: connError } = await supabaseAdmin
@@ -63,7 +67,7 @@ Deno.serve(async (req) => {
       .single()
 
     if (connError || !connection) {
-      throw new Error('Google Calendar connection not found')
+      return errorResponse(404, 'Google Calendar connection not found')
     }
 
     const accessToken = await getValidAccessToken(
@@ -97,10 +101,12 @@ Deno.serve(async (req) => {
     let nextSyncToken: string | null = null
 
     const result: SyncResult = {
-      created: 0,
-      updated: 0,
-      deleted: 0,
+      events_created: 0,
+      events_updated: 0,
+      events_deleted: 0,
+      events_skipped: 0,
       errors: [],
+      status: 'success',
       sync_token: null,
     }
 
@@ -141,7 +147,11 @@ Deno.serve(async (req) => {
         try {
           await processEvent(event, config, supabaseAdmin, result)
         } catch (eventError) {
-          result.errors.push(`Event ${event.id}: ${(eventError as Error).message}`)
+          result.errors.push({
+            event_id: String(event.id ?? ''),
+            message: (eventError as Error).message,
+            timestamp: new Date().toISOString(),
+          })
         }
       }
     } while (nextPageToken)
@@ -157,16 +167,22 @@ Deno.serve(async (req) => {
 
     result.sync_token = nextSyncToken
 
-    // Log sync result
+    // Set final status
+    if (result.errors.length > 0) {
+      result.status = 'partial'
+    }
+
+    // M7: Log sync result with completed_at
     await supabaseAdmin.from('google_calendar_sync_log').insert({
       sync_config_id: config.id,
       sync_type: config.sync_token ? 'incremental' : 'full',
       direction: 'from_google',
-      events_created: result.created,
-      events_updated: result.updated,
-      events_deleted: result.deleted,
+      events_created: result.events_created,
+      events_updated: result.events_updated,
+      events_deleted: result.events_deleted,
       errors: result.errors.length > 0 ? JSON.stringify(result.errors) : '[]',
-      status: result.errors.length > 0 ? 'partial' : 'success',
+      status: result.status,
+      completed_at: new Date().toISOString(),
     })
 
     return new Response(
@@ -177,14 +193,7 @@ Deno.serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error syncing calendar:', error)
-    return new Response(
-      JSON.stringify({ error: (error as Error).message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    )
+    return errorResponse(500, 'Failed to sync calendar', error)
   }
 })
 
@@ -207,17 +216,26 @@ async function processEvent(
   // Handle cancelled events
   if (event.status === 'cancelled') {
     if (existingMapping) {
-      await supabaseAdmin
+      // I12: Capture errors from delete operations
+      const { error: rowDeleteError } = await supabaseAdmin
         .from('database_rows')
         .delete()
         .eq('id', existingMapping.kodo_row_id)
 
-      await supabaseAdmin
+      if (rowDeleteError) {
+        console.error('Failed to delete database row:', rowDeleteError)
+      }
+
+      const { error: mappingDeleteError } = await supabaseAdmin
         .from('google_calendar_event_mapping')
         .delete()
         .eq('id', existingMapping.id)
 
-      result.deleted++
+      if (mappingDeleteError) {
+        console.error('Failed to delete event mapping:', mappingDeleteError)
+      }
+
+      result.events_deleted++
     }
     return
   }
@@ -226,14 +244,18 @@ async function processEvent(
   const rowData = mapGoogleEventToKodo(event)
 
   if (existingMapping) {
-    // Update existing Kodo row
-    await supabaseAdmin
+    // I12: Update existing Kodo row with error capture
+    const { error: rowUpdateError } = await supabaseAdmin
       .from('database_rows')
       .update({ data: rowData, updated_at: new Date().toISOString() })
       .eq('id', existingMapping.kodo_row_id)
 
-    // Update mapping timestamps
-    await supabaseAdmin
+    if (rowUpdateError) {
+      console.error('Failed to update database row:', rowUpdateError)
+    }
+
+    // I12: Update mapping timestamps with error capture
+    const { error: mappingUpdateError } = await supabaseAdmin
       .from('google_calendar_event_mapping')
       .update({
         google_updated_at: new Date().toISOString(),
@@ -241,7 +263,11 @@ async function processEvent(
       })
       .eq('id', existingMapping.id)
 
-    result.updated++
+    if (mappingUpdateError) {
+      console.error('Failed to update event mapping:', mappingUpdateError)
+    }
+
+    result.events_updated++
   } else {
     // Create new Kodo row
     const { data: newRow, error: insertError } = await supabaseAdmin
@@ -257,10 +283,10 @@ async function processEvent(
       throw new Error(`Failed to create Kodo row: ${insertError?.message}`)
     }
 
-    // Create mapping
-    await supabaseAdmin
+    // C9: Create mapping with upsert to handle race conditions
+    const { error: mappingError } = await supabaseAdmin
       .from('google_calendar_event_mapping')
-      .insert({
+      .upsert({
         sync_config_id: config.id,
         google_event_id: googleEventId,
         google_calendar_id: config.google_calendar_id,
@@ -268,9 +294,13 @@ async function processEvent(
         kodo_row_id: newRow.id,
         google_updated_at: new Date().toISOString(),
         sync_status: 'synced',
-      })
+      }, { onConflict: 'google_event_id,google_calendar_id' })
 
-    result.created++
+    if (mappingError) {
+      console.error('Failed to upsert event mapping:', mappingError)
+    }
+
+    result.events_created++
   }
 }
 

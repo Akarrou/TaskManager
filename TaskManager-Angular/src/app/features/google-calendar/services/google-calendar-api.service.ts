@@ -25,6 +25,10 @@ export class GoogleCalendarApiService {
       throw new Error(`Failed to list calendars: ${error.message}`);
     }
 
+    if (!data || !Array.isArray(data.calendars)) {
+      throw new Error('Invalid response from list calendars');
+    }
+
     return data.calendars as GoogleCalendarInfo[];
   }
 
@@ -35,6 +39,10 @@ export class GoogleCalendarApiService {
 
     if (error) {
       throw new Error(`Failed to trigger sync: ${error.message}`);
+    }
+
+    if (!data) {
+      throw new Error('Invalid response from sync');
     }
 
     return data as SyncResult;
@@ -49,8 +57,8 @@ export class GoogleCalendarApiService {
     const { data, error } = await this.client.functions.invoke('google-calendar-push-event', {
       body: {
         sync_config_id: syncConfigId,
-        database_id: databaseId,
-        row_id: rowId,
+        kodo_database_id: databaseId,
+        kodo_row_id: rowId,
         event_data: eventData,
       },
     });
@@ -59,7 +67,11 @@ export class GoogleCalendarApiService {
       throw new Error(`Failed to push event: ${error.message}`);
     }
 
-    return { google_event_id: data.google_event_id as string };
+    if (!data || typeof data.google_event_id !== 'string') {
+      throw new Error('Invalid response from push event');
+    }
+
+    return { google_event_id: data.google_event_id };
   }
 
   async deleteGoogleEvent(
@@ -70,8 +82,8 @@ export class GoogleCalendarApiService {
     const { error } = await this.client.functions.invoke('google-calendar-delete-event', {
       body: {
         sync_config_id: syncConfigId,
-        database_id: databaseId,
-        row_id: rowId,
+        kodo_database_id: databaseId,
+        kodo_row_id: rowId,
       },
     });
 

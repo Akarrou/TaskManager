@@ -7,12 +7,13 @@ import {
   authenticateUser,
   getValidAccessToken,
   GoogleCalendarConnection,
+  validateMethod,
+  errorResponse,
 } from "../_shared/google-auth-helpers.ts"
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  const methodError = validateMethod(req, 'POST')
+  if (methodError) return methodError
 
   try {
     const supabaseAdmin = createSupabaseAdmin()
@@ -21,18 +22,19 @@ Deno.serve(async (req) => {
     const { sync_config_id, kodo_database_id, kodo_row_id } = await req.json()
 
     if (!sync_config_id || !kodo_database_id || !kodo_row_id) {
-      throw new Error('Missing required parameters')
+      return errorResponse(400, 'Missing required parameters')
     }
 
-    // Get sync config
+    // C10: Get sync config with user_id check via join
     const { data: syncConfig, error: configError } = await supabaseAdmin
       .from('google_calendar_sync_config')
-      .select('*')
+      .select('*, google_calendar_connections!inner(user_id)')
       .eq('id', sync_config_id)
+      .eq('google_calendar_connections.user_id', user.id)
       .single()
 
     if (configError || !syncConfig) {
-      throw new Error('Sync configuration not found')
+      return errorResponse(404, 'Sync configuration not found')
     }
 
     // Get connection
@@ -44,7 +46,7 @@ Deno.serve(async (req) => {
       .single()
 
     if (connError || !connection) {
-      throw new Error('Google Calendar connection not found')
+      return errorResponse(404, 'Google Calendar connection not found')
     }
 
     // Look up mapping
@@ -79,11 +81,15 @@ Deno.serve(async (req) => {
         throw new Error(`Failed to delete Google event: ${errorText}`)
       }
 
-      // Delete mapping record
-      await supabaseAdmin
+      // I12: Delete mapping record with error capture
+      const { error: mappingDeleteError } = await supabaseAdmin
         .from('google_calendar_event_mapping')
         .delete()
         .eq('id', mapping.id)
+
+      if (mappingDeleteError) {
+        console.error('Failed to delete event mapping:', mappingDeleteError)
+      }
     }
 
     return new Response(
@@ -94,13 +100,6 @@ Deno.serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error deleting event:', error)
-    return new Response(
-      JSON.stringify({ error: (error as Error).message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    )
+    return errorResponse(500, 'Failed to delete event', error)
   }
 })

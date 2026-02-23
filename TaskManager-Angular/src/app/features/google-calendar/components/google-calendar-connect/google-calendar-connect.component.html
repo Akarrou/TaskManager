@@ -10,7 +10,7 @@
         <span class="gcal-connected__email">{{ connection()?.google_email }}</span>
         <span class="gcal-connected__sync">
           @if (connection()?.last_sync_at) {
-            Dernière sync : {{ connection()!.last_sync_at | date:'short' }}
+            Dernière sync : {{ connection()?.last_sync_at | date:'short' }}
           } @else {
             Jamais synchronisé
           }

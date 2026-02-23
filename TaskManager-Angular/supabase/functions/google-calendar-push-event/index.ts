@@ -7,6 +7,8 @@ import {
   authenticateUser,
   getValidAccessToken,
   GoogleCalendarConnection,
+  validateMethod,
+  errorResponse,
 } from "../_shared/google-auth-helpers.ts"
 
 interface EventData {
@@ -24,9 +26,8 @@ interface EventData {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  const methodError = validateMethod(req, 'POST')
+  if (methodError) return methodError
 
   try {
     const supabaseAdmin = createSupabaseAdmin()
@@ -35,20 +36,21 @@ Deno.serve(async (req) => {
     const { sync_config_id, kodo_database_id, kodo_row_id, event_data } = await req.json()
 
     if (!sync_config_id || !kodo_database_id || !kodo_row_id || !event_data) {
-      throw new Error('Missing required parameters')
+      return errorResponse(400, 'Missing required parameters')
     }
 
     const eventData = event_data as EventData
 
-    // Get sync config
+    // C10: Get sync config with user_id check via join
     const { data: syncConfig, error: configError } = await supabaseAdmin
       .from('google_calendar_sync_config')
-      .select('*')
+      .select('*, google_calendar_connections!inner(user_id)')
       .eq('id', sync_config_id)
+      .eq('google_calendar_connections.user_id', user.id)
       .single()
 
     if (configError || !syncConfig) {
-      throw new Error('Sync configuration not found')
+      return errorResponse(404, 'Sync configuration not found')
     }
 
     // Get connection
@@ -60,7 +62,7 @@ Deno.serve(async (req) => {
       .single()
 
     if (connError || !connection) {
-      throw new Error('Google Calendar connection not found')
+      return errorResponse(404, 'Google Calendar connection not found')
     }
 
     const accessToken = await getValidAccessToken(
@@ -76,8 +78,13 @@ Deno.serve(async (req) => {
 
     // Date handling
     if (eventData.all_day) {
-      googleEvent.start = { date: eventData.start_date.split('T')[0] }
-      googleEvent.end = { date: eventData.end_date.split('T')[0] }
+      const startDate = eventData.start_date.split('T')[0]
+      // M5: Google uses exclusive end date for all-day events, so add 1 day
+      const endDateObj = new Date(eventData.end_date.split('T')[0])
+      endDateObj.setDate(endDateObj.getDate() + 1)
+      const endDate = endDateObj.toISOString().split('T')[0]
+      googleEvent.start = { date: startDate }
+      googleEvent.end = { date: endDate }
     } else {
       googleEvent.start = { dateTime: eventData.start_date }
       googleEvent.end = { dateTime: eventData.end_date }
@@ -141,8 +148,8 @@ Deno.serve(async (req) => {
       const updatedEvent = await response.json()
       googleEventId = updatedEvent.id
 
-      // Update mapping
-      await supabaseAdmin
+      // Update mapping - capture error
+      const { error: mappingError } = await supabaseAdmin
         .from('google_calendar_event_mapping')
         .update({
           kodo_updated_at: new Date().toISOString(),
@@ -150,6 +157,10 @@ Deno.serve(async (req) => {
           sync_status: 'synced',
         })
         .eq('id', existingMapping.id)
+
+      if (mappingError) {
+        console.error('Failed to update event mapping:', mappingError)
+      }
     } else {
       // Create new Google event
       const response = await fetch(
@@ -172,10 +183,10 @@ Deno.serve(async (req) => {
       const createdEvent = await response.json()
       googleEventId = createdEvent.id
 
-      // Create mapping
-      await supabaseAdmin
+      // C9: Create mapping with upsert to handle race conditions
+      const { error: mappingError } = await supabaseAdmin
         .from('google_calendar_event_mapping')
-        .insert({
+        .upsert({
           sync_config_id,
           google_event_id: googleEventId,
           google_calendar_id: syncConfig.google_calendar_id,
@@ -184,7 +195,11 @@ Deno.serve(async (req) => {
           kodo_updated_at: new Date().toISOString(),
           google_updated_at: new Date().toISOString(),
           sync_status: 'synced',
-        })
+        }, { onConflict: 'kodo_database_id,kodo_row_id' })
+
+      if (mappingError) {
+        console.error('Failed to create event mapping:', mappingError)
+      }
     }
 
     return new Response(
@@ -195,13 +210,6 @@ Deno.serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error pushing event:', error)
-    return new Response(
-      JSON.stringify({ error: (error as Error).message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    )
+    return errorResponse(500, 'Failed to push event', error)
   }
 })

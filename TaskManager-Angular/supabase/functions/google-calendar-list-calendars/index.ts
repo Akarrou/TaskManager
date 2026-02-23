@@ -7,6 +7,8 @@ import {
   authenticateUser,
   getConnectionForUser,
   getValidAccessToken,
+  validateMethod,
+  errorResponse,
 } from "../_shared/google-auth-helpers.ts"
 
 interface GoogleCalendarListItem {
@@ -18,9 +20,8 @@ interface GoogleCalendarListItem {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  const methodError = validateMethod(req, 'POST')
+  if (methodError) return methodError
 
   try {
     const supabaseAdmin = createSupabaseAdmin()
@@ -60,13 +61,6 @@ Deno.serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error listing calendars:', error)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    )
+    return errorResponse(500, 'Failed to list calendars', error)
   }
 })

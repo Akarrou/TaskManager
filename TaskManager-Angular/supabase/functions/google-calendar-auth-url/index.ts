@@ -6,18 +6,20 @@ import {
   createSupabaseAdmin,
   authenticateUser,
   createStateJwt,
+  requireEnv,
+  validateMethod,
+  errorResponse,
 } from "../_shared/google-auth-helpers.ts"
 
-const GOOGLE_CLIENT_ID = Deno.env.get('GOOGLE_CLIENT_ID')!
-const GOOGLE_REDIRECT_URI = Deno.env.get('GOOGLE_REDIRECT_URI')!
-const SUPABASE_JWT_SECRET = Deno.env.get('SUPABASE_JWT_SECRET') ?? Deno.env.get('JWT_SECRET')!
-
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  const methodError = validateMethod(req, 'POST')
+  if (methodError) return methodError
 
   try {
+    const GOOGLE_CLIENT_ID = requireEnv('GOOGLE_CLIENT_ID')
+    const GOOGLE_REDIRECT_URI = requireEnv('GOOGLE_REDIRECT_URI')
+    const SUPABASE_JWT_SECRET = Deno.env.get('SUPABASE_JWT_SECRET') ?? requireEnv('JWT_SECRET')
+
     const supabaseAdmin = createSupabaseAdmin()
     const user = await authenticateUser(req, supabaseAdmin)
 
@@ -29,7 +31,7 @@ Deno.serve(async (req) => {
       client_id: GOOGLE_CLIENT_ID,
       redirect_uri: GOOGLE_REDIRECT_URI,
       response_type: 'code',
-      scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events',
+      scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email',
       access_type: 'offline',
       prompt: 'consent',
       state,
@@ -45,13 +47,6 @@ Deno.serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error generating auth URL:', error)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 401,
-      }
-    )
+    return errorResponse(500, 'Failed to generate authorization URL', error)
   }
 })

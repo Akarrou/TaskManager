@@ -40,7 +40,7 @@
               @if (getConfigForCalendar(calendar.id); as config) {
                 <mat-button-toggle-group
                   [value]="config.sync_direction"
-                  (change)="changeSyncDirection(config.id!, $event.value)"
+                  (change)="changeSyncDirection(config.id, $event.value)"
                   class="gcal-direction-toggle">
                   <mat-button-toggle value="from_google" matTooltip="Google vers Kodo">
                     <mat-icon>arrow_back</mat-icon>
@@ -56,7 +56,7 @@
                 <button
                   class="c-btn c-btn--icon"
                   type="button"
-                  (click)="syncNow(config.id!)"
+                  (click)="syncNow(config.id)"
                   title="Synchroniser maintenant"
                 >
                   <span class="material-icons-outlined">sync</span>

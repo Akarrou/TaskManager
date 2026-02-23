@@ -6,28 +6,35 @@ import {
   createSupabaseAdmin,
   verifyStateJwt,
   encryptToken,
+  requireEnv,
+  validateMethod,
+  errorResponse,
 } from "../_shared/google-auth-helpers.ts"
 
-const GOOGLE_CLIENT_ID = Deno.env.get('GOOGLE_CLIENT_ID')!
-const GOOGLE_CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET')!
-const GOOGLE_REDIRECT_URI = Deno.env.get('GOOGLE_REDIRECT_URI')!
-const SUPABASE_JWT_SECRET = Deno.env.get('SUPABASE_JWT_SECRET') ?? Deno.env.get('JWT_SECRET')!
-
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  const methodError = validateMethod(req, 'POST')
+  if (methodError) return methodError
 
   try {
+    const GOOGLE_CLIENT_ID = requireEnv('GOOGLE_CLIENT_ID')
+    const GOOGLE_CLIENT_SECRET = requireEnv('GOOGLE_CLIENT_SECRET')
+    const GOOGLE_REDIRECT_URI = requireEnv('GOOGLE_REDIRECT_URI')
+    const SUPABASE_JWT_SECRET = Deno.env.get('SUPABASE_JWT_SECRET') ?? requireEnv('JWT_SECRET')
+
     const { code, state } = await req.json()
 
     if (!code || !state) {
-      throw new Error('Missing code or state parameter')
+      return errorResponse(400, 'Missing code or state parameter')
     }
 
     // Verify state JWT to get user_id
     const stateSecret = `gcal-state-${SUPABASE_JWT_SECRET}`
     const { user_id } = await verifyStateJwt(state, stateSecret)
+
+    // C8: Validate user_id from state
+    if (!user_id) {
+      return errorResponse(400, 'Invalid state: missing user identifier')
+    }
 
     // Exchange authorization code for tokens
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -64,6 +71,11 @@ Deno.serve(async (req) => {
     }
 
     const userInfo = await userInfoResponse.json()
+
+    if (!userInfo.email || typeof userInfo.email !== 'string') {
+      throw new Error('Google user info did not include an email address')
+    }
+
     const googleEmail: string = userInfo.email
 
     // Encrypt tokens
@@ -100,13 +112,6 @@ Deno.serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error exchanging token:', error)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    )
+    return errorResponse(400, 'Token exchange failed', error)
   }
 })

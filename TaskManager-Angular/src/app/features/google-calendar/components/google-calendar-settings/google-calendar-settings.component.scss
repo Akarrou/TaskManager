@@ -117,10 +117,6 @@
 
 // Direction toggle
 .gcal-direction-toggle {
-  ::ng-deep .mat-button-toggle-button {
-    padding: 0 8px;
-  }
-
   mat-icon {
     font-size: 18px;
     width: 18px;

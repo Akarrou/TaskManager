@@ -387,6 +387,7 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-http://localhost:4010}
     command: ["start", "--main-service", "/home/deno/functions/main"]
     networks:
       - supabase_network
