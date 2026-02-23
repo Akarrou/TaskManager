@@ -33,6 +33,7 @@ import { LinkedItem } from '../../../documents/models/database.model';
 import { FabStore } from '../../../../core/stores/fab.store';
 import { EventCategoryStore } from '../../../../core/stores/event-category.store';
 import { CATEGORY_COLOR_PALETTE } from '../../../../shared/models/event-constants';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-calendar-page',
@@ -364,8 +365,24 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
   }
 
   onEventDeleted(data: { databaseId: string; rowId: string }): void {
-    this.calendarStore.deleteEvent(data);
-    this.closeDetailPanel();
+    const event = this.events().find(e => e.id === data.rowId);
+    const dialogRef = this.dialog.open<ConfirmDialogComponent, ConfirmDialogData, boolean>(
+      ConfirmDialogComponent,
+      {
+        width: '500px',
+        data: {
+          title: 'Supprimer l\'événement',
+          message: `Voulez-vous déplacer "${event?.title ?? 'cet événement'}" vers la corbeille ?`,
+        },
+      },
+    );
+
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((confirmed) => {
+      if (confirmed) {
+        this.calendarStore.deleteEvent(data);
+        this.closeDetailPanel();
+      }
+    });
   }
 
   onNavigateToSource(data: { databaseId: string; rowId: string; title: string }): void {

@@ -1,9 +1,10 @@
 import { computed, inject } from '@angular/core';
 import { signalStore, withState, withMethods, withComputed, patchState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, tap, switchMap, concatMap, catchError, EMPTY, from } from 'rxjs';
+import { pipe, tap, switchMap, concatMap, catchError, EMPTY, from, of } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { EventEntry, EventDatabaseService } from '../../../core/services/event-database.service';
+import { TrashService } from '../../../core/services/trash.service';
 import { CalendarViewType } from '../models/calendar.model';
 import { GoogleCalendarStore } from '../../google-calendar/store/google-calendar.store';
 
@@ -39,6 +40,7 @@ export const CalendarStore = signalStore(
   withMethods((
     store,
     eventDbService = inject(EventDatabaseService),
+    trashService = inject(TrashService),
     snackBar = inject(MatSnackBar),
     gcalStore = inject(GoogleCalendarStore),
   ) => ({
@@ -187,15 +189,33 @@ export const CalendarStore = signalStore(
     deleteEvent: rxMethod<{ databaseId: string; rowId: string }>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
-        concatMap(({ databaseId, rowId }) =>
-          eventDbService.deleteEvent(databaseId, rowId).pipe(
+        concatMap(({ databaseId, rowId }) => {
+          const event = store.events().find(e => e.id === rowId);
+
+          return eventDbService.deleteEvent(databaseId, rowId).pipe(
+            // Create trash entry so the event appears in the trash
+            concatMap(() =>
+              eventDbService.getDatabaseMetadata(databaseId).pipe(
+                concatMap(metadata => trashService.softDeleteTrashOnly(
+                  'event',
+                  rowId,
+                  metadata.table_name,
+                  event?.title ?? 'Événement sans titre',
+                  { databaseId, databaseName: event?.databaseName ?? '' },
+                )),
+                catchError((err: Error) => {
+                  console.error('[CalendarStore] Failed to create trash entry:', err);
+                  return of(null);
+                }),
+              ),
+            ),
             tap(() => {
               patchState(store, {
                 events: store.events().filter(e => e.id !== rowId),
                 loading: false,
                 selectedEventId: store.selectedEventId() === rowId ? null : store.selectedEventId(),
               });
-              snackBar.open('Événement supprimé', 'Fermer', { duration: 2000 });
+              snackBar.open('Événement déplacé vers la corbeille', 'Fermer', { duration: 3000 });
             }),
             concatMap(() =>
               from(gcalStore.triggerDeleteForEvent(databaseId, rowId)).pipe(
@@ -210,8 +230,8 @@ export const CalendarStore = signalStore(
               snackBar.open(error.message || 'Erreur lors de la suppression', 'Fermer', { duration: 5000 });
               return EMPTY;
             }),
-          ),
-        ),
+          );
+        }),
       ),
     ),
 
