@@ -59,6 +59,13 @@ rsync -avz --delete \
     "$LOCAL_PROJECT_DIR/supabase/" \
     "$VPS_USER@$VPS_HOST:$VPS_PATH/supabase/"
 
+# Sync Edge Functions
+echo "   Syncing Edge Functions..."
+rsync -avz --delete \
+    --exclude='.DS_Store' \
+    "$LOCAL_PROJECT_DIR/OBS/supabase-self-hosted/volumes/functions/" \
+    "$VPS_USER@$VPS_HOST:$VPS_PATH/OBS/supabase-self-hosted/volumes/functions/"
+
 # Sync MCP server
 echo "   Syncing MCP server..."
 rsync -avz --delete \
@@ -112,6 +119,11 @@ echo -e "${YELLOW}🐳 Step 5/5: Rebuilding and restarting services...${NC}"
 echo "   Rebuilding Angular app container..."
 ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH/OBS && docker compose build app --no-cache && docker compose up -d app"
 echo -e "${GREEN}   ✅ Angular app container restarted${NC}"
+
+# Restart Edge Functions container
+echo "   Restarting Edge Functions container..."
+ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH/OBS && docker compose up -d functions"
+echo -e "${GREEN}   ✅ Edge Functions container restarted${NC}"
 
 # Restart MCP server
 echo "   Restarting MCP server..."

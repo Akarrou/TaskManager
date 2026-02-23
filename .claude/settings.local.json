@@ -85,9 +85,6 @@
       "mcp__context7__query-docs"
     ],
     "deny": [
-      "Read(./.env)",
-      "Read(./.env.*)",
-      "Read(./secrets/**)"
     ],
     "ask": [
       "Bash(rm -rf *)"

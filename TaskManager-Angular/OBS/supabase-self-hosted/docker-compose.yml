@@ -340,6 +340,7 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}
       # TODO: Allow configuring VERIFY_JWT per function. This PR might help: https://github.com/supabase/cli/pull/786
       VERIFY_JWT: "${FUNCTIONS_VERIFY_JWT}"
     command:

@@ -497,6 +497,14 @@ export class DatabaseService {
         return this.mapRowsFromDb(response.data || []);
       }),
       catchError(error => {
+        const isSchemaError =
+          error.code === '42P01' ||
+          error.code === '42703' ||
+          error.message?.includes('does not exist');
+
+        if (isSchemaError) {
+          return of([]);
+        }
         console.error('Failed to fetch rows:', error);
         return throwError(() => error);
       })
@@ -552,11 +560,13 @@ export class DatabaseService {
           error.code === 'PGRST204' ||
           error.code === 'PGRST205' ||
           error.code === '42P01' ||
+          error.code === '42703' || // undefined_column (column removed from table but still in config)
           error.message?.includes('PGRST') ||
-          error.message?.includes('relation') && error.message?.includes('does not exist');
+          error.message?.includes('relation') && error.message?.includes('does not exist') ||
+          error.message?.includes('column') && error.message?.includes('does not exist');
 
         if (isTableNotFound) {
-          // Silently return empty result for newly created tables
+          // Silently return empty result for missing tables or columns
           return of({ rows: [], totalCount: 0 });
         }
         console.error('Failed to fetch rows with count:', error);
