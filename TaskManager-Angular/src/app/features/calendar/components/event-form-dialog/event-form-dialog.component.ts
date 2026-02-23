@@ -41,6 +41,7 @@ import {
   LinkedItem,
   createEventDatabaseConfig,
 } from '../../../../features/documents/models/database.model';
+import { GoogleCalendarReminder } from '../../../google-calendar/models/google-calendar.model';
 import { DatabaseService } from '../../../../features/documents/services/database.service';
 import { RecurrencePickerComponent } from '../recurrence-picker/recurrence-picker.component';
 import { LinkedItemsPickerComponent } from '../linked-items-picker/linked-items-picker.component';
@@ -67,6 +68,7 @@ export interface EventFormDialogResult {
   location: string;
   recurrence: string;
   linked_items: LinkedItem[];
+  reminders: GoogleCalendarReminder[];
   databaseId: string;
 }
 
@@ -82,6 +84,7 @@ interface EventForm {
   location: FormControl<string>;
   recurrence: FormControl<string>;
   linkedItems: FormControl<LinkedItem[]>;
+  reminders: FormControl<GoogleCalendarReminder[]>;
   databaseId: FormControl<string>;
 }
 
@@ -159,6 +162,7 @@ export class EventFormDialogComponent implements OnInit {
     location: new FormControl<string>('', { nonNullable: true }),
     recurrence: new FormControl<string>('', { nonNullable: true }),
     linkedItems: new FormControl<LinkedItem[]>([], { nonNullable: true }),
+    reminders: new FormControl<GoogleCalendarReminder[]>([], { nonNullable: true }),
     databaseId: new FormControl<string>('', {
       nonNullable: true,
       validators: [Validators.required],
@@ -239,6 +243,7 @@ export class EventFormDialogComponent implements OnInit {
         location: event.location ?? '',
         recurrence: event.recurrence ?? '',
         linkedItems: event.linked_items ?? [],
+        reminders: event.reminders ?? [],
         databaseId: event.databaseId,
       });
 
@@ -321,11 +326,42 @@ export class EventFormDialogComponent implements OnInit {
       location: formValue.location.trim(),
       recurrence: formValue.recurrence,
       linked_items: formValue.linkedItems,
+      reminders: formValue.reminders,
       databaseId: formValue.databaseId,
     };
 
     this.isLoading.set(false);
     this.dialogRef.close(result);
+  }
+
+  // =====================================================================
+  // Reminder Helpers
+  // =====================================================================
+
+  addReminder(): void {
+    const current = this.form.controls.reminders.value;
+    this.form.controls.reminders.setValue([
+      ...current,
+      { method: 'popup', minutes: 15 },
+    ]);
+  }
+
+  removeReminder(index: number): void {
+    const current = [...this.form.controls.reminders.value];
+    current.splice(index, 1);
+    this.form.controls.reminders.setValue(current);
+  }
+
+  updateReminderMethod(index: number, method: 'popup' | 'email'): void {
+    const current = [...this.form.controls.reminders.value];
+    current[index] = { ...current[index], method };
+    this.form.controls.reminders.setValue(current);
+  }
+
+  updateReminderMinutes(index: number, minutes: number): void {
+    const current = [...this.form.controls.reminders.value];
+    current[index] = { ...current[index], minutes };
+    this.form.controls.reminders.setValue(current);
   }
 
   // =====================================================================

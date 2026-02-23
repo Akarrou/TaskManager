@@ -1,0 +1,5 @@
+@if (isConnected()) {
+  <button mat-icon-button [matTooltip]="tooltipText()" (click)="onClick()">
+    <mat-icon [class]="'sync-icon ' + syncStatus()">{{ iconName() }}</mat-icon>
+  </button>
+}

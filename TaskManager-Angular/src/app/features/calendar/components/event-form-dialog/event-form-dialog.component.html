@@ -123,6 +123,43 @@
         <app-recurrence-picker formControlName="recurrence"></app-recurrence-picker>
       </div>
 
+      <!-- Reminders -->
+      <div class="form-group">
+        <label class="form-label">Rappels</label>
+        <div class="reminders-list">
+          @for (reminder of form.controls.reminders.value; track $index) {
+            <div class="reminder-row">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="reminder-method-field">
+                <mat-select [value]="reminder.method" (selectionChange)="updateReminderMethod($index, $event.value)">
+                  <mat-option value="popup">Notification</mat-option>
+                  <mat-option value="email">Email</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="reminder-time-field">
+                <mat-select [value]="reminder.minutes" (selectionChange)="updateReminderMinutes($index, $event.value)">
+                  <mat-option [value]="5">5 minutes</mat-option>
+                  <mat-option [value]="15">15 minutes</mat-option>
+                  <mat-option [value]="30">30 minutes</mat-option>
+                  <mat-option [value]="60">1 heure</mat-option>
+                  <mat-option [value]="120">2 heures</mat-option>
+                  <mat-option [value]="1440">1 jour</mat-option>
+                  <mat-option [value]="2880">2 jours</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <button mat-icon-button type="button" (click)="removeReminder($index)" class="reminder-remove-btn">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          }
+          @if (form.controls.reminders.value.length < 5) {
+            <button mat-stroked-button type="button" (click)="addReminder()" class="reminder-add-btn">
+              <mat-icon>add</mat-icon>
+              Ajouter un rappel
+            </button>
+          }
+        </div>
+      </div>
+
     </div>
 
     <!-- Right Column: Linked Items -->

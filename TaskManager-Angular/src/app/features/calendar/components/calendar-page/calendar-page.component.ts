@@ -19,6 +19,7 @@ import { EventEntry } from '../../../../core/services/event-database.service';
 import { FullCalendarAdapterService } from '../../services/fullcalendar-adapter.service';
 import { EventFormDialogComponent } from '../event-form-dialog/event-form-dialog.component';
 import { EventDetailPanelComponent } from '../event-detail-panel/event-detail-panel.component';
+import { SyncStatusIndicatorComponent } from '../../../google-calendar/components/sync-status-indicator/sync-status-indicator.component';
 import { selectActiveProjects } from '../../../projects/store/project.selectors';
 import { loadProjects } from '../../../projects/store/project.actions';
 import { switchMap } from 'rxjs/operators';
@@ -38,6 +39,7 @@ import { FabStore } from '../../../../core/stores/fab.store';
     MatButtonToggleModule,
     MatIconModule,
     EventDetailPanelComponent,
+    SyncStatusIndicatorComponent,
   ],
   templateUrl: './calendar-page.component.html',
   styleUrls: ['./calendar-page.component.scss'],

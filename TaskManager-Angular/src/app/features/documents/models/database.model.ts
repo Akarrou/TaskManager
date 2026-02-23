@@ -956,6 +956,15 @@ export function createEventDatabaseTemplateColumns(): DatabaseColumn[] {
       width: 120,
       color: 'gray',
     },
+    {
+      id: crypto.randomUUID(),
+      name: 'Reminders',
+      type: 'text',
+      visible: false,
+      order: 11,
+      width: DEFAULT_COLUMN_WIDTHS.text,
+      color: 'yellow',
+    },
   ];
 }
 

@@ -37,6 +37,10 @@ yarn-error.log
 testem.log
 /typings
 
+# Environment / Secrets
+.env
+supabase/functions/.env
+
 # System files
 .DS_Store
 Thumbs.db

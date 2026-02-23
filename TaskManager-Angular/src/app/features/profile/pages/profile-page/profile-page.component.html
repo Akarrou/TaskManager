@@ -163,6 +163,20 @@
         </div>
       </div>
 
+      <!-- Intégrations -->
+      <div class="c-profile-card c-profile-card--integrations">
+        <div class="c-profile-card__header">
+          <span class="material-icons-outlined c-card-icon">sync</span>
+          <h2 class="c-card-title">Intégrations</h2>
+        </div>
+        <div class="c-profile-card__content">
+          <app-google-calendar-connect></app-google-calendar-connect>
+          @if (gcalStore.isConnected()) {
+            <app-google-calendar-settings></app-google-calendar-settings>
+          }
+        </div>
+      </div>
+
       <!-- Informations du compte -->
       <div class="c-profile-card c-profile-card--info">
         <div class="c-profile-card__header">

@@ -1,0 +1,295 @@
+// Supabase Edge Function: Sync Google Calendar events to Kodo
+// Deploy with: supabase functions deploy google-calendar-sync
+
+import {
+  corsHeaders,
+  createSupabaseAdmin,
+  authenticateUser,
+  getValidAccessToken,
+  GoogleCalendarConnection,
+} from "../_shared/google-auth-helpers.ts"
+
+interface SyncConfig {
+  id: string
+  connection_id: string
+  google_calendar_id: string
+  kodo_database_id: string
+  sync_direction: string
+  sync_token: string | null
+  last_sync_at: string | null
+}
+
+interface SyncResult {
+  created: number
+  updated: number
+  deleted: number
+  errors: string[]
+  sync_token: string | null
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const supabaseAdmin = createSupabaseAdmin()
+    const user = await authenticateUser(req, supabaseAdmin)
+
+    const { sync_config_id } = await req.json()
+    if (!sync_config_id) {
+      throw new Error('Missing sync_config_id')
+    }
+
+    // Get sync config
+    const { data: syncConfig, error: configError } = await supabaseAdmin
+      .from('google_calendar_sync_config')
+      .select('*')
+      .eq('id', sync_config_id)
+      .single()
+
+    if (configError || !syncConfig) {
+      throw new Error('Sync configuration not found')
+    }
+
+    const config = syncConfig as SyncConfig
+
+    // Get connection
+    const { data: connection, error: connError } = await supabaseAdmin
+      .from('google_calendar_connections')
+      .select('*')
+      .eq('id', config.connection_id)
+      .eq('user_id', user.id)
+      .single()
+
+    if (connError || !connection) {
+      throw new Error('Google Calendar connection not found')
+    }
+
+    const accessToken = await getValidAccessToken(
+      connection as GoogleCalendarConnection,
+      supabaseAdmin
+    )
+
+    // Build request parameters
+    const params = new URLSearchParams({
+      singleEvents: 'true',
+      orderBy: 'startTime',
+      maxResults: '2500',
+    })
+
+    if (config.sync_token) {
+      // Incremental sync
+      params.set('syncToken', config.sync_token)
+    } else {
+      // Full sync: 3 months ago to 1 year future
+      const timeMin = new Date()
+      timeMin.setMonth(timeMin.getMonth() - 3)
+      const timeMax = new Date()
+      timeMax.setFullYear(timeMax.getFullYear() + 1)
+
+      params.set('timeMin', timeMin.toISOString())
+      params.set('timeMax', timeMax.toISOString())
+    }
+
+    const calendarId = encodeURIComponent(config.google_calendar_id)
+    let nextPageToken: string | undefined
+    let nextSyncToken: string | null = null
+
+    const result: SyncResult = {
+      created: 0,
+      updated: 0,
+      deleted: 0,
+      errors: [],
+      sync_token: null,
+    }
+
+    // Paginate through all events
+    do {
+      if (nextPageToken) {
+        params.set('pageToken', nextPageToken)
+      }
+
+      const eventsUrl = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?${params.toString()}`
+      const eventsResponse = await fetch(eventsUrl, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+
+      if (!eventsResponse.ok) {
+        const errorText = await eventsResponse.text()
+
+        // If sync token is invalid, clear it and request a full sync
+        if (eventsResponse.status === 410) {
+          await supabaseAdmin
+            .from('google_calendar_sync_config')
+            .update({ sync_token: null })
+            .eq('id', config.id)
+
+          throw new Error('Sync token expired. Please trigger a full sync.')
+        }
+
+        throw new Error(`Google Calendar API error: ${errorText}`)
+      }
+
+      const eventsData = await eventsResponse.json()
+      const events: Record<string, unknown>[] = eventsData.items ?? []
+      nextPageToken = eventsData.nextPageToken
+      nextSyncToken = eventsData.nextSyncToken ?? null
+
+      // Process each event
+      for (const event of events) {
+        try {
+          await processEvent(event, config, supabaseAdmin, result)
+        } catch (eventError) {
+          result.errors.push(`Event ${event.id}: ${(eventError as Error).message}`)
+        }
+      }
+    } while (nextPageToken)
+
+    // Save sync token and update last sync timestamp
+    await supabaseAdmin
+      .from('google_calendar_sync_config')
+      .update({
+        sync_token: nextSyncToken,
+        last_sync_at: new Date().toISOString(),
+      })
+      .eq('id', config.id)
+
+    result.sync_token = nextSyncToken
+
+    // Log sync result
+    await supabaseAdmin.from('google_calendar_sync_log').insert({
+      sync_config_id: config.id,
+      sync_type: config.sync_token ? 'incremental' : 'full',
+      direction: 'from_google',
+      events_created: result.created,
+      events_updated: result.updated,
+      events_deleted: result.deleted,
+      errors: result.errors.length > 0 ? JSON.stringify(result.errors) : '[]',
+      status: result.errors.length > 0 ? 'partial' : 'success',
+    })
+
+    return new Response(
+      JSON.stringify(result),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      }
+    )
+  } catch (error) {
+    console.error('Error syncing calendar:', error)
+    return new Response(
+      JSON.stringify({ error: (error as Error).message }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      }
+    )
+  }
+})
+
+async function processEvent(
+  event: Record<string, unknown>,
+  config: SyncConfig,
+  supabaseAdmin: ReturnType<typeof createSupabaseAdmin>,
+  result: SyncResult
+): Promise<void> {
+  const googleEventId = event.id as string
+
+  // Check existing mapping
+  const { data: existingMapping } = await supabaseAdmin
+    .from('google_calendar_event_mapping')
+    .select('*')
+    .eq('sync_config_id', config.id)
+    .eq('google_event_id', googleEventId)
+    .maybeSingle()
+
+  // Handle cancelled events
+  if (event.status === 'cancelled') {
+    if (existingMapping) {
+      await supabaseAdmin
+        .from('database_rows')
+        .delete()
+        .eq('id', existingMapping.kodo_row_id)
+
+      await supabaseAdmin
+        .from('google_calendar_event_mapping')
+        .delete()
+        .eq('id', existingMapping.id)
+
+      result.deleted++
+    }
+    return
+  }
+
+  // Build Kodo row data from Google event
+  const rowData = mapGoogleEventToKodo(event)
+
+  if (existingMapping) {
+    // Update existing Kodo row
+    await supabaseAdmin
+      .from('database_rows')
+      .update({ data: rowData, updated_at: new Date().toISOString() })
+      .eq('id', existingMapping.kodo_row_id)
+
+    // Update mapping timestamps
+    await supabaseAdmin
+      .from('google_calendar_event_mapping')
+      .update({
+        google_updated_at: new Date().toISOString(),
+        sync_status: 'synced',
+      })
+      .eq('id', existingMapping.id)
+
+    result.updated++
+  } else {
+    // Create new Kodo row
+    const { data: newRow, error: insertError } = await supabaseAdmin
+      .from('database_rows')
+      .insert({
+        database_id: config.kodo_database_id,
+        data: rowData,
+      })
+      .select('id')
+      .single()
+
+    if (insertError || !newRow) {
+      throw new Error(`Failed to create Kodo row: ${insertError?.message}`)
+    }
+
+    // Create mapping
+    await supabaseAdmin
+      .from('google_calendar_event_mapping')
+      .insert({
+        sync_config_id: config.id,
+        google_event_id: googleEventId,
+        google_calendar_id: config.google_calendar_id,
+        kodo_database_id: config.kodo_database_id,
+        kodo_row_id: newRow.id,
+        google_updated_at: new Date().toISOString(),
+        sync_status: 'synced',
+      })
+
+    result.created++
+  }
+}
+
+function mapGoogleEventToKodo(event: Record<string, unknown>): Record<string, unknown> {
+  const start = event.start as Record<string, string> | undefined
+  const end = event.end as Record<string, string> | undefined
+  const reminders = event.reminders as Record<string, unknown> | undefined
+  const isAllDay = !!(start?.date && !start?.dateTime)
+
+  return {
+    title: event.summary ?? '',
+    description: event.description ?? '',
+    start_date: start?.dateTime ?? start?.date ?? null,
+    end_date: end?.dateTime ?? end?.date ?? null,
+    all_day: isAllDay,
+    location: event.location ?? null,
+    recurrence: Array.isArray(event.recurrence)
+      ? (event.recurrence as string[]).join('\n')
+      : null,
+    reminders: reminders?.overrides ?? null,
+  }
+}

@@ -1,0 +1,35 @@
+@if (loading()) {
+  <div class="gcal-loading">
+    <span class="c-spinner c-spinner--medium"></span>
+  </div>
+} @else if (isConnected()) {
+  <div class="gcal-connected">
+    <div class="gcal-connected__info">
+      <span class="material-icons-outlined gcal-icon">event</span>
+      <div class="gcal-connected__details">
+        <span class="gcal-connected__email">{{ connection()?.google_email }}</span>
+        <span class="gcal-connected__sync">
+          @if (connection()?.last_sync_at) {
+            Dernière sync : {{ connection()!.last_sync_at | date:'short' }}
+          } @else {
+            Jamais synchronisé
+          }
+        </span>
+      </div>
+    </div>
+    <button class="c-btn c-btn--danger" type="button" (click)="disconnect()">
+      <span class="material-icons-outlined">link_off</span>
+      <span>Déconnecter</span>
+    </button>
+  </div>
+} @else {
+  <p class="gcal-description">
+    Connectez votre compte Google Calendar pour synchroniser vos événements et recevoir des rappels.
+  </p>
+  <div class="gcal-actions">
+    <button class="c-btn c-btn--primary" type="button" (click)="connect()" [disabled]="loading()">
+      <span class="material-icons-outlined">add_link</span>
+      <span>Connecter Google Calendar</span>
+    </button>
+  </div>
+}

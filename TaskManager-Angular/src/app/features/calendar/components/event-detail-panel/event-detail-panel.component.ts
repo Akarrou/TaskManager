@@ -9,6 +9,7 @@ import { EventEntry } from '../../../../core/services/event-database.service';
 import { CATEGORY_LABELS, CATEGORY_COLORS, EventCategory } from '../../../../shared/models/event-constants';
 import { LinkedItem } from '../../../documents/models/database.model';
 import { RruleToTextPipe } from '../../pipes/rrule-to-text.pipe';
+import { GoogleCalendarReminder } from '../../../google-calendar/models/google-calendar.model';
 
 @Component({
   selector: 'app-event-detail-panel',
@@ -99,6 +100,24 @@ export class EventDetailPanelComponent {
 
   onLinkedItemClick(item: LinkedItem): void {
     this.linkedItemClick.emit(item);
+  }
+
+  getGoogleCalendarLink(googleEventId: string): string {
+    const encodedId = btoa(googleEventId);
+    return `https://calendar.google.com/calendar/event?eid=${encodedId}`;
+  }
+
+  formatReminder(reminder: GoogleCalendarReminder): string {
+    const method = reminder.method === 'popup' ? 'Notification' : 'Email';
+    if (reminder.minutes < 60) {
+      return `${method} : ${reminder.minutes} min avant`;
+    } else if (reminder.minutes < 1440) {
+      const hours = Math.floor(reminder.minutes / 60);
+      return `${method} : ${hours}h avant`;
+    } else {
+      const days = Math.floor(reminder.minutes / 1440);
+      return `${method} : ${days} jour${days > 1 ? 's' : ''} avant`;
+    }
   }
 
   private formatDateTime(isoDate: string, allDay: boolean): string {

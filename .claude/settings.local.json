@@ -60,7 +60,17 @@
       "mcp__chrome-devtools__wait_for",
       "mcp__chrome-devtools__list_pages",
       "mcp__chrome-devtools__new_page",
-      "WebFetch(domain:linear.app)"
+      "WebFetch(domain:linear.app)",
+      "Bash(pkill:*)",
+      "Bash(gcloud auth:*)",
+      "Bash(gcloud projects:*)",
+      "Bash(gcloud config set project kodo-taskmanager 2>&1 && gcloud services enable calendar-json.googleapis.com 2>&1)",
+      "Bash(gcloud services:*)",
+      "Bash(tail:*)",
+      "Bash(echo Endpoint not available:*)",
+      "Bash(cp:*)",
+      "Bash(printf:*)",
+      "Bash(test:*)"
     ],
     "deny": [
       "Read(./.env)",

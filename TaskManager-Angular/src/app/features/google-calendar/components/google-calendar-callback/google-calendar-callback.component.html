@@ -1,0 +1,10 @@
+<div class="callback-container">
+  @if (processing()) {
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Connexion à Google Calendar en cours...</p>
+  } @else if (error()) {
+    <mat-icon class="error-icon">error</mat-icon>
+    <p class="error-text">{{ error() }}</p>
+    <button mat-raised-button color="primary" routerLink="/profile">Retour au profil</button>
+  }
+</div>

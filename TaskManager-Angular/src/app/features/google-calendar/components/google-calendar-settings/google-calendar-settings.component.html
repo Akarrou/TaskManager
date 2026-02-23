@@ -1,0 +1,71 @@
+<div class="gcal-settings">
+  <div class="gcal-settings__header">
+    <h3 class="gcal-settings__title">
+      <span class="material-icons-outlined gcal-title-icon">calendar_month</span>
+      Calendriers Google
+    </h3>
+    <button
+      class="c-btn c-btn--icon"
+      type="button"
+      (click)="refreshCalendars()"
+      [disabled]="loading()"
+      title="Rafraîchir les calendriers"
+    >
+      <span class="material-icons-outlined">refresh</span>
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="gcal-loading">
+      <span class="c-spinner c-spinner--medium"></span>
+    </div>
+  } @else if (!hasCalendars()) {
+    <p class="gcal-empty">Aucun calendrier trouvé. Vérifiez votre connexion Google Calendar.</p>
+  } @else {
+    <div class="gcal-calendar-list">
+      @for (calendar of availableCalendars(); track calendar.id) {
+        <div class="gcal-calendar-item">
+          <div class="gcal-calendar-info">
+            <span class="gcal-color-dot" [style.background-color]="calendar.backgroundColor"></span>
+            <span class="gcal-calendar-name">{{ calendar.summary }}</span>
+          </div>
+
+          <div class="gcal-calendar-controls">
+            <mat-slide-toggle
+              [checked]="isCalendarEnabled(calendar.id)"
+              (change)="toggleCalendar(calendar, $event.checked)">
+            </mat-slide-toggle>
+
+            @if (isCalendarEnabled(calendar.id)) {
+              @if (getConfigForCalendar(calendar.id); as config) {
+                <mat-button-toggle-group
+                  [value]="config.sync_direction"
+                  (change)="changeSyncDirection(config.id!, $event.value)"
+                  class="gcal-direction-toggle">
+                  <mat-button-toggle value="from_google" matTooltip="Google vers Kodo">
+                    <mat-icon>arrow_back</mat-icon>
+                  </mat-button-toggle>
+                  <mat-button-toggle value="bidirectional" matTooltip="Bidirectionnel">
+                    <mat-icon>swap_horiz</mat-icon>
+                  </mat-button-toggle>
+                  <mat-button-toggle value="to_google" matTooltip="Kodo vers Google">
+                    <mat-icon>arrow_forward</mat-icon>
+                  </mat-button-toggle>
+                </mat-button-toggle-group>
+
+                <button
+                  class="c-btn c-btn--icon"
+                  type="button"
+                  (click)="syncNow(config.id!)"
+                  title="Synchroniser maintenant"
+                >
+                  <span class="material-icons-outlined">sync</span>
+                </button>
+              }
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

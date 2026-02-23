@@ -1,0 +1,27 @@
+.sync-icon {
+  &.idle {
+    color: #4caf50;
+  }
+
+  &.syncing {
+    color: #2196f3;
+    animation: spin 1.5s linear infinite;
+  }
+
+  &.error {
+    color: #f44336;
+  }
+
+  &.disconnected {
+    color: #9e9e9e;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

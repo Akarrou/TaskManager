@@ -124,6 +124,38 @@
         </div>
       }
 
+      <!-- Google Calendar Sync Status -->
+      @if (event.google_event_id) {
+        <mat-divider></mat-divider>
+        <div class="panel-section">
+          <mat-icon class="section-icon google-icon">event_available</mat-icon>
+          <div class="section-content">
+            <span class="sync-badge sync-badge--synced">
+              <mat-icon class="!text-[14px] !w-[14px] !h-[14px]">cloud_done</mat-icon>
+              Synchronisé avec Google Calendar
+            </span>
+            <a class="google-link" [href]="getGoogleCalendarLink(event.google_event_id)" target="_blank" rel="noopener">
+              Voir dans Google Calendar
+              <mat-icon class="!text-[13px] !w-[13px] !h-[13px]">open_in_new</mat-icon>
+            </a>
+          </div>
+        </div>
+      }
+
+      <!-- Reminders -->
+      @if (event.reminders && event.reminders.length > 0) {
+        <mat-divider></mat-divider>
+        <div class="panel-section panel-section--top">
+          <mat-icon class="section-icon">notifications</mat-icon>
+          <div class="section-content">
+            <span class="section-label">Rappels</span>
+            @for (reminder of event.reminders; track reminder.minutes) {
+              <span class="section-value">{{ formatReminder(reminder) }}</span>
+            }
+          </div>
+        </div>
+      }
+
       <!-- Source -->
       <mat-divider></mat-divider>
       <div class="panel-section">

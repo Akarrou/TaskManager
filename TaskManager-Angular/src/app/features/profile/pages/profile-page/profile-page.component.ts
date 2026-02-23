@@ -7,11 +7,14 @@ import { AuthService } from '../../../../core/services/auth';
 import { Profile } from '../../models/profile.model';
 import { ApiTokenListComponent } from '../../components/api-token-list/api-token-list.component';
 import { ApiTokenCreateComponent } from '../../components/api-token-create/api-token-create.component';
+import { GoogleCalendarConnectComponent } from '../../../google-calendar/components/google-calendar-connect/google-calendar-connect.component';
+import { GoogleCalendarSettingsComponent } from '../../../google-calendar/components/google-calendar-settings/google-calendar-settings.component';
+import { GoogleCalendarStore } from '../../../google-calendar/store/google-calendar.store';
 
 @Component({
   selector: 'app-profile-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, ApiTokenListComponent, ApiTokenCreateComponent],
+  imports: [CommonModule, FormsModule, ApiTokenListComponent, ApiTokenCreateComponent, GoogleCalendarConnectComponent, GoogleCalendarSettingsComponent],
   templateUrl: './profile-page.component.html',
   styleUrls: ['./profile-page.component.scss']
 })
@@ -19,6 +22,7 @@ export class ProfilePageComponent implements OnInit {
   private profileService = inject(ProfileService);
   private authService = inject(AuthService);
   private router = inject(Router);
+  readonly gcalStore = inject(GoogleCalendarStore);
 
   @ViewChild(ApiTokenListComponent) tokenListComponent!: ApiTokenListComponent;
 
@@ -45,6 +49,7 @@ export class ProfilePageComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadProfile();
+    this.gcalStore.loadConnection();
   }
 
   async loadProfile(): Promise<void> {

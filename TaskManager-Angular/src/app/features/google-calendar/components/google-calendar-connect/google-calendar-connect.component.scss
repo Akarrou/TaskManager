@@ -1,0 +1,127 @@
+@use '../../../../styles/variables' as v;
+
+:host {
+  display: block;
+}
+
+// Loading
+.gcal-loading {
+  display: flex;
+  justify-content: center;
+  padding: v.$space-6 0;
+}
+
+.c-spinner--medium {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(v.$primary-color, 0.2);
+  border-radius: 50%;
+  border-top-color: v.$primary-color;
+  animation: spinner 0.8s linear infinite;
+}
+
+@keyframes spinner {
+  to { transform: rotate(360deg); }
+}
+
+// Connected state
+.gcal-connected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$space-4;
+
+  &__info {
+    display: flex;
+    align-items: center;
+    gap: v.$space-3;
+  }
+
+  &__details {
+    display: flex;
+    flex-direction: column;
+    gap: v.$space-1;
+  }
+
+  &__email {
+    font-size: v.$font-size-sm;
+    font-weight: 500;
+    color: v.$text-color-dark;
+  }
+
+  &__sync {
+    font-size: v.$font-size-xs;
+    color: v.$text-color-light;
+  }
+}
+
+.gcal-icon {
+  font-size: 28px;
+  color: #4285f4;
+}
+
+// Description
+.gcal-description {
+  font-size: v.$font-size-sm;
+  color: v.$text-color-medium;
+  line-height: 1.6;
+  margin: 0;
+}
+
+// Actions
+.gcal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: v.$space-8;
+}
+
+// Buttons
+.c-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: v.$space-3 v.$space-5;
+  border-radius: v.$border-radius-lg;
+  font-weight: 600;
+  font-size: v.$font-size-sm;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: v.$space-2;
+
+  .material-icons-outlined {
+    font-size: 18px;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: v.$primary-color;
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(v.$primary-color, 0.2);
+
+    &:hover:not(:disabled) {
+      background: v.$primary-color-dark;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 8px -1px rgba(v.$primary-color, 0.3);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+  }
+
+  &--danger {
+    background: transparent;
+    color: v.$danger-color;
+    border-color: v.$danger-border;
+
+    &:hover:not(:disabled) {
+      background: v.$danger-color-lightest;
+      border-color: v.$danger-color;
+    }
+  }
+}

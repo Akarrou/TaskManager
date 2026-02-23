@@ -12,6 +12,7 @@ import {
 } from '../../features/documents/models/database.model';
 import { DatabaseService } from '../../features/documents/services/database.service';
 import { EventCategory } from '../../shared/models/event-constants';
+import { GoogleCalendarReminder } from '../../features/google-calendar/models/google-calendar.model';
 
 /**
  * EventEntry - Normalized event entry from database rows
@@ -35,6 +36,11 @@ export interface EventEntry {
   linked_items?: LinkedItem[];
   project_id?: string;
   event_number?: string;
+
+  // Google Calendar sync
+  google_event_id?: string;
+  sync_status?: 'synced' | 'pending' | 'conflict' | 'error' | 'local_only';
+  reminders?: GoogleCalendarReminder[];
 
   // Metadata
   created_at: string;
@@ -208,6 +214,9 @@ export class EventDatabaseService {
         if (eventData.project_id && columnMapping['Project ID']) {
           cells[columnMapping['Project ID']] = eventData.project_id;
         }
+        if (eventData.reminders && columnMapping['Reminders']) {
+          cells[columnMapping['Reminders']] = JSON.stringify(eventData.reminders);
+        }
 
         return this.databaseService.addRow({
           databaseId,
@@ -263,6 +272,9 @@ export class EventDatabaseService {
         }
         if (updates.project_id !== undefined && columnMapping['Project ID']) {
           cells[columnMapping['Project ID']] = updates.project_id ?? null;
+        }
+        if (updates.reminders !== undefined && columnMapping['Reminders']) {
+          cells[columnMapping['Reminders']] = updates.reminders ? JSON.stringify(updates.reminders) : null;
         }
 
         return this.databaseService.updateRow(databaseId, rowId, cells).pipe(
@@ -342,6 +354,7 @@ export class EventDatabaseService {
       linked_items: this.getCellValue(row, columnMapping, 'Linked Items') as LinkedItem[],
       project_id: this.getCellValue(row, columnMapping, 'Project ID') as string,
       event_number: this.getCellValue(row, columnMapping, 'Event Number') as string,
+      reminders: this.parseReminders(this.getCellValue(row, columnMapping, 'Reminders') as string),
       created_at: row.created_at,
       updated_at: row.updated_at,
       row_order: row.row_order,
@@ -402,6 +415,19 @@ export class EventDatabaseService {
       default:
         console.warn(`Unknown category value: ${value}, defaulting to 'other'`);
         return 'other';
+    }
+  }
+
+  /**
+   * Parse reminders from JSON string
+   */
+  private parseReminders(value: string | null | undefined): GoogleCalendarReminder[] | undefined {
+    if (!value) return undefined;
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : undefined;
+    } catch {
+      return undefined;
     }
   }
 }

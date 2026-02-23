@@ -1,0 +1,47 @@
+<h2 mat-dialog-title>Résolution de conflits</h2>
+<mat-dialog-content>
+  <!-- Current conflict info -->
+  <div class="conflict-header">
+    <span>Conflit {{ currentIndex() + 1 }} / {{ conflicts.length }}</span>
+  </div>
+
+  @if (currentConflict(); as conflict) {
+    <div class="comparison">
+      <div class="version kodo-version">
+        <h3>Version Kodo</h3>
+        @for (diff of conflict.field_diffs; track diff.field) {
+          <div class="field">
+            <span class="field-name">{{ diff.field }}</span>
+            <span class="field-value">{{ diff.kodo_value }}</span>
+          </div>
+        }
+      </div>
+      <div class="version google-version">
+        <h3>Version Google</h3>
+        @for (diff of conflict.field_diffs; track diff.field) {
+          <div class="field">
+            <span class="field-name">{{ diff.field }}</span>
+            <span class="field-value">{{ diff.google_value }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <mat-radio-group [(ngModel)]="resolution" class="resolution-group">
+    <mat-radio-button value="kodo">Garder Kodo</mat-radio-button>
+    <mat-radio-button value="google">Garder Google</mat-radio-button>
+    <mat-radio-button value="newest">Garder le plus récent</mat-radio-button>
+  </mat-radio-group>
+
+  @if (conflicts.length > 1) {
+    <mat-checkbox [(ngModel)]="applyToAll" class="apply-all">
+      Appliquer à tous les conflits
+    </mat-checkbox>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Annuler</button>
+  <button mat-button (click)="skip()">Ignorer</button>
+  <button mat-raised-button color="primary" (click)="resolveAndNext()">Appliquer</button>
+</mat-dialog-actions>

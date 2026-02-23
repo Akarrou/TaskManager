@@ -4,6 +4,7 @@ import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, tap, switchMap, catchError, of } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { EventEntry, EventDatabaseService } from '../../../core/services/event-database.service';
+import { GoogleCalendarStore } from '../../google-calendar/store/google-calendar.store';
 
 type CalendarViewType = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay';
 
@@ -40,6 +41,7 @@ export const CalendarStore = signalStore(
     store,
     eventDbService = inject(EventDatabaseService),
     snackBar = inject(MatSnackBar),
+    gcalStore = inject(GoogleCalendarStore),
   ) => ({
     loadEvents: rxMethod<{ start: string; end: string; projectId?: string }>(
       pipe(
@@ -74,6 +76,18 @@ export const CalendarStore = signalStore(
                 loading: false,
               });
               snackBar.open('Événement créé avec succès', 'Fermer', { duration: 3000 });
+              // Sync to Google Calendar if applicable
+              gcalStore.triggerSyncForEvent(created.databaseId, created.id, {
+                title: created.title,
+                description: created.description,
+                start_date: created.start_date,
+                end_date: created.end_date,
+                all_day: created.all_day,
+                category: created.category,
+                location: created.location,
+                recurrence: created.recurrence,
+                reminders: created.reminders,
+              });
             }),
             catchError((error: Error) => {
               patchState(store, { loading: false, error: error.message });
@@ -96,6 +110,18 @@ export const CalendarStore = signalStore(
                 loading: false,
               });
               snackBar.open('Événement mis à jour', 'Fermer', { duration: 2000 });
+              // Sync to Google Calendar if applicable
+              gcalStore.triggerSyncForEvent(updated.databaseId, updated.id, {
+                title: updated.title,
+                description: updated.description,
+                start_date: updated.start_date,
+                end_date: updated.end_date,
+                all_day: updated.all_day,
+                category: updated.category,
+                location: updated.location,
+                recurrence: updated.recurrence,
+                reminders: updated.reminders,
+              });
             }),
             catchError((error: Error) => {
               patchState(store, { loading: false, error: error.message });
@@ -113,6 +139,8 @@ export const CalendarStore = signalStore(
         switchMap(({ databaseId, rowId }) =>
           eventDbService.deleteEvent(databaseId, rowId).pipe(
             tap(() => {
+              // Sync delete to Google Calendar before removing from state
+              gcalStore.triggerDeleteForEvent(databaseId, rowId);
               patchState(store, {
                 events: store.events().filter(e => e.id !== rowId),
                 loading: false,

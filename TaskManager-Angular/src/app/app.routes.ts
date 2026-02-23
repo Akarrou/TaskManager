@@ -72,6 +72,12 @@ export const routes: Routes = [
     title: 'Mon Profil - Kōdo'
   },
   {
+    path: 'profile/google-callback',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/google-calendar/components/google-calendar-callback/google-calendar-callback.component').then(m => m.GoogleCalendarCallbackComponent),
+    title: 'Connexion Google Calendar - Kōdo'
+  },
+  {
     path: '**',
     redirectTo: '/dashboard'
   }
