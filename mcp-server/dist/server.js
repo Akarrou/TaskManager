@@ -12,6 +12,7 @@ import { registerSnapshotTools } from './tools/snapshots.js';
 import { registerTiptapDocsTools } from './tools/tiptap-docs.js';
 import { registerEventTools } from './tools/events.js';
 import { registerCalendarDocsTools } from './tools/calendar-docs.js';
+import { registerEventCategoryTools } from './tools/event-categories.js';
 import { registerTrashTools } from './tools/trash.js';
 import { registerPrompts } from './prompts/index.js';
 import { registerResources } from './resources/index.js';
@@ -43,12 +44,13 @@ export function createMcpServer() {
     registerTiptapDocsTools(server);
     registerEventTools(server);
     registerCalendarDocsTools(server);
+    registerEventCategoryTools(server);
     registerTrashTools(server);
     // Register resources
     registerResources(server);
     // Register prompts
     registerPrompts(server);
-    logger.info('MCP server configured with 89 tools, 5 resources, 9 prompts');
+    logger.info('MCP server configured with 93 tools, 5 resources, 9 prompts');
     return server;
 }
 //# sourceMappingURL=server.js.map

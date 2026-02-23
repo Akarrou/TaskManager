@@ -43,7 +43,7 @@ Each sync config has a `sync_direction`:
 
 When a sync config has `kodo_database_id = null` (new calendar connection), the `google-calendar-sync` edge function **automatically creates** an event database:
 1. Creates a document to host the database
-2. Creates `document_databases` metadata with all 13 standard event columns
+2. Creates `document_databases` metadata with all 15 standard event columns (including Attendees and Reminders)
 3. Creates the physical PostgreSQL table via `ensure_table_exists` RPC
 4. Updates `sync_config.kodo_database_id` with the new database UUID
 
@@ -91,9 +91,33 @@ When creating or updating events with `add_google_meet: true`:
 1. The push edge function adds `conferenceData.createRequest` to the Google API call
 2. Google creates a Meet conference and returns the link
 3. The Meet link is stored in the event's `Google Meet` column
-4. If the column doesn't exist (older databases), it's auto-created via migration
+4. If the column doesn't exist (older databases), it's auto-created via `ensureEventColumns()`
 
 The Meet link is extracted from `conferenceData.entryPoints[type=video].uri` or `hangoutLink` as fallback.
+
+**MCP usage**: Pass the `meet_link` parameter in `create_event` / `update_event` to store a known Meet link. MCP cannot generate new Meet links — this requires Google API access via the Angular app.
+
+## Attendee Sync
+
+### Google → Kodo
+- Attendee data from Google Calendar is imported into the `Attendees` column
+- RSVP status (`accepted`, `declined`, `tentative`, `needsAction`), display names, and organizer status are preserved
+- Guest permissions (`guestsCanModify`, `guestsCanInviteOthers`, `guestsCanSeeOtherGuests`) are inferred from Google Calendar settings
+
+### Kodo → Google
+- Attendees and guest permissions are pushed to Google Calendar via `google-calendar-push-event` edge function
+- RSVP statuses are sent to Google (Google may send invitation emails)
+
+**MCP usage**: Pass the `attendees` and `guest_permissions` parameters in `create_event` / `update_event` to manage attendees. Changes are stored in Kodo immediately but only propagate to Google Calendar when sync is triggered from the Angular app.
+
+## Reminders Sync
+
+Reminders are stored as `[{method: "popup"|"email", minutes: number}]` in the `Reminders` column.
+
+- **Google → Kodo**: Google Calendar reminders are imported
+- **Kodo → Google**: Reminders are pushed to Google during sync
+
+**MCP usage**: Pass the `reminders` parameter in `create_event` / `update_event`.
 
 ## FullCalendar Rendering
 
@@ -106,8 +130,10 @@ Events synced from Google Calendar may have a `color` field (hex). When present:
 ## MCP Limitations
 
 - **No direct sync trigger**: MCP tools cannot initiate Google Calendar sync
+- **No Meet link generation**: MCP can store existing Meet links but cannot create new ones (requires Google API access)
 - **Read-only access**: MCP can read events that were synced from Google, but changes via `update_event` will not automatically propagate to Google Calendar
-- **Delete propagation**: When deleting events via the Angular app, deletion propagates to Google Calendar. MCP `delete_event` does not trigger this propagation
+- **Delete propagation**: When deleting events via the Angular app, deletion propagates to Google Calendar. MCP `delete_event` performs a soft-delete (trash) but does not trigger Google deletion
+- **Attendee/reminder propagation**: Changes to attendees and reminders via MCP are stored locally but only propagate to Google on next sync from Angular
 - **Sync status**: Use `list_events` to see the current state of synced events in Kodo
 
 ## Sync Token Strategy

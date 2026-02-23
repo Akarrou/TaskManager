@@ -419,6 +419,23 @@ export class EventDatabaseService {
   }
 
   /**
+   * Get a single event by database ID and row ID
+   */
+  getEventById(databaseId: string, rowId: string): Observable<EventEntry | null> {
+    return this.getDatabaseMetadata(databaseId).pipe(
+      switchMap(dbMetadata =>
+        this.databaseService.getRowById(databaseId, rowId).pipe(
+          map(row => row ? this.normalizeRowToEventEntry(row, dbMetadata) : null),
+        ),
+      ),
+      catchError(err => {
+        console.error('[getEventById] Failed:', err);
+        return of(null);
+      }),
+    );
+  }
+
+  /**
    * Get database metadata with caching
    */
   getDatabaseMetadata(databaseId: string): Observable<DocumentDatabase> {

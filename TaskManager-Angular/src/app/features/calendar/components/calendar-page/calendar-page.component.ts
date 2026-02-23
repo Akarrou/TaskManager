@@ -23,7 +23,6 @@ import { SyncStatusIndicatorComponent } from '../../../google-calendar/component
 import { GoogleCalendarSettingsComponent } from '../../../google-calendar/components/google-calendar-settings/google-calendar-settings.component';
 import { GoogleCalendarStore } from '../../../google-calendar/store/google-calendar.store';
 import { selectActiveProjects } from '../../../projects/store/project.selectors';
-import { loadProjects } from '../../../projects/store/project.actions';
 import { switchMap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { of } from 'rxjs';
@@ -487,7 +486,6 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
   }
 
   private loadProjects(): void {
-    this.store.dispatch(loadProjects());
     this.store.select(selectActiveProjects).pipe(
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(projects => {

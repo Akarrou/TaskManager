@@ -1,0 +1,219 @@
+@if (isVisible()) {
+  <div class="table-bubble-menu" [style.top]="position().top" [style.left]="position().left">
+    <div class="menu-container">
+      <!-- Column actions -->
+      <div class="action-group">
+        <button
+          type="button"
+          class="menu-btn"
+          (mousedown)="$event.preventDefault()"
+          (click)="addColumnBefore(); $event.stopPropagation()"
+          matTooltip="Ajouter colonne avant"
+        >
+          <mat-icon>first_page</mat-icon>
+        </button>
+
+        <button
+          type="button"
+          class="menu-btn"
+          (mousedown)="$event.preventDefault()"
+          (click)="addColumnAfter(); $event.stopPropagation()"
+          matTooltip="Ajouter colonne après"
+        >
+          <mat-icon>last_page</mat-icon>
+        </button>
+
+        <button
+          type="button"
+          class="menu-btn danger"
+          (mousedown)="$event.preventDefault()"
+          (click)="deleteColumn(); $event.stopPropagation()"
+          matTooltip="Supprimer colonne"
+        >
+          <mat-icon>view_column</mat-icon>
+        </button>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Row actions -->
+      <div class="action-group">
+        <button
+          type="button"
+          class="menu-btn"
+          (mousedown)="$event.preventDefault()"
+          (click)="addRowBefore(); $event.stopPropagation()"
+          matTooltip="Ajouter ligne avant"
+        >
+          <mat-icon>vertical_align_top</mat-icon>
+        </button>
+
+        <button
+          type="button"
+          class="menu-btn"
+          (mousedown)="$event.preventDefault()"
+          (click)="addRowAfter(); $event.stopPropagation()"
+          matTooltip="Ajouter ligne après"
+        >
+          <mat-icon>vertical_align_bottom</mat-icon>
+        </button>
+
+        <button
+          type="button"
+          class="menu-btn danger"
+          (mousedown)="$event.preventDefault()"
+          (click)="deleteRow(); $event.stopPropagation()"
+          matTooltip="Supprimer ligne"
+        >
+          <mat-icon>table_rows</mat-icon>
+        </button>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Cell background color -->
+      <div class="picker-wrapper">
+        <button
+          type="button"
+          class="menu-btn"
+          (mousedown)="$event.preventDefault()"
+          (click)="toggleCellColorPicker(); $event.stopPropagation()"
+          matTooltip="Couleur de fond"
+        >
+          <mat-icon>format_color_fill</mat-icon>
+        </button>
+
+        @if (showCellColorPicker()) {
+          <div class="color-dropdown">
+            <div class="dropdown-label">Fond de cellule</div>
+            <div class="color-grid">
+              @for (color of cellColors; track color.value) {
+                <button
+                  type="button"
+                  class="color-swatch"
+                  [class.no-color]="!color.value"
+                  [style.background-color]="color.value || 'white'"
+                  [title]="color.label"
+                  (mousedown)="$event.preventDefault()"
+                  (click)="setCellColor(color.value); $event.stopPropagation()"
+                >
+                  @if (!color.value) {
+                    <mat-icon class="no-color-icon">format_color_reset</mat-icon>
+                  }
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Border color -->
+      <div class="picker-wrapper">
+        <button
+          type="button"
+          class="menu-btn"
+          (mousedown)="$event.preventDefault()"
+          (click)="toggleBorderColorPicker(); $event.stopPropagation()"
+          matTooltip="Couleur de bordure"
+        >
+          <mat-icon>border_color</mat-icon>
+        </button>
+
+        @if (showBorderColorPicker()) {
+          <div class="color-dropdown">
+            <div class="dropdown-label">Couleur de bordure</div>
+            <div class="color-grid">
+              @for (color of borderColors; track color.value) {
+                <button
+                  type="button"
+                  class="color-swatch"
+                  [class.no-color]="!color.value"
+                  [style.background-color]="color.value || 'white'"
+                  [title]="color.label"
+                  (mousedown)="$event.preventDefault()"
+                  (click)="setBorderColor(color.value); $event.stopPropagation()"
+                >
+                  @if (!color.value) {
+                    <mat-icon class="no-color-icon">format_color_reset</mat-icon>
+                  }
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Border width -->
+      <div class="picker-wrapper">
+        <button
+          type="button"
+          class="menu-btn"
+          (mousedown)="$event.preventDefault()"
+          (click)="toggleBorderWidthPicker(); $event.stopPropagation()"
+          matTooltip="Épaisseur de bordure"
+        >
+          <mat-icon>line_weight</mat-icon>
+        </button>
+
+        @if (showBorderWidthPicker()) {
+          <div class="width-dropdown">
+            <div class="dropdown-label">Épaisseur de bordure</div>
+            @for (w of borderWidths; track w.value) {
+              <button
+                type="button"
+                class="width-option"
+                (mousedown)="$event.preventDefault()"
+                (click)="setBorderWidth(w.value); $event.stopPropagation()"
+              >
+                @if (w.value) {
+                  <span class="width-preview" [style.height]="w.value" [style.background]="'#374151'"></span>
+                } @else {
+                  <mat-icon class="width-reset-icon">format_color_reset</mat-icon>
+                }
+                <span class="width-label">{{ w.label }}</span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Merge/Split -->
+      <div class="action-group">
+        <button
+          type="button"
+          class="menu-btn"
+          (mousedown)="$event.preventDefault()"
+          (click)="mergeCells(); $event.stopPropagation()"
+          matTooltip="Fusionner cellules"
+        >
+          <mat-icon>call_merge</mat-icon>
+        </button>
+
+        <button
+          type="button"
+          class="menu-btn"
+          (mousedown)="$event.preventDefault()"
+          (click)="splitCell(); $event.stopPropagation()"
+          matTooltip="Diviser cellule"
+        >
+          <mat-icon>call_split</mat-icon>
+        </button>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Delete table -->
+      <button
+        type="button"
+        class="menu-btn danger"
+        (mousedown)="$event.preventDefault()"
+        (click)="deleteTable(); $event.stopPropagation()"
+        matTooltip="Supprimer le tableau"
+      >
+        <mat-icon>delete</mat-icon>
+      </button>
+    </div>
+  </div>
+}

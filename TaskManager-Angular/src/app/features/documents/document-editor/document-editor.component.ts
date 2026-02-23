@@ -12,8 +12,7 @@ import { TaskList } from '@tiptap/extension-task-list';
 import { TaskItem } from '@tiptap/extension-task-item';
 import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
-import { TableCell } from '@tiptap/extension-table-cell';
-import { TableHeader } from '@tiptap/extension-table-header';
+import { CustomTableCell, CustomTableHeader } from '../extensions/table-cell-background.extension';
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
 import { Gapcursor } from '@tiptap/extension-gapcursor';
 import { Dropcursor } from '@tiptap/extension-dropcursor';
@@ -42,6 +41,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { TaskSearchModalComponent } from '../components/task-search-modal/task-search-modal.component';
 import { ImageInsertDialogComponent, ImageInsertDialogData, ImageInsertDialogResult } from '../components/image-insert-dialog/image-insert-dialog.component';
 import { ImageBubbleMenuComponent } from '../components/image-bubble-menu/image-bubble-menu.component';
+import { TableBubbleMenuComponent } from '../components/table-bubble-menu/table-bubble-menu.component';
 import { NewDocumentDialogComponent, NewDocumentDialogResult } from '../components/new-document-dialog/new-document-dialog';
 import { ExternalLinkDialogComponent, ExternalLinkDialogData, ExternalLinkDialogResult } from '../components/external-link-dialog/external-link-dialog.component';
 import { DocumentUploadDialogComponent, DocumentUploadDialogData, DocumentUploadDialogResult } from '../components/document-upload-dialog/document-upload-dialog.component';
@@ -76,7 +76,7 @@ const lowlight = createLowlight(all);
 @Component({
   selector: 'app-document-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, ImageBubbleMenuComponent, TaskSectionRendererDirective, DatabaseTableRendererDirective, CommentThreadPanelComponent, CommentIndicatorDirective, MindmapRendererDirective, SpreadsheetRendererDirective, AccordionSettingsPopoverComponent],
+  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, TiptapEditorDirective, SlashMenuComponent, BubbleMenuComponent, ImageBubbleMenuComponent, TableBubbleMenuComponent, TaskSectionRendererDirective, DatabaseTableRendererDirective, CommentThreadPanelComponent, CommentIndicatorDirective, MindmapRendererDirective, SpreadsheetRendererDirective, AccordionSettingsPopoverComponent],
   templateUrl: './document-editor.component.html',
   styleUrl: './document-editor.component.scss',
   encapsulation: ViewEncapsulation.None
@@ -262,6 +262,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
           codeBlock: false, // Disable CodeBlock from StarterKit (using CodeBlockLowlight instead)
           dropcursor: false, // Disable default dropcursor (using custom one)
           gapcursor: false, // Disable default gapcursor (using custom one)
+          link: false, // Disable default Link (using custom configured one below)
         }),
         Placeholder.configure({
           placeholder: 'Tapez \'/\' pour afficher les commandes...',
@@ -295,8 +296,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         }),
         Table.configure({ resizable: true }),
         TableRow,
-        TableHeader,
-        TableCell,
+        CustomTableHeader,
+        CustomTableCell,
         CodeBlockLowlight.configure({ lowlight }),
         Columns,
         Column,
@@ -1424,23 +1425,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   }
 
   addTable() {
-    const rows = window.prompt('Nombre de lignes:', '3');
-    if (!rows) return;
-
-    const cols = window.prompt('Nombre de colonnes:', '3');
-    if (!cols) return;
-
-    const rowsNum = parseInt(rows, 10);
-    const colsNum = parseInt(cols, 10);
-
-    if (isNaN(rowsNum) || isNaN(colsNum) || rowsNum < 1 || colsNum < 1) {
-      alert('Veuillez entrer des nombres valides (minimum 1)');
-      return;
-    }
-
     this.editor.chain().focus().insertTable({
-      rows: rowsNum,
-      cols: colsNum,
+      rows: 3,
+      cols: 3,
       withHeaderRow: true
     }).run();
   }

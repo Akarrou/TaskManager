@@ -7,6 +7,29 @@ import { saveSnapshot } from '../services/snapshot.js';
 // Event category — accepts any string to support custom categories
 const EventCategoryEnum = z.string().describe('Event category. Default values: meeting, deadline, milestone, reminder, personal, other. Custom category keys are also accepted.');
 
+// Attendee schema matching Angular EventAttendee interface
+const EventAttendeeSchema = z.object({
+  email: z.string().email().describe('Attendee email address.'),
+  displayName: z.string().optional().describe('Display name of the attendee.'),
+  userId: z.string().optional().describe('Kodo user ID if the attendee is a Kodo user.'),
+  rsvpStatus: z.enum(['accepted', 'declined', 'tentative', 'needsAction']).optional().default('needsAction').describe('RSVP status.'),
+  isOrganizer: z.boolean().optional().default(false).describe('Whether this attendee is the organizer.'),
+  isOptional: z.boolean().optional().default(false).describe('Whether attendance is optional.'),
+});
+
+// Guest permissions schema matching Angular EventGuestPermissions interface
+const GuestPermissionsSchema = z.object({
+  guestsCanModify: z.boolean().optional().default(false).describe('Whether guests can modify the event.'),
+  guestsCanInviteOthers: z.boolean().optional().default(true).describe('Whether guests can invite others.'),
+  guestsCanSeeOtherGuests: z.boolean().optional().default(true).describe('Whether guests can see other guests.'),
+});
+
+// Reminder schema matching Angular GoogleCalendarReminder interface
+const ReminderSchema = z.object({
+  method: z.enum(['popup', 'email']).describe('Reminder method: popup or email.'),
+  minutes: z.number().min(0).describe('Minutes before the event to trigger the reminder.'),
+});
+
 /**
  * Register all event-related tools
  */
@@ -16,7 +39,7 @@ export function registerEventTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'list_events',
-    `List events aggregated from all event-type databases in the workspace. Events are stored as rows in "event" type databases with standardized columns: Title, Description, Start Date, End Date, All Day, Category, Location, Recurrence, Linked Items, Project ID, Event Number, Color, Google Meet. This tool scans all event databases and returns a unified view. Results are normalized and sorted by start date. Default category values: meeting, deadline, milestone, reminder, personal, other (custom categories also accepted). Related tools: create_event, update_event, get_event, list_calendar_docs, get_calendar_doc.`,
+    `List events aggregated from all event-type databases in the workspace. Events are stored as rows in "event" type databases with standardized columns: Title, Description, Start Date, End Date, All Day, Category, Location, Recurrence, Linked Items, Project ID, Event Number, Color, Google Meet, Attendees, Reminders. This tool scans all event databases and returns a unified view. Results are normalized and sorted by start date. Each event includes: id, database_id, database_name, event_number, title, description, start_date, end_date, all_day, category, location, recurrence, linked_items, project_id, reminders, meet_link, color, attendees, guest_permissions, timestamps. Default category values: meeting, deadline, milestone, reminder, personal, other (custom categories also accepted). Related tools: create_event, update_event, get_event, list_event_categories, list_calendar_docs, get_calendar_doc.`,
     {
       category: EventCategoryEnum.optional().describe('Filter to only events with this category. Valid: meeting, deadline, milestone, reminder, personal, other.'),
       project_id: z.string().uuid().optional().describe('Filter to events associated with this project.'),
@@ -144,6 +167,10 @@ STEP 4: Collect optional fields
   - Location (texte libre)
   - Recurrence (RRULE string, e.g. "FREQ=WEEKLY;BYDAY=MO,WE,FR")
   - Linked items (array of {type, id, databaseId?, label})
+  - Attendees (array of {email, displayName?, rsvpStatus?, isOrganizer?, isOptional?})
+  - Guest permissions ({guestsCanModify?, guestsCanInviteOthers?, guestsCanSeeOtherGuests?})
+  - Reminders (array of {method: "popup"|"email", minutes: number})
+  - Meet link (Google Meet URL, if already known)
 
 STEP 5: Create the event
 -> Only NOW call create_event with all collected information
@@ -167,9 +194,15 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
         databaseId: z.string().optional().describe('Database ID of the linked item, if applicable.'),
         label: z.string().optional().describe('Display label for the linked item.'),
       })).optional().describe('Array of items linked to this event.'),
+      attendees: z.array(EventAttendeeSchema).optional().describe('Array of event attendees with email, displayName, rsvpStatus, isOrganizer, isOptional.'),
+      guest_permissions: GuestPermissionsSchema.optional().describe('Guest permissions for the event. Only meaningful when attendees are present.'),
+      reminders: z.array(ReminderSchema).optional().describe('Array of reminders. Each has method ("popup" or "email") and minutes before event.'),
+      meet_link: z.string().url().optional().describe('Google Meet link URL for the event.'),
+      color: z.string().optional().describe('Event color as hex string (e.g., "#3b82f6"). Used for Google Calendar color mapping.'),
+      project_id: z.string().uuid().optional().describe('Project ID to associate this event with.'),
       user_id: z.string().uuid().optional().describe('User ID to assign ownership of the linked document. Required for RLS access. Get this from list_users or get_profile.'),
     },
-    async ({ database_id, title, description, start_date, end_date, all_day, category, location, recurrence, linked_items, user_id }) => {
+    async ({ database_id, title, description, start_date, end_date, all_day, category, location, recurrence, linked_items, attendees, guest_permissions, reminders, meet_link, color, project_id, user_id }) => {
       try {
         const currentUserId = getCurrentUserId();
         const supabase = getSupabaseClient();
@@ -232,6 +265,42 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
         const linkedItemsColId = findColumnId('Linked Items');
         if (linkedItemsColId && linked_items) cells[linkedItemsColId] = linked_items;
 
+        // Attendees — stored as JSON.stringify({attendees: [...], permissions: {...}})
+        // MUST match Angular's format: JSON string inside JSONB column
+        const attendeesColId = findColumnId('Attendees');
+        if (attendeesColId && (attendees || guest_permissions)) {
+          const attendeesData: Record<string, unknown> = {};
+          if (attendees) attendeesData.attendees = attendees;
+          if (guest_permissions) {
+            attendeesData.permissions = guest_permissions;
+          } else if (attendees) {
+            // Default permissions when attendees are provided
+            attendeesData.permissions = {
+              guestsCanModify: false,
+              guestsCanInviteOthers: true,
+              guestsCanSeeOtherGuests: true,
+            };
+          }
+          cells[attendeesColId] = JSON.stringify(attendeesData);
+        }
+
+        // Reminders — stored as JSON.stringify([{method, minutes}])
+        // MUST match Angular's format: JSON string inside JSONB column
+        const remindersColId = findColumnId('Reminders');
+        if (remindersColId && reminders) cells[remindersColId] = JSON.stringify(reminders);
+
+        // Google Meet link
+        const meetLinkColId = findColumnId('Google Meet');
+        if (meetLinkColId && meet_link) cells[meetLinkColId] = meet_link;
+
+        // Color
+        const colorColId = findColumnId('Color');
+        if (colorColId && color) cells[colorColId] = color;
+
+        // Project ID
+        const projectIdColId = findColumnId('Project ID');
+        if (projectIdColId && project_id) cells[projectIdColId] = project_id;
+
         // Auto-generate event number for event databases
         const eventNumberColId = findColumnId('Event Number');
         if (isEventDatabase && eventNumberColId) {
@@ -272,6 +341,9 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
           };
         }
 
+        // Normalize the raw row to a readable event object
+        const normalizedEvent = normalizeRowToEvent(data, dbMeta);
+
         // Create the linked document (Notion-style) - always use current user
         const { data: docData, error: docError } = await supabase
           .from('documents')
@@ -279,7 +351,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
             title: title,
             database_id: database_id,
             database_row_id: data.id,
-            project_id: (dbMeta.project_id as string) || null,
+            project_id: project_id || (dbMeta.project_id as string) || null,
             content: { type: 'doc', content: [] },
             user_id: user_id || currentUserId,
           })
@@ -289,12 +361,12 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
         if (docError) {
           // Return event with document error info
           return {
-            content: [{ type: 'text', text: `Event created but linked document failed:\n${JSON.stringify({ event: data, document: null, document_error: docError.message }, null, 2)}` }],
+            content: [{ type: 'text', text: `Event created but linked document failed:\n${JSON.stringify({ event: normalizedEvent, document: null, document_error: docError.message }, null, 2)}` }],
           };
         }
 
         return {
-          content: [{ type: 'text', text: `Event created successfully:\n${JSON.stringify({ event: data, document: docData }, null, 2)}` }],
+          content: [{ type: 'text', text: `Event created successfully:\n${JSON.stringify({ event: normalizedEvent, document: docData }, null, 2)}` }],
         };
       } catch (err) {
         return {
@@ -310,7 +382,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
   // =========================================================================
   server.tool(
     'get_event',
-    `Get full details of a specific event including all fields. Returns normalized event object with: id, database_id, title, description, start_date, end_date, all_day, category, location, recurrence, linked_items, and timestamps. Use this when you need complete event information after getting an ID from list_events. The response includes the database_id and database_name for context. Related tools: update_event (modify), delete_event (remove).`,
+    `Get full details of a specific event including all fields. Returns normalized event object with: id, database_id, database_name, event_number, title, description, start_date, end_date, all_day, category, location, recurrence, linked_items, project_id, reminders, meet_link, color, attendees, guest_permissions, created_at, updated_at, row_order. Use this when you need complete event information after getting an ID from list_events. Related tools: update_event (modify), delete_event (remove), list_event_categories.`,
     {
       database_id: z.string().describe('The database ID containing the event. Format: db-uuid.'),
       row_id: z.string().uuid().describe('The specific event/row ID to retrieve.'),
@@ -518,7 +590,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
   // =========================================================================
   server.tool(
     'update_event',
-    `Update one or more fields of an existing event. Only provide the fields you want to change - unspecified fields remain unchanged. Returns the complete updated event. At least one field must be provided. All field values use the same format as create_event. Note: linked_items replaces the entire array (not append). Related tools: get_event, list_calendar_docs, get_calendar_doc.`,
+    `Update one or more fields of an existing event. Only provide the fields you want to change - unspecified fields remain unchanged. Returns the complete updated event. At least one field must be provided. All field values use the same format as create_event. Note: linked_items and attendees replace the entire array (not append). For attendees, the Attendees column stores {attendees: [...], permissions: {...}} as a JSON-stringified string. Related tools: get_event, list_calendar_docs, get_calendar_doc.`,
     {
       database_id: z.string().describe('The database ID containing the event. Format: db-uuid.'),
       row_id: z.string().uuid().describe('The event/row ID to update.'),
@@ -536,8 +608,13 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
         databaseId: z.string().optional().describe('Database ID of the linked item.'),
         label: z.string().optional().describe('Display label for the linked item.'),
       })).optional().describe('New linked items array. Leave undefined to keep current.'),
+      attendees: z.array(EventAttendeeSchema).optional().describe('New attendees array. Replaces existing. Leave undefined to keep current.'),
+      guest_permissions: GuestPermissionsSchema.optional().describe('New guest permissions. Leave undefined to keep current.'),
+      reminders: z.array(ReminderSchema).optional().describe('New reminders array. Replaces existing. Leave undefined to keep current.'),
+      meet_link: z.string().url().optional().describe('Google Meet link URL. Leave undefined to keep current.'),
+      color: z.string().optional().describe('Event color hex string. Leave undefined to keep current.'),
     },
-    async ({ database_id, row_id, title, description, start_date, end_date, all_day, category, location, recurrence, linked_items }) => {
+    async ({ database_id, row_id, title, description, start_date, end_date, all_day, category, location, recurrence, linked_items, attendees, guest_permissions, reminders, meet_link, color }) => {
       try {
         // Check for updates early to avoid unnecessary DB calls and snapshots
         const updates: Array<{ name: string; value: unknown }> = [];
@@ -550,6 +627,15 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
         if (location !== undefined) updates.push({ name: 'Location', value: location });
         if (recurrence !== undefined) updates.push({ name: 'Recurrence', value: recurrence });
         if (linked_items !== undefined) updates.push({ name: 'Linked Items', value: linked_items });
+        if (reminders !== undefined) updates.push({ name: 'Reminders', value: JSON.stringify(reminders) });
+        if (meet_link !== undefined) updates.push({ name: 'Google Meet', value: meet_link });
+        if (color !== undefined) updates.push({ name: 'Color', value: color });
+
+        // Attendees require special handling: merge attendees + permissions into single JSON column
+        if (attendees !== undefined || guest_permissions !== undefined) {
+          // We need to read the current attendees data to merge properly
+          updates.push({ name: '__attendees_update__', value: { attendees, guest_permissions } });
+        }
 
         if (updates.length === 0) {
           return {
@@ -621,6 +707,33 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
         };
 
         for (const update of updates) {
+          // Special handling for attendees: merge into single JSON column
+          if (update.name === '__attendees_update__') {
+            const attendeesColId = findColumnId('Attendees');
+            if (attendeesColId) {
+              const colName = `col_${attendeesColId.replace(/-/g, '_')}`;
+              const updatePayload = update.value as { attendees?: unknown[]; guest_permissions?: Record<string, boolean> };
+
+              // Read current attendees data from the row
+              const currentAttendeesRaw = currentRow[colName];
+              let currentAttendeesData: Record<string, unknown> = {};
+              if (currentAttendeesRaw && typeof currentAttendeesRaw === 'object') {
+                currentAttendeesData = currentAttendeesRaw as Record<string, unknown>;
+              } else if (typeof currentAttendeesRaw === 'string') {
+                try { currentAttendeesData = JSON.parse(currentAttendeesRaw); } catch { /* ignore */ }
+              }
+
+              // Merge: only update provided fields
+              const merged: Record<string, unknown> = { ...currentAttendeesData };
+              if (updatePayload.attendees !== undefined) merged.attendees = updatePayload.attendees;
+              if (updatePayload.guest_permissions !== undefined) merged.permissions = updatePayload.guest_permissions;
+
+              // MUST match Angular's format: JSON string inside JSONB column
+              updateData[colName] = JSON.stringify(merged);
+            }
+            continue;
+          }
+
           const colId = findColumnId(update.name);
           if (colId) {
             const colName = `col_${colId.replace(/-/g, '_')}`;
@@ -830,6 +943,15 @@ function normalizeRowToEvent(row: Record<string, unknown>, dbMeta: Record<string
     return getCellFromRow(row, col.id);
   };
 
+  // Parse attendees JSON column: { attendees: [...], permissions: {...} }
+  const attendeesRaw = getCell('Attendees');
+  let attendeesData: { attendees?: unknown[]; permissions?: Record<string, boolean> } = {};
+  if (attendeesRaw && typeof attendeesRaw === 'object') {
+    attendeesData = attendeesRaw as typeof attendeesData;
+  } else if (typeof attendeesRaw === 'string') {
+    try { attendeesData = JSON.parse(attendeesRaw); } catch { /* ignore */ }
+  }
+
   return {
     id: row.id,
     database_id: dbMeta.database_id,
@@ -848,6 +970,8 @@ function normalizeRowToEvent(row: Record<string, unknown>, dbMeta: Record<string
     reminders: parseReminders(getCell('Reminders') as string | null),
     meet_link: getCell('Google Meet'),
     color: getCell('Color'),
+    attendees: attendeesData.attendees || null,
+    guest_permissions: attendeesData.permissions || null,
     created_at: row.created_at,
     updated_at: row.updated_at,
     row_order: row.row_order,

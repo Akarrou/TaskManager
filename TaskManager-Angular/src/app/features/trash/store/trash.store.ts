@@ -1,12 +1,14 @@
 import { computed, inject } from '@angular/core';
 import { signalStore, withState, withMethods, withComputed, patchState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, tap, switchMap, mergeMap, catchError, EMPTY, of } from 'rxjs';
+import { pipe, tap, switchMap, mergeMap, catchError, EMPTY, of, from } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TrashService } from '../../../core/services/trash.service';
 import { TrashItem, TrashItemType } from '../../../core/models/trash.model';
 import { DatabaseService } from '../../documents/services/database.service';
 import { SpreadsheetService } from '../../documents/services/spreadsheet.service';
+import { EventDatabaseService } from '../../../core/services/event-database.service';
+import { GoogleCalendarStore } from '../../google-calendar/store/google-calendar.store';
 
 interface TrashStoreState {
   items: TrashItem[];
@@ -44,6 +46,8 @@ export const TrashStore = signalStore(
     trashService = inject(TrashService),
     databaseService = inject(DatabaseService),
     spreadsheetService = inject(SpreadsheetService),
+    eventDbService = inject(EventDatabaseService),
+    gcalStore = inject(GoogleCalendarStore),
     snackBar = inject(MatSnackBar),
   ) => ({
     loadItems: rxMethod<void>(
@@ -116,6 +120,36 @@ export const TrashStore = signalStore(
                 return spreadsheetService.restoreSpreadsheetToDocument(trashItem.item_id, docId);
               }
               return of(true);
+            }),
+            // For events, re-sync to Google Calendar
+            switchMap(() => {
+              if (trashItem.item_type !== 'event') return of(true);
+
+              const eventDatabaseId = trashItem.parent_info?.['databaseId'];
+              if (!eventDatabaseId) return of(true);
+
+              return eventDbService.getEventById(eventDatabaseId, trashItem.item_id).pipe(
+                switchMap(event => {
+                  if (!event) return of(true);
+                  return from(gcalStore.triggerSyncForEvent(eventDatabaseId, trashItem.item_id, {
+                    title: event.title,
+                    description: event.description,
+                    start_date: event.start_date,
+                    end_date: event.end_date,
+                    all_day: event.all_day,
+                    category: event.category,
+                    location: event.location,
+                    recurrence: event.recurrence,
+                    reminders: event.reminders,
+                    attendees: event.attendees,
+                    guest_permissions: event.guest_permissions,
+                  }));
+                }),
+                catchError((err: Error) => {
+                  console.error('[TrashStore] Google Calendar re-sync failed:', err);
+                  return of(true);
+                }),
+              );
             }),
             tap(() => {
               patchState(store, {

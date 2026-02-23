@@ -10,6 +10,8 @@ export { registerTabTools } from './tabs.js';
 export { registerSpreadsheetTools } from './spreadsheets.js';
 export { registerSnapshotTools } from './snapshots.js';
 export { registerTiptapDocsTools } from './tiptap-docs.js';
+export { registerEventTools } from './events.js';
 export { registerCalendarDocsTools } from './calendar-docs.js';
+export { registerEventCategoryTools } from './event-categories.js';
 export { registerTrashTools } from './trash.js';
 //# sourceMappingURL=index.js.map
