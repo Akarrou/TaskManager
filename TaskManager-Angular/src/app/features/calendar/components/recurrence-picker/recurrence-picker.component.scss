@@ -56,10 +56,6 @@
       line-height: 34px;
     }
 
-    // Hide the pseudo-checkbox: selected state is already clear from color
-    .mat-button-toggle-checkbox-wrapper {
-      display: none !important;
-    }
 
     .mat-button-toggle + .mat-button-toggle {
       border-left: 1px solid v.$border-color-light;

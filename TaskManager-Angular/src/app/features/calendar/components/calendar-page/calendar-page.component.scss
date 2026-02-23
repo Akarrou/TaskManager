@@ -114,10 +114,6 @@
         line-height: 36px;
       }
 
-      // Hide pseudo-checkbox: selected state is clear from color
-      .mat-button-toggle-checkbox-wrapper {
-        display: none !important;
-      }
 
       // Remove default separator borders
       .mat-button-toggle + .mat-button-toggle {

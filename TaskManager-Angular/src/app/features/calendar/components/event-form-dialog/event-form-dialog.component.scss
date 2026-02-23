@@ -246,6 +246,59 @@
 }
 
 // ============================================================================
+// Reminders
+// ============================================================================
+
+.reminders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reminder-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.reminder-method-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.reminder-time-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.reminder-remove-btn {
+  flex-shrink: 0;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  line-height: 32px !important;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.reminder-add-btn {
+  margin-top: 0.25rem;
+  align-self: flex-start;
+  font-size: v.$font-size-sm;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    margin-right: 4px;
+  }
+}
+
+// ============================================================================
 // Mat-spinner
 // ============================================================================
 
