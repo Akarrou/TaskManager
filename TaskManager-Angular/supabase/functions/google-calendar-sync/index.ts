@@ -11,11 +11,15 @@ import {
   errorResponse,
 } from "../_shared/google-auth-helpers.ts"
 
+// deno-lint-ignore no-explicit-any
+type SupabaseAdmin = ReturnType<typeof createSupabaseAdmin>
+
 interface SyncConfig {
   id: string
   connection_id: string
   google_calendar_id: string
-  kodo_database_id: string
+  google_calendar_name: string
+  kodo_database_id: string | null
   sync_direction: string
   sync_token: string | null
   last_sync_at: string | null
@@ -29,6 +33,19 @@ interface SyncResult {
   errors: Array<{ event_id: string; message: string; timestamp: string }>
   status: 'success' | 'partial' | 'error'
   sync_token: string | null
+}
+
+interface DatabaseColumn {
+  id: string
+  name: string
+  type: string
+}
+
+interface ResolvedDatabase {
+  tableName: string
+  databaseId: string   // document_databases.database_id (text, db-<uuid>)
+  dbMetaId: string     // document_databases.id (UUID PK)
+  columns: DatabaseColumn[]
 }
 
 Deno.serve(async (req) => {
@@ -74,6 +91,19 @@ Deno.serve(async (req) => {
       connection as GoogleCalendarConnection,
       supabaseAdmin
     )
+
+    // Resolve or auto-create the event database
+    let resolvedDb: ResolvedDatabase
+    if (config.kodo_database_id) {
+      resolvedDb = await resolveEventDatabase(config.kodo_database_id, supabaseAdmin)
+    } else {
+      resolvedDb = await autoCreateEventDatabase(
+        config.id,
+        user.id,
+        config.google_calendar_name,
+        supabaseAdmin
+      )
+    }
 
     // Build request parameters
     const params = new URLSearchParams({
@@ -145,7 +175,7 @@ Deno.serve(async (req) => {
       // Process each event
       for (const event of events) {
         try {
-          await processEvent(event, config, supabaseAdmin, result)
+          await processEvent(event, config, resolvedDb, user.id, supabaseAdmin, result)
         } catch (eventError) {
           result.errors.push({
             event_id: String(event.id ?? ''),
@@ -197,10 +227,164 @@ Deno.serve(async (req) => {
   }
 })
 
+// =============================================================================
+// Database Resolution
+// =============================================================================
+
+/**
+ * Resolve the event database metadata from kodo_database_id.
+ * Queries document_databases by its UUID primary key.
+ */
+async function resolveEventDatabase(
+  kodoDatabaseId: string,
+  supabaseAdmin: SupabaseAdmin
+): Promise<ResolvedDatabase> {
+  const { data, error } = await supabaseAdmin
+    .from('document_databases')
+    .select('id, database_id, table_name, config')
+    .eq('id', kodoDatabaseId)
+    .single()
+
+  if (error || !data) {
+    throw new Error(`Event database not found for id: ${kodoDatabaseId}`)
+  }
+
+  const config = data.config as { columns?: DatabaseColumn[] }
+
+  return {
+    tableName: data.table_name as string,
+    databaseId: data.database_id as string,
+    dbMetaId: data.id as string,
+    columns: config.columns ?? [],
+  }
+}
+
+/**
+ * Auto-create an event database when kodo_database_id is null.
+ * Creates: document + document_databases metadata + physical table via RPC.
+ * Updates sync_config.kodo_database_id with the new database UUID.
+ */
+async function autoCreateEventDatabase(
+  syncConfigId: string,
+  userId: string,
+  calendarName: string,
+  supabaseAdmin: SupabaseAdmin
+): Promise<ResolvedDatabase> {
+  const rawUuid = crypto.randomUUID()
+  const databaseId = `db-${rawUuid}`
+  const tableName = `database_${rawUuid.replace(/-/g, '_')}`
+  const dbName = calendarName || 'Google Calendar Events'
+
+  // Standard event columns (matches MCP server create_database pattern)
+  const startDateId = crypto.randomUUID()
+  const columns: Record<string, unknown>[] = [
+    { id: crypto.randomUUID(), name: 'Title', type: 'text', visible: true, required: true, readonly: true, isNameColumn: true, order: 0, width: 200, color: 'blue' },
+    { id: crypto.randomUUID(), name: 'Description', type: 'text', visible: true, readonly: true, order: 1, width: 300, color: 'green' },
+    { id: startDateId, name: 'Start Date', type: 'datetime', visible: true, readonly: true, order: 2, width: 200, color: 'orange', options: { dateFormat: 'DD/MM/YYYY HH:mm' } },
+    { id: crypto.randomUUID(), name: 'End Date', type: 'datetime', visible: true, readonly: true, order: 3, width: 200, color: 'orange', options: { dateFormat: 'DD/MM/YYYY HH:mm' } },
+    { id: crypto.randomUUID(), name: 'All Day', type: 'checkbox', visible: true, readonly: true, order: 4, width: 80, color: 'yellow' },
+    { id: crypto.randomUUID(), name: 'Category', type: 'select', visible: true, readonly: true, order: 5, width: 180, color: 'purple', options: {
+      choices: [
+        { id: 'meeting', label: 'Réunion', color: 'bg-blue-200' },
+        { id: 'deadline', label: 'Échéance', color: 'bg-red-200' },
+        { id: 'milestone', label: 'Jalon', color: 'bg-purple-200' },
+        { id: 'reminder', label: 'Rappel', color: 'bg-yellow-200' },
+        { id: 'personal', label: 'Personnel', color: 'bg-green-200' },
+        { id: 'other', label: 'Autre', color: 'bg-gray-200' },
+      ],
+    }},
+    { id: crypto.randomUUID(), name: 'Location', type: 'text', visible: true, order: 6, width: 200, color: 'pink' },
+    { id: crypto.randomUUID(), name: 'Recurrence', type: 'text', visible: false, order: 7, width: 200, color: 'gray' },
+    { id: crypto.randomUUID(), name: 'Linked Items', type: 'linked-items', visible: true, order: 8, width: 300, color: 'blue' },
+    { id: crypto.randomUUID(), name: 'Project ID', type: 'text', visible: false, order: 9, width: 200, color: 'pink' },
+    { id: crypto.randomUUID(), name: 'Event Number', type: 'text', visible: true, readonly: true, required: false, order: 10, width: 120, color: 'gray' },
+  ]
+
+  const config = {
+    name: dbName,
+    type: 'event',
+    columns,
+    defaultView: 'calendar',
+    views: [
+      { id: 'view-calendar', name: 'Vue calendrier', type: 'calendar', config: { calendarDateColumnId: startDateId } },
+      { id: 'view-table', name: 'Vue tableau', type: 'table', config: {} },
+    ],
+  }
+
+  // Create a document to host the database
+  const { data: docData, error: docError } = await supabaseAdmin
+    .from('documents')
+    .insert({
+      title: dbName,
+      content: { type: 'doc', content: [] },
+      user_id: userId,
+    })
+    .select('id')
+    .single()
+
+  if (docError || !docData) {
+    throw new Error(`Failed to create document: ${docError?.message}`)
+  }
+
+  // Create database metadata
+  const { data: dbData, error: dbError } = await supabaseAdmin
+    .from('document_databases')
+    .insert({
+      database_id: databaseId,
+      document_id: docData.id,
+      table_name: tableName,
+      name: dbName,
+      config,
+    })
+    .select('id')
+    .single()
+
+  if (dbError || !dbData) {
+    throw new Error(`Failed to create database metadata: ${dbError?.message}`)
+  }
+
+  // Create the physical PostgreSQL table via RPC
+  const { error: tableError } = await supabaseAdmin.rpc('ensure_table_exists', {
+    p_database_id: databaseId,
+  })
+
+  if (tableError) {
+    // Rollback on failure
+    await supabaseAdmin.from('document_databases').delete().eq('id', dbData.id)
+    await supabaseAdmin.from('documents').delete().eq('id', docData.id)
+    throw new Error(`Failed to create physical table: ${tableError.message}`)
+  }
+
+  // Update sync config with the new database reference
+  const { error: updateError } = await supabaseAdmin
+    .from('google_calendar_sync_config')
+    .update({ kodo_database_id: dbData.id })
+    .eq('id', syncConfigId)
+
+  if (updateError) {
+    throw new Error(`Failed to update sync config: ${updateError.message}`)
+  }
+
+  console.log(`Auto-created event database "${dbName}" (${databaseId}) for sync config ${syncConfigId}`)
+
+  return {
+    tableName,
+    databaseId,
+    dbMetaId: dbData.id as string,
+    columns: columns as DatabaseColumn[],
+  }
+}
+
+// =============================================================================
+// Event Processing
+// =============================================================================
+
 async function processEvent(
   event: Record<string, unknown>,
   config: SyncConfig,
-  supabaseAdmin: ReturnType<typeof createSupabaseAdmin>,
+  resolvedDb: ResolvedDatabase,
+  userId: string,
+  supabaseAdmin: SupabaseAdmin,
   result: SyncResult
 ): Promise<void> {
   const googleEventId = event.id as string
@@ -216,23 +400,31 @@ async function processEvent(
   // Handle cancelled events
   if (event.status === 'cancelled') {
     if (existingMapping) {
-      // I12: Capture errors from delete operations
+      // Delete row from dynamic table
       const { error: rowDeleteError } = await supabaseAdmin
-        .from('database_rows')
+        .from(resolvedDb.tableName)
         .delete()
         .eq('id', existingMapping.kodo_row_id)
 
       if (rowDeleteError) {
-        console.error('Failed to delete database row:', rowDeleteError)
+        console.error('Failed to delete row:', rowDeleteError)
       }
 
+      // Delete linked document
+      await supabaseAdmin
+        .from('documents')
+        .delete()
+        .eq('database_id', resolvedDb.databaseId)
+        .eq('database_row_id', existingMapping.kodo_row_id)
+
+      // Delete mapping
       const { error: mappingDeleteError } = await supabaseAdmin
         .from('google_calendar_event_mapping')
         .delete()
         .eq('id', existingMapping.id)
 
       if (mappingDeleteError) {
-        console.error('Failed to delete event mapping:', mappingDeleteError)
+        console.error('Failed to delete mapping:', mappingDeleteError)
       }
 
       result.events_deleted++
@@ -240,21 +432,33 @@ async function processEvent(
     return
   }
 
-  // Build Kodo row data from Google event
-  const rowData = mapGoogleEventToKodo(event)
+  // Build row data mapped to col_* columns
+  const rowData = mapGoogleEventToKodo(event, resolvedDb.columns)
 
   if (existingMapping) {
-    // I12: Update existing Kodo row with error capture
+    // Update existing row in dynamic table
+    rowData['updated_at'] = new Date().toISOString()
+
     const { error: rowUpdateError } = await supabaseAdmin
-      .from('database_rows')
-      .update({ data: rowData, updated_at: new Date().toISOString() })
+      .from(resolvedDb.tableName)
+      .update(rowData)
       .eq('id', existingMapping.kodo_row_id)
 
     if (rowUpdateError) {
-      console.error('Failed to update database row:', rowUpdateError)
+      console.error('Failed to update row:', rowUpdateError)
     }
 
-    // I12: Update mapping timestamps with error capture
+    // Update linked document title
+    const title = (event.summary as string) ?? ''
+    if (title) {
+      await supabaseAdmin
+        .from('documents')
+        .update({ title, updated_at: new Date().toISOString() })
+        .eq('database_id', resolvedDb.databaseId)
+        .eq('database_row_id', existingMapping.kodo_row_id)
+    }
+
+    // Update mapping timestamps
     const { error: mappingUpdateError } = await supabaseAdmin
       .from('google_calendar_event_mapping')
       .update({
@@ -264,24 +468,52 @@ async function processEvent(
       .eq('id', existingMapping.id)
 
     if (mappingUpdateError) {
-      console.error('Failed to update event mapping:', mappingUpdateError)
+      console.error('Failed to update mapping:', mappingUpdateError)
     }
 
     result.events_updated++
   } else {
-    // Create new Kodo row
+    // Generate event number
+    const eventNumberColId = getColumnId(resolvedDb.columns, 'Event Number')
+    if (eventNumberColId) {
+      const { data: eventNumber } = await supabaseAdmin.rpc('get_next_event_number')
+      if (eventNumber) {
+        rowData[toColName(eventNumberColId)] = eventNumber
+      }
+    }
+
+    // Get next row_order
+    const { data: maxOrderRow } = await supabaseAdmin
+      .from(resolvedDb.tableName)
+      .select('row_order')
+      .order('row_order', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    rowData['row_order'] = ((maxOrderRow?.row_order as number) ?? 0) + 1
+
+    // Insert new row into dynamic table
     const { data: newRow, error: insertError } = await supabaseAdmin
-      .from('database_rows')
-      .insert({
-        database_id: config.kodo_database_id,
-        data: rowData,
-      })
+      .from(resolvedDb.tableName)
+      .insert(rowData)
       .select('id')
       .single()
 
     if (insertError || !newRow) {
-      throw new Error(`Failed to create Kodo row: ${insertError?.message}`)
+      throw new Error(`Failed to create row: ${insertError?.message}`)
     }
+
+    // Create linked document (Notion-style)
+    const title = (event.summary as string) ?? 'Untitled'
+    await supabaseAdmin
+      .from('documents')
+      .insert({
+        title,
+        database_id: resolvedDb.databaseId,
+        database_row_id: newRow.id,
+        content: { type: 'doc', content: [] },
+        user_id: userId,
+      })
 
     // C9: Create mapping with upsert to handle race conditions
     const { error: mappingError } = await supabaseAdmin
@@ -290,36 +522,63 @@ async function processEvent(
         sync_config_id: config.id,
         google_event_id: googleEventId,
         google_calendar_id: config.google_calendar_id,
-        kodo_database_id: config.kodo_database_id,
+        kodo_database_id: resolvedDb.dbMetaId,
         kodo_row_id: newRow.id,
         google_updated_at: new Date().toISOString(),
         sync_status: 'synced',
       }, { onConflict: 'google_event_id,google_calendar_id' })
 
     if (mappingError) {
-      console.error('Failed to upsert event mapping:', mappingError)
+      console.error('Failed to upsert mapping:', mappingError)
     }
 
     result.events_created++
   }
 }
 
-function mapGoogleEventToKodo(event: Record<string, unknown>): Record<string, unknown> {
+// =============================================================================
+// Column Mapping Helpers
+// =============================================================================
+
+function getColumnId(columns: DatabaseColumn[], name: string): string | undefined {
+  return columns.find(c => c.name === name)?.id
+}
+
+function toColName(columnId: string): string {
+  return `col_${columnId.replace(/-/g, '_')}`
+}
+
+/**
+ * Map a Google Calendar event to Kodo database row data.
+ * Returns an object with col_<uuid> keys ready for INSERT/UPDATE.
+ */
+function mapGoogleEventToKodo(
+  event: Record<string, unknown>,
+  columns: DatabaseColumn[]
+): Record<string, unknown> {
   const start = event.start as Record<string, string> | undefined
   const end = event.end as Record<string, string> | undefined
-  const reminders = event.reminders as Record<string, unknown> | undefined
   const isAllDay = !!(start?.date && !start?.dateTime)
 
-  return {
-    title: event.summary ?? '',
-    description: event.description ?? '',
-    start_date: start?.dateTime ?? start?.date ?? null,
-    end_date: end?.dateTime ?? end?.date ?? null,
-    all_day: isAllDay,
-    location: event.location ?? null,
-    recurrence: Array.isArray(event.recurrence)
-      ? (event.recurrence as string[]).join('\n')
-      : null,
-    reminders: reminders?.overrides ?? null,
+  const rowData: Record<string, unknown> = {}
+
+  const setField = (colName: string, value: unknown) => {
+    const colId = getColumnId(columns, colName)
+    if (colId) {
+      rowData[toColName(colId)] = value
+    }
   }
+
+  setField('Title', event.summary ?? '')
+  setField('Description', event.description ?? '')
+  setField('Start Date', start?.dateTime ?? start?.date ?? null)
+  setField('End Date', end?.dateTime ?? end?.date ?? null)
+  setField('All Day', isAllDay)
+  setField('Location', event.location ?? null)
+  setField('Category', 'other')
+  setField('Recurrence', Array.isArray(event.recurrence)
+    ? (event.recurrence as string[]).join('\n')
+    : null)
+
+  return rowData
 }

@@ -196,23 +196,29 @@ export const GoogleCalendarStore = signalStore(
       eventData: Record<string, unknown>,
     ): Promise<void> {
       try {
+        console.log('[GCal Push] triggerSyncForEvent called:', { databaseId, rowId, eventData });
         const syncConfig = await apiService.getEnabledSyncConfigForDatabase(databaseId);
-        if (!syncConfig) {
+        console.log('[GCal Push] syncConfig found:', syncConfig);
+        if (!syncConfig?.kodo_database_id) {
+          console.warn('[GCal Push] No sync config or kodo_database_id null — skipping push');
           return;
         }
-        await apiService.pushEvent(syncConfig.id, databaseId, rowId, eventData);
+        console.log('[GCal Push] Calling pushEvent with kodo_database_id:', syncConfig.kodo_database_id);
+        const result = await apiService.pushEvent(syncConfig.id, syncConfig.kodo_database_id, rowId, eventData);
+        console.log('[GCal Push] pushEvent result:', result);
       } catch (error) {
-        console.error('[GoogleCalendarStore] triggerSyncForEvent failed:', error);
+        console.error('[GCal Push] triggerSyncForEvent failed:', error);
       }
     },
 
     async triggerDeleteForEvent(databaseId: string, rowId: string): Promise<void> {
       try {
         const syncConfig = await apiService.getEnabledSyncConfigForDatabase(databaseId);
-        if (!syncConfig) {
+        if (!syncConfig?.kodo_database_id) {
           return;
         }
-        await apiService.deleteGoogleEvent(syncConfig.id, databaseId, rowId);
+        // Pass the UUID (from sync_config) instead of database_id text
+        await apiService.deleteGoogleEvent(syncConfig.id, syncConfig.kodo_database_id, rowId);
       } catch (error) {
         console.error('[GoogleCalendarStore] triggerDeleteForEvent failed:', error);
       }

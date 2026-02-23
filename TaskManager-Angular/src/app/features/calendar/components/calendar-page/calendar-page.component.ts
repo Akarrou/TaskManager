@@ -72,6 +72,15 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
     this.fabStore.setHidden(this.showDetailPanel());
   });
 
+  // Synchronise le selectedEvent du store vers le signal local
+  // pour que le sidebar reflète les modifications d'événements en temps réel
+  private syncSelectedEventEffect = effect(() => {
+    const storeEvent = this.calendarStore.selectedEvent();
+    if (storeEvent) {
+      this.selectedEvent.set(storeEvent);
+    }
+  });
+
   @ViewChild('calendar') calendarComponent!: FullCalendarComponent;
 
   events = this.calendarStore.events;
