@@ -6,6 +6,7 @@ import {
   createSupabaseAdmin,
   authenticateUser,
   getValidAccessToken,
+  fetchWithRetry,
   GoogleCalendarConnection,
   validateMethod,
   errorResponse,
@@ -31,6 +32,7 @@ interface EventData {
   start_date: string
   end_date: string
   all_day?: boolean
+  timezone?: string
   location?: string
   recurrence?: string
   category?: string
@@ -127,8 +129,9 @@ Deno.serve(async (req) => {
       googleEvent.start = { date: startDate }
       googleEvent.end = { date: endDate }
     } else {
-      googleEvent.start = { dateTime: eventData.start_date }
-      googleEvent.end = { dateTime: eventData.end_date }
+      const timeZone = eventData.timezone || 'Europe/Paris'
+      googleEvent.start = { dateTime: eventData.start_date, timeZone }
+      googleEvent.end = { dateTime: eventData.end_date, timeZone }
     }
 
     if (eventData.location) {
@@ -136,7 +139,11 @@ Deno.serve(async (req) => {
     }
 
     if (eventData.recurrence) {
-      googleEvent.recurrence = [eventData.recurrence]
+      try {
+        googleEvent.recurrence = JSON.parse(eventData.recurrence)
+      } catch {
+        googleEvent.recurrence = [eventData.recurrence]
+      }
     }
 
     if (eventData.reminders && eventData.reminders.length > 0) {
@@ -151,7 +158,7 @@ Deno.serve(async (req) => {
       googleEvent.attendees = eventData.attendees.map(a => ({
         email: a.email,
         displayName: a.displayName ?? undefined,
-        responseStatus: a.rsvpStatus === 'needsAction' ? 'needsAction' : (a.rsvpStatus ?? 'needsAction'),
+        responseStatus: a.rsvpStatus ?? 'needsAction',
         optional: a.isOptional ?? false,
         // organizer is read-only in Google Calendar API — omitted
       }))
@@ -192,7 +199,7 @@ Deno.serve(async (req) => {
         // Check if the Google event already has a conference
         try {
           const eventId = encodeURIComponent(existingMapping.google_event_id)
-          const checkResp = await fetch(
+          const checkResp = await fetchWithRetry(
             `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}?fields=conferenceData`,
             { headers: { Authorization: `Bearer ${accessToken}` } }
           )
@@ -231,7 +238,7 @@ Deno.serve(async (req) => {
     if (existingMapping) {
       // PATCH (not PUT) to preserve fields we don't send (e.g. conferenceData)
       const eventId = encodeURIComponent(existingMapping.google_event_id)
-      const response = await fetch(
+      const response = await fetchWithRetry(
         `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}${queryString}`,
         {
           method: 'PATCH',
@@ -267,7 +274,7 @@ Deno.serve(async (req) => {
       }
     } else {
       // Create new Google event
-      const response = await fetch(
+      const response = await fetchWithRetry(
         `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events${queryString}`,
         {
           method: 'POST',
@@ -312,7 +319,7 @@ Deno.serve(async (req) => {
       console.log('[push-event] Meet link not in initial response, refetching...')
       try {
         const refetchUrl = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${encodeURIComponent(googleEventId)}`
-        const refetchResp = await fetch(refetchUrl, {
+        const refetchResp = await fetchWithRetry(refetchUrl, {
           headers: { Authorization: `Bearer ${accessToken}` },
         })
         if (refetchResp.ok) {

@@ -3,7 +3,7 @@ import { inject } from '@angular/core';
 import { TaskDatabaseService, TaskStats } from '../services/task-database.service';
 import { DocumentService } from '../../features/documents/services/document.service';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, tap, switchMap, catchError, of, forkJoin } from 'rxjs';
+import { pipe, tap, switchMap, catchError, EMPTY, forkJoin } from 'rxjs';
 
 /**
  * Interface pour les statistiques de documents
@@ -23,7 +23,7 @@ interface DashboardStatsState {
   taskLoading: boolean;
   documentLoading: boolean;
   error: string | null;
-  lastUpdated: Date | null;
+  lastUpdated: string | null;
 }
 
 /**
@@ -102,15 +102,16 @@ export const DashboardStatsStore = signalStore(
               patchState(store, {
                 taskStats,
                 taskLoading: false,
-                lastUpdated: new Date()
+                lastUpdated: new Date().toISOString()
               });
             }),
-            catchError((error: Error) => {
+            catchError((error: unknown) => {
+              const message = error instanceof Error ? error.message : 'Unknown error';
               patchState(store, {
-                error: error.message,
+                error: message,
                 taskLoading: false
               });
-              return of(null);
+              return EMPTY;
             })
           )
         )
@@ -132,15 +133,16 @@ export const DashboardStatsStore = signalStore(
               patchState(store, {
                 documentStats,
                 documentLoading: false,
-                lastUpdated: new Date()
+                lastUpdated: new Date().toISOString()
               });
             }),
-            catchError((error: Error) => {
+            catchError((error: unknown) => {
+              const message = error instanceof Error ? error.message : 'Unknown error';
               patchState(store, {
-                error: error.message,
+                error: message,
                 documentLoading: false
               });
-              return of(null);
+              return EMPTY;
             })
           )
         )
@@ -175,16 +177,17 @@ export const DashboardStatsStore = signalStore(
                 documentStats,
                 taskLoading: false,
                 documentLoading: false,
-                lastUpdated: new Date()
+                lastUpdated: new Date().toISOString()
               });
             }),
-            catchError((error: Error) => {
+            catchError((error: unknown) => {
+              const message = error instanceof Error ? error.message : 'Unknown error';
               patchState(store, {
-                error: error.message,
+                error: message,
                 taskLoading: false,
                 documentLoading: false
               });
-              return of(null);
+              return EMPTY;
             })
           )
         )
@@ -221,45 +224,5 @@ export const DashboardStatsStore = signalStore(
       });
     },
 
-    /**
-     * Rafraîchir toutes les stats
-     *
-     * Recharge les stats de tâches et documents en parallèle.
-     *
-     * @param projectId - ID du projet pour filtrer les tâches (optionnel)
-     */
-    refresh: rxMethod<{ projectId?: string }>(
-      pipe(
-        tap(() => patchState(store, {
-          taskLoading: true,
-          documentLoading: true,
-          error: null
-        })),
-        switchMap(({ projectId }) =>
-          forkJoin({
-            taskStats: taskDatabaseService.getTaskStatsFromDatabase(projectId),
-            documentStats: documentService.getDocumentsStats()
-          }).pipe(
-            tap(({ taskStats, documentStats }) => {
-              patchState(store, {
-                taskStats,
-                documentStats,
-                taskLoading: false,
-                documentLoading: false,
-                lastUpdated: new Date()
-              });
-            }),
-            catchError((error: Error) => {
-              patchState(store, {
-                error: error.message,
-                taskLoading: false,
-                documentLoading: false
-              });
-              return of(null);
-            })
-          )
-        )
-      )
-    )
   }))
 );

@@ -591,7 +591,10 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
 
           snackRef.onAction().pipe(takeUntil(this.destroy$)).subscribe(() => {
             this.databaseService.restoreRows(this.databaseId, rowIds)
-              .pipe(takeUntil(this.destroy$))
+              .pipe(
+                switchMap(() => this.trashService.removeTrashEntries('database_row', rowIds)),
+                takeUntil(this.destroy$),
+              )
               .subscribe(() => {
                 this.loadRows();
                 this.trashStore.loadTrashCount();

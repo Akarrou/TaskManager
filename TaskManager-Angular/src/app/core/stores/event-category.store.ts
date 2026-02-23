@@ -1,7 +1,7 @@
 import { computed, inject } from '@angular/core';
 import { signalStore, withState, withMethods, withComputed, patchState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, tap, switchMap, catchError, of } from 'rxjs';
+import { pipe, tap, switchMap, concatMap, catchError, EMPTY } from 'rxjs';
 import { EventCategoryService } from '../services/event-category.service';
 import {
   CategoryDefinition,
@@ -42,9 +42,10 @@ export const EventCategoryStore = signalStore(
             tap((categories) => {
               patchState(store, { customCategories: categories, loading: false });
             }),
-            catchError((error: Error) => {
-              patchState(store, { loading: false, error: error.message });
-              return of(null);
+            catchError((error: unknown) => {
+              const message = error instanceof Error ? error.message : 'Unknown error';
+              patchState(store, { loading: false, error: message });
+              return EMPTY;
             }),
           ),
         ),
@@ -54,7 +55,7 @@ export const EventCategoryStore = signalStore(
     addCategory: rxMethod<{ key: string; label: string; colorKey: string }>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
-        switchMap(({ key, label, colorKey }) => {
+        concatMap(({ key, label, colorKey }) => {
           const existingOrders = store.customCategories().map(c => c.sortOrder ?? 0);
           const nextOrder = existingOrders.length > 0 ? Math.max(...existingOrders) + 1 : 0;
           return categoryService.addCategory({
@@ -69,9 +70,10 @@ export const EventCategoryStore = signalStore(
                 loading: false,
               });
             }),
-            catchError((error: Error) => {
-              patchState(store, { loading: false, error: error.message });
-              return of(null);
+            catchError((error: unknown) => {
+              const message = error instanceof Error ? error.message : 'Unknown error';
+              patchState(store, { loading: false, error: message });
+              return EMPTY;
             }),
           );
         }),
@@ -91,9 +93,10 @@ export const EventCategoryStore = signalStore(
                 loading: false,
               });
             }),
-            catchError((error: Error) => {
-              patchState(store, { loading: false, error: error.message });
-              return of(null);
+            catchError((error: unknown) => {
+              const message = error instanceof Error ? error.message : 'Unknown error';
+              patchState(store, { loading: false, error: message });
+              return EMPTY;
             }),
           ),
         ),
@@ -103,7 +106,7 @@ export const EventCategoryStore = signalStore(
     deleteCategory: rxMethod<{ key: string }>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
-        switchMap(({ key }) =>
+        concatMap(({ key }) =>
           categoryService.deleteCategory(key).pipe(
             tap(() => {
               patchState(store, {
@@ -111,9 +114,10 @@ export const EventCategoryStore = signalStore(
                 loading: false,
               });
             }),
-            catchError((error: Error) => {
-              patchState(store, { loading: false, error: error.message });
-              return of(null);
+            catchError((error: unknown) => {
+              const message = error instanceof Error ? error.message : 'Unknown error';
+              patchState(store, { loading: false, error: message });
+              return EMPTY;
             }),
           ),
         ),

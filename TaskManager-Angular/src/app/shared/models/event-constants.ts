@@ -10,9 +10,11 @@
 // ============================================================================
 
 /**
- * EventCategory - string-based for extensibility with custom categories
+ * EventCategory - built-in categories are strongly typed; custom categories are arbitrary strings.
+ * The `string & {}` trick prevents widening to plain `string` while still accepting any string value.
  */
-export type EventCategory = string;
+type BuiltinCategory = 'meeting' | 'deadline' | 'milestone' | 'reminder' | 'personal' | 'other';
+export type EventCategory = BuiltinCategory | (string & {});
 
 /**
  * Color set for a category (Tailwind classes + hex for FullCalendar)

@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, signal, computed, inject, OnInit, OnDestroy, ViewChild, effect, Renderer2, DestroyRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import { Router } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { MatButtonModule } from '@angular/material/button';
@@ -75,6 +75,7 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
   private categoryStore = inject(EventCategoryStore);
   private gcalStore = inject(GoogleCalendarStore);
   private destroyRef = inject(DestroyRef);
+  private document = inject(DOCUMENT);
 
   readonly isGoogleCalendarConnected = this.gcalStore.isConnected;
   readonly hasEnabledSyncConfigs = computed(() => this.gcalStore.enabledSyncConfigs().length > 0);
@@ -91,7 +92,7 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
     if (!this.customCategoryStyleEl) {
       this.customCategoryStyleEl = this.renderer.createElement('style') as HTMLStyleElement;
       this.renderer.setAttribute(this.customCategoryStyleEl, 'data-custom-categories', '');
-      this.renderer.appendChild(document.head, this.customCategoryStyleEl);
+      this.renderer.appendChild(this.document.head, this.customCategoryStyleEl);
     }
     const css = customs.map(cat => {
       const palette = CATEGORY_COLOR_PALETTE[cat.colorKey] ?? CATEGORY_COLOR_PALETTE['gray'];
@@ -155,7 +156,6 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
     dayMaxEvents: true,
     slotMinTime: '06:00:00',
     slotMaxTime: '22:00:00',
-    events: [],
     select: this.handleSelect.bind(this),
     eventClick: this.handleEventClick.bind(this),
     eventDrop: this.handleEventDrop.bind(this),
@@ -196,7 +196,7 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.fabStore.setHidden(false);
     if (this.customCategoryStyleEl) {
-      this.renderer.removeChild(document.head, this.customCategoryStyleEl);
+      this.renderer.removeChild(this.document.head, this.customCategoryStyleEl);
     }
   }
 
@@ -261,6 +261,7 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
         this.calendarStore.createEvent({
           databaseId: result.databaseId,
           event: result,
+          addGoogleMeet: result.add_google_meet,
         });
       }
     });
@@ -287,6 +288,7 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
         this.calendarStore.createEvent({
           databaseId: result.databaseId,
           event: result,
+          addGoogleMeet: result.add_google_meet,
         });
       }
     });
@@ -308,7 +310,7 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
     if (event) {
       this.calendarStore.updateEvent({
         databaseId: event.databaseId,
-        rowId: event.id,
+        eventId: event.id,
         updates: {
           start_date: dropInfo.event.startStr,
           end_date: dropInfo.event.endStr || dropInfo.event.startStr,
@@ -322,7 +324,7 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
     if (event) {
       this.calendarStore.updateEvent({
         databaseId: event.databaseId,
-        rowId: event.id,
+        eventId: event.id,
         updates: {
           start_date: resizeInfo.event.startStr,
           end_date: resizeInfo.event.endStr || resizeInfo.event.startStr,
@@ -357,7 +359,7 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  onEventUpdated(updates: { databaseId: string; rowId: string; updates: Partial<EventEntry> }): void {
+  onEventUpdated(updates: { databaseId: string; eventId: string; updates: Partial<EventEntry> }): void {
     this.calendarStore.updateEvent(updates);
   }
 
@@ -378,6 +380,7 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
           database_row_id: data.rowId,
         });
       }),
+      takeUntilDestroyed(this.destroyRef),
     ).subscribe({
       next: (document) => {
         this.router.navigate(['/documents', document.id], { queryParams: { from: 'calendar' } });
@@ -409,6 +412,7 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
                 database_row_id: item.id,
               });
             }),
+            takeUntilDestroyed(this.destroyRef),
           ).subscribe({
             next: (document) => {
               this.router.navigate(['/documents', document.id]);
@@ -433,8 +437,9 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
       if (result) {
         this.calendarStore.updateEvent({
           databaseId: result.databaseId,
-          rowId: event.id,
+          eventId: event.id,
           updates: result,
+          addGoogleMeet: result.add_google_meet,
         });
       }
     });

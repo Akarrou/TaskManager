@@ -6,12 +6,12 @@ import {
   createSupabaseAdmin,
   authenticateUser,
   getValidAccessToken,
+  fetchWithRetry,
   GoogleCalendarConnection,
   validateMethod,
   errorResponse,
 } from "../_shared/google-auth-helpers.ts"
 
-// deno-lint-ignore no-explicit-any
 type SupabaseAdmin = ReturnType<typeof createSupabaseAdmin>
 
 interface SyncConfig {
@@ -103,10 +103,18 @@ Deno.serve(async (req) => {
       return errorResponse(404, 'Google Calendar connection not found')
     }
 
-    const accessToken = await getValidAccessToken(
-      connection as GoogleCalendarConnection,
-      supabaseAdmin
-    )
+    const getValidToken = async () => {
+      const { data: freshConn } = await supabaseAdmin
+        .from('google_calendar_connections')
+        .select('*')
+        .eq('id', (connection as GoogleCalendarConnection).id)
+        .single()
+      return getValidAccessToken(
+        (freshConn ?? connection) as GoogleCalendarConnection,
+        supabaseAdmin
+      )
+    }
+    let accessToken = await getValidToken()
 
     // Resolve or auto-create the event database
     let resolvedDb: ResolvedDatabase
@@ -172,14 +180,22 @@ Deno.serve(async (req) => {
       mappingsByGoogleEventId.set(m.google_event_id as string, m)
     }
 
+    let pageCount = 0
+
     // Paginate through all events
     do {
       if (nextPageToken) {
         params.set('pageToken', nextPageToken)
       }
 
+      // Refresh token periodically (every 10 pages) to guard against expiry during long syncs
+      pageCount++
+      if (pageCount % 10 === 0) {
+        accessToken = await getValidToken()
+      }
+
       const eventsUrl = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?${params.toString()}`
-      const eventsResponse = await fetch(eventsUrl, {
+      const eventsResponse = await fetchWithRetry(eventsUrl, {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
 
@@ -442,8 +458,10 @@ async function autoCreateEventDatabase(
 
   if (tableError) {
     // Rollback on failure
-    await supabaseAdmin.from('document_databases').delete().eq('id', dbData.id)
-    await supabaseAdmin.from('documents').delete().eq('id', docData.id)
+    const { error: dbDeleteError } = await supabaseAdmin.from('document_databases').delete().eq('id', dbData.id)
+    if (dbDeleteError) console.error('[Sync] Rollback failed for document_databases:', dbDeleteError)
+    const { error: docDeleteError } = await supabaseAdmin.from('documents').delete().eq('id', docData.id)
+    if (docDeleteError) console.error('[Sync] Rollback failed for documents:', docDeleteError)
     throw new Error(`Failed to create physical table: ${tableError.message}`)
   }
 
@@ -934,7 +952,7 @@ function mapGoogleEventToKodo(
   setField('Color', hexColor)
 
   setField('Recurrence', Array.isArray(event.recurrence)
-    ? (event.recurrence as string[]).join('\n')
+    ? JSON.stringify(event.recurrence)
     : null)
 
   // Extract Google Meet link from conferenceData

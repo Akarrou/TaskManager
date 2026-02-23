@@ -15,6 +15,9 @@ const GOOGLE_CLIENT_ID = requireEnv('GOOGLE_CLIENT_ID')
 const GOOGLE_CLIENT_SECRET = requireEnv('GOOGLE_CLIENT_SECRET')
 const GOOGLE_REDIRECT_URI = requireEnv('GOOGLE_REDIRECT_URI')
 const TOKEN_ENCRYPTION_KEY = requireEnv('TOKEN_ENCRYPTION_KEY')
+if (TOKEN_ENCRYPTION_KEY.length !== 64 || !/^[0-9a-fA-F]+$/.test(TOKEN_ENCRYPTION_KEY)) {
+  throw new Error('TOKEN_ENCRYPTION_KEY must be exactly 64 hex characters (32 bytes for AES-256)')
+}
 
 export interface GoogleCalendarConnection {
   id: string
@@ -29,7 +32,7 @@ export interface GoogleCalendarConnection {
 
 // --- CORS ---
 
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? 'http://localhost:4200'
+const ALLOWED_ORIGIN = requireEnv('ALLOWED_ORIGIN')
 export const corsHeaders = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -79,7 +82,12 @@ async function getEncryptionKey(): Promise<CryptoKey> {
 }
 
 function toBase64(buffer: ArrayBuffer): string {
-  return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  return btoa(binary)
 }
 
 function fromBase64(base64: string): Uint8Array {
@@ -204,8 +212,10 @@ export async function createStateJwt(userId: string, secret: string): Promise<st
     exp: Math.floor(Date.now() / 1000) + 600, // 10 min expiry
   }
 
-  const encode = (obj: Record<string, unknown>) =>
-    btoa(JSON.stringify(obj)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
+  const encode = (obj: Record<string, unknown>): string => {
+    const bytes = new TextEncoder().encode(JSON.stringify(obj))
+    return toBase64(bytes.buffer as ArrayBuffer).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
+  }
 
   const headerB64 = encode(header)
   const payloadB64 = encode(payload)
@@ -319,4 +329,25 @@ export function validateMethod(req: Request, allowed: string): Response | null {
     return errorResponse(405, `Method ${req.method} not allowed`)
   }
   return null
+}
+
+// --- Fetch with Exponential Backoff ---
+
+export async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries = 3,
+): Promise<Response> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, options)
+    if (response.status === 429 || (response.status >= 500 && response.status < 600)) {
+      if (attempt < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt), 10000)
+        await new Promise(resolve => setTimeout(resolve, delay))
+        continue
+      }
+    }
+    return response
+  }
+  throw new Error('fetchWithRetry: should not reach here')
 }

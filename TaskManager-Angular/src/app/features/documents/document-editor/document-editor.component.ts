@@ -831,6 +831,12 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
           // Load breadcrumb hierarchy
           const breadcrumbPath = await this.documentService.getDocumentBreadcrumb(id);
+          // When coming from calendar, the root already shows "Calendrier",
+          // so skip the database parent document to avoid duplication
+          const from = this.route.snapshot.queryParamMap.get('from');
+          if (from === 'calendar' && doc.database_id && breadcrumbPath.length > 1) {
+            breadcrumbPath.shift();
+          }
           this.breadcrumbs.set(breadcrumbPath);
 
           // Check if this document is linked to a database row (Notion-style)

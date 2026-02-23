@@ -1,3 +1,5 @@
+import { EventAttendee, EventGuestPermissions } from '../../../shared/models/attendee.model';
+
 export interface GoogleCalendarConnection {
   id: string;
   user_id: string;
@@ -32,7 +34,7 @@ export interface GoogleCalendarEventMapping {
   last_error: string | null;
 }
 
-export type SyncStatus = 'synced' | 'pending' | 'conflict' | 'error';
+export type SyncStatus = 'synced' | 'pending' | 'conflict' | 'error' | 'local_only';
 
 export interface GoogleCalendarInfo {
   id: string;
@@ -73,4 +75,20 @@ export interface FieldDiff {
 export interface GoogleCalendarReminder {
   method: 'popup' | 'email';
   minutes: number;
+}
+
+export interface EventSyncPayload {
+  title: string;
+  description?: string;
+  start_date: string;
+  end_date: string;
+  all_day: boolean;
+  category: string;
+  location?: string;
+  recurrence?: string;
+  reminders?: GoogleCalendarReminder[];
+  attendees?: EventAttendee[];
+  guest_permissions?: EventGuestPermissions;
+  add_google_meet?: boolean;
+  linked_items?: unknown[];
 }

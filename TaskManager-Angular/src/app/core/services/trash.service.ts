@@ -232,4 +232,26 @@ export class TrashService {
       catchError(() => of({ exists: false, deleted: false })),
     );
   }
+
+  /**
+   * Remove trash_items entries by item type and IDs (via RPC).
+   * Used when undoing a soft-delete to clean up orphaned trash entries.
+   */
+  removeTrashEntries(itemType: TrashItemType, itemIds: string[]): Observable<boolean> {
+    return from(
+      this.client.rpc('remove_trash_entries', {
+        p_item_type: itemType,
+        p_item_ids: itemIds,
+      }),
+    ).pipe(
+      map(({ error }) => {
+        if (error) {
+          console.error('[TrashService.removeTrashEntries] Error:', error);
+          throw error;
+        }
+        return true;
+      }),
+      catchError(() => of(true)),
+    );
+  }
 }

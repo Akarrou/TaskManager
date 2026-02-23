@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, forwardRef, signal, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, forwardRef, signal, computed, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -156,7 +156,7 @@ export class LinkedItemsPickerComponent implements ControlValueAccessor, OnInit,
     }
   }
 
-  protected filteredResults = (): LinkedItem[] => {
+  protected filteredResults = computed((): LinkedItem[] => {
     const results = this.searchResults();
     const tab = this.activeTab();
     const selected = this.selectedItems();
@@ -177,7 +177,7 @@ export class LinkedItemsPickerComponent implements ControlValueAccessor, OnInit,
     );
 
     return filtered;
-  };
+  });
 
   private performSearch(query: string): void {
     if (!query || query.trim().length < 2) {

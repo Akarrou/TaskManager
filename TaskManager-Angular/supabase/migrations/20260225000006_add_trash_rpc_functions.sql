@@ -77,6 +77,7 @@ DECLARE
   v_record RECORD;
   v_deleted_count INTEGER := 0;
   v_errors TEXT[] := '{}';
+  v_table_name TEXT;
 BEGIN
   v_user_id := auth.uid();
   IF v_user_id IS NULL THEN
@@ -107,6 +108,21 @@ BEGIN
     WHERE user_id = v_user_id AND item_type != 'project'
   LOOP
     BEGIN
+      -- For databases/spreadsheets, drop dynamic table first
+      IF v_record.item_type = 'database' THEN
+        SELECT table_name INTO v_table_name
+        FROM document_databases WHERE id = v_record.item_id::uuid;
+        IF v_table_name IS NOT NULL THEN
+          EXECUTE format('DROP TABLE IF EXISTS %I CASCADE', v_table_name);
+        END IF;
+      ELSIF v_record.item_type = 'spreadsheet' THEN
+        SELECT table_name INTO v_table_name
+        FROM document_spreadsheets WHERE id = v_record.item_id::uuid;
+        IF v_table_name IS NOT NULL THEN
+          EXECUTE format('DROP TABLE IF EXISTS %I CASCADE', v_table_name);
+        END IF;
+      END IF;
+
       EXECUTE format('DELETE FROM %I WHERE id = $1', v_record.item_table)
         USING v_record.item_id::uuid;
       v_deleted_count := v_deleted_count + 1;
@@ -144,14 +160,35 @@ DECLARE
   v_record RECORD;
   v_purged_count INTEGER := 0;
   v_errors TEXT[] := '{}';
+  v_table_name TEXT;
 BEGIN
   FOR v_record IN
-    SELECT id, item_type, item_id, item_table, display_name
+    SELECT id, item_type, item_id, item_table, display_name, user_id
     FROM trash_items
     WHERE expires_at <= now()
     ORDER BY deleted_at ASC
   LOOP
     BEGIN
+      -- For projects: cascade hard-delete children first
+      IF v_record.item_type = 'project' THEN
+        PERFORM _cascade_hard_delete_project(v_record.item_id::uuid, v_record.user_id);
+      END IF;
+
+      -- For databases/spreadsheets, drop dynamic table first
+      IF v_record.item_type = 'database' THEN
+        SELECT table_name INTO v_table_name
+        FROM document_databases WHERE id = v_record.item_id::uuid;
+        IF v_table_name IS NOT NULL THEN
+          EXECUTE format('DROP TABLE IF EXISTS %I CASCADE', v_table_name);
+        END IF;
+      ELSIF v_record.item_type = 'spreadsheet' THEN
+        SELECT table_name INTO v_table_name
+        FROM document_spreadsheets WHERE id = v_record.item_id::uuid;
+        IF v_table_name IS NOT NULL THEN
+          EXECUTE format('DROP TABLE IF EXISTS %I CASCADE', v_table_name);
+        END IF;
+      END IF;
+
       -- Try UUID cast first, fall back to text comparison
       BEGIN
         EXECUTE format('DELETE FROM %I WHERE id = $1', v_record.item_table)

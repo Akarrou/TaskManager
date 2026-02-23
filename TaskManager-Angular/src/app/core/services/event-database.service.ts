@@ -15,7 +15,7 @@ import {
 import { DatabaseService } from '../../features/documents/services/database.service';
 import { EventCategory, DEFAULT_CATEGORIES } from '../../shared/models/event-constants';
 import { GoogleCalendarReminder } from '../../features/google-calendar/models/google-calendar.model';
-import { EventAttendee, EventGuestPermissions } from '../../features/calendar/models/attendee.model';
+import { EventAttendee, EventGuestPermissions } from '../../shared/models/attendee.model';
 
 /**
  * EventEntry - Normalized event entry from database rows
@@ -46,7 +46,6 @@ export interface EventEntry {
 
   // Google Calendar sync
   google_event_id?: string;
-  sync_status?: 'synced' | 'pending' | 'conflict' | 'error' | 'local_only';
   reminders?: GoogleCalendarReminder[];
   meet_link?: string;
   color?: string;
@@ -76,6 +75,7 @@ export class EventDatabaseService {
 
   // Metadata cache for performance optimization
   private metadataCache = new Map<string, DocumentDatabase>();
+  private cacheTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private cacheExpiry = 5 * 60 * 1000; // 5 minutes
 
   // Required columns that must exist on event databases
@@ -105,6 +105,7 @@ export class EventDatabaseService {
       this.client
         .from('document_databases')
         .select('*')
+        .is('deleted_at', null)
     ).pipe(
       map(({ data, error }) => {
         if (error) {
@@ -268,7 +269,7 @@ export class EventDatabaseService {
   /**
    * Update an existing event in a specific database
    */
-  updateEvent(databaseId: string, rowId: string, updates: Partial<EventEntry>): Observable<EventEntry> {
+  updateEvent(databaseId: string, rowId: string, updates: Partial<EventEntry>): Observable<Partial<EventEntry> & { id: string; databaseId: string; databaseName: string; updated_at: string }> {
     return this.ensureEventColumns(databaseId).pipe(
       switchMap(dbMetadata => {
         const columnMapping = this.getColumnMapping(dbMetadata.config.columns);
@@ -353,7 +354,7 @@ export class EventDatabaseService {
                     if (updates.meet_link !== undefined) result.meet_link = updates.meet_link;
                     if (updates.attendees !== undefined) result.attendees = updates.attendees;
                     if (updates.guest_permissions !== undefined) result.guest_permissions = updates.guest_permissions;
-                    return result as EventEntry;
+                    return result;
                   }),
                 );
               }),
@@ -390,7 +391,7 @@ export class EventDatabaseService {
             if (updates.attendees !== undefined) result.attendees = updates.attendees;
             if (updates.guest_permissions !== undefined) result.guest_permissions = updates.guest_permissions;
 
-            return result as EventEntry;
+            return result;
           }),
         );
       }),
@@ -428,9 +429,7 @@ export class EventDatabaseService {
 
     return this.databaseService.getDatabaseMetadata(databaseId).pipe(
       tap(metadata => {
-        this.metadataCache.set(databaseId, metadata);
-        // Clear cache after expiry
-        setTimeout(() => this.metadataCache.delete(databaseId), this.cacheExpiry);
+        this.setCacheWithTimer(databaseId, metadata);
       })
     );
   }
@@ -460,8 +459,7 @@ export class EventDatabaseService {
 
         if (missingColumns.length === 0) {
           // All columns present — update cache and return
-          this.metadataCache.set(databaseId, metadata);
-          setTimeout(() => this.metadataCache.delete(databaseId), this.cacheExpiry);
+          this.setCacheWithTimer(databaseId, metadata);
           return of(metadata);
         }
 
@@ -487,8 +485,7 @@ export class EventDatabaseService {
             // Re-fetch fresh metadata after adding columns
             return this.databaseService.getDatabaseMetadata(databaseId).pipe(
               tap(freshMetadata => {
-                this.metadataCache.set(databaseId, freshMetadata);
-                setTimeout(() => this.metadataCache.delete(databaseId), this.cacheExpiry);
+                this.setCacheWithTimer(databaseId, freshMetadata);
               })
             );
           })
@@ -521,13 +518,13 @@ export class EventDatabaseService {
       databaseName: databaseMetadata.name,
       title: this.getCellValue(row, columnMapping, 'Title') as string || 'Sans titre',
       description: this.getCellValue(row, columnMapping, 'Description') as string,
-      start_date: this.getCellValue(row, columnMapping, 'Start Date') as string || new Date().toISOString(),
-      end_date: this.getCellValue(row, columnMapping, 'End Date') as string || new Date().toISOString(),
+      start_date: (() => { const startDateFallback = new Date().toISOString(); return this.getCellValue(row, columnMapping, 'Start Date') as string || startDateFallback; })(),
+      end_date: (() => { const startRaw = this.getCellValue(row, columnMapping, 'Start Date') as string; const endRaw = this.getCellValue(row, columnMapping, 'End Date') as string; if (endRaw) return endRaw; const startDate = startRaw ? new Date(startRaw) : new Date(); return new Date(startDate.getTime() + 60 * 60 * 1000).toISOString(); })(),
       all_day: (this.getCellValue(row, columnMapping, 'All Day') as boolean) ?? false,
       category: this.normalizeCategory(this.getCellValue(row, columnMapping, 'Category') as string),
       location: this.getCellValue(row, columnMapping, 'Location') as string,
       recurrence: this.getCellValue(row, columnMapping, 'Recurrence') as string,
-      linked_items: this.getCellValue(row, columnMapping, 'Linked Items') as LinkedItem[],
+      linked_items: (() => { const rawLinkedItems = this.getCellValue(row, columnMapping, 'Linked Items'); return Array.isArray(rawLinkedItems) ? rawLinkedItems as LinkedItem[] : []; })(),
       project_id: this.getCellValue(row, columnMapping, 'Project ID') as string,
       event_number: this.getCellValue(row, columnMapping, 'Event Number') as string,
       reminders: this.parseReminders(this.getCellValue(row, columnMapping, 'Reminders') as string),
@@ -540,6 +537,23 @@ export class EventDatabaseService {
     };
 
     return entry;
+  }
+
+  /**
+   * Set a metadata cache entry and schedule its expiry,
+   * clearing any previously scheduled timer for the same key.
+   */
+  private setCacheWithTimer(databaseId: string, metadata: DocumentDatabase): void {
+    const existingTimer = this.cacheTimers.get(databaseId);
+    if (existingTimer !== undefined) {
+      clearTimeout(existingTimer);
+    }
+    this.metadataCache.set(databaseId, metadata);
+    const timer = setTimeout(() => {
+      this.metadataCache.delete(databaseId);
+      this.cacheTimers.delete(databaseId);
+    }, this.cacheExpiry);
+    this.cacheTimers.set(databaseId, timer);
   }
 
   /**

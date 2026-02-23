@@ -13,7 +13,6 @@ import {
   NG_VALUE_ACCESSOR,
   ReactiveFormsModule,
   FormControl,
-  Validators,
 } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -30,7 +29,8 @@ import {
   takeUntil,
 } from 'rxjs';
 
-import { EventAttendee, RsvpStatus } from '../../models/attendee.model';
+import { EventAttendee } from '../../models/attendee.model';
+import { getInitials, getRsvpIcon, getRsvpLabel } from '../../../../shared/utils/attendee.utils';
 import { UserService } from '../../../../core/services/user.service';
 import { SupabaseService } from '../../../../core/services/supabase';
 import { GoogleCalendarApiService, GoogleContact } from '../../../google-calendar/services/google-calendar-api.service';
@@ -164,33 +164,15 @@ export class EventAttendeesPickerComponent implements ControlValueAccessor, OnIn
   }
 
   getInitials(attendee: EventAttendee): string {
-    if (attendee.displayName) {
-      return attendee.displayName
-        .split(' ')
-        .map(n => n[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase();
-    }
-    return attendee.email[0].toUpperCase();
+    return getInitials(attendee.displayName, attendee.email);
   }
 
-  getRsvpIcon(status: RsvpStatus): string {
-    switch (status) {
-      case 'accepted': return 'check_circle';
-      case 'declined': return 'cancel';
-      case 'tentative': return 'help';
-      case 'needsAction': return 'schedule';
-    }
+  getRsvpIcon(status: Parameters<typeof getRsvpIcon>[0]): string {
+    return getRsvpIcon(status);
   }
 
-  getRsvpLabel(status: RsvpStatus): string {
-    switch (status) {
-      case 'accepted': return 'Accepté';
-      case 'declined': return 'Refusé';
-      case 'tentative': return 'Peut-être';
-      case 'needsAction': return 'En attente';
-    }
+  getRsvpLabel(status: Parameters<typeof getRsvpLabel>[0]): string {
+    return getRsvpLabel(status);
   }
 
   // Private

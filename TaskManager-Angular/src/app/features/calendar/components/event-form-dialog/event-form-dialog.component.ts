@@ -5,7 +5,9 @@ import {
   ChangeDetectionStrategy,
   signal,
   computed,
+  DestroyRef,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import {
   ReactiveFormsModule,
@@ -140,6 +142,7 @@ export class EventFormDialogComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly eventDatabaseService = inject(EventDatabaseService);
   protected readonly categoryStore = inject(EventCategoryStore);
+  private readonly destroyRef = inject(DestroyRef);
 
   // State signals
   readonly isLoading = signal(false);
@@ -160,7 +163,7 @@ export class EventFormDialogComponent implements OnInit {
 
   // Mode
   readonly isEditMode = this.data.mode === 'edit';
-  readonly dialogTitle = this.isEditMode ? 'Modifier l\'événement' : 'Nouvel événement';
+  readonly dialogTitle = this.isEditMode ? "Modifier l'événement" : 'Nouvel événement';
 
   // Whether to show guest permissions (at least 1 attendee)
   readonly hasAttendees = signal(false);
@@ -178,7 +181,7 @@ export class EventFormDialogComponent implements OnInit {
   readonly form: FormGroup<EventForm> = this.fb.group<EventForm>({
     title: new FormControl<string>('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.minLength(1)],
+      validators: [Validators.required],
     }),
     description: new FormControl<string>('', { nonNullable: true }),
     startDate: new FormControl<Date | null>(null, {
@@ -242,9 +245,9 @@ export class EventFormDialogComponent implements OnInit {
     this.populateFormFromData();
 
     // Track whether attendees exist for showing permissions
-    this.form.controls.attendees.valueChanges.subscribe(attendees => {
-      this.hasAttendees.set(attendees.length > 0);
-    });
+    this.form.controls.attendees.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(attendees => this.hasAttendees.set(attendees.length > 0));
     this.hasAttendees.set(this.form.controls.attendees.value.length > 0);
   }
 
@@ -429,17 +432,21 @@ export class EventFormDialogComponent implements OnInit {
       return;
     }
 
-    this.isLoading.set(true);
-
     const formValue = this.form.getRawValue();
     const startIso = this.combineDateAndTime(
       formValue.startDate,
       formValue.allDay ? '00:00' : formValue.startTime
     );
-    const endIso = this.combineDateAndTime(
-      formValue.endDate,
-      formValue.allDay ? '23:59' : formValue.endTime
-    );
+
+    let endIso: string;
+    // For all-day events, end date should be start of next day (exclusive end, per iCal/Google convention)
+    if (formValue.allDay) {
+      const endDate = new Date(formValue.endDate!);
+      endDate.setDate(endDate.getDate() + 1);
+      endIso = endDate.toISOString().split('T')[0] + 'T00:00:00.000Z';
+    } else {
+      endIso = this.combineDateAndTime(formValue.endDate, formValue.endTime);
+    }
 
     const result: EventFormDialogResult = {
       title: formValue.title.trim(),
@@ -458,7 +465,6 @@ export class EventFormDialogComponent implements OnInit {
       add_google_meet: formValue.addGoogleMeet,
     };
 
-    this.isLoading.set(false);
     this.dialogRef.close(result);
   }
 
@@ -498,7 +504,7 @@ export class EventFormDialogComponent implements OnInit {
 
   private combineDateAndTime(date: Date | null, time: string): string {
     if (!date) {
-      return new Date().toISOString();
+      throw new Error('combineDateAndTime called with null date — form validation should prevent this');
     }
 
     const [hours, minutes] = time.split(':').map(Number);

@@ -19,6 +19,14 @@ export interface PageFabConfig {
 
 /**
  * État interne du FAB Store
+ *
+ * NOTE: `saveCallback`, `navigateCallback`, and `isDirtySignal` are non-serializable
+ * values stored in state as a deliberate exception to the serializable state rule.
+ * Refactoring them out would require storing them in a separate service and threading
+ * references through all 6 consumer components (app, dashboard, general-dashboard,
+ * document-list, calendar-page, document-editor). The current design is intentional:
+ * the FAB acts as a page-scoped communication bus where page components register
+ * transient callbacks for the duration of their lifecycle, not persistent state.
  */
 interface FabState {
   context: NavigationContext;

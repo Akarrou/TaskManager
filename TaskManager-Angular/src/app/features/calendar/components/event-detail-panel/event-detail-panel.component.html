@@ -8,10 +8,10 @@
           <span class="event-badge">#{{ event.event_number }}</span>
         }
         <h2 class="panel-title">{{ event.title }}</h2>
-        <a class="open-doc-link" (click)="onNavigateToSource()">
+        <button type="button" class="open-doc-link" (click)="onNavigateToSource()">
           Ouvrir le document
           <mat-icon class="open-doc-link__icon">north_east</mat-icon>
-        </a>
+        </button>
       </div>
       <button mat-icon-button (click)="onClose()" class="close-btn" aria-label="Fermer">
         <mat-icon>close</mat-icon>
@@ -84,7 +84,7 @@
             <path fill="#ffba00" d="M63.5 0h-43v20.5h29V36l20-16.57V6c0-3.315-2.685-6-6-6z"/>
           </svg>
           <div class="section-content">
-            <a class="meet-btn" [href]="event.meet_link" target="_blank" rel="noopener">
+            <a class="meet-btn" [href]="event.meet_link" target="_blank" rel="noopener noreferrer">
               Rejoindre Google Meet
             </a>
             <span class="meet-url">{{ event.meet_link }}</span>
@@ -199,7 +199,7 @@
               <mat-icon class="!text-[14px] !w-[14px] !h-[14px]">cloud_done</mat-icon>
               Synchronisé avec Google Calendar
             </span>
-            <a class="google-link" [href]="getGoogleCalendarLink(event.google_event_id)" target="_blank" rel="noopener">
+            <a class="google-link" [href]="getGoogleCalendarLink(event.google_event_id)" target="_blank" rel="noopener noreferrer">
               Voir dans Google Calendar
               <mat-icon class="!text-[13px] !w-[13px] !h-[13px]">open_in_new</mat-icon>
             </a>
@@ -214,7 +214,7 @@
           <mat-icon class="section-icon">notifications</mat-icon>
           <div class="section-content">
             <span class="section-label">Rappels</span>
-            @for (reminder of event.reminders; track reminder.minutes) {
+            @for (reminder of event.reminders; track $index) {
               <span class="section-value">{{ formatReminder(reminder) }}</span>
             }
           </div>

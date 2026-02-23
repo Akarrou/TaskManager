@@ -21,6 +21,7 @@ interface GoogleCalendarStoreState {
   connectionLoading: boolean;
   calendarsLoading: boolean;
   syncConfigsLoading: boolean;
+  error: string | null;
 }
 
 export const GoogleCalendarStore = signalStore(
@@ -36,10 +37,14 @@ export const GoogleCalendarStore = signalStore(
     connectionLoading: false,
     calendarsLoading: false,
     syncConfigsLoading: false,
+    error: null,
   }),
 
   withComputed((store) => ({
-    isConnected: computed(() => store.connection() !== null && store.connection()!.is_active),
+    isConnected: computed(() => {
+      const conn = store.connection();
+      return conn !== null && conn.is_active;
+    }),
     enabledSyncConfigs: computed(() => store.syncConfigs().filter(c => c.is_enabled)),
     loading: computed(() => store.connectionLoading() || store.calendarsLoading() || store.syncConfigsLoading()),
   })),
@@ -50,7 +55,7 @@ export const GoogleCalendarStore = signalStore(
     apiService = inject(GoogleCalendarApiService),
   ) => ({
     async loadConnection(): Promise<void> {
-      patchState(store, { connectionLoading: true });
+      patchState(store, { connectionLoading: true, error: null });
       try {
         const connection = await authService.getConnection();
         patchState(store, {
@@ -60,22 +65,29 @@ export const GoogleCalendarStore = signalStore(
         });
       } catch (error) {
         console.error('[GoogleCalendarStore] loadConnection failed:', error);
-        patchState(store, { connectionLoading: false, syncStatus: 'disconnected' });
+        patchState(store, {
+          connectionLoading: false,
+          syncStatus: 'disconnected',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
       }
     },
 
     async connect(): Promise<void> {
-      patchState(store, { connectionLoading: true });
+      patchState(store, { connectionLoading: true, error: null });
       try {
         await authService.initiateConnection();
       } catch (error) {
         console.error('[GoogleCalendarStore] connect failed:', error);
-        patchState(store, { connectionLoading: false });
+        patchState(store, {
+          connectionLoading: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
       }
     },
 
     async disconnect(): Promise<void> {
-      patchState(store, { connectionLoading: true });
+      patchState(store, { connectionLoading: true, error: null });
       try {
         await authService.disconnect();
         patchState(store, {
@@ -89,29 +101,38 @@ export const GoogleCalendarStore = signalStore(
         });
       } catch (error) {
         console.error('[GoogleCalendarStore] disconnect failed:', error);
-        patchState(store, { connectionLoading: false });
+        patchState(store, {
+          connectionLoading: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
       }
     },
 
     async loadCalendars(): Promise<void> {
-      patchState(store, { calendarsLoading: true });
+      patchState(store, { calendarsLoading: true, error: null });
       try {
         const calendars = await apiService.listCalendars();
         patchState(store, { availableCalendars: calendars, calendarsLoading: false });
       } catch (error) {
         console.error('[GoogleCalendarStore] loadCalendars failed:', error);
-        patchState(store, { calendarsLoading: false });
+        patchState(store, {
+          calendarsLoading: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
       }
     },
 
     async loadSyncConfigs(): Promise<void> {
-      patchState(store, { syncConfigsLoading: true });
+      patchState(store, { syncConfigsLoading: true, error: null });
       try {
         const configs = await apiService.getSyncConfigs();
         patchState(store, { syncConfigs: configs, syncConfigsLoading: false });
       } catch (error) {
         console.error('[GoogleCalendarStore] loadSyncConfigs failed:', error);
-        patchState(store, { syncConfigsLoading: false });
+        patchState(store, {
+          syncConfigsLoading: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
       }
     },
 
@@ -122,6 +143,7 @@ export const GoogleCalendarStore = signalStore(
         patchState(store, { syncConfigs: configs });
       } catch (error) {
         console.error('[GoogleCalendarStore] updateSyncConfig failed:', error);
+        patchState(store, { error: error instanceof Error ? error.message : 'Unknown error' });
       }
     },
 
@@ -132,6 +154,7 @@ export const GoogleCalendarStore = signalStore(
         patchState(store, { syncConfigs: configs });
       } catch (error) {
         console.error('[GoogleCalendarStore] createSyncConfig failed:', error);
+        patchState(store, { error: error instanceof Error ? error.message : 'Unknown error' });
       }
     },
 
@@ -186,7 +209,10 @@ export const GoogleCalendarStore = signalStore(
         patchState(store, { syncConfigs: configs });
       } catch (error) {
         console.error('[GoogleCalendarStore] triggerSync failed:', error);
-        patchState(store, { syncStatus: 'error' });
+        patchState(store, {
+          syncStatus: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
       }
     },
 
@@ -218,25 +244,46 @@ export const GoogleCalendarStore = signalStore(
         return { meet_link: result.meet_link };
       } catch (error) {
         console.error('[GoogleCalendarStore] triggerSyncForEvent failed:', error);
+        patchState(store, { error: error instanceof Error ? error.message : 'Unknown error' });
         return null;
       }
     },
 
     async triggerDeleteForEvent(databaseId: string, rowId: string): Promise<void> {
       try {
-        const syncConfig = await apiService.getEnabledSyncConfigForDatabase(databaseId);
-        if (!syncConfig?.kodo_database_id) {
-          return;
+        const actualDbUuid = await apiService.resolveDatabaseUuid(databaseId);
+        if (!actualDbUuid) return;
+
+        // First check if there's an existing mapping for this event
+        const existingMapping = await apiService.getEventMapping(databaseId, rowId);
+
+        let syncConfigId: string;
+        let kodoDatabaseId: string;
+
+        if (existingMapping?.sync_config_id) {
+          // Use the mapping's sync config and calendar ids directly
+          syncConfigId = existingMapping.sync_config_id;
+          kodoDatabaseId = existingMapping.kodo_database_id;
+        } else {
+          // Fallback: find any enabled sync config for this database
+          const syncConfig = await apiService.getEnabledSyncConfigForDatabase(databaseId);
+          if (!syncConfig?.kodo_database_id) {
+            return;
+          }
+          syncConfigId = syncConfig.id;
+          kodoDatabaseId = syncConfig.kodo_database_id;
         }
-        // Pass the UUID (from sync_config) instead of database_id text
-        await apiService.deleteGoogleEvent(syncConfig.id, syncConfig.kodo_database_id, rowId);
+
+        // Pass the UUID (from sync_config or mapping) instead of database_id text
+        await apiService.deleteGoogleEvent(syncConfigId, kodoDatabaseId, rowId);
       } catch (error) {
         console.error('[GoogleCalendarStore] triggerDeleteForEvent failed:', error);
+        patchState(store, { error: error instanceof Error ? error.message : 'Unknown error' });
       }
     },
 
     async handleOAuthCallback(code: string, state: string): Promise<void> {
-      patchState(store, { connectionLoading: true });
+      patchState(store, { connectionLoading: true, error: null });
       try {
         authService.validateOAuthState(state);
         await authService.handleCallback(code, state);
@@ -247,9 +294,16 @@ export const GoogleCalendarStore = signalStore(
           connectionLoading: false,
         });
       } catch (error) {
-        patchState(store, { connectionLoading: false });
+        patchState(store, {
+          connectionLoading: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
         throw error;
       }
+    },
+
+    clearError(): void {
+      patchState(store, { error: null });
     },
   })),
 );

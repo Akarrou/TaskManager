@@ -20,17 +20,13 @@ Deno.serve(async (req) => {
     const user = await authenticateUser(req, supabaseAdmin)
     const connection = await getConnectionForUser(user.id, supabaseAdmin)
 
-    // Decrypt access token and attempt to revoke it
-    try {
-      const accessToken = await decryptToken(connection.access_token_encrypted)
-      await fetch(`https://oauth2.googleapis.com/revoke?token=${accessToken}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      })
-    } catch (revokeError) {
-      // Revocation failure is non-fatal: proceed with deletion
-      console.warn('Token revocation failed (proceeding with disconnect):', revokeError)
-    }
+    // Decrypt refresh token and attempt to revoke it (revoking the refresh token
+    // also invalidates all associated access tokens)
+    const refreshToken = await decryptToken(connection.refresh_token_encrypted)
+    await fetch(`https://oauth2.googleapis.com/revoke?token=${refreshToken}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    }).catch(() => { /* Best effort - token revocation is non-critical */ })
 
     // Delete connection (cascade deletes configs, mappings, logs)
     const { error: deleteError } = await supabaseAdmin

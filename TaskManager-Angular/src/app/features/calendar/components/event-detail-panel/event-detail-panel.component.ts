@@ -10,8 +10,9 @@ import { getCategoryLabel, getCategoryColors, formatReminder } from '../../../..
 import { LinkedItem } from '../../../documents/models/database.model';
 import { RruleToTextPipe } from '../../pipes/rrule-to-text.pipe';
 import { GoogleCalendarReminder } from '../../../google-calendar/models/google-calendar.model';
-import { EventAttendee, RsvpStatus } from '../../models/attendee.model';
+import { EventAttendee } from '../../models/attendee.model';
 import { EventCategoryStore } from '../../../../core/stores/event-category.store';
+import { getInitials, getRsvpIcon, getRsvpLabel } from '../../../../shared/utils/attendee.utils';
 
 @Component({
   selector: 'app-event-detail-panel',
@@ -39,7 +40,7 @@ export class EventDetailPanelComponent {
   @Output() close = new EventEmitter<void>();
   @Output() edit = new EventEmitter<EventEntry>();
   @Output() deleted = new EventEmitter<{ databaseId: string; rowId: string }>();
-  @Output() updated = new EventEmitter<{ databaseId: string; rowId: string; updates: Partial<EventEntry> }>();
+  @Output() updated = new EventEmitter<{ databaseId: string; eventId: string; updates: Partial<EventEntry> }>();
   @Output() navigateToSource = new EventEmitter<{ databaseId: string; rowId: string; title: string }>();
   @Output() linkedItemClick = new EventEmitter<LinkedItem>();
 
@@ -116,33 +117,15 @@ export class EventDetailPanelComponent {
   }
 
   getInitials(attendee: EventAttendee): string {
-    if (attendee.displayName) {
-      return attendee.displayName
-        .split(' ')
-        .map(n => n[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase();
-    }
-    return attendee.email[0].toUpperCase();
+    return getInitials(attendee.displayName, attendee.email);
   }
 
-  getRsvpIcon(status: RsvpStatus): string {
-    switch (status) {
-      case 'accepted': return 'check_circle';
-      case 'declined': return 'cancel';
-      case 'tentative': return 'help';
-      case 'needsAction': return 'schedule';
-    }
+  getRsvpIcon(status: Parameters<typeof getRsvpIcon>[0]): string {
+    return getRsvpIcon(status);
   }
 
-  getRsvpLabel(status: RsvpStatus): string {
-    switch (status) {
-      case 'accepted': return 'Accepté';
-      case 'declined': return 'Refusé';
-      case 'tentative': return 'Peut-être';
-      case 'needsAction': return 'En attente';
-    }
+  getRsvpLabel(status: Parameters<typeof getRsvpLabel>[0]): string {
+    return getRsvpLabel(status);
   }
 
   private formatDateTime(isoDate: string, allDay: boolean): string {

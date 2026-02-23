@@ -44,7 +44,7 @@
       <!-- Google Meet toggle -->
       <div class="form-group form-group--inline meet-toggle-row">
         <mat-checkbox formControlName="addGoogleMeet" class="meet-checkbox">
-          <svg class="meet-toggle-icon" viewBox="0 0 87.5 72" xmlns="http://www.w3.org/2000/svg">
+          <svg class="meet-toggle-icon" viewBox="0 0 87.5 72" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path fill="#00832d" d="M49.5 36l8.53 9.75 11.47 7.33 2-17.02-2-16.64-11.69 6.44z"/>
             <path fill="#0066da" d="M0 51.5V66c0 3.315 2.685 6 6 6h14.5l3-10.96-3-9.54-9.95-3z"/>
             <path fill="#e94235" d="M20.5 0L0 20.5l10.55 3 9.95-3 2.95-9.41z"/>
@@ -63,7 +63,7 @@
 
       <!-- Attendees trigger button -->
       <div class="form-group form-group--inline attendees-toggle-row">
-        <button type="button" class="attendees-trigger-btn" (click)="toggleAttendeesPanel()">
+        <button type="button" class="attendees-trigger-btn" aria-label="Gérer les participants" (click)="toggleAttendeesPanel()">
           <mat-icon>group</mat-icon>
           <span>Invités</span>
           @if (form.controls.attendees.value.length > 0) {
@@ -105,7 +105,7 @@
           }
         </div>
         @if (form.hasError('dateRange')) {
-          <mat-error class="date-range-error">La date de fin doit être après la date de début</mat-error>
+          <p role="alert" class="mat-mdc-form-field-error date-range-error">La date de fin doit être après la date de début</p>
         }
       </div>
 
@@ -117,6 +117,7 @@
             <button
               type="button"
               class="category-settings-btn"
+              aria-label="Gérer les catégories"
               (click)="toggleCategoryPanel()"
               matTooltip="Gérer les catégories">
               <mat-icon>settings</mat-icon>
@@ -189,7 +190,7 @@
                   <mat-option [value]="2880">2 jours</mat-option>
                 </mat-select>
               </mat-form-field>
-              <button mat-icon-button type="button" (click)="removeReminder($index)" class="reminder-remove-btn">
+              <button mat-icon-button type="button" (click)="removeReminder($index)" class="reminder-remove-btn" aria-label="Supprimer le rappel">
                 <mat-icon>close</mat-icon>
               </button>
             </div>
@@ -216,7 +217,7 @@
               <mat-icon class="category-panel__icon">palette</mat-icon>
               Catégories
             </h3>
-            <button mat-icon-button (click)="toggleCategoryPanel()" class="category-panel__close">
+            <button mat-icon-button aria-label="Fermer le panneau" (click)="toggleCategoryPanel()" class="category-panel__close">
               <mat-icon>close</mat-icon>
             </button>
           </div>
@@ -253,16 +254,17 @@
                             class="color-circle"
                             [class.color-circle--selected]="editColorKey() === colorKey"
                             [style.background-color]="palette[colorKey].hex"
+                            [attr.aria-label]="'Couleur ' + colorKey"
                             [matTooltip]="colorKey"
                             (click)="selectEditColor(colorKey)">
                           </button>
                         }
                       </div>
                       <div class="category-edit__actions">
-                        <button mat-icon-button (click)="saveEdit(cat)" matTooltip="Enregistrer">
+                        <button mat-icon-button (click)="saveEdit(cat)" matTooltip="Enregistrer" aria-label="Enregistrer la catégorie">
                           <mat-icon>check</mat-icon>
                         </button>
-                        <button mat-icon-button (click)="cancelEdit()" matTooltip="Annuler">
+                        <button mat-icon-button (click)="cancelEdit()" matTooltip="Annuler" aria-label="Annuler la modification">
                           <mat-icon>close</mat-icon>
                         </button>
                       </div>
@@ -279,10 +281,10 @@
                     <span class="category-color-dot" [style.background-color]="palette[cat.colorKey]?.hex"></span>
                     <span class="category-row__label">{{ cat.label }}</span>
                     <div class="category-row__actions">
-                      <button mat-icon-button (click)="startEdit(cat)" matTooltip="Modifier">
+                      <button mat-icon-button (click)="startEdit(cat)" matTooltip="Modifier" aria-label="Modifier la catégorie">
                         <mat-icon>edit</mat-icon>
                       </button>
-                      <button mat-icon-button (click)="requestDelete(cat.key)" matTooltip="Supprimer">
+                      <button mat-icon-button (click)="requestDelete(cat.key)" matTooltip="Supprimer" aria-label="Supprimer la catégorie">
                         <mat-icon>delete</mat-icon>
                       </button>
                     </div>
@@ -310,6 +312,7 @@
                     class="color-circle"
                     [class.color-circle--selected]="selectedColorKey() === colorKey"
                     [style.background-color]="palette[colorKey].hex"
+                    [attr.aria-label]="'Couleur ' + colorKey"
                     [matTooltip]="colorKey"
                     (click)="selectNewColor(colorKey)">
                   </button>
@@ -339,7 +342,7 @@
               <mat-icon class="attendees-overlay__icon">group</mat-icon>
               Invités
             </h3>
-            <button mat-icon-button (click)="toggleAttendeesPanel()" class="attendees-overlay__close">
+            <button mat-icon-button (click)="toggleAttendeesPanel()" class="attendees-overlay__close" aria-label="Fermer le panneau des participants">
               <mat-icon>close</mat-icon>
             </button>
           </div>
@@ -383,7 +386,7 @@
       @if (isLoading()) {
         <mat-spinner diameter="18" class="!inline-block !mr-2"></mat-spinner>
       }
-      {{ isEditMode ? 'Enregistrer' : 'Créer l\'événement' }}
+      {{ isEditMode ? 'Enregistrer' : "Créer l'événement" }}
     </button>
   </div>
 </mat-dialog-actions>

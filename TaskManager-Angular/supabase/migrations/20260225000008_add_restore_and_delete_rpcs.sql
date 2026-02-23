@@ -234,8 +234,47 @@ $$;
 COMMENT ON FUNCTION soft_delete_trash_only IS
 'Insert into trash_items only (deleted_at already set by caller). Uses auth.uid() server-side to avoid N getUser() calls.';
 
--- Grant permissions
+-- =============================================================================
+-- 5. remove_trash_entries: removes trash_items by type and IDs.
+--    Used when undoing a soft-delete to clean up orphaned entries.
+-- =============================================================================
+
+CREATE OR REPLACE FUNCTION remove_trash_entries(
+  p_item_type TEXT,
+  p_item_ids TEXT[]
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_user_id UUID;
+  v_deleted_count INTEGER;
+BEGIN
+  v_user_id := auth.uid();
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'User not authenticated';
+  END IF;
+
+  DELETE FROM trash_items
+  WHERE user_id = v_user_id
+  AND item_type = p_item_type
+  AND item_id = ANY(p_item_ids);
+
+  GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'deleted_count', v_deleted_count
+  );
+END;
+$$;
+
+COMMENT ON FUNCTION remove_trash_entries IS
+'Removes trash_items entries by item type and IDs. Used for undo operations.';
+
+-- Grant permissions (note: _cascade_hard_delete_project is internal only, no direct GRANT)
 GRANT EXECUTE ON FUNCTION restore_item TO authenticated;
 GRANT EXECUTE ON FUNCTION permanent_delete_item TO authenticated;
 GRANT EXECUTE ON FUNCTION soft_delete_trash_only TO authenticated;
-GRANT EXECUTE ON FUNCTION _cascade_hard_delete_project TO authenticated;
+GRANT EXECUTE ON FUNCTION remove_trash_entries TO authenticated;
