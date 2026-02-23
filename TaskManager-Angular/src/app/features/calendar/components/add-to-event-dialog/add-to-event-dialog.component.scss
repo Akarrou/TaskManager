@@ -1,0 +1,295 @@
+@use '../../../../styles/variables' as v;
+
+:host {
+  display: block;
+}
+
+// ============================================================================
+// Dialog title — ensure icon + text are vertically centered
+// ============================================================================
+
+::ng-deep .mat-mdc-dialog-title.dialog-title-default {
+  display: flex !important;
+  align-items: center !important;
+
+  mat-icon {
+    line-height: 1;
+  }
+}
+
+// ============================================================================
+// Form Layout
+// ============================================================================
+
+.add-to-event-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.form-label {
+  display: block;
+  font-size: v.$font-size-sm;
+  font-weight: v.$font-weight-medium;
+  color: v.$text-color-medium;
+}
+
+.search-icon {
+  color: v.$text-color-light !important;
+  font-size: 20px !important;
+  margin-right: 4px !important;
+}
+
+// ============================================================================
+// Mat-form-field overrides (matching event-form-dialog)
+// ============================================================================
+
+::ng-deep {
+  .add-to-event-form .mat-mdc-form-field {
+    .mdc-floating-label {
+      display: none !important;
+    }
+
+    .mdc-notched-outline__notch {
+      display: none !important;
+    }
+  }
+
+  .add-to-event-form .mdc-notched-outline__leading {
+    border-radius: v.$border-radius-md 0 0 v.$border-radius-md !important;
+    border-color: v.$border-color-medium !important;
+    border-width: 1px !important;
+  }
+
+  .add-to-event-form .mdc-notched-outline__trailing {
+    border-radius: 0 v.$border-radius-md v.$border-radius-md 0 !important;
+    border-color: v.$border-color-medium !important;
+    border-width: 1px !important;
+  }
+
+  .add-to-event-form .mat-mdc-form-field.mat-focused {
+    .mdc-notched-outline__leading,
+    .mdc-notched-outline__trailing {
+      border-color: v.$primary-color !important;
+      border-width: 1px !important;
+    }
+  }
+
+  .add-to-event-form .mat-mdc-form-field-infix {
+    min-height: 44px;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    display: flex;
+    align-items: center;
+  }
+
+  .add-to-event-form .mat-mdc-text-field-wrapper {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .add-to-event-form .mat-mdc-input-element {
+    font-size: v.$font-size-base !important;
+    color: v.$text-color-dark !important;
+
+    &::placeholder {
+      color: v.$text-color-light !important;
+      opacity: 1 !important;
+    }
+  }
+
+  .add-to-event-form .mat-mdc-form-field-subscript-wrapper {
+    margin-bottom: 0;
+  }
+}
+
+// ============================================================================
+// Linked Item Preview
+// ============================================================================
+
+.linked-item-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background-color: v.$background-color-light;
+  border: 1px solid v.$border-color-light;
+  border-radius: v.$border-radius-md;
+
+  &__icon {
+    color: v.$primary-color;
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__type {
+    font-size: v.$font-size-xs;
+    font-weight: v.$font-weight-semibold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: v.$text-color-light;
+  }
+
+  &__label {
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-medium;
+    color: v.$text-color-dark;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+// ============================================================================
+// Loading & Empty State
+// ============================================================================
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2.5rem 0;
+  color: v.$text-color-light;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    opacity: 0.4;
+  }
+
+  p {
+    font-size: v.$font-size-sm;
+    margin: 0;
+  }
+}
+
+// ============================================================================
+// Event List
+// ============================================================================
+
+.event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+
+  // Subtle scrollbar
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: v.$border-color-medium;
+    border-radius: v.$border-radius-full;
+  }
+}
+
+.event-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid v.$border-color-light;
+  border-radius: v.$border-radius-md;
+  background: v.$background-color-form;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: all 0.15s ease;
+
+  &:hover:not(:disabled) {
+    border-color: v.$primary-color;
+    background: v.$primary-color-lightest;
+    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &__left {
+    display: flex;
+    align-items: center;
+    padding-top: 3px;
+    flex-shrink: 0;
+  }
+
+  &__color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: v.$border-radius-full;
+    flex-shrink: 0;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  &__title {
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-medium;
+    color: v.$text-color-dark;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+
+  &__category {
+    font-size: v.$font-size-xs;
+    font-weight: v.$font-weight-medium;
+    padding: 2px 8px;
+    border-radius: v.$border-radius-full;
+    white-space: nowrap;
+    line-height: 1.4;
+  }
+
+  &__dates {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: v.$font-size-xs;
+    color: v.$text-color-light;
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+  }
+}

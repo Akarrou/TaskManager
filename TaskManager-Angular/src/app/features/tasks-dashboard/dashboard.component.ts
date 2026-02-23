@@ -28,8 +28,11 @@ import { DashboardStatsStore } from '../../core/stores/dashboard-stats.store';
 import { getStatusLabel, getPriorityLabel } from '../../shared/models/task-constants';
 import { TaskCsvImportDialogComponent } from './components/task-csv-import-dialog/task-csv-import-dialog.component';
 import { TaskCsvImportResult } from './models/task-csv-import.model';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { LinkedItem } from '../documents/models/database.model';
+import { AddToEventDialogComponent, AddToEventDialogData } from '../calendar/components/add-to-event-dialog/add-to-event-dialog.component';
 
 @Component({
   selector: 'app-tasks-dashboard',
@@ -42,6 +45,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     MatButtonModule,
     MatCardModule,
     MatPaginatorModule,
+    MatMenuModule,
     MatSnackBarModule,
     MatTooltipModule,
     TaskSearchComponent,
@@ -575,6 +579,45 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
   // TrackBy function for epic cards performance optimization
   trackEpic(index: number, epic: Task): string {
     return epic.id || index.toString();
+  }
+
+  /**
+   * Open Add-to-Event dialog for a task entry (table view)
+   */
+  openAddToEventForTask(entry: TaskEntry): void {
+    const item: LinkedItem = {
+      type: 'task',
+      id: entry.id,
+      databaseId: entry.databaseId,
+      label: entry.task_number ? `${entry.task_number} — ${entry.title}` : entry.title,
+    };
+    this.dialog.open(AddToEventDialogComponent, {
+      width: '560px',
+      maxHeight: '80vh',
+      data: { item } as AddToEventDialogData,
+    });
+  }
+
+  /**
+   * Handle add-to-event from kanban card
+   */
+  onAddToEventFromKanban(task: Task): void {
+    const entry = this.taskEntries().find(e => e.id === task.id);
+    if (entry) {
+      this.openAddToEventForTask(entry);
+    } else {
+      // Fallback with Task data
+      const item: LinkedItem = {
+        type: 'task',
+        id: task.id!,
+        label: task.task_number ? `${task.task_number} — ${task.title}` : task.title,
+      };
+      this.dialog.open(AddToEventDialogComponent, {
+        width: '560px',
+        maxHeight: '80vh',
+        data: { item } as AddToEventDialogData,
+      });
+    }
   }
 
   /**

@@ -158,6 +158,10 @@
               <span>Connecter à une base existante</span>
             </button>
           }
+          <button mat-menu-item (click)="openAddToEvent()">
+            <mat-icon>event</mat-icon>
+            <span>Ajouter à un événement</span>
+          </button>
           <button mat-menu-item (click)="onDeleteDatabase()" class="delete-menu-item">
             <mat-icon color="warn">delete</mat-icon>
             <span>Supprimer la base de données</span>
@@ -456,6 +460,10 @@
                             <button mat-menu-item (click)="onOpenRowDocument(row.id)">
                               <mat-icon>open_in_new</mat-icon>
                               <span>Ouvrir</span>
+                            </button>
+                            <button mat-menu-item (click)="openAddToEventForRow(row)">
+                              <mat-icon>event</mat-icon>
+                              <span>Ajouter à un événement</span>
                             </button>
                             <button mat-menu-item (click)="onDeleteRows([row.id])">
                               <mat-icon>delete</mat-icon>

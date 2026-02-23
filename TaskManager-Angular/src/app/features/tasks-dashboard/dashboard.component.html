@@ -102,9 +102,19 @@
                     <td class="c-table__cell c-table-column--due">{{ entry.due_date | date:'dd/MM/yyyy' }}</td>
                     <td class="c-table__cell c-table__cell--actions c-table-column--actions">
                       <div class="c-table__actions">
-                        <button class="c-icon-button" aria-label="Voir le document de la tâche" (click)="navigateToTaskDocument(entry.databaseId, entry.id)">
-                          <span class="material-icons-outlined">visibility</span>
+                        <button mat-icon-button [matMenuTriggerFor]="taskRowMenu" aria-label="Actions">
+                          <mat-icon>more_vert</mat-icon>
                         </button>
+                        <mat-menu #taskRowMenu="matMenu">
+                          <button mat-menu-item (click)="navigateToTaskDocument(entry.databaseId, entry.id)">
+                            <mat-icon>visibility</mat-icon>
+                            <span>Voir</span>
+                          </button>
+                          <button mat-menu-item (click)="openAddToEventForTask(entry)">
+                            <mat-icon>event</mat-icon>
+                            <span>Ajouter à un événement</span>
+                          </button>
+                        </mat-menu>
                       </div>
                     </td>
                   </tr>
@@ -130,7 +140,8 @@
             [groupBy]="kanbanGroupBy()"
             (taskMoved)="onTaskMoved($event)"
             (taskEdit)="onTaskEdit($event)"
-            (taskDelete)="onTaskDelete($event)">
+            (taskDelete)="onTaskDelete($event)"
+            (addToEvent)="onAddToEventFromKanban($event)">
           </app-kanban-board>
         }
 

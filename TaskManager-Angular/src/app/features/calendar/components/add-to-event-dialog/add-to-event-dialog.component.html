@@ -1,0 +1,112 @@
+<h2 mat-dialog-title class="dialog-title-default">
+  <mat-icon>event</mat-icon>
+  <span>Ajouter à un événement</span>
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <div class="add-to-event-form">
+
+    <!-- Item being linked -->
+    <div class="linked-item-preview">
+      <mat-icon class="linked-item-preview__icon">
+        @switch (item.type) {
+          @case ('task') { task_alt }
+          @case ('document') { description }
+          @case ('database') { table_chart }
+        }
+      </mat-icon>
+      <div class="linked-item-preview__info">
+        <span class="linked-item-preview__type">{{ getItemTypeLabel() }}</span>
+        <span class="linked-item-preview__label">{{ item.label }}</span>
+      </div>
+    </div>
+
+    <!-- Search field -->
+    <div class="form-group">
+      <label class="form-label">Rechercher un événement</label>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-icon matPrefix class="search-icon">search</mat-icon>
+        <input
+          matInput
+          type="text"
+          placeholder="Filtrer par titre..."
+          (input)="onSearchInput($any($event.target).value)"
+          [disabled]="loading()">
+      </mat-form-field>
+    </div>
+
+    <!-- Duplicate warning -->
+    @if (duplicateWarning()) {
+      <div class="dialog-alert-warning">
+        <mat-icon>warning</mat-icon>
+        <div class="dialog-alert-content">
+          <p>{{ duplicateWarning() }}</p>
+        </div>
+      </div>
+    }
+
+    <!-- Loading -->
+    @if (loading()) {
+      <div class="dialog-loading">
+        <mat-spinner diameter="32"></mat-spinner>
+        <span>Chargement des événements...</span>
+      </div>
+    }
+
+    <!-- Event list -->
+    @if (!loading()) {
+      @if (filteredEvents().length === 0) {
+        <div class="empty-state">
+          <mat-icon>event_busy</mat-icon>
+          <p>Aucun événement trouvé</p>
+        </div>
+      } @else {
+        <div class="event-list">
+          @for (event of filteredEvents(); track event.id) {
+            <button
+              class="event-item"
+              [disabled]="linking()"
+              (click)="selectEvent(event)">
+              <div class="event-item__left">
+                <span class="event-item__color-dot" [style.background-color]="getCategoryHexColor(event.category)"></span>
+              </div>
+              <div class="event-item__content">
+                <div class="event-item__header">
+                  <span class="event-item__title">{{ event.title }}</span>
+                  <span
+                    class="event-item__category"
+                    [ngClass]="[
+                      getCategoryColors(event.category).bg,
+                      getCategoryColors(event.category).text
+                    ]">
+                    {{ getCategoryLabel(event.category) }}
+                  </span>
+                </div>
+                <div class="event-item__dates">
+                  <mat-icon>schedule</mat-icon>
+                  @if (event.all_day) {
+                    <span>{{ event.start_date | date:'dd MMM yyyy' }}</span>
+                  } @else {
+                    <span>{{ event.start_date | date:'dd MMM yyyy HH:mm' }} — {{ event.end_date | date:'dd MMM yyyy HH:mm' }}</span>
+                  }
+                </div>
+              </div>
+            </button>
+          }
+        </div>
+      }
+    }
+
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
+  <span></span>
+  <button
+    mat-button
+    (click)="close()"
+    [disabled]="linking()"
+    class="dialog-btn-secondary">
+    Annuler
+  </button>
+</mat-dialog-actions>

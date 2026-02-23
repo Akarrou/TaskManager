@@ -71,6 +71,8 @@ import {
   DateRangePickerDialogResult,
 } from '../date-range-picker-dialog/date-range-picker-dialog.component';
 import { DateRangeFormatPipe } from '../../../../shared/pipes/date-range-format.pipe';
+import { LinkedItem } from '../../models/database.model';
+import { AddToEventDialogComponent, AddToEventDialogData } from '../../../calendar/components/add-to-event-dialog/add-to-event-dialog.component';
 
 /**
  * DocumentDatabaseTableComponent
@@ -1335,6 +1337,47 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
    * For linked databases: only removes the TipTap node (keeps data intact)
    * For owned databases: removes the PostgreSQL table, metadata, and TipTap node
    */
+  openAddToEvent(): void {
+    const item: LinkedItem = {
+      type: 'database',
+      id: this.databaseId,
+      label: this.databaseConfig().name,
+    };
+    this.dialog.open(AddToEventDialogComponent, {
+      width: '560px',
+      maxHeight: '80vh',
+      data: { item } as AddToEventDialogData,
+    });
+  }
+
+  openAddToEventForRow(row: DatabaseRow): void {
+    const columns = this.databaseConfig().columns;
+    const nameColumn = findNameColumn(columns);
+    const title = nameColumn ? (row.cells[nameColumn.id] as string) || 'Sans titre' : 'Sans titre';
+    const itemType = this.isTaskDatabase() ? 'task' : 'document';
+
+    let label = title;
+    if (this.isTaskDatabase()) {
+      const taskNumberCol = columns.find(c => c.name === 'Task Number');
+      const taskNumber = taskNumberCol ? (row.cells[taskNumberCol.id] as string) : null;
+      if (taskNumber) {
+        label = `${taskNumber} — ${title}`;
+      }
+    }
+
+    const item: LinkedItem = {
+      type: itemType,
+      id: row.id,
+      databaseId: this.databaseId,
+      label,
+    };
+    this.dialog.open(AddToEventDialogComponent, {
+      width: '560px',
+      maxHeight: '80vh',
+      data: { item } as AddToEventDialogData,
+    });
+  }
+
   onDeleteDatabase(): void {
     const isLinkedDb = this.isLinked();
 

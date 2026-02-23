@@ -29,7 +29,7 @@ import { DocumentState, DocumentSnapshot, createSnapshot, hasChanges } from '../
 import { Columns, Column } from '../extensions/columns.extension';
 import { AccordionGroup, AccordionItem, AccordionTitle, AccordionContent } from '../extensions/accordion.extension';
 import { AccordionSettingsPopoverComponent, AccordionSettings } from '../components/accordion-settings-popover/accordion-settings-popover.component';
-import { DatabaseRow, DatabaseColumn, DocumentDatabase, CellValue, createTaskDatabaseConfig, PROPERTY_COLORS, PropertyColor, getDefaultColumnColor } from '../models/database.model';
+import { DatabaseRow, DatabaseColumn, DocumentDatabase, CellValue, createTaskDatabaseConfig, PROPERTY_COLORS, PropertyColor, getDefaultColumnColor, LinkedItem } from '../models/database.model';
 import { FontSize } from '../extensions/font-size.extension';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { FontFamily } from '@tiptap/extension-font-family';
@@ -66,6 +66,7 @@ import { MindmapExtension } from '../extensions/mindmap.extension';
 import { MindmapRendererDirective } from '../directives/mindmap-renderer.directive';
 import { SpreadsheetExtension } from '../extensions/spreadsheet.extension';
 import { SpreadsheetRendererDirective } from '../directives/spreadsheet-renderer.directive';
+import { AddToEventDialogComponent, AddToEventDialogData } from '../../calendar/components/add-to-event-dialog/add-to-event-dialog.component';
 
 const lowlight = createLowlight(all);
 
@@ -415,7 +416,16 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
           isDirty: false,
           hasUnsavedChanges: false
         },
-        actions: [],
+        actions: [
+          {
+            id: 'add-to-event',
+            icon: 'event',
+            label: 'Lier à un événement',
+            tooltip: 'Ajouter ce document à un événement du calendrier',
+            action: () => this.openAddToEventDialog(),
+            color: 'accent'
+          }
+        ],
         onSave: () => this.saveDocument(),
         isDirtySignal: this.isDirty
       },
@@ -1139,6 +1149,20 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
    */
   toNumber(value: string): number {
     return Number(value);
+  }
+
+  openAddToEventDialog(): void {
+    const state = this.documentState();
+    const item: LinkedItem = {
+      type: 'document',
+      id: state.id!,
+      label: state.title || 'Sans titre',
+    };
+    this.dialog.open(AddToEventDialogComponent, {
+      width: '560px',
+      maxHeight: '80vh',
+      data: { item } as AddToEventDialogData,
+    });
   }
 
   saveDocument() {

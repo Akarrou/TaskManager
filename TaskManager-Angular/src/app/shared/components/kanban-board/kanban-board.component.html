@@ -50,6 +50,10 @@
                   <mat-icon>edit</mat-icon>
                   <span>Modifier</span>
                 </button>
+                <button mat-menu-item (click)="onAddToEvent(task)">
+                  <mat-icon>event</mat-icon>
+                  <span>Ajouter à un événement</span>
+                </button>
                 <button mat-menu-item class="danger" (click)="onDeleteTask(task.id!)">
                   <mat-icon>delete</mat-icon>
                   <span>Supprimer</span>

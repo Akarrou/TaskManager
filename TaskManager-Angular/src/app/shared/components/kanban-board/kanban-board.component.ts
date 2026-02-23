@@ -40,6 +40,7 @@ export class KanbanBoardComponent {
   taskMoved = output<{ task: Task; newStatus?: string; newPriority?: string }>();
   taskEdit = output<Task>();
   taskDelete = output<string>();
+  addToEvent = output<Task>();
 
   statusColumns: { id: string; title: string; color: string; bgColor: string }[] = [
     { id: 'backlog', title: 'Backlog', color: '#6b7280', bgColor: '#f3f4f6' },
@@ -103,6 +104,10 @@ export class KanbanBoardComponent {
 
   onDeleteTask(taskId: string) {
     this.taskDelete.emit(taskId);
+  }
+
+  onAddToEvent(task: Task) {
+    this.addToEvent.emit(task);
   }
 
   getEnvironmentBadge(env: string[] | undefined): string {

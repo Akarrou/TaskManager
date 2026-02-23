@@ -72,7 +72,8 @@
       "Bash(printf:*)",
       "Bash(test:*)",
       "Bash(.:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(grep:*)"
     ],
     "deny": [
       "Read(./.env)",
