@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, Input, Output, EventEmitter, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, Input, Output, EventEmitter, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -6,10 +6,11 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { EventEntry } from '../../../../core/services/event-database.service';
-import { CATEGORY_LABELS, CATEGORY_COLORS, EventCategory } from '../../../../shared/models/event-constants';
+import { getCategoryLabel, getCategoryColors, formatReminder } from '../../../../shared/models/event-constants';
 import { LinkedItem } from '../../../documents/models/database.model';
 import { RruleToTextPipe } from '../../pipes/rrule-to-text.pipe';
 import { GoogleCalendarReminder } from '../../../google-calendar/models/google-calendar.model';
+import { EventCategoryStore } from '../../../../core/stores/event-category.store';
 
 @Component({
   selector: 'app-event-detail-panel',
@@ -28,6 +29,8 @@ import { GoogleCalendarReminder } from '../../../google-calendar/models/google-c
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EventDetailPanelComponent {
+  private categoryStore = inject(EventCategoryStore);
+
   @Input() set event(value: EventEntry | null) {
     this.eventSignal.set(value);
   }
@@ -44,13 +47,13 @@ export class EventDetailPanelComponent {
   protected categoryLabel = computed(() => {
     const ev = this.eventSignal();
     if (!ev) return '';
-    return CATEGORY_LABELS[ev.category as EventCategory] || ev.category;
+    return getCategoryLabel(ev.category, this.categoryStore.allCategories());
   });
 
   protected categoryColors = computed(() => {
     const ev = this.eventSignal();
-    if (!ev) return CATEGORY_COLORS.other;
-    return CATEGORY_COLORS[ev.category as EventCategory] || CATEGORY_COLORS.other;
+    if (!ev) return getCategoryColors('other', this.categoryStore.allCategories());
+    return getCategoryColors(ev.category, this.categoryStore.allCategories());
   });
 
   protected formattedStartDate = computed(() => {
@@ -108,16 +111,7 @@ export class EventDetailPanelComponent {
   }
 
   formatReminder(reminder: GoogleCalendarReminder): string {
-    const method = reminder.method === 'popup' ? 'Notification' : 'Email';
-    if (reminder.minutes < 60) {
-      return `${method} : ${reminder.minutes} min avant`;
-    } else if (reminder.minutes < 1440) {
-      const hours = Math.floor(reminder.minutes / 60);
-      return `${method} : ${hours}h avant`;
-    } else {
-      const days = Math.floor(reminder.minutes / 1440);
-      return `${method} : ${days} jour${days > 1 ? 's' : ''} avant`;
-    }
+    return formatReminder(reminder);
   }
 
   private formatDateTime(isoDate: string, allDay: boolean): string {

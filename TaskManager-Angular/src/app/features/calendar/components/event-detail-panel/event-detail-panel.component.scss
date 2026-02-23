@@ -222,66 +222,99 @@
 }
 
 // ============================================================================
-// Linked items
+// Linked items (card style — matches linked-items-picker)
 // ============================================================================
 
-.linked-chips {
+$task-color: #10b981;
+$task-color-bg: #ecfdf5;
+$document-color: #3b82f6;
+$document-color-bg: #eff6ff;
+$database-color: #8b5cf6;
+$database-color-bg: #f5f3ff;
+
+.linked-items-list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-direction: column;
+  gap: 0.5rem;
   margin-top: 4px;
 }
 
-.linked-chip {
+.linked-item-card {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
   cursor: pointer;
   transition: filter 0.15s ease;
 
+  &--task { background-color: $task-color-bg; }
+  &--document { background-color: $document-color-bg; }
+  &--database { background-color: $database-color-bg; }
+
   &:hover {
-    filter: brightness(0.93);
+    filter: brightness(0.97);
+  }
+
+  &__content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
   }
 
   &__icon {
-    font-size: 15px !important;
-    width: 15px !important;
-    height: 15px !important;
-    margin-right: 4px;
-    vertical-align: middle;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+
+    &--task { color: $task-color; }
+    &--document { color: $document-color; }
+    &--database { color: $database-color; }
   }
 
-  // Task — green
-  &--task {
-    --mdc-chip-elevated-container-color: #d1fae5;
-    --mdc-chip-label-text-color: #065f46;
-
-    .linked-chip__icon {
-      color: #059669;
-    }
-  }
-
-  // Document — blue
-  &--document {
-    --mdc-chip-elevated-container-color: #dbeafe;
-    --mdc-chip-label-text-color: #1e40af;
-
-    .linked-chip__icon {
-      color: #2563eb;
-    }
-  }
-
-  // Database — purple
-  &--database {
-    --mdc-chip-elevated-container-color: #ede9fe;
-    --mdc-chip-label-text-color: #5b21b6;
-
-    .linked-chip__icon {
-      color: #7c3aed;
-    }
+  &__label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1f2937;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
   }
 }
 
 // ============================================================================
 // Google Calendar Sync
 // ============================================================================
+
+.meet-svg-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.meet-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background-color: #3b82f6;
+  border-radius: 8px;
+  text-decoration: none;
+  width: fit-content;
+  transition: background-color 0.15s ease;
+  &:hover { background-color: #2563eb; }
+}
+
+.meet-url {
+  font-size: 12px;
+  color: #9ca3af;
+  word-break: break-all;
+  margin-top: 2px;
+}
 
 .google-icon {
   color: #4285f4;

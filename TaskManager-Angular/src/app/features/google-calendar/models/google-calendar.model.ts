@@ -16,6 +16,7 @@ export interface GoogleCalendarSyncConfig {
   sync_direction: SyncDirection;
   is_enabled: boolean;
   last_sync_at: string | null;
+  calendar_color: string | null;
 }
 
 export type SyncDirection = 'to_google' | 'from_google' | 'bidirectional';

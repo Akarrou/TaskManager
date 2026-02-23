@@ -447,13 +447,14 @@
   .fc .fc-event {
     border: none;
     border-radius: v.$border-radius-sm;
-    padding: 2px 6px;
-    font-size: 11px;
+    padding: 3px 8px;
+    font-size: 12px;
+    line-height: 1.4;
     font-weight: v.$font-weight-medium;
     cursor: pointer;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
     border-left: 3px solid;
-    margin-bottom: 1px;
+    margin-bottom: 2px;
 
     &:hover {
       transform: translateY(-1px);
@@ -469,7 +470,7 @@
   }
 
   .fc .fc-event-time {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: v.$font-weight-regular;
     opacity: 0.8;
   }
@@ -526,7 +527,25 @@
   }
 
   .fc-event.category-other {
-    @include event-category(#f3f4f6, #6b7280, #374151);
+    @include event-category(#e0e7ff, #6366f1, #3730a3);
+  }
+
+  // Google Calendar events with inline colors
+  .fc-event.google-event {
+    border-left-width: 3px;
+    border-left-style: solid;
+
+    .fc-event-main {
+      color: inherit !important;
+    }
+
+    .fc-daygrid-event-dot {
+      border-color: inherit !important;
+    }
+
+    &.fc-timegrid-event .fc-event-main {
+      color: inherit !important;
+    }
   }
 
   // -----------------------------------------------------------------------
@@ -636,6 +655,164 @@
     background-color: v.$border-color-medium;
     border-radius: v.$border-radius-full;
   }
+
+  // -----------------------------------------------------------------------
+  // Custom tooltip for truncated event titles
+  // -----------------------------------------------------------------------
+  .fc .fc-event[data-tooltip] {
+    position: relative;
+
+    &:hover {
+      z-index: 9999 !important;
+    }
+
+    &::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 6px 12px;
+      background-color: #1f2937;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.4;
+      white-space: nowrap;
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      z-index: 10000;
+    }
+
+    &:hover::after {
+      opacity: 1;
+    }
+  }
+}
+
+// ============================================================================
+// Google Calendar Connection Overlay
+// ============================================================================
+
+.calendar-connect-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: v.$space-6;
+}
+
+.calendar-connect-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 420px;
+  max-width: 520px;
+  padding: v.$space-8 v.$space-6;
+  background-color: v.$background-color-form;
+  border: 1px solid v.$border-color-light;
+  border-radius: v.$border-radius-xl;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+
+  h2 {
+    margin: v.$space-4 0 v.$space-2;
+    font-size: v.$font-size-xl;
+    font-weight: v.$font-weight-bold;
+    color: v.$text-color-dark;
+  }
+
+  p {
+    margin: 0 0 v.$space-6;
+    font-size: v.$font-size-sm;
+    color: v.$text-color-light;
+    line-height: 1.6;
+  }
+
+  // Google Calendar settings component takes full width
+  app-google-calendar-settings {
+    width: 100%;
+    text-align: left;
+  }
+}
+
+.calendar-connect-icon {
+  font-size: 56px;
+  color: v.$primary-color;
+  opacity: 0.8;
+}
+
+// Button (matches c-btn pattern from google-calendar-connect)
+.c-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: v.$space-3 v.$space-5;
+  border-radius: v.$border-radius-lg;
+  font-weight: 600;
+  font-size: v.$font-size-sm;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: v.$space-2;
+
+  .material-icons-outlined {
+    font-size: 18px;
+  }
+
+  &--primary {
+    background: v.$primary-color;
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(v.$primary-color, 0.2);
+
+    &:hover:not(:disabled) {
+      background: v.$primary-color-dark;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 8px -1px rgba(v.$primary-color, 0.3);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.calendar-connect-continue {
+  margin-top: v.$space-6;
+}
+
+.c-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spinner 0.8s linear infinite;
+
+  &--large {
+    width: 32px;
+    height: 32px;
+    border: 3px solid v.$border-color-light;
+    border-radius: 50%;
+    border-top-color: v.$primary-color;
+    animation: spinner 0.8s linear infinite;
+    margin-bottom: v.$space-4;
+  }
+}
+
+@keyframes spinner {
+  to { transform: rotate(360deg); }
 }
 
 // ============================================================================

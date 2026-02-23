@@ -41,6 +41,26 @@
         </mat-checkbox>
       </div>
 
+      <!-- Google Meet toggle -->
+      <div class="form-group form-group--inline meet-toggle-row">
+        <mat-checkbox formControlName="addGoogleMeet" class="meet-checkbox">
+          <svg class="meet-toggle-icon" viewBox="0 0 87.5 72" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#00832d" d="M49.5 36l8.53 9.75 11.47 7.33 2-17.02-2-16.64-11.69 6.44z"/>
+            <path fill="#0066da" d="M0 51.5V66c0 3.315 2.685 6 6 6h14.5l3-10.96-3-9.54-9.95-3z"/>
+            <path fill="#e94235" d="M20.5 0L0 20.5l10.55 3 9.95-3 2.95-9.41z"/>
+            <path fill="#2684fc" d="M20.5 20.5H0v31h20.5z"/>
+            <path fill="#00ac47" d="M82.6 8.68L69.5 19.42v33.66l13.16 10.79c1.97 1.54 4.85.135 4.85-2.37V11c0-2.535-2.945-3.925-4.91-2.32zM49.5 36v15.5h-29V72h43c3.315 0 6-2.685 6-6V53.08z"/>
+            <path fill="#ffba00" d="M63.5 0h-43v20.5h29V36l20-16.57V6c0-3.315-2.685-6-6-6z"/>
+          </svg>
+          Ajouter Google Meet
+        </mat-checkbox>
+        @if (data.event?.meet_link; as meetLink) {
+          <a class="meet-link-inline" [href]="meetLink" target="_blank" rel="noopener">
+            {{ meetLink }}
+          </a>
+        }
+      </div>
+
       <!-- Date/Time Row: Start -->
       <div class="form-group">
         <label class="form-label">Date de début <span class="required">*</span></label>
@@ -73,15 +93,27 @@
             </mat-form-field>
           }
         </div>
+        @if (form.hasError('dateRange')) {
+          <mat-error class="date-range-error">La date de fin doit être après la date de début</mat-error>
+        }
       </div>
 
       <!-- Category + Location -->
       <div class="form-row">
         <div class="form-group flex-1">
-          <label class="form-label">Catégorie</label>
+          <label class="form-label form-label--with-action">
+            Catégorie
+            <button
+              type="button"
+              class="category-settings-btn"
+              (click)="toggleCategoryPanel()"
+              matTooltip="Gérer les catégories">
+              <mat-icon>settings</mat-icon>
+            </button>
+          </label>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-select formControlName="category">
-              @for (option of categoryOptions; track option.value) {
+              @for (option of categoryOptions(); track option.value) {
                 <mat-option [value]="option.value">
                   <span class="flex items-center gap-2">
                     <span class="inline-block w-2.5 h-2.5 rounded-full" [ngClass]="option.colors.bg"></span>
@@ -162,15 +194,142 @@
 
     </div>
 
-    <!-- Right Column: Linked Items -->
+    <!-- Right Column: Linked Items OR Category Management -->
     <div class="event-form__right">
-      <div class="linked-items-panel">
-        <h3 class="linked-items-panel__title">
-          <mat-icon class="linked-items-panel__icon">link</mat-icon>
-          Éléments liés
-        </h3>
-        <app-linked-items-picker formControlName="linkedItems"></app-linked-items-picker>
-      </div>
+      @if (showCategoryPanel()) {
+        <!-- Category Management Panel -->
+        <div class="category-panel">
+          <!-- Header -->
+          <div class="category-panel__header">
+            <h3 class="category-panel__title">
+              <mat-icon class="category-panel__icon">palette</mat-icon>
+              Catégories
+            </h3>
+            <button mat-icon-button (click)="toggleCategoryPanel()" class="category-panel__close">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+
+          <!-- Body (scrollable) -->
+          <div class="category-panel__body">
+            <!-- Default categories (read-only) -->
+            <div class="category-section">
+              <h4 class="category-section__title">Par défaut</h4>
+              @for (cat of categoryStore.allCategories(); track cat.key) {
+                @if (cat.isDefault) {
+                  <div class="category-row category-row--default">
+                    <span class="category-color-dot" [style.background-color]="palette[cat.colorKey]?.hex"></span>
+                    <span class="category-row__label">{{ cat.label }}</span>
+                  </div>
+                }
+              }
+            </div>
+
+            <!-- Custom categories -->
+            <div class="category-section">
+              <h4 class="category-section__title">Personnalisées</h4>
+              @for (cat of categoryStore.customCategories(); track cat.key) {
+                <div class="category-row">
+                  @if (editingKey() === cat.key) {
+                    <div class="category-edit">
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="category-edit__field">
+                        <input matInput [formControl]="editLabel" placeholder="Nom" />
+                      </mat-form-field>
+                      <div class="color-picker">
+                        @for (colorKey of paletteKeys; track colorKey) {
+                          <button
+                            type="button"
+                            class="color-circle"
+                            [class.color-circle--selected]="editColorKey() === colorKey"
+                            [style.background-color]="palette[colorKey].hex"
+                            [matTooltip]="colorKey"
+                            (click)="selectEditColor(colorKey)">
+                          </button>
+                        }
+                      </div>
+                      <div class="category-edit__actions">
+                        <button mat-icon-button (click)="saveEdit(cat)" matTooltip="Enregistrer">
+                          <mat-icon>check</mat-icon>
+                        </button>
+                        <button mat-icon-button (click)="cancelEdit()" matTooltip="Annuler">
+                          <mat-icon>close</mat-icon>
+                        </button>
+                      </div>
+                    </div>
+                  } @else if (confirmDeleteKey() === cat.key) {
+                    <div class="category-delete-confirm">
+                      <span>Supprimer « {{ cat.label }} » ?</span>
+                      <div class="category-delete-confirm__actions">
+                        <button mat-button color="warn" (click)="confirmDelete(cat.key)">Supprimer</button>
+                        <button mat-button (click)="cancelDelete()">Annuler</button>
+                      </div>
+                    </div>
+                  } @else {
+                    <span class="category-color-dot" [style.background-color]="palette[cat.colorKey]?.hex"></span>
+                    <span class="category-row__label">{{ cat.label }}</span>
+                    <div class="category-row__actions">
+                      <button mat-icon-button (click)="startEdit(cat)" matTooltip="Modifier">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button mat-icon-button (click)="requestDelete(cat.key)" matTooltip="Supprimer">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </div>
+                  }
+                </div>
+              } @empty {
+                <p class="category-section__empty">Aucune catégorie personnalisée</p>
+              }
+            </div>
+
+            <!-- New category form -->
+            <div class="category-section category-section--add">
+              <h4 class="category-section__title">Nouvelle catégorie</h4>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="category-add__field">
+                <input
+                  matInput
+                  [formControl]="newCategoryLabel"
+                  placeholder="Nom de la catégorie"
+                  (keyup.enter)="onAddCategory()" />
+              </mat-form-field>
+              <div class="color-picker">
+                @for (colorKey of paletteKeys; track colorKey) {
+                  <button
+                    type="button"
+                    class="color-circle"
+                    [class.color-circle--selected]="selectedColorKey() === colorKey"
+                    [style.background-color]="palette[colorKey].hex"
+                    [matTooltip]="colorKey"
+                    (click)="selectNewColor(colorKey)">
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="category-panel__footer">
+            <button
+              mat-flat-button
+              type="button"
+              (click)="onAddCategory()"
+              [disabled]="!newCategoryLabel.value.trim()"
+              class="dialog-btn-primary category-add__btn">
+              <mat-icon>add</mat-icon>
+              Ajouter
+            </button>
+          </div>
+        </div>
+      } @else {
+        <!-- Linked Items (default) -->
+        <div class="linked-items-panel">
+          <h3 class="linked-items-panel__title">
+            <mat-icon class="linked-items-panel__icon">link</mat-icon>
+            Éléments liés
+          </h3>
+          <app-linked-items-picker formControlName="linkedItems"></app-linked-items-picker>
+        </div>
+      }
     </div>
 
   </form>

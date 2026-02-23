@@ -194,20 +194,21 @@ export const GoogleCalendarStore = signalStore(
       databaseId: string,
       rowId: string,
       eventData: Record<string, unknown>,
-    ): Promise<void> {
+    ): Promise<{ meet_link?: string } | null> {
       try {
-        console.log('[GCal Push] triggerSyncForEvent called:', { databaseId, rowId, eventData });
         const syncConfig = await apiService.getEnabledSyncConfigForDatabase(databaseId);
-        console.log('[GCal Push] syncConfig found:', syncConfig);
         if (!syncConfig?.kodo_database_id) {
-          console.warn('[GCal Push] No sync config or kodo_database_id null — skipping push');
-          return;
+          return null;
         }
-        console.log('[GCal Push] Calling pushEvent with kodo_database_id:', syncConfig.kodo_database_id);
-        const result = await apiService.pushEvent(syncConfig.id, syncConfig.kodo_database_id, rowId, eventData);
-        console.log('[GCal Push] pushEvent result:', result);
+        // Use the ACTUAL database UUID where the event lives, not the sync config's
+        // (they may differ when events are created in a different Kodo database)
+        const actualDbUuid = await apiService.resolveDatabaseUuid(databaseId);
+        const kodoDatabaseId = actualDbUuid ?? syncConfig.kodo_database_id;
+        const result = await apiService.pushEvent(syncConfig.id, kodoDatabaseId, rowId, eventData);
+        return { meet_link: result.meet_link };
       } catch (error) {
-        console.error('[GCal Push] triggerSyncForEvent failed:', error);
+        console.error('[GoogleCalendarStore] triggerSyncForEvent failed:', error);
+        return null;
       }
     },
 

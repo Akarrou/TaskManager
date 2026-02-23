@@ -965,6 +965,16 @@ export function createEventDatabaseTemplateColumns(): DatabaseColumn[] {
       width: DEFAULT_COLUMN_WIDTHS.text,
       color: 'yellow',
     },
+    {
+      id: crypto.randomUUID(),
+      name: 'Google Meet',
+      type: 'url',
+      visible: true,
+      readonly: true,
+      order: 12,
+      width: 250,
+      color: 'green',
+    },
   ];
 }
 

@@ -23,6 +23,7 @@ interface SyncConfig {
   sync_direction: string
   sync_token: string | null
   last_sync_at: string | null
+  calendar_color: string | null
 }
 
 interface SyncResult {
@@ -46,6 +47,21 @@ interface ResolvedDatabase {
   databaseId: string   // document_databases.database_id (text, db-<uuid>)
   dbMetaId: string     // document_databases.id (UUID PK)
   columns: DatabaseColumn[]
+}
+
+// Google Calendar color mappings
+// Source of truth (Angular side): shared/models/event-constants.ts → GOOGLE_COLOR_ID_MAP
+// Keep both in sync when modifying color mappings.
+const GOOGLE_COLOR_ID_TO_HEX: Record<string, string> = {
+  '1': '#7986cb', '2': '#33b679', '3': '#8e24aa', '4': '#e67c73',
+  '5': '#f6bf26', '6': '#f4511e', '7': '#039be5', '8': '#616161',
+  '9': '#3f51b5', '10': '#0b8043', '11': '#d50000',
+}
+
+const GOOGLE_COLOR_ID_TO_CATEGORY: Record<string, string> = {
+  '1': 'meeting', '2': 'personal', '3': 'milestone', '4': 'deadline',
+  '5': 'reminder', '6': 'deadline', '7': 'meeting', '8': 'other',
+  '9': 'meeting', '10': 'personal', '11': 'deadline',
 }
 
 Deno.serve(async (req) => {
@@ -104,6 +120,10 @@ Deno.serve(async (req) => {
         supabaseAdmin
       )
     }
+
+    // Ensure "Google Meet" and "Color" columns exist in the database (migrate older databases)
+    resolvedDb = await ensureMeetColumn(resolvedDb, supabaseAdmin)
+    resolvedDb = await ensureColorColumn(resolvedDb, supabaseAdmin)
 
     // Build request parameters
     const params = new URLSearchParams({
@@ -270,10 +290,69 @@ async function autoCreateEventDatabase(
   calendarName: string,
   supabaseAdmin: SupabaseAdmin
 ): Promise<ResolvedDatabase> {
+  // Determine DB name: writable calendars → "Calendrier", read-only → keep original name
+  const { data: syncCfg } = await supabaseAdmin
+    .from('google_calendar_sync_config')
+    .select('sync_direction, google_calendar_id')
+    .eq('id', syncConfigId)
+    .single()
+
+  const isReadOnly = syncCfg?.sync_direction === 'from_google'
+    || (syncCfg?.google_calendar_id as string)?.includes('#holiday')
+    || (syncCfg?.google_calendar_id as string)?.endsWith('@group.v.calendar.google.com')
+
+  const dbName = isReadOnly ? (calendarName || 'Google Calendar Events') : 'Calendrier'
+
+  // Try to reuse an existing event database with the same name owned by this user
+  const { data: existingDbs } = await supabaseAdmin
+    .from('document_databases')
+    .select('id, database_id, table_name, config')
+    .eq('config->>type', 'event')
+    .eq('config->>name', dbName)
+
+  if (existingDbs?.length) {
+    for (const db of existingDbs) {
+      const { data: ownerDoc } = await supabaseAdmin
+        .from('documents')
+        .select('id')
+        .eq('database_id', db.database_id as string)
+        .eq('user_id', userId)
+        .limit(1)
+        .maybeSingle()
+
+      if (ownerDoc) {
+        // Reuse this database
+        await supabaseAdmin
+          .from('google_calendar_sync_config')
+          .update({ kodo_database_id: db.id })
+          .eq('id', syncConfigId)
+
+        const config = db.config as { columns?: DatabaseColumn[] }
+        return {
+          tableName: db.table_name as string,
+          databaseId: db.database_id as string,
+          dbMetaId: db.id as string,
+          columns: config.columns ?? [],
+        }
+      }
+    }
+  }
+
+  // Re-check kodo_database_id — a concurrent sync may have created a DB in the meantime
+  const { data: freshConfig } = await supabaseAdmin
+    .from('google_calendar_sync_config')
+    .select('kodo_database_id')
+    .eq('id', syncConfigId)
+    .single()
+
+  if (freshConfig?.kodo_database_id) {
+    return resolveEventDatabase(freshConfig.kodo_database_id as string, supabaseAdmin)
+  }
+
+  // No existing DB found → create new one
   const rawUuid = crypto.randomUUID()
   const databaseId = `db-${rawUuid}`
   const tableName = `database_${rawUuid.replace(/-/g, '_')}`
-  const dbName = calendarName || 'Google Calendar Events'
 
   // Standard event columns (matches MCP server create_database pattern)
   const startDateId = crypto.randomUUID()
@@ -290,7 +369,7 @@ async function autoCreateEventDatabase(
         { id: 'milestone', label: 'Jalon', color: 'bg-purple-200' },
         { id: 'reminder', label: 'Rappel', color: 'bg-yellow-200' },
         { id: 'personal', label: 'Personnel', color: 'bg-green-200' },
-        { id: 'other', label: 'Autre', color: 'bg-gray-200' },
+        { id: 'other', label: 'Autre', color: 'bg-indigo-200' },
       ],
     }},
     { id: crypto.randomUUID(), name: 'Location', type: 'text', visible: true, order: 6, width: 200, color: 'pink' },
@@ -298,6 +377,8 @@ async function autoCreateEventDatabase(
     { id: crypto.randomUUID(), name: 'Linked Items', type: 'linked-items', visible: true, order: 8, width: 300, color: 'blue' },
     { id: crypto.randomUUID(), name: 'Project ID', type: 'text', visible: false, order: 9, width: 200, color: 'pink' },
     { id: crypto.randomUUID(), name: 'Event Number', type: 'text', visible: true, readonly: true, required: false, order: 10, width: 120, color: 'gray' },
+    { id: crypto.randomUUID(), name: 'Color', type: 'text', visible: false, readonly: true, order: 11, width: 120, color: 'gray' },
+    { id: crypto.randomUUID(), name: 'Google Meet', type: 'url', visible: true, readonly: true, order: 12, width: 250, color: 'green' },
   ]
 
   const config = {
@@ -375,6 +456,157 @@ async function autoCreateEventDatabase(
   }
 }
 
+/**
+ * Ensure the "Google Meet" column exists in an existing event database.
+ * If missing, adds both the config entry and the physical column.
+ * Returns the updated ResolvedDatabase with the new column included.
+ */
+async function ensureMeetColumn(
+  resolvedDb: ResolvedDatabase,
+  supabaseAdmin: SupabaseAdmin
+): Promise<ResolvedDatabase> {
+  const hasMeetCol = resolvedDb.columns.some(c => c.name === 'Google Meet')
+  if (hasMeetCol) return resolvedDb
+
+  const newColId = crypto.randomUUID()
+  const newColumn: DatabaseColumn = { id: newColId, name: 'Google Meet', type: 'url' }
+
+  // 1. Add physical column FIRST (so config is only updated on success)
+  const physColName = `col_${newColId.replace(/-/g, '_')}`
+  const { data: addResult } = await supabaseAdmin.rpc('add_column_to_table', {
+    table_name: resolvedDb.tableName,
+    column_name: physColName,
+    column_type: 'TEXT',
+  })
+
+  if (addResult && !(addResult as Record<string, unknown>).success) {
+    console.error('Failed to add physical Meet column:', addResult)
+    return resolvedDb
+  }
+
+  // Notify PostgREST to reload its schema cache
+  await supabaseAdmin.rpc('reload_schema_cache')
+  await new Promise(resolve => setTimeout(resolve, 500))
+
+  // 2. Read current config and update it AFTER physical column exists
+  const { data: dbMeta, error: metaError } = await supabaseAdmin
+    .from('document_databases')
+    .select('config')
+    .eq('id', resolvedDb.dbMetaId)
+    .single()
+
+  if (metaError || !dbMeta) {
+    console.error('Failed to read database config for Meet column migration:', metaError)
+    return resolvedDb
+  }
+
+  const config = dbMeta.config as { columns: Array<Record<string, unknown>> }
+  const maxOrder = Math.max(...config.columns.map(c => (c.order as number) ?? 0), 0)
+
+  config.columns.push({
+    id: newColId,
+    name: 'Google Meet',
+    type: 'url',
+    visible: true,
+    readonly: true,
+    order: maxOrder + 1,
+    width: 250,
+    color: 'green',
+  })
+
+  const { error: configError } = await supabaseAdmin
+    .from('document_databases')
+    .update({ config })
+    .eq('id', resolvedDb.dbMetaId)
+
+  if (configError) {
+    console.error('Failed to update database config for Meet column:', configError)
+    return resolvedDb
+  }
+
+  console.log(`Migrated database "${resolvedDb.tableName}": added "Google Meet" column`)
+
+  return {
+    ...resolvedDb,
+    columns: [...resolvedDb.columns, newColumn],
+  }
+}
+
+/**
+ * Ensure the "Color" column exists in an existing event database.
+ * If missing, adds both the config entry and the physical column.
+ * Returns the updated ResolvedDatabase with the new column included.
+ */
+async function ensureColorColumn(
+  resolvedDb: ResolvedDatabase,
+  supabaseAdmin: SupabaseAdmin
+): Promise<ResolvedDatabase> {
+  const hasColorCol = resolvedDb.columns.some(c => c.name === 'Color')
+  if (hasColorCol) return resolvedDb
+
+  const newColId = crypto.randomUUID()
+  const newColumn: DatabaseColumn = { id: newColId, name: 'Color', type: 'text' }
+
+  // 1. Add physical column FIRST (so config is only updated on success)
+  const physColName = `col_${newColId.replace(/-/g, '_')}`
+  const { data: addResult } = await supabaseAdmin.rpc('add_column_to_table', {
+    table_name: resolvedDb.tableName,
+    column_name: physColName,
+    column_type: 'TEXT',
+  })
+
+  if (addResult && !(addResult as Record<string, unknown>).success) {
+    console.error('Failed to add physical Color column:', addResult)
+    return resolvedDb
+  }
+
+  await supabaseAdmin.rpc('reload_schema_cache')
+  await new Promise(resolve => setTimeout(resolve, 500))
+
+  // 2. Read current config and update it AFTER physical column exists
+  const { data: dbMeta, error: metaError } = await supabaseAdmin
+    .from('document_databases')
+    .select('config')
+    .eq('id', resolvedDb.dbMetaId)
+    .single()
+
+  if (metaError || !dbMeta) {
+    console.error('Failed to read database config for Color column migration:', metaError)
+    return resolvedDb
+  }
+
+  const config = dbMeta.config as { columns: Array<Record<string, unknown>> }
+  const maxOrder = Math.max(...config.columns.map(c => (c.order as number) ?? 0), 0)
+
+  config.columns.push({
+    id: newColId,
+    name: 'Color',
+    type: 'text',
+    visible: false,
+    readonly: true,
+    order: maxOrder + 1,
+    width: 120,
+    color: 'gray',
+  })
+
+  const { error: configError } = await supabaseAdmin
+    .from('document_databases')
+    .update({ config })
+    .eq('id', resolvedDb.dbMetaId)
+
+  if (configError) {
+    console.error('Failed to update database config for Color column:', configError)
+    return resolvedDb
+  }
+
+  console.log(`Migrated database "${resolvedDb.tableName}": added "Color" column`)
+
+  return {
+    ...resolvedDb,
+    columns: [...resolvedDb.columns, newColumn],
+  }
+}
+
 // =============================================================================
 // Event Processing
 // =============================================================================
@@ -389,13 +621,22 @@ async function processEvent(
 ): Promise<void> {
   const googleEventId = event.id as string
 
-  // Check existing mapping
-  const { data: existingMapping } = await supabaseAdmin
+  // Check existing mapping by google_calendar_id (stable across reconnections)
+  let { data: existingMapping } = await supabaseAdmin
     .from('google_calendar_event_mapping')
     .select('*')
-    .eq('sync_config_id', config.id)
+    .eq('google_calendar_id', config.google_calendar_id)
     .eq('google_event_id', googleEventId)
     .maybeSingle()
+
+  // If found with a stale sync_config_id, update it to point to the current config
+  if (existingMapping && existingMapping.sync_config_id !== config.id) {
+    await supabaseAdmin
+      .from('google_calendar_event_mapping')
+      .update({ sync_config_id: config.id })
+      .eq('id', existingMapping.id)
+    existingMapping = { ...existingMapping, sync_config_id: config.id }
+  }
 
   // Handle cancelled events
   if (event.status === 'cancelled') {
@@ -432,15 +673,27 @@ async function processEvent(
     return
   }
 
-  // Build row data mapped to col_* columns
-  const rowData = mapGoogleEventToKodo(event, resolvedDb.columns)
-
   if (existingMapping) {
-    // Update existing row in dynamic table
+    // Determine the correct target database for the update.
+    // The mapping may point to a different database than the sync config's resolvedDb
+    // (e.g. when events were created from a different Kodo database and pushed to Google).
+    let targetDb = resolvedDb
+    if (existingMapping.kodo_database_id !== resolvedDb.dbMetaId) {
+      try {
+        targetDb = await resolveEventDatabase(existingMapping.kodo_database_id, supabaseAdmin)
+        targetDb = await ensureMeetColumn(targetDb, supabaseAdmin)
+        targetDb = await ensureColorColumn(targetDb, supabaseAdmin)
+      } catch {
+        targetDb = resolvedDb
+      }
+    }
+
+    // Build row data mapped to col_* columns of the TARGET database
+    const rowData = mapGoogleEventToKodo(event, targetDb.columns, config.calendar_color)
     rowData['updated_at'] = new Date().toISOString()
 
     const { error: rowUpdateError } = await supabaseAdmin
-      .from(resolvedDb.tableName)
+      .from(targetDb.tableName)
       .update(rowData)
       .eq('id', existingMapping.kodo_row_id)
 
@@ -454,7 +707,7 @@ async function processEvent(
       await supabaseAdmin
         .from('documents')
         .update({ title, updated_at: new Date().toISOString() })
-        .eq('database_id', resolvedDb.databaseId)
+        .eq('database_id', targetDb.databaseId)
         .eq('database_row_id', existingMapping.kodo_row_id)
     }
 
@@ -473,6 +726,9 @@ async function processEvent(
 
     result.events_updated++
   } else {
+    // Build row data for NEW events (always use resolvedDb from the sync config)
+    const rowData = mapGoogleEventToKodo(event, resolvedDb.columns, config.calendar_color)
+
     // Generate event number
     const eventNumberColId = getColumnId(resolvedDb.columns, 'Event Number')
     if (eventNumberColId) {
@@ -554,7 +810,8 @@ function toColName(columnId: string): string {
  */
 function mapGoogleEventToKodo(
   event: Record<string, unknown>,
-  columns: DatabaseColumn[]
+  columns: DatabaseColumn[],
+  calendarColor: string | null = null
 ): Record<string, unknown> {
   const start = event.start as Record<string, string> | undefined
   const end = event.end as Record<string, string> | undefined
@@ -575,10 +832,33 @@ function mapGoogleEventToKodo(
   setField('End Date', end?.dateTime ?? end?.date ?? null)
   setField('All Day', isAllDay)
   setField('Location', event.location ?? null)
-  setField('Category', 'other')
+
+  // Map Google Calendar colorId to category and hex color
+  const colorId = event.colorId as string | undefined
+  const hexColor = colorId
+    ? (GOOGLE_COLOR_ID_TO_HEX[colorId] ?? calendarColor ?? null)
+    : (calendarColor ?? null)
+  const category = colorId
+    ? (GOOGLE_COLOR_ID_TO_CATEGORY[colorId] ?? 'other')
+    : 'other'
+  setField('Category', category)
+  setField('Color', hexColor)
+
   setField('Recurrence', Array.isArray(event.recurrence)
     ? (event.recurrence as string[]).join('\n')
     : null)
+
+  // Extract Google Meet link from conferenceData
+  const conferenceData = event.conferenceData as {
+    entryPoints?: Array<{ entryPointType: string; uri: string }>
+  } | undefined
+  const videoEntry = conferenceData?.entryPoints?.find(
+    (ep) => ep.entryPointType === 'video'
+  )
+  const meetLink = videoEntry?.uri ?? (event.hangoutLink as string) ?? null
+  if (meetLink) {
+    setField('Google Meet', meetLink)
+  }
 
   return rowData
 }

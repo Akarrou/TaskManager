@@ -47,7 +47,7 @@ export class GoogleCalendarCallbackComponent implements OnInit {
     try {
       await this.store.handleOAuthCallback(code, state);
       this.snackBar.open('Google Calendar connecté avec succès', 'OK', { duration: 3000 });
-      this.router.navigate(['/profile']);
+      this.router.navigate(['/calendar']);
     } catch (err) {
       this.processing.set(false);
       const message = err instanceof Error ? err.message : 'Erreur lors de la connexion à Google Calendar';

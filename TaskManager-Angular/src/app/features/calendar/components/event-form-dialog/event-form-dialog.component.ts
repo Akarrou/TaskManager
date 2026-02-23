@@ -4,6 +4,7 @@ import {
   OnInit,
   ChangeDetectionStrategy,
   signal,
+  computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -12,6 +13,8 @@ import {
   FormGroup,
   FormControl,
   Validators,
+  AbstractControl,
+  ValidationErrors,
 } from '@angular/forms';
 import {
   MatDialogModule,
@@ -26,6 +29,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import {
   EventEntry,
@@ -33,18 +37,19 @@ import {
 } from '../../../../core/services/event-database.service';
 import {
   EventCategory,
-  CATEGORY_LABELS,
-  CATEGORY_COLORS,
+  CategoryDefinition,
+  CATEGORY_COLOR_PALETTE,
+  getCategoryColors,
+  slugify,
 } from '../../../../shared/models/event-constants';
 import {
   DocumentDatabase,
   LinkedItem,
-  createEventDatabaseConfig,
 } from '../../../../features/documents/models/database.model';
 import { GoogleCalendarReminder } from '../../../google-calendar/models/google-calendar.model';
-import { DatabaseService } from '../../../../features/documents/services/database.service';
 import { RecurrencePickerComponent } from '../recurrence-picker/recurrence-picker.component';
 import { LinkedItemsPickerComponent } from '../linked-items-picker/linked-items-picker.component';
+import { EventCategoryStore } from '../../../../core/stores/event-category.store';
 
 // =====================================================================
 // Interfaces
@@ -70,6 +75,7 @@ export interface EventFormDialogResult {
   linked_items: LinkedItem[];
   reminders: GoogleCalendarReminder[];
   databaseId: string;
+  add_google_meet: boolean;
 }
 
 interface EventForm {
@@ -80,7 +86,8 @@ interface EventForm {
   endDate: FormControl<Date | null>;
   endTime: FormControl<string>;
   allDay: FormControl<boolean>;
-  category: FormControl<EventCategory>;
+  addGoogleMeet: FormControl<boolean>;
+  category: FormControl<string>;
   location: FormControl<string>;
   recurrence: FormControl<string>;
   linkedItems: FormControl<LinkedItem[]>;
@@ -89,7 +96,7 @@ interface EventForm {
 }
 
 interface CategoryOption {
-  value: EventCategory;
+  value: string;
   label: string;
   colors: { bg: string; text: string; border: string };
 }
@@ -109,6 +116,7 @@ interface CategoryOption {
     MatDatepickerModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    MatTooltipModule,
     TextFieldModule,
     RecurrencePickerComponent,
     LinkedItemsPickerComponent,
@@ -119,28 +127,39 @@ interface CategoryOption {
 })
 export class EventFormDialogComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<EventFormDialogComponent>);
-  private readonly data: EventFormDialogData = inject(MAT_DIALOG_DATA);
+  protected readonly data: EventFormDialogData = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
   private readonly eventDatabaseService = inject(EventDatabaseService);
-  private readonly databaseService = inject(DatabaseService);
+  protected readonly categoryStore = inject(EventCategoryStore);
 
   // State signals
   readonly isLoading = signal(false);
   readonly eventDatabases = signal<DocumentDatabase[]>([]);
   readonly showDatabaseSelector = signal(false);
 
+  // Category panel state
+  readonly showCategoryPanel = signal(false);
+  readonly editingKey = signal<string | null>(null);
+  readonly editLabel = new FormControl('', { nonNullable: true });
+  readonly editColorKey = signal('blue');
+  readonly confirmDeleteKey = signal<string | null>(null);
+  readonly newCategoryLabel = new FormControl('', { nonNullable: true });
+  readonly selectedColorKey = signal('blue');
+  readonly paletteKeys = Object.keys(CATEGORY_COLOR_PALETTE);
+  readonly palette = CATEGORY_COLOR_PALETTE;
+
   // Mode
   readonly isEditMode = this.data.mode === 'edit';
   readonly dialogTitle = this.isEditMode ? 'Modifier l\'événement' : 'Nouvel événement';
 
-  // Category options built from constants
-  readonly categoryOptions: CategoryOption[] = (
-    Object.keys(CATEGORY_LABELS) as EventCategory[]
-  ).map(key => ({
-    value: key,
-    label: CATEGORY_LABELS[key],
-    colors: CATEGORY_COLORS[key],
-  }));
+  // Category options from store
+  readonly categoryOptions = computed<CategoryOption[]>(() =>
+    this.categoryStore.allCategories().map(cat => ({
+      value: cat.key,
+      label: cat.label,
+      colors: getCategoryColors(cat.key, this.categoryStore.allCategories()),
+    }))
+  );
 
   // Form
   readonly form: FormGroup<EventForm> = this.fb.group<EventForm>({
@@ -158,7 +177,8 @@ export class EventFormDialogComponent implements OnInit {
     }),
     endTime: new FormControl<string>('10:00', { nonNullable: true }),
     allDay: new FormControl<boolean>(false, { nonNullable: true }),
-    category: new FormControl<EventCategory>('other', { nonNullable: true }),
+    addGoogleMeet: new FormControl<boolean>(false, { nonNullable: true }),
+    category: new FormControl<string>('other', { nonNullable: true }),
     location: new FormControl<string>('', { nonNullable: true }),
     recurrence: new FormControl<string>('', { nonNullable: true }),
     linkedItems: new FormControl<LinkedItem[]>([], { nonNullable: true }),
@@ -167,7 +187,36 @@ export class EventFormDialogComponent implements OnInit {
       nonNullable: true,
       validators: [Validators.required],
     }),
-  });
+  }, { validators: [EventFormDialogComponent.dateRangeValidator] });
+
+  /**
+   * Cross-field validator: ensures end date/time is not before start date/time
+   */
+  private static dateRangeValidator(control: AbstractControl): ValidationErrors | null {
+    const group = control as FormGroup<EventForm>;
+    const startDate = group.controls.startDate?.value;
+    const endDate = group.controls.endDate?.value;
+
+    if (!startDate || !endDate) return null;
+
+    const allDay = group.controls.allDay?.value;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (allDay) {
+      start.setHours(0, 0, 0, 0);
+      end.setHours(0, 0, 0, 0);
+    } else {
+      const startTime = group.controls.startTime?.value ?? '00:00';
+      const endTime = group.controls.endTime?.value ?? '00:00';
+      const [sh, sm] = startTime.split(':').map(Number);
+      const [eh, em] = endTime.split(':').map(Number);
+      start.setHours(sh ?? 0, sm ?? 0, 0, 0);
+      end.setHours(eh ?? 0, em ?? 0, 0, 0);
+    }
+
+    return end < start ? { dateRange: true } : null;
+  }
 
   // =====================================================================
   // Lifecycle
@@ -179,47 +228,91 @@ export class EventFormDialogComponent implements OnInit {
   }
 
   // =====================================================================
+  // Category Panel
+  // =====================================================================
+
+  toggleCategoryPanel(): void {
+    this.showCategoryPanel.update(v => !v);
+    this.editingKey.set(null);
+    this.confirmDeleteKey.set(null);
+  }
+
+  onAddCategory(): void {
+    const label = this.newCategoryLabel.value.trim();
+    if (!label) return;
+
+    const key = slugify(label);
+    const allKeys = this.categoryStore.allCategories().map(c => c.key);
+    if (allKeys.includes(key)) return;
+
+    this.categoryStore.addCategory({
+      key,
+      label,
+      colorKey: this.selectedColorKey(),
+    });
+
+    this.newCategoryLabel.reset('');
+    this.selectedColorKey.set('blue');
+  }
+
+  startEdit(cat: CategoryDefinition): void {
+    this.editingKey.set(cat.key);
+    this.editLabel.setValue(cat.label);
+    this.editColorKey.set(cat.colorKey);
+  }
+
+  cancelEdit(): void {
+    this.editingKey.set(null);
+  }
+
+  saveEdit(cat: CategoryDefinition): void {
+    const label = this.editLabel.value.trim();
+    if (!label) return;
+
+    this.categoryStore.updateCategory({
+      key: cat.key,
+      label,
+      colorKey: this.editColorKey(),
+    });
+    this.editingKey.set(null);
+  }
+
+  requestDelete(key: string): void {
+    this.confirmDeleteKey.set(key);
+  }
+
+  confirmDelete(key: string): void {
+    this.categoryStore.deleteCategory({ key });
+    this.confirmDeleteKey.set(null);
+  }
+
+  cancelDelete(): void {
+    this.confirmDeleteKey.set(null);
+  }
+
+  selectNewColor(key: string): void {
+    this.selectedColorKey.set(key);
+  }
+
+  selectEditColor(key: string): void {
+    this.editColorKey.set(key);
+  }
+
+  // =====================================================================
   // Data Loading
   // =====================================================================
 
   private loadEventDatabases(): void {
     this.eventDatabaseService.getAllEventDatabases().subscribe({
       next: (databases) => {
-        if (databases.length === 0) {
-          // No event database exists — create a default one automatically
-          this.createDefaultEventDatabase();
-          return;
-        }
-
         this.eventDatabases.set(databases);
-        this.form.controls.databaseId.setValue(databases[0].database_id);
-
-        // Only show selector if there are multiple databases
+        if (databases.length > 0) {
+          this.form.controls.databaseId.setValue(databases[0].database_id);
+        }
         this.showDatabaseSelector.set(databases.length > 1);
       },
       error: (err) => {
         console.error('[EventFormDialog] Failed to load event databases:', err);
-      },
-    });
-  }
-
-  private createDefaultEventDatabase(): void {
-    const config = createEventDatabaseConfig('Calendrier');
-    this.databaseService.createStandaloneDatabase(config).subscribe({
-      next: (result) => {
-        // Reload databases after creation
-        this.eventDatabaseService.getAllEventDatabases().subscribe({
-          next: (databases) => {
-            this.eventDatabases.set(databases);
-            if (databases.length > 0) {
-              this.form.controls.databaseId.setValue(databases[0].database_id);
-            }
-            this.showDatabaseSelector.set(false);
-          },
-        });
-      },
-      error: (err) => {
-        console.error('[EventFormDialog] Failed to create default event database:', err);
       },
     });
   }
@@ -247,17 +340,20 @@ export class EventFormDialogComponent implements OnInit {
         databaseId: event.databaseId,
       });
 
-      // In edit mode, database cannot be changed
       this.form.controls.databaseId.disable();
+
+      // If a Meet link already exists, check the toggle and disable it
+      if (event.meet_link) {
+        this.form.controls.addGoogleMeet.setValue(true);
+        this.form.controls.addGoogleMeet.disable();
+      }
     } else {
-      // Create mode: pre-fill dates if provided
       if (this.data.startDate) {
         const start = new Date(this.data.startDate);
         this.form.controls.startDate.setValue(start);
         this.form.controls.startTime.setValue(this.formatTime(start));
       } else {
         const now = new Date();
-        // Round to next half-hour for a cleaner default
         const minutes = now.getMinutes();
         now.setMinutes(minutes < 30 ? 30 : 0);
         if (minutes >= 30) now.setHours(now.getHours() + 1);
@@ -271,7 +367,6 @@ export class EventFormDialogComponent implements OnInit {
         this.form.controls.endDate.setValue(end);
         this.form.controls.endTime.setValue(this.formatTime(end));
       } else {
-        // Default: 1 hour after start
         const startDate = this.form.controls.startDate.value!;
         const [h, m] = this.form.controls.startTime.value.split(':').map(Number);
         const defaultEnd = new Date(startDate);
@@ -328,6 +423,7 @@ export class EventFormDialogComponent implements OnInit {
       linked_items: formValue.linkedItems,
       reminders: formValue.reminders,
       databaseId: formValue.databaseId,
+      add_google_meet: formValue.addGoogleMeet,
     };
 
     this.isLoading.set(false);

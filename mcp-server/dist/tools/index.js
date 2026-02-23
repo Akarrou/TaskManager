@@ -10,4 +10,5 @@ export { registerTabTools } from './tabs.js';
 export { registerSpreadsheetTools } from './spreadsheets.js';
 export { registerSnapshotTools } from './snapshots.js';
 export { registerTiptapDocsTools } from './tiptap-docs.js';
+export { registerCalendarDocsTools } from './calendar-docs.js';
 //# sourceMappingURL=index.js.map

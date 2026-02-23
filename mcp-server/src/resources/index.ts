@@ -282,7 +282,7 @@ export function registerResources(server: McpServer): void {
         version: '0.3.0',
         description: 'MCP Server for Kodo - Task and document management',
         capabilities: {
-          tools: 71,
+          tools: 85,
           resources: 5,
           prompts: 9,
         },
@@ -291,6 +291,8 @@ export function registerResources(server: McpServer): void {
           'Documents with TipTap content',
           'Notion-like databases',
           'Tasks with Kanban views',
+          'Calendar/Event management',
+          'Google Calendar sync',
           'Spreadsheets',
           'Comments',
           'Tabs and sections',

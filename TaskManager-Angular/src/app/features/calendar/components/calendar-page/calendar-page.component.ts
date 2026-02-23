@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, computed, inject, OnInit, OnDestroy, ViewChild, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, computed, inject, OnInit, OnDestroy, ViewChild, effect, Renderer2 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
@@ -20,6 +20,8 @@ import { FullCalendarAdapterService } from '../../services/fullcalendar-adapter.
 import { EventFormDialogComponent } from '../event-form-dialog/event-form-dialog.component';
 import { EventDetailPanelComponent } from '../event-detail-panel/event-detail-panel.component';
 import { SyncStatusIndicatorComponent } from '../../../google-calendar/components/sync-status-indicator/sync-status-indicator.component';
+import { GoogleCalendarSettingsComponent } from '../../../google-calendar/components/google-calendar-settings/google-calendar-settings.component';
+import { GoogleCalendarStore } from '../../../google-calendar/store/google-calendar.store';
 import { selectActiveProjects } from '../../../projects/store/project.selectors';
 import { loadProjects } from '../../../projects/store/project.actions';
 import { switchMap } from 'rxjs/operators';
@@ -28,6 +30,8 @@ import { DatabaseService } from '../../../documents/services/database.service';
 import { DocumentService } from '../../../documents/services/document.service';
 import { LinkedItem } from '../../../documents/models/database.model';
 import { FabStore } from '../../../../core/stores/fab.store';
+import { EventCategoryStore } from '../../../../core/stores/event-category.store';
+import { CATEGORY_COLOR_PALETTE } from '../../../../shared/models/event-constants';
 
 @Component({
   selector: 'app-calendar-page',
@@ -40,6 +44,7 @@ import { FabStore } from '../../../../core/stores/fab.store';
     MatIconModule,
     EventDetailPanelComponent,
     SyncStatusIndicatorComponent,
+    GoogleCalendarSettingsComponent,
   ],
   templateUrl: './calendar-page.component.html',
   styleUrls: ['./calendar-page.component.scss'],
@@ -66,6 +71,40 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
   private databaseService = inject(DatabaseService);
   private documentService = inject(DocumentService);
   private fabStore = inject(FabStore);
+  private renderer = inject(Renderer2);
+  private categoryStore = inject(EventCategoryStore);
+  private gcalStore = inject(GoogleCalendarStore);
+
+  readonly isGoogleCalendarConnected = this.gcalStore.isConnected;
+  readonly hasEnabledSyncConfigs = computed(() => this.gcalStore.enabledSyncConfigs().length > 0);
+  readonly gcalLoading = this.gcalStore.loading;
+  readonly gcalSyncing = computed(() => this.gcalStore.syncStatus() === 'syncing');
+  readonly calendarSetupMode = signal(false);
+  readonly initialLoadComplete = signal(false);
+
+  // Dynamic <style> element for custom category colors (managed via Renderer2)
+  private customCategoryStyleEl: HTMLStyleElement | null = null;
+
+  private customCategoryStyleEffect = effect(() => {
+    const customs = this.categoryStore.customCategories();
+    if (!this.customCategoryStyleEl) {
+      this.customCategoryStyleEl = this.renderer.createElement('style') as HTMLStyleElement;
+      this.renderer.setAttribute(this.customCategoryStyleEl, 'data-custom-categories', '');
+      this.renderer.appendChild(document.head, this.customCategoryStyleEl);
+    }
+    const css = customs.map(cat => {
+      const palette = CATEGORY_COLOR_PALETTE[cat.colorKey] ?? CATEGORY_COLOR_PALETTE['gray'];
+      const sel = `.fc-event.category-${cat.key}`;
+      return `
+        ${sel} { background-color: ${palette.bgHex} !important; border-left-color: ${palette.hex} !important; color: ${palette.textHex} !important; }
+        ${sel} .fc-event-main { color: ${palette.textHex} !important; }
+        ${sel} .fc-daygrid-event-dot { border-color: ${palette.hex} !important; }
+        ${sel}.fc-timegrid-event { background-color: ${palette.bgHex} !important; border-color: ${palette.hex} !important; }
+        ${sel}.fc-timegrid-event .fc-event-main { color: ${palette.textHex} !important; }
+      `;
+    }).join('\n');
+    this.renderer.setProperty(this.customCategoryStyleEl, 'textContent', css);
+  });
 
   // Synchronise la visibilité du FAB avec le panneau de détail
   private fabHiddenEffect = effect(() => {
@@ -121,19 +160,54 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
     eventDrop: this.handleEventDrop.bind(this),
     eventResize: this.handleEventResize.bind(this),
     datesSet: this.handleDatesSet.bind(this),
+    eventDidMount: (info) => {
+      info.el.setAttribute('data-tooltip', info.event.title);
+      info.el.addEventListener('dblclick', () => {
+        const event = this.events().find(e => e.id === info.event.id);
+        if (event) {
+          this.onEditEvent(event);
+        }
+      });
+    },
   });
 
   ngOnInit(): void {
+    this.initializeGoogleCalendar();
+    this.categoryStore.loadCategories();
     this.loadProjects();
+  }
+
+  private async initializeGoogleCalendar(): Promise<void> {
+    await this.gcalStore.loadConnection();
+    await this.gcalStore.loadSyncConfigs();
+    // Only enter setup mode when connected but no calendars are enabled yet
+    if (this.isGoogleCalendarConnected() && !this.hasEnabledSyncConfigs()) {
+      this.calendarSetupMode.set(true);
+    }
+    this.initialLoadComplete.set(true);
+    this.cdr.markForCheck();
   }
 
   ngOnDestroy(): void {
     this.fabStore.setHidden(false);
+    if (this.customCategoryStyleEl) {
+      this.renderer.removeChild(document.head, this.customCategoryStyleEl);
+    }
   }
 
   // =====================================================================
   // Toolbar Actions
   // =====================================================================
+
+  connectGoogleCalendar(): void {
+    this.gcalStore.connect();
+  }
+
+  async finishCalendarSetup(): Promise<void> {
+    // Trigger sync for all enabled calendars, then show the calendar
+    await this.gcalStore.triggerSync();
+    this.calendarSetupMode.set(false);
+  }
 
   navigatePrev(): void {
     this.calendarComponent?.getApi()?.prev();

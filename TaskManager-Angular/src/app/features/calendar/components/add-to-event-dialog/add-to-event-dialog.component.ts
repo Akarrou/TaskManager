@@ -7,16 +7,17 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { Subject, debounceTime, takeUntil } from 'rxjs';
+import { Subject, takeUntil } from 'rxjs';
 
 import { EventDatabaseService, EventEntry } from '../../../../core/services/event-database.service';
 import { LinkedItem } from '../../../documents/models/database.model';
 import {
-  CATEGORY_LABELS,
-  CATEGORY_COLORS,
-  CATEGORY_HEX_COLORS,
   EventCategory,
+  getCategoryLabel,
+  getCategoryColors,
+  getCategoryHexColor,
 } from '../../../../shared/models/event-constants';
+import { EventCategoryStore } from '../../../../core/stores/event-category.store';
 
 export interface AddToEventDialogData {
   item: LinkedItem;
@@ -45,9 +46,9 @@ export class AddToEventDialogComponent implements OnInit, OnDestroy {
   private data: AddToEventDialogData = inject(MAT_DIALOG_DATA);
   private eventDatabaseService = inject(EventDatabaseService);
   private snackBar = inject(MatSnackBar);
+  private categoryStore = inject(EventCategoryStore);
 
   private destroy$ = new Subject<void>();
-  private searchSubject = new Subject<string>();
 
   allEvents = signal<EventEntry[]>([]);
   loading = signal(true);
@@ -65,18 +66,11 @@ export class AddToEventDialogComponent implements OnInit, OnDestroy {
   item = this.data.item;
 
   ngOnInit(): void {
-    this.searchSubject.pipe(
-      debounceTime(300),
-      takeUntil(this.destroy$),
-    ).subscribe(query => {
-      this.searchQuery.set(query);
-    });
-
     this.loadEvents();
   }
 
   onSearchInput(value: string): void {
-    this.searchSubject.next(value);
+    this.searchQuery.set(value);
   }
 
   selectEvent(event: EventEntry): void {
@@ -130,16 +124,16 @@ export class AddToEventDialogComponent implements OnInit, OnDestroy {
     }
   }
 
-  getCategoryLabel(category: EventCategory): string {
-    return CATEGORY_LABELS[category] || category;
+  getCategoryLabelForEvent(category: EventCategory): string {
+    return getCategoryLabel(category, this.categoryStore.allCategories());
   }
 
-  getCategoryColors(category: EventCategory): { bg: string; text: string; border: string } {
-    return CATEGORY_COLORS[category] || CATEGORY_COLORS.other;
+  getCategoryColorsForEvent(category: EventCategory): { bg: string; text: string; border: string } {
+    return getCategoryColors(category, this.categoryStore.allCategories());
   }
 
-  getCategoryHexColor(category: EventCategory): string {
-    return CATEGORY_HEX_COLORS[category] || CATEGORY_HEX_COLORS.other;
+  getCategoryHexColorForEvent(category: EventCategory): string {
+    return getCategoryHexColor(category, this.categoryStore.allCategories());
   }
 
   close(): void {
@@ -149,9 +143,9 @@ export class AddToEventDialogComponent implements OnInit, OnDestroy {
   private loadEvents(): void {
     const now = new Date();
     const start = new Date(now);
-    start.setMonth(start.getMonth() - 3);
+    start.setMonth(start.getMonth() - 1);
     const end = new Date(now);
-    end.setMonth(end.getMonth() + 12);
+    end.setMonth(end.getMonth() + 3);
 
     this.eventDatabaseService
       .getEventEntriesForDateRange(start.toISOString(), end.toISOString())

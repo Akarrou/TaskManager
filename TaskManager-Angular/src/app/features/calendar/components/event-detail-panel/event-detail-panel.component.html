@@ -71,6 +71,27 @@
         </div>
       }
 
+      <!-- Google Meet -->
+      @if (event.meet_link) {
+        <mat-divider></mat-divider>
+        <div class="panel-section">
+          <svg class="section-icon meet-svg-icon" viewBox="0 0 87.5 72" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#00832d" d="M49.5 36l8.53 9.75 11.47 7.33 2-17.02-2-16.64-11.69 6.44z"/>
+            <path fill="#0066da" d="M0 51.5V66c0 3.315 2.685 6 6 6h14.5l3-10.96-3-9.54-9.95-3z"/>
+            <path fill="#e94235" d="M20.5 0L0 20.5l10.55 3 9.95-3 2.95-9.41z"/>
+            <path fill="#2684fc" d="M20.5 20.5H0v31h20.5z"/>
+            <path fill="#00ac47" d="M82.6 8.68L69.5 19.42v33.66l13.16 10.79c1.97 1.54 4.85.135 4.85-2.37V11c0-2.535-2.945-3.925-4.91-2.32zM49.5 36v15.5h-29V72h43c3.315 0 6-2.685 6-6V53.08z"/>
+            <path fill="#ffba00" d="M63.5 0h-43v20.5h29V36l20-16.57V6c0-3.315-2.685-6-6-6z"/>
+          </svg>
+          <div class="section-content">
+            <a class="meet-btn" [href]="event.meet_link" target="_blank" rel="noopener">
+              Rejoindre Google Meet
+            </a>
+            <span class="meet-url">{{ event.meet_link }}</span>
+          </div>
+        </div>
+      }
+
       <!-- Description -->
       @if (event.description) {
         <mat-divider></mat-divider>
@@ -100,24 +121,28 @@
           <mat-icon class="section-icon">link</mat-icon>
           <div class="section-content">
             <span class="section-label">Éléments liés</span>
-            <div class="linked-chips">
+            <div class="linked-items-list">
               @for (item of event.linked_items; track item.id) {
-                <mat-chip
-                  class="linked-chip linked-chip--{{ item.type }}"
+                <div class="linked-item-card"
+                  [class.linked-item-card--task]="item.type === 'task'"
+                  [class.linked-item-card--document]="item.type === 'document'"
+                  [class.linked-item-card--database]="item.type === 'database'"
                   (click)="onLinkedItemClick(item)">
-                  @switch (item.type) {
-                    @case ('task') {
-                      <mat-icon class="linked-chip__icon">task_alt</mat-icon>
+                  <div class="linked-item-card__content">
+                    @switch (item.type) {
+                      @case ('task') {
+                        <mat-icon class="linked-item-card__icon linked-item-card__icon--task">task_alt</mat-icon>
+                      }
+                      @case ('document') {
+                        <mat-icon class="linked-item-card__icon linked-item-card__icon--document">article</mat-icon>
+                      }
+                      @case ('database') {
+                        <mat-icon class="linked-item-card__icon linked-item-card__icon--database">storage</mat-icon>
+                      }
                     }
-                    @case ('document') {
-                      <mat-icon class="linked-chip__icon">article</mat-icon>
-                    }
-                    @case ('database') {
-                      <mat-icon class="linked-chip__icon">storage</mat-icon>
-                    }
-                  }
-                  {{ item.label }}
-                </mat-chip>
+                    <span class="linked-item-card__label" [matTooltip]="item.label">{{ item.label }}</span>
+                  </div>
+                </div>
               }
             </div>
           </div>

@@ -73,7 +73,14 @@
       "Bash(test:*)",
       "Bash(.:*)",
       "Bash(find:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(docker inspect supabase-edge-functions --format '{{json .Mounts}}' 2>/dev/null | python3 -m json.tool 2>/dev/null || docker inspect supabase-edge-functions --format '{{json .Mounts}}' 2>/dev/null)",
+      "WebFetch(domain:commons.wikimedia.org)",
+      "WebFetch(domain:www.svgrepo.com)",
+      "WebFetch(domain:upload.wikimedia.org)",
+      "WebFetch(domain:iconify.design)",
+      "WebFetch(domain:worldvectorlogo.com)",
+      "Bash(docker exec:*)"
     ],
     "deny": [
       "Read(./.env)",

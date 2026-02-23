@@ -87,6 +87,14 @@ export const CalendarStore = signalStore(
                 location: created.location,
                 recurrence: created.recurrence,
                 reminders: created.reminders,
+                add_google_meet: (event as Record<string, unknown>)['add_google_meet'] ?? false,
+              }).then(result => {
+                if (result?.meet_link) {
+                  const withMeet = { ...created, meet_link: result.meet_link };
+                  patchState(store, {
+                    events: store.events().map(e => e.id === withMeet.id ? withMeet : e),
+                  });
+                }
               });
             }),
             catchError((error: Error) => {
@@ -121,6 +129,14 @@ export const CalendarStore = signalStore(
                 location: updated.location,
                 recurrence: updated.recurrence,
                 reminders: updated.reminders,
+                add_google_meet: (updates as Record<string, unknown>)['add_google_meet'] ?? false,
+              }).then(result => {
+                if (result?.meet_link) {
+                  const withMeet = { ...updated, meet_link: result.meet_link };
+                  patchState(store, {
+                    events: store.events().map(e => e.id === withMeet.id ? withMeet : e),
+                  });
+                }
               });
             }),
             catchError((error: Error) => {

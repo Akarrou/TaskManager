@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, OnInit, inject, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, inject, computed, effect } from '@angular/core';
 
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
@@ -30,6 +30,24 @@ export class GoogleCalendarSettingsComponent implements OnInit {
 
   protected readonly hasCalendars = computed(() => this.availableCalendars().length > 0);
 
+  constructor() {
+    // Reconcile existing configs missing calendar_color with available calendars
+    effect(() => {
+      const configs = this.syncConfigs();
+      const calendars = this.availableCalendars();
+      if (configs.length === 0 || calendars.length === 0) return;
+
+      for (const config of configs) {
+        if (config.calendar_color === null || config.calendar_color === undefined) {
+          const calendar = calendars.find(c => c.id === config.google_calendar_id);
+          if (calendar?.backgroundColor) {
+            this.store.updateSyncConfig(config.id, { calendar_color: calendar.backgroundColor });
+          }
+        }
+      }
+    });
+  }
+
   async ngOnInit(): Promise<void> {
     await this.store.loadConnection();
     this.store.loadCalendars();
@@ -54,14 +72,16 @@ export class GoogleCalendarSettingsComponent implements OnInit {
         if (!connectionId) {
           return;
         }
+        const isWritable = calendar.accessRole === 'owner' || calendar.accessRole === 'writer';
         this.store.createSyncConfig({
           connection_id: connectionId,
           google_calendar_id: calendar.id,
           google_calendar_name: calendar.summary,
           kodo_database_id: null,
-          sync_direction: 'bidirectional',
+          sync_direction: isWritable ? 'bidirectional' : 'from_google',
           is_enabled: true,
           last_sync_at: null,
+          calendar_color: calendar.backgroundColor || null,
         });
       }
     } else if (existing) {

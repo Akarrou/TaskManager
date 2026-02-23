@@ -1,154 +1,200 @@
 <div class="calendar-page">
-  <!-- ================================================================== -->
-  <!-- Custom Toolbar                                                      -->
-  <!-- ================================================================== -->
-  <div class="calendar-toolbar">
-    <!-- Left: Navigation -->
-    <div class="calendar-toolbar__left">
-      <button
-        mat-icon-button
-        (click)="navigatePrev()"
-        aria-label="Période précédente"
-        class="calendar-toolbar__nav-btn">
-        <mat-icon>chevron_left</mat-icon>
-      </button>
-      <button
-        mat-icon-button
-        (click)="navigateNext()"
-        aria-label="Période suivante"
-        class="calendar-toolbar__nav-btn">
-        <mat-icon>chevron_right</mat-icon>
-      </button>
-      <button
-        mat-stroked-button
-        (click)="navigateToday()"
-        class="calendar-toolbar__today-btn">
-        Aujourd'hui
-      </button>
+  @if (!initialLoadComplete()) {
+    <!-- Loading state while checking Google Calendar connection -->
+    <div class="calendar-connect-overlay">
+      <div class="calendar-connect-card">
+        <span class="c-spinner c-spinner--large"></span>
+        <p>Chargement du calendrier...</p>
+      </div>
     </div>
-
-    <!-- Center: Title -->
-    <h2 class="calendar-toolbar__title">{{ calendarTitle() }}</h2>
-
-    <!-- Right: View toggle + filter + create -->
-    <div class="calendar-toolbar__right">
-      <mat-button-toggle-group
-        [value]="currentView()"
-        (change)="changeView($event.value)"
-        class="calendar-toolbar__view-toggle"
-        aria-label="Vue du calendrier">
-        <mat-button-toggle value="dayGridMonth">Mois</mat-button-toggle>
-        <mat-button-toggle value="timeGridWeek">Semaine</mat-button-toggle>
-        <mat-button-toggle value="timeGridDay">Jour</mat-button-toggle>
-      </mat-button-toggle-group>
-
-      <!-- Project filter -->
-      <div class="project-filter">
+  } @else if (isGoogleCalendarConnected() && !calendarSetupMode()) {
+    <!-- ================================================================== -->
+    <!-- Custom Toolbar                                                      -->
+    <!-- ================================================================== -->
+    <div class="calendar-toolbar">
+      <!-- Left: Navigation -->
+      <div class="calendar-toolbar__left">
         <button
-          type="button"
-          class="project-filter__btn"
-          (click)="toggleProjectDropdown()"
-          [class.is-open]="isProjectDropdownOpen()">
-          <span class="project-filter__label">{{ selectedProjectLabel() }}</span>
-          <mat-icon class="project-filter__icon">
-            {{ isProjectDropdownOpen() ? 'expand_less' : 'expand_more' }}
-          </mat-icon>
+          mat-icon-button
+          (click)="navigatePrev()"
+          aria-label="Période précédente"
+          class="calendar-toolbar__nav-btn">
+          <mat-icon>chevron_left</mat-icon>
         </button>
+        <button
+          mat-icon-button
+          (click)="navigateNext()"
+          aria-label="Période suivante"
+          class="calendar-toolbar__nav-btn">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+        <button
+          mat-stroked-button
+          (click)="navigateToday()"
+          class="calendar-toolbar__today-btn">
+          Aujourd'hui
+        </button>
+      </div>
 
-        @if (isProjectDropdownOpen()) {
-          <div class="project-filter__dropdown">
-            <div class="project-filter__header">
-              <span class="project-filter__title">Filtrer par projet</span>
-            </div>
-            <ul class="project-filter__list">
-              <li>
-                <button
-                  type="button"
-                  class="project-filter__item"
-                  [class.is-selected]="selectedProjectId() === null"
-                  (click)="selectProjectFilter(null)">
-                  <mat-icon class="project-filter__item-icon">folder_open</mat-icon>
-                  <span class="project-filter__item-name">Tous les projets</span>
-                  @if (selectedProjectId() === null) {
-                    <mat-icon class="project-filter__check">check</mat-icon>
-                  }
-                </button>
-              </li>
-              @for (project of projects(); track project.id) {
+      <!-- Center: Title -->
+      <h2 class="calendar-toolbar__title">{{ calendarTitle() }}</h2>
+
+      <!-- Right: View toggle + filter + create -->
+      <div class="calendar-toolbar__right">
+        <mat-button-toggle-group
+          [value]="currentView()"
+          (change)="changeView($event.value)"
+          class="calendar-toolbar__view-toggle"
+          aria-label="Vue du calendrier">
+          <mat-button-toggle value="dayGridMonth">Mois</mat-button-toggle>
+          <mat-button-toggle value="timeGridWeek">Semaine</mat-button-toggle>
+          <mat-button-toggle value="timeGridDay">Jour</mat-button-toggle>
+        </mat-button-toggle-group>
+
+        <!-- Project filter -->
+        <div class="project-filter">
+          <button
+            type="button"
+            class="project-filter__btn"
+            (click)="toggleProjectDropdown()"
+            [class.is-open]="isProjectDropdownOpen()">
+            <span class="project-filter__label">{{ selectedProjectLabel() }}</span>
+            <mat-icon class="project-filter__icon">
+              {{ isProjectDropdownOpen() ? 'expand_less' : 'expand_more' }}
+            </mat-icon>
+          </button>
+
+          @if (isProjectDropdownOpen()) {
+            <div class="project-filter__dropdown">
+              <div class="project-filter__header">
+                <span class="project-filter__title">Filtrer par projet</span>
+              </div>
+              <ul class="project-filter__list">
                 <li>
                   <button
                     type="button"
                     class="project-filter__item"
-                    [class.is-selected]="selectedProjectId() === project.id"
-                    (click)="selectProjectFilter(project.id)">
-                    <mat-icon class="project-filter__item-icon">folder</mat-icon>
-                    <span class="project-filter__item-name">{{ project.name }}</span>
-                    @if (selectedProjectId() === project.id) {
+                    [class.is-selected]="selectedProjectId() === null"
+                    (click)="selectProjectFilter(null)">
+                    <mat-icon class="project-filter__item-icon">folder_open</mat-icon>
+                    <span class="project-filter__item-name">Tous les projets</span>
+                    @if (selectedProjectId() === null) {
                       <mat-icon class="project-filter__check">check</mat-icon>
                     }
                   </button>
                 </li>
-              }
-            </ul>
-          </div>
-          <div class="project-filter__overlay" (click)="closeProjectDropdown()"></div>
-        }
+                @for (project of projects(); track project.id) {
+                  <li>
+                    <button
+                      type="button"
+                      class="project-filter__item"
+                      [class.is-selected]="selectedProjectId() === project.id"
+                      (click)="selectProjectFilter(project.id)">
+                      <mat-icon class="project-filter__item-icon">folder</mat-icon>
+                      <span class="project-filter__item-name">{{ project.name }}</span>
+                      @if (selectedProjectId() === project.id) {
+                        <mat-icon class="project-filter__check">check</mat-icon>
+                      }
+                    </button>
+                  </li>
+                }
+              </ul>
+            </div>
+            <div class="project-filter__overlay" (click)="closeProjectDropdown()"></div>
+          }
+        </div>
+
+        <!-- Sync status indicator -->
+        <app-sync-status-indicator></app-sync-status-indicator>
+
+        <!-- Create event button -->
+        <button
+          mat-flat-button
+          color="primary"
+          (click)="openCreateDialog()"
+          class="calendar-toolbar__create-btn">
+          <mat-icon>add</mat-icon>
+          <span class="calendar-toolbar__create-label">Nouvel événement</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- Loading Bar                                                         -->
+    <!-- ================================================================== -->
+    @if (loading()) {
+      <div class="calendar-loading">
+        <div class="calendar-loading__bar"></div>
+      </div>
+    }
+
+    <!-- ================================================================== -->
+    <!-- Main Content: Calendar + Detail Panel                               -->
+    <!-- ================================================================== -->
+    <div class="calendar-content" [class.calendar-content--panel-open]="showDetailPanel()">
+      <!-- FullCalendar -->
+      <div class="calendar-wrapper">
+        <full-calendar
+          #calendar
+          [options]="calendarOptions()"
+          [events]="calendarEvents">
+        </full-calendar>
       </div>
 
-      <!-- Sync status indicator -->
-      <app-sync-status-indicator></app-sync-status-indicator>
-
-      <!-- Create event button -->
-      <button
-        mat-flat-button
-        color="primary"
-        (click)="openCreateDialog()"
-        class="calendar-toolbar__create-btn">
-        <mat-icon>add</mat-icon>
-        <span class="calendar-toolbar__create-label">Nouvel événement</span>
-      </button>
+      <!-- Detail Panel (slide-in/out from right) -->
+      @if (showDetailPanel() && selectedEvent()) {
+        <aside class="detail-panel"
+               @slidePanel
+               (@slidePanel.done)="onPanelAnimationDone()"
+               role="complementary"
+               aria-label="Détail de l'événement">
+          <app-event-detail-panel
+            [event]="selectedEvent()!"
+            (close)="closeDetailPanel()"
+            (edit)="onEditEvent($event)"
+            (updated)="onEventUpdated($event)"
+            (deleted)="onEventDeleted($event)"
+            (navigateToSource)="onNavigateToSource($event)"
+            (linkedItemClick)="onLinkedItemClick($event)">
+          </app-event-detail-panel>
+        </aside>
+      }
     </div>
-  </div>
-
-  <!-- ================================================================== -->
-  <!-- Loading Bar                                                         -->
-  <!-- ================================================================== -->
-  @if (loading()) {
-    <div class="calendar-loading">
-      <div class="calendar-loading__bar"></div>
+  } @else {
+    <!-- ================================================================== -->
+    <!-- Google Calendar Setup Overlay                                       -->
+    <!-- ================================================================== -->
+    <div class="calendar-connect-overlay">
+      <div class="calendar-connect-card">
+        @if (!isGoogleCalendarConnected()) {
+          <!-- Step 1: Not connected -->
+          <span class="material-icons-outlined calendar-connect-icon">calendar_month</span>
+          <h2>Connectez votre Google Calendar</h2>
+          <p>Pour utiliser le calendrier Kōdo, connectez-vous à Google Calendar pour synchroniser vos événements.</p>
+          <button class="c-btn c-btn--primary" type="button" (click)="connectGoogleCalendar()">
+            <span class="material-icons-outlined">add_link</span>
+            <span>Connecter Google Calendar</span>
+          </button>
+        } @else {
+          <!-- Step 2: Connected, choose calendars to sync -->
+          <h2>Configurez vos calendriers</h2>
+          <p>Activez les calendriers que vous souhaitez synchroniser avec Kōdo.</p>
+          <app-google-calendar-settings></app-google-calendar-settings>
+          <button
+            class="c-btn c-btn--primary calendar-connect-continue"
+            type="button"
+            [disabled]="!hasEnabledSyncConfigs() || gcalSyncing()"
+            (click)="finishCalendarSetup()">
+            @if (gcalSyncing()) {
+              <span class="c-spinner"></span>
+              <span>Synchronisation...</span>
+            } @else {
+              <span class="material-icons-outlined">arrow_forward</span>
+              <span>Continuer</span>
+            }
+          </button>
+        }
+      </div>
     </div>
   }
-
-  <!-- ================================================================== -->
-  <!-- Main Content: Calendar + Detail Panel                               -->
-  <!-- ================================================================== -->
-  <div class="calendar-content" [class.calendar-content--panel-open]="showDetailPanel()">
-    <!-- FullCalendar -->
-    <div class="calendar-wrapper">
-      <full-calendar
-        #calendar
-        [options]="calendarOptions()"
-        [events]="calendarEvents">
-      </full-calendar>
-    </div>
-
-    <!-- Detail Panel (slide-in/out from right) -->
-    @if (showDetailPanel() && selectedEvent()) {
-      <aside class="detail-panel"
-             @slidePanel
-             (@slidePanel.done)="onPanelAnimationDone()"
-             role="complementary"
-             aria-label="Détail de l'événement">
-        <app-event-detail-panel
-          [event]="selectedEvent()!"
-          (close)="closeDetailPanel()"
-          (edit)="onEditEvent($event)"
-          (updated)="onEventUpdated($event)"
-          (deleted)="onEventDeleted($event)"
-          (navigateToSource)="onNavigateToSource($event)"
-          (linkedItemClick)="onLinkedItemClick($event)">
-        </app-event-detail-panel>
-      </aside>
-    }
-  </div>
 </div>

@@ -11,7 +11,7 @@ import {
   LinkedItem,
 } from '../../features/documents/models/database.model';
 import { DatabaseService } from '../../features/documents/services/database.service';
-import { EventCategory } from '../../shared/models/event-constants';
+import { EventCategory, DEFAULT_CATEGORIES } from '../../shared/models/event-constants';
 import { GoogleCalendarReminder } from '../../features/google-calendar/models/google-calendar.model';
 
 /**
@@ -41,6 +41,8 @@ export interface EventEntry {
   google_event_id?: string;
   sync_status?: 'synced' | 'pending' | 'conflict' | 'error' | 'local_only';
   reminders?: GoogleCalendarReminder[];
+  meet_link?: string;
+  color?: string;
 
   // Metadata
   created_at: string;
@@ -217,6 +219,9 @@ export class EventDatabaseService {
         if (eventData.reminders && columnMapping['Reminders']) {
           cells[columnMapping['Reminders']] = JSON.stringify(eventData.reminders);
         }
+        if (eventData.meet_link && columnMapping['Google Meet']) {
+          cells[columnMapping['Google Meet']] = eventData.meet_link;
+        }
 
         return this.databaseService.addRow({
           databaseId,
@@ -276,16 +281,37 @@ export class EventDatabaseService {
         if (updates.reminders !== undefined && columnMapping['Reminders']) {
           cells[columnMapping['Reminders']] = updates.reminders ? JSON.stringify(updates.reminders) : null;
         }
+        if (updates.meet_link !== undefined && columnMapping['Google Meet']) {
+          cells[columnMapping['Google Meet']] = updates.meet_link ?? null;
+        }
 
         return this.databaseService.updateRow(databaseId, rowId, cells).pipe(
-          // After update, fetch the updated row to return normalized entry
-          switchMap(() => this.databaseService.getRowById(databaseId, rowId)),
-          map(updatedRow => {
-            if (!updatedRow) {
-              throw new Error(`Updated row ${rowId} not found`);
-            }
-            return this.normalizeRowToEventEntry(updatedRow, dbMetadata);
-          })
+          map(() => {
+            // Reconstruct EventEntry from the updates we just applied
+            // (RLS prevents reading the row back, so we build it from inputs)
+            const now = new Date().toISOString();
+            return {
+              id: rowId,
+              databaseId,
+              databaseName: dbMetadata.name,
+              title: (updates.title ?? '') as string,
+              description: updates.description,
+              start_date: updates.start_date ?? now,
+              end_date: updates.end_date ?? now,
+              all_day: updates.all_day ?? false,
+              category: updates.category ?? 'other',
+              location: updates.location,
+              recurrence: updates.recurrence,
+              linked_items: updates.linked_items,
+              project_id: updates.project_id,
+              event_number: updates.event_number,
+              reminders: updates.reminders,
+              meet_link: updates.meet_link,
+              created_at: updates.created_at ?? now,
+              updated_at: now,
+              row_order: updates.row_order ?? 0,
+            } as EventEntry;
+          }),
         );
       }),
       catchError(err => {
@@ -355,6 +381,8 @@ export class EventDatabaseService {
       project_id: this.getCellValue(row, columnMapping, 'Project ID') as string,
       event_number: this.getCellValue(row, columnMapping, 'Event Number') as string,
       reminders: this.parseReminders(this.getCellValue(row, columnMapping, 'Reminders') as string),
+      meet_link: this.getCellValue(row, columnMapping, 'Google Meet') as string,
+      color: (this.getCellValue(row, columnMapping, 'Color') as string) || undefined,
       created_at: row.created_at,
       updated_at: row.updated_at,
       row_order: row.row_order,
@@ -383,39 +411,39 @@ export class EventDatabaseService {
   }
 
   /**
-   * Normalize category value to EventCategory
-   * Supports English and French labels
+   * Normalize category value to EventCategory key
+   * Maps French labels to English keys for backwards compatibility,
+   * passes unknown values through as-is (custom categories).
    */
   private normalizeCategory(value: string | null | undefined): EventCategory {
     if (!value) return 'other';
 
     const normalized = value.toLowerCase();
 
-    switch (normalized) {
-      case 'meeting':
-      case 'réunion':
-      case 'reunion':
-        return 'meeting';
-      case 'deadline':
-      case 'échéance':
-      case 'echeance':
-        return 'deadline';
-      case 'milestone':
-      case 'jalon':
-        return 'milestone';
-      case 'reminder':
-      case 'rappel':
-        return 'reminder';
-      case 'personal':
-      case 'personnel':
-        return 'personal';
-      case 'other':
-      case 'autre':
-        return 'other';
-      default:
-        console.warn(`Unknown category value: ${value}, defaulting to 'other'`);
-        return 'other';
+    // French → English mapping for default categories
+    const frenchToEnglish: Record<string, string> = {
+      'réunion': 'meeting',
+      'reunion': 'meeting',
+      'échéance': 'deadline',
+      'echeance': 'deadline',
+      'jalon': 'milestone',
+      'rappel': 'reminder',
+      'personnel': 'personal',
+      'autre': 'other',
+    };
+
+    // Check French mapping first
+    if (frenchToEnglish[normalized]) {
+      return frenchToEnglish[normalized];
     }
+
+    // Check if it's a known default category key
+    if (DEFAULT_CATEGORIES.some(c => c.key === normalized)) {
+      return normalized;
+    }
+
+    // Pass through as-is (custom category or unknown)
+    return normalized;
   }
 
   /**

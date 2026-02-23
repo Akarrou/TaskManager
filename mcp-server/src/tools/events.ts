@@ -4,8 +4,8 @@ import { getSupabaseClient } from '../services/supabase-client.js';
 import { getCurrentUserId } from '../services/user-auth.js';
 import { saveSnapshot } from '../services/snapshot.js';
 
-// Event category enum
-const EventCategoryEnum = z.enum(['meeting', 'deadline', 'milestone', 'reminder', 'personal', 'other']);
+// Event category — accepts any string to support custom categories
+const EventCategoryEnum = z.string().describe('Event category. Default values: meeting, deadline, milestone, reminder, personal, other. Custom category keys are also accepted.');
 
 /**
  * Register all event-related tools
@@ -16,7 +16,7 @@ export function registerEventTools(server: McpServer): void {
   // =========================================================================
   server.tool(
     'list_events',
-    `List events aggregated from all event-type databases in the workspace. Events are stored as rows in "event" type databases with standardized columns: Title, Description, Start Date, End Date, All Day, Category, Location, Recurrence, Linked Items, Project ID, Event Number. This tool scans all event databases and returns a unified view. Results are normalized and sorted by start date. Category values: meeting, deadline, milestone, reminder, personal, other. Related tools: create_event, update_event, get_event.`,
+    `List events aggregated from all event-type databases in the workspace. Events are stored as rows in "event" type databases with standardized columns: Title, Description, Start Date, End Date, All Day, Category, Location, Recurrence, Linked Items, Project ID, Event Number, Color, Google Meet. This tool scans all event databases and returns a unified view. Results are normalized and sorted by start date. Default category values: meeting, deadline, milestone, reminder, personal, other (custom categories also accepted). Related tools: create_event, update_event, get_event, list_calendar_docs, get_calendar_doc.`,
     {
       category: EventCategoryEnum.optional().describe('Filter to only events with this category. Valid: meeting, deadline, milestone, reminder, personal, other.'),
       project_id: z.string().uuid().optional().describe('Filter to events associated with this project.'),
@@ -124,15 +124,17 @@ STEP 4: Collect optional fields
   - Description (texte libre)
   - End date (ISO format with time)
   - All day (true/false) - default: false
-  - Category (meeting/deadline/milestone/reminder/personal/other) - default: other
+  - Category (meeting/deadline/milestone/reminder/personal/other or custom key) - default: other
   - Location (texte libre)
-  - Recurrence (RRULE string)
+  - Recurrence (RRULE string, e.g. "FREQ=WEEKLY;BYDAY=MO,WE,FR")
   - Linked items (array of {type, id, databaseId?, label})
 
 STEP 5: Create the event
 -> Only NOW call create_event with all collected information
 
-Returns: { event, document }. Related tools: list_databases, create_database.`,
+For detailed documentation on categories, linked items, recurrence rules, etc., use list_calendar_docs and get_calendar_doc.
+
+Returns: { event, document }. Related tools: list_databases, create_database, list_calendar_docs.`,
     {
       database_id: z.string().describe('The event database to add to. Format: db-uuid. Get this from list_databases or the database where you want the event.'),
       title: z.string().min(1).describe('Event title - the main identifier shown in calendar views.'),
@@ -144,7 +146,7 @@ Returns: { event, document }. Related tools: list_databases, create_database.`,
       location: z.string().optional().describe('Event location. Free text field.'),
       recurrence: z.string().optional().describe('Recurrence rule in RRULE format (e.g., "FREQ=WEEKLY;BYDAY=MO,WE,FR").'),
       linked_items: z.array(z.object({
-        type: z.string().describe('Type of linked item (e.g., "task", "document", "event").'),
+        type: z.string().describe('Type of linked item: "task", "document", or "database".'),
         id: z.string().describe('ID of the linked item.'),
         databaseId: z.string().optional().describe('Database ID of the linked item, if applicable.'),
         label: z.string().optional().describe('Display label for the linked item.'),
@@ -496,7 +498,7 @@ Returns: { event, document }. Related tools: list_databases, create_database.`,
   // =========================================================================
   server.tool(
     'update_event',
-    `Update one or more fields of an existing event. Only provide the fields you want to change - unspecified fields remain unchanged. Returns the complete updated event. At least one field must be provided. All field values use the same format as create_event.`,
+    `Update one or more fields of an existing event. Only provide the fields you want to change - unspecified fields remain unchanged. Returns the complete updated event. At least one field must be provided. All field values use the same format as create_event. Note: linked_items replaces the entire array (not append). Related tools: get_event, list_calendar_docs, get_calendar_doc.`,
     {
       database_id: z.string().describe('The database ID containing the event. Format: db-uuid.'),
       row_id: z.string().uuid().describe('The event/row ID to update.'),
@@ -509,7 +511,7 @@ Returns: { event, document }. Related tools: list_databases, create_database.`,
       location: z.string().optional().describe('New location. Leave undefined to keep current.'),
       recurrence: z.string().optional().describe('New recurrence rule in RRULE format. Leave undefined to keep current.'),
       linked_items: z.array(z.object({
-        type: z.string().describe('Type of linked item.'),
+        type: z.string().describe('Type of linked item: "task", "document", or "database".'),
         id: z.string().describe('ID of the linked item.'),
         databaseId: z.string().optional().describe('Database ID of the linked item.'),
         label: z.string().optional().describe('Display label for the linked item.'),
@@ -639,7 +641,7 @@ Returns: { event, document }. Related tools: list_databases, create_database.`,
   // =========================================================================
   server.tool(
     'delete_event',
-    `Permanently delete an event from a database. This removes the row from the event database. The deletion is immediate and cannot be undone. Returns confirmation with the deleted event's information. A snapshot is taken before deletion for recovery purposes.`,
+    `Permanently delete an event from a database. This removes the row from the event database. The deletion is immediate and cannot be undone. Returns confirmation with the deleted event's information. A snapshot is taken before deletion for recovery purposes. Note: if Google Calendar sync is active for the event's database, the corresponding Google event will also be deleted when the event is removed via the Angular app (but not via MCP).`,
     {
       database_id: z.string().describe('The database ID containing the event to delete. Format: db-uuid.'),
       row_id: z.string().uuid().describe('The event/row ID to permanently delete.'),
@@ -805,6 +807,9 @@ function normalizeRowToEvent(row: Record<string, unknown>, dbMeta: Record<string
     recurrence: getCell('Recurrence'),
     linked_items: getCell('Linked Items'),
     project_id: getCell('Project ID'),
+    reminders: getCell('Reminders'),
+    meet_link: getCell('Google Meet'),
+    color: getCell('Color'),
     created_at: row.created_at,
     updated_at: row.updated_at,
     row_order: row.row_order,

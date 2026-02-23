@@ -68,7 +68,7 @@
               [disabled]="linking()"
               (click)="selectEvent(event)">
               <div class="event-item__left">
-                <span class="event-item__color-dot" [style.background-color]="getCategoryHexColor(event.category)"></span>
+                <span class="event-item__color-dot" [style.background-color]="getCategoryHexColorForEvent(event.category)"></span>
               </div>
               <div class="event-item__content">
                 <div class="event-item__header">
@@ -76,10 +76,10 @@
                   <span
                     class="event-item__category"
                     [ngClass]="[
-                      getCategoryColors(event.category).bg,
-                      getCategoryColors(event.category).text
+                      getCategoryColorsForEvent(event.category).bg,
+                      getCategoryColorsForEvent(event.category).text
                     ]">
-                    {{ getCategoryLabel(event.category) }}
+                    {{ getCategoryLabelForEvent(event.category) }}
                   </span>
                 </div>
                 <div class="event-item__dates">

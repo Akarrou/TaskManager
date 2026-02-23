@@ -53,7 +53,7 @@ export class GoogleCalendarApiService {
     databaseId: string,
     rowId: string,
     eventData: Record<string, unknown>,
-  ): Promise<{ google_event_id: string }> {
+  ): Promise<{ google_event_id: string; meet_link?: string }> {
     const { data, error } = await this.client.functions.invoke('google-calendar-push-event', {
       body: {
         sync_config_id: syncConfigId,
@@ -71,7 +71,10 @@ export class GoogleCalendarApiService {
       throw new Error('Invalid response from push event');
     }
 
-    return { google_event_id: data.google_event_id };
+    return {
+      google_event_id: data.google_event_id,
+      meet_link: (data.meet_link as string) ?? undefined,
+    };
   }
 
   async deleteGoogleEvent(
@@ -159,7 +162,6 @@ export class GoogleCalendarApiService {
   ): Promise<GoogleCalendarSyncConfig | null> {
     // 1. Try exact match: resolve database_id → UUID, then match kodo_database_id
     const dbUuid = await this.resolveDatabaseUuid(databaseId);
-    console.log('[GCal API] getEnabledSyncConfigForDatabase:', { databaseId, resolvedUuid: dbUuid });
 
     if (dbUuid) {
       const { data } = await this.client
@@ -170,7 +172,6 @@ export class GoogleCalendarApiService {
         .maybeSingle();
 
       if (data) {
-        console.log('[GCal API] sync config found by exact match:', data);
         return data as GoogleCalendarSyncConfig;
       }
     }
@@ -184,16 +185,9 @@ export class GoogleCalendarApiService {
       .eq('is_enabled', true)
       .in('sync_direction', ['bidirectional', 'to_google']);
 
-    // Prefer the user's primary calendar (email-like ID), exclude special Google calendars
-    const writableConfigs = (fallbackList ?? []).filter((c: GoogleCalendarSyncConfig) =>
-      !c.google_calendar_id.includes('#holiday') &&
-      !c.google_calendar_id.includes('#contacts') &&
-      !c.google_calendar_id.includes('#other') &&
-      !c.google_calendar_id.endsWith('@group.v.calendar.google.com')
-    );
-
-    const fallback = writableConfigs[0] ?? null;
-    console.log('[GCal API] sync config fallback result:', { data: fallback, allConfigs: fallbackList?.length, writableConfigs: writableConfigs.length, error: error?.message });
+    // Prefer configs with owner/writer access (sync_direction already filters for writable)
+    // The sync_direction is set based on accessRole during initial calendar discovery
+    const fallback = (fallbackList ?? [])[0] ?? null;
 
     if (error) {
       throw new Error(`Failed to get sync config for database: ${error.message}`);
@@ -207,16 +201,13 @@ export class GoogleCalendarApiService {
    * document_databases primary key UUID, which is what
    * kodo_database_id columns store.
    */
-  private async resolveDatabaseUuid(databaseId: string): Promise<string | null> {
-    console.log('[GCal API] resolveDatabaseUuid input:', databaseId);
-    const { data, error } = await this.client
+  async resolveDatabaseUuid(databaseId: string): Promise<string | null> {
+    const { data } = await this.client
       .from('document_databases')
       .select('id')
       .eq('database_id', databaseId)
       .maybeSingle();
 
-    const uuid = (data?.id as string) ?? null;
-    console.log('[GCal API] resolveDatabaseUuid result:', { uuid, error: error?.message });
-    return uuid;
+    return (data?.id as string) ?? null;
   }
 }
