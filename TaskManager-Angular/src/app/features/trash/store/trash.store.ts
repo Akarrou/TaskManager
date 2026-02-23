@@ -1,7 +1,7 @@
 import { computed, inject } from '@angular/core';
 import { signalStore, withState, withMethods, withComputed, patchState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, tap, switchMap, catchError, EMPTY, of } from 'rxjs';
+import { pipe, tap, switchMap, mergeMap, catchError, EMPTY, of } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TrashService } from '../../../core/services/trash.service';
 import { TrashItem, TrashItemType } from '../../../core/models/trash.model';
@@ -14,6 +14,7 @@ interface TrashStoreState {
   loading: boolean;
   error: string | null;
   trashCount: number;
+  processingIds: string[];
 }
 
 export const TrashStore = signalStore(
@@ -25,6 +26,7 @@ export const TrashStore = signalStore(
     loading: false,
     error: null,
     trashCount: 0,
+    processingIds: [],
   }),
 
   withComputed((store) => ({
@@ -74,12 +76,37 @@ export const TrashStore = signalStore(
 
     restoreItem: rxMethod<TrashItem>(
       pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((trashItem) =>
-          trashService.restore(trashItem).pipe(
+        tap((trashItem) => patchState(store, {
+          processingIds: [...store.processingIds(), trashItem.id],
+          error: null,
+        })),
+        mergeMap((trashItem) => {
+          const docId = trashItem.parent_info?.['documentId'];
+
+          // For embedded items, verify parent document exists and is active
+          const parentCheck$ = (docId && (trashItem.item_type === 'database' || trashItem.item_type === 'spreadsheet'))
+            ? trashService.checkParentDocument(docId).pipe(
+                switchMap((parent) => {
+                  if (!parent.exists || parent.deleted) {
+                    snackBar.open(
+                      'Le document parent est supprimé. Restaurez-le d\'abord.',
+                      'Fermer',
+                      { duration: 5000 },
+                    );
+                    patchState(store, {
+                      processingIds: store.processingIds().filter(id => id !== trashItem.id),
+                    });
+                    return EMPTY;
+                  }
+                  return of(true);
+                }),
+              )
+            : of(true);
+
+          return parentCheck$.pipe(
+            switchMap(() => trashService.restore(trashItem)),
             // For TipTap embedded elements, also restore the node in the parent document
             switchMap(() => {
-              const docId = trashItem.parent_info?.['documentId'];
               if (!docId) return of(true);
 
               if (trashItem.item_type === 'database') {
@@ -93,36 +120,45 @@ export const TrashStore = signalStore(
             tap(() => {
               patchState(store, {
                 items: store.items().filter(i => i.id !== trashItem.id),
-                loading: false,
+                processingIds: store.processingIds().filter(id => id !== trashItem.id),
                 trashCount: store.trashCount() - 1,
               });
               snackBar.open(`"${trashItem.display_name}" restauré`, 'Fermer', { duration: 3000 });
             }),
             catchError((error: Error) => {
-              patchState(store, { loading: false, error: error.message });
+              patchState(store, {
+                processingIds: store.processingIds().filter(id => id !== trashItem.id),
+                error: error.message,
+              });
               snackBar.open('Erreur lors de la restauration', 'Fermer', { duration: 5000 });
               return EMPTY;
             }),
-          ),
-        ),
+          );
+        }),
       ),
     ),
 
     permanentDeleteItem: rxMethod<TrashItem>(
       pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((trashItem) =>
+        tap((trashItem) => patchState(store, {
+          processingIds: [...store.processingIds(), trashItem.id],
+          error: null,
+        })),
+        mergeMap((trashItem) =>
           trashService.permanentDelete(trashItem).pipe(
             tap(() => {
               patchState(store, {
                 items: store.items().filter(i => i.id !== trashItem.id),
-                loading: false,
+                processingIds: store.processingIds().filter(id => id !== trashItem.id),
                 trashCount: store.trashCount() - 1,
               });
               snackBar.open(`"${trashItem.display_name}" supprimé définitivement`, 'Fermer', { duration: 3000 });
             }),
             catchError((error: Error) => {
-              patchState(store, { loading: false, error: error.message });
+              patchState(store, {
+                processingIds: store.processingIds().filter(id => id !== trashItem.id),
+                error: error.message,
+              });
               snackBar.open('Erreur lors de la suppression', 'Fermer', { duration: 5000 });
               return EMPTY;
             }),

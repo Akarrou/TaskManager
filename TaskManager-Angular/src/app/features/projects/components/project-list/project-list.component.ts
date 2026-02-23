@@ -106,7 +106,7 @@ export class ProjectListComponent implements OnInit {
 
         dialogRef.afterClosed().subscribe((confirmed: boolean) => {
             if (confirmed) {
-                this.store.dispatch(ProjectActions.deleteProject({ projectId: project.id }));
+                this.store.dispatch(ProjectActions.deleteProject({ projectId: project.id, projectName: project.name }));
             }
         });
     }

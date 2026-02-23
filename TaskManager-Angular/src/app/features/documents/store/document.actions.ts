@@ -63,7 +63,7 @@ export const updateDocumentFailure = createAction(
 // Delete Document
 export const deleteDocument = createAction(
     '[Documents Page] Delete Document',
-    props<{ documentId: string }>()
+    props<{ documentId: string; documentTitle: string; projectId?: string }>()
 );
 export const deleteDocumentSuccess = createAction(
     '[Documents API] Delete Document Success',

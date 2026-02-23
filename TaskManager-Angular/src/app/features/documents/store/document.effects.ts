@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { of } from 'rxjs';
-import { map, catchError, mergeMap, tap, switchMap } from 'rxjs/operators';
+import { map, catchError, mergeMap, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DocumentService } from '../services/document.service';
@@ -107,28 +107,23 @@ export class DocumentEffects {
     deleteDocument$ = createEffect(() =>
         this.actions$.pipe(
             ofType(DocumentActions.deleteDocument),
-            mergeMap(({ documentId }) =>
-                // Get document info for the trash record, then soft delete
-                this.documentService.getDocument(documentId).pipe(
-                    switchMap((doc) => {
-                        const displayName = doc?.title || 'Document sans titre';
-                        const parentInfo: Record<string, string> = {};
-                        if (doc?.project_id) {
-                            parentInfo['projectId'] = doc.project_id;
-                        }
-                        return this.trashService.softDelete(
-                            'document',
-                            documentId,
-                            'documents',
-                            displayName,
-                            Object.keys(parentInfo).length > 0 ? parentInfo : undefined,
-                        ).pipe(
-                            map(() => DocumentActions.deleteDocumentSuccess({ documentId })),
-                        );
-                    }),
+            mergeMap(({ documentId, documentTitle, projectId }) => {
+                const displayName = documentTitle || 'Document sans titre';
+                const parentInfo: Record<string, string> = {};
+                if (projectId) {
+                    parentInfo['projectId'] = projectId;
+                }
+                return this.trashService.softDelete(
+                    'document',
+                    documentId,
+                    'documents',
+                    displayName,
+                    Object.keys(parentInfo).length > 0 ? parentInfo : undefined,
+                ).pipe(
+                    map(() => DocumentActions.deleteDocumentSuccess({ documentId })),
                     catchError((error) => of(DocumentActions.deleteDocumentFailure({ error })))
-                )
-            )
+                );
+            })
         )
     );
 

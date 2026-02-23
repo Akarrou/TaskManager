@@ -333,7 +333,8 @@ export class EventFormDialogComponent implements OnInit {
     this.eventDatabaseService.getAllEventDatabases().subscribe({
       next: (databases) => {
         this.eventDatabases.set(databases);
-        if (databases.length > 0) {
+        // Only set default database for new events — don't overwrite in edit mode
+        if (databases.length > 0 && !this.isEditMode) {
           this.form.controls.databaseId.setValue(databases[0].database_id);
         }
         this.showDatabaseSelector.set(databases.length > 1);

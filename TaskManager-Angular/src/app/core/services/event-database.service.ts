@@ -312,10 +312,53 @@ export class EventDatabaseService {
           cells[columnMapping['Google Meet']] = updates.meet_link ?? null;
         }
         if ((updates.attendees !== undefined || updates.guest_permissions !== undefined) && columnMapping['Attendees']) {
-          cells[columnMapping['Attendees']] = JSON.stringify({
-            attendees: updates.attendees ?? [],
-            permissions: updates.guest_permissions ?? {},
-          });
+          // For partial updates, merge with existing data to avoid overwriting
+          const bothProvided = updates.attendees !== undefined && updates.guest_permissions !== undefined;
+          if (bothProvided) {
+            cells[columnMapping['Attendees']] = JSON.stringify({
+              attendees: updates.attendees ?? [],
+              permissions: updates.guest_permissions ?? {},
+            });
+          } else {
+            // Only one field provided — need to read existing row to merge
+            return this.databaseService.getRowById(databaseId, rowId).pipe(
+              switchMap(existingRow => {
+                const existingValue = existingRow ? this.getCellValue(existingRow, columnMapping, 'Attendees') : null;
+                const existing = this.parseAttendees(existingValue);
+                cells[columnMapping['Attendees']] = JSON.stringify({
+                  attendees: updates.attendees ?? existing.attendees ?? [],
+                  permissions: updates.guest_permissions ?? existing.guest_permissions ?? {},
+                });
+                return this.databaseService.updateRow(databaseId, rowId, cells).pipe(
+                  map(() => {
+                    const now = new Date().toISOString();
+                    const result: Partial<EventEntry> & { id: string; databaseId: string; databaseName: string; updated_at: string } = {
+                      id: rowId,
+                      databaseId,
+                      databaseName: dbMetadata.name,
+                      updated_at: now,
+                    };
+                    if (updates.title !== undefined) result.title = updates.title;
+                    if (updates.description !== undefined) result.description = updates.description;
+                    if (updates.start_date !== undefined) result.start_date = updates.start_date;
+                    if (updates.end_date !== undefined) result.end_date = updates.end_date;
+                    if (updates.all_day !== undefined) result.all_day = updates.all_day;
+                    if (updates.category !== undefined) result.category = updates.category;
+                    if (updates.location !== undefined) result.location = updates.location;
+                    if (updates.recurrence !== undefined) result.recurrence = updates.recurrence;
+                    if (updates.linked_items !== undefined) result.linked_items = updates.linked_items;
+                    if (updates.project_id !== undefined) result.project_id = updates.project_id;
+                    if (updates.event_number !== undefined) result.event_number = updates.event_number;
+                    if (updates.reminders !== undefined) result.reminders = updates.reminders;
+                    if (updates.meet_link !== undefined) result.meet_link = updates.meet_link;
+                    if (updates.attendees !== undefined) result.attendees = updates.attendees;
+                    if (updates.guest_permissions !== undefined) result.guest_permissions = updates.guest_permissions;
+                    return result as EventEntry;
+                  }),
+                );
+              }),
+            );
+          }
         }
 
         return this.databaseService.updateRow(databaseId, rowId, cells).pipe(
@@ -468,6 +511,10 @@ export class EventDatabaseService {
   private normalizeRowToEventEntry(row: DatabaseRow, databaseMetadata: DocumentDatabase): EventEntry {
     const columnMapping = this.getColumnMapping(databaseMetadata.config.columns);
 
+    const rawAttendees = this.getCellValue(row, columnMapping, 'Attendees');
+    const parsedAttendees = this.parseAttendees(rawAttendees);
+    const meetLink = this.getCellValue(row, columnMapping, 'Google Meet') as string;
+
     const entry: EventEntry = {
       id: row.id,
       databaseId: databaseMetadata.database_id,
@@ -484,8 +531,8 @@ export class EventDatabaseService {
       project_id: this.getCellValue(row, columnMapping, 'Project ID') as string,
       event_number: this.getCellValue(row, columnMapping, 'Event Number') as string,
       reminders: this.parseReminders(this.getCellValue(row, columnMapping, 'Reminders') as string),
-      meet_link: this.getCellValue(row, columnMapping, 'Google Meet') as string,
-      ...this.parseAttendees(this.getCellValue(row, columnMapping, 'Attendees')),
+      meet_link: meetLink,
+      ...parsedAttendees,
       color: (this.getCellValue(row, columnMapping, 'Color') as string) || undefined,
       created_at: row.created_at,
       updated_at: row.updated_at,

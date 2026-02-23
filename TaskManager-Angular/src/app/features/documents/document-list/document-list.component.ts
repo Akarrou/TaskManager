@@ -9,7 +9,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, switchMap } from 'rxjs/operators';
+import { TrashService } from '../../../core/services/trash.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { DocumentService, Document, DocumentStorageFile } from '../services/document.service';
@@ -51,6 +52,7 @@ import {
 export class DocumentListComponent implements OnInit, OnDestroy {
   private documentService = inject(DocumentService);
   private databaseService = inject(DatabaseService);
+  private trashService = inject(TrashService);
   private router = inject(Router);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
@@ -477,36 +479,40 @@ export class DocumentListComponent implements OnInit, OnDestroy {
   }
 
   private performDelete(documentId: string, databaseIds: string[]): void {
-    // 1. Supprimer les bases de données en cascade (parallèle)
-    const deleteDatabases$ = databaseIds.length > 0
+    const doc = this.documentMap().get(documentId);
+    const documentTitle = doc?.title || 'Document sans titre';
+    const projectId = doc?.project_id ?? undefined;
+
+    // 1. Soft-delete embedded databases (set deleted_at + register in trash_items)
+    const softDeleteDatabases$ = databaseIds.length > 0
       ? forkJoin(
           databaseIds.map(dbId =>
-            this.databaseService.deleteDatabase(dbId).pipe(
+            this.databaseService.softDeleteDatabase(dbId).pipe(
+              switchMap((metadata) =>
+                this.trashService.softDeleteTrashOnly(
+                  'database',
+                  metadata.id,
+                  'document_databases',
+                  metadata.name || dbId,
+                  { databaseId: dbId, documentId },
+                )
+              ),
               catchError(err => {
-                console.error(`[deleteDocument] Erreur suppression base ${dbId}:`, err);
-                return of(false); // Continue même si une base échoue
+                console.error(`[deleteDocument] Erreur soft-delete base ${dbId}:`, err);
+                return of(null);
               })
             )
           )
         )
       : of([]);
 
-    // 2. Après suppression des bases, supprimer le document via store
-    deleteDatabases$.subscribe({
+    // 2. After soft-deleting databases, soft-delete the document via NgRx store
+    softDeleteDatabases$.subscribe({
       next: () => {
-        // Dispatch delete action to NgRx store
-        this.store.dispatch(DocumentActions.deleteDocument({ documentId }));
-
-        if (databaseIds.length > 0) {
-          this.snackBar.open(
-            `Document supprimé avec ${databaseIds.length} base(s) de données`,
-            'OK',
-            { duration: 5000 }
-          );
-        }
+        this.store.dispatch(DocumentActions.deleteDocument({ documentId, documentTitle, projectId }));
       },
       error: (err) => {
-        console.error('[deleteDocument] Erreur suppression bases:', err);
+        console.error('[deleteDocument] Erreur soft-delete bases:', err);
         this.snackBar.open('Erreur lors de la suppression des bases de données', 'OK', {
           duration: 5000
         });

@@ -13,6 +13,8 @@ export interface ConfirmDialogData {
   warningTitle?: string;
   /** Optional warning block message */
   warningMessage?: string;
+  /** If true, shows "Supprimer définitivement" instead of "Déplacer vers la corbeille" */
+  permanent?: boolean;
 }
 
 @Component({

@@ -23,10 +23,12 @@
     </div>
   }
 
-  <p class="text-sm text-gray-600">
-    <mat-icon class="text-base align-middle">info</mat-icon>
-    L'élément sera conservé 30 jours avant suppression définitive.
-  </p>
+  @if (!data.permanent) {
+    <p class="text-sm text-gray-600">
+      <mat-icon class="text-base align-middle">info</mat-icon>
+      L'élément sera conservé 30 jours avant suppression définitive.
+    </p>
+  }
 </mat-dialog-content>
 
 <mat-dialog-actions class="dialog-actions">
@@ -38,12 +40,23 @@
     Annuler
   </button>
 
-  <button
-    mat-raised-button
-    class="dialog-btn-danger"
-    [mat-dialog-close]="true"
-    cdkFocusInitial>
-    <mat-icon>delete</mat-icon>
-    Déplacer vers la corbeille
-  </button>
+  @if (data.permanent) {
+    <button
+      mat-raised-button
+      class="dialog-btn-danger"
+      [mat-dialog-close]="true"
+      cdkFocusInitial>
+      <mat-icon>delete_forever</mat-icon>
+      Supprimer définitivement
+    </button>
+  } @else {
+    <button
+      mat-raised-button
+      class="dialog-btn-danger"
+      [mat-dialog-close]="true"
+      cdkFocusInitial>
+      <mat-icon>delete</mat-icon>
+      Déplacer vers la corbeille
+    </button>
+  }
 </mat-dialog-actions>

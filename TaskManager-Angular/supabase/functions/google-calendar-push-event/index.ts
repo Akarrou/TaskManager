@@ -66,14 +66,19 @@ Deno.serve(async (req) => {
       .single()
 
     if (dbMeta) {
-      const { data: eventRow } = await supabaseAdmin
-        .from(dbMeta.table_name as string)
-        .select('id, deleted_at')
-        .eq('id', kodo_row_id)
-        .single()
+      try {
+        const { data: eventRow } = await supabaseAdmin
+          .from(dbMeta.table_name as string)
+          .select('id, deleted_at')
+          .eq('id', kodo_row_id)
+          .single()
 
-      if (!eventRow || eventRow.deleted_at !== null) {
-        return errorResponse(404, 'Event has been deleted and cannot be pushed to Google Calendar')
+        if (eventRow?.deleted_at !== null && eventRow?.deleted_at !== undefined) {
+          return errorResponse(404, 'Event has been deleted and cannot be pushed to Google Calendar')
+        }
+      } catch {
+        // Column deleted_at might not exist yet — proceed safely
+        console.warn('[push-event] Could not check deleted_at column, proceeding')
       }
     }
 
@@ -141,16 +146,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Add Google Meet conference data if requested
-    if (eventData.add_google_meet) {
-      googleEvent.conferenceData = {
-        createRequest: {
-          requestId: crypto.randomUUID(),
-          conferenceSolutionKey: { type: 'hangoutsMeet' },
-        },
-      }
-    }
-
     // Map attendees to Google Calendar format
     if (eventData.attendees && eventData.attendees.length > 0) {
       googleEvent.attendees = eventData.attendees.map(a => ({
@@ -158,7 +153,7 @@ Deno.serve(async (req) => {
         displayName: a.displayName ?? undefined,
         responseStatus: a.rsvpStatus === 'needsAction' ? 'needsAction' : (a.rsvpStatus ?? 'needsAction'),
         optional: a.isOptional ?? false,
-        organizer: a.isOrganizer ?? false,
+        // organizer is read-only in Google Calendar API — omitted
       }))
     }
 
@@ -188,26 +183,58 @@ Deno.serve(async (req) => {
       .maybeSingle()
 
     const calendarId = encodeURIComponent(syncConfig.google_calendar_id)
-    // Add conferenceDataVersion=1 when Meet is requested or already exists (to preserve it on updates)
-    const needsConferenceParam = eventData.add_google_meet || !!existingMapping
+
+    // Determine if we need to create a new Meet conference
+    if (eventData.add_google_meet) {
+      let needsCreateRequest = true
+
+      if (existingMapping) {
+        // Check if the Google event already has a conference
+        try {
+          const eventId = encodeURIComponent(existingMapping.google_event_id)
+          const checkResp = await fetch(
+            `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}?fields=conferenceData`,
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+          )
+          if (checkResp.ok) {
+            const existing = await checkResp.json()
+            if (existing.conferenceData?.entryPoints?.length > 0) {
+              needsCreateRequest = false // Already has a conference, don't recreate
+            }
+          }
+        } catch {
+          // If check fails, default to creating
+        }
+      }
+
+      if (needsCreateRequest) {
+        googleEvent.conferenceData = {
+          createRequest: {
+            requestId: crypto.randomUUID(),
+            conferenceSolutionKey: { type: 'hangoutsMeet' },
+          },
+        }
+      }
+    }
+
     const hasAttendees = eventData.attendees && eventData.attendees.length > 0
 
-    // Build query params
+    // Build query params — always include conferenceDataVersion=1 to preserve existing Meet data
     const queryParams = new URLSearchParams()
-    if (needsConferenceParam) queryParams.set('conferenceDataVersion', '1')
+    queryParams.set('conferenceDataVersion', '1')
     if (hasAttendees) queryParams.set('sendUpdates', 'all')
-    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : ''
+    const queryString = `?${queryParams.toString()}`
 
     let googleEventId: string
     let meetLink: string | null = null
 
     if (existingMapping) {
-      // Update existing Google event — don't send createRequest if Meet already exists
+      // PATCH (not PUT) to preserve fields we don't send (e.g. conferenceData)
       const eventId = encodeURIComponent(existingMapping.google_event_id)
       const response = await fetch(
         `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}${queryString}`,
         {
-          method: 'PUT',
+          method: 'PATCH',
           headers: {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
@@ -277,6 +304,24 @@ Deno.serve(async (req) => {
 
       if (mappingError) {
         console.error('Failed to create event mapping:', mappingError)
+      }
+    }
+
+    // If Meet was requested but link not yet available (async creation), refetch once immediately
+    if (eventData.add_google_meet && !meetLink) {
+      console.log('[push-event] Meet link not in initial response, refetching...')
+      try {
+        const refetchUrl = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${encodeURIComponent(googleEventId)}`
+        const refetchResp = await fetch(refetchUrl, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        })
+        if (refetchResp.ok) {
+          const refetched = await refetchResp.json()
+          meetLink = extractMeetLink(refetched)
+          console.log('[push-event] Refetched meet link:', meetLink ?? 'still pending')
+        }
+      } catch (refetchErr) {
+        console.error('[push-event] Failed to refetch Meet link:', refetchErr)
       }
     }
 

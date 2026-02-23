@@ -81,7 +81,8 @@
       "WebFetch(domain:iconify.design)",
       "WebFetch(domain:worldvectorlogo.com)",
       "Bash(docker exec:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "mcp__context7__query-docs"
     ],
     "deny": [
       "Read(./.env)",

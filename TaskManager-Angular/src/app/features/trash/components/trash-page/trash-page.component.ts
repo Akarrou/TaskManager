@@ -1,12 +1,35 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MatDialog } from '@angular/material/dialog';
 import { TrashStore } from '../../store/trash.store';
 import { TrashItem, TrashItemType } from '../../../../core/models/trash.model';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 interface FilterOption {
   label: string;
   value: TrashItemType | null;
   icon: string;
 }
+
+const ITEM_ICONS: Record<TrashItemType, string> = {
+  document: 'description',
+  project: 'folder',
+  event: 'event',
+  database: 'storage',
+  database_row: 'task_alt',
+  comment: 'comment',
+  spreadsheet: 'grid_on',
+};
+
+const ITEM_TYPE_LABELS: Record<TrashItemType, string> = {
+  document: 'Document',
+  project: 'Projet',
+  event: 'Événement',
+  database: 'Base de données',
+  database_row: 'Tâche',
+  comment: 'Commentaire',
+  spreadsheet: 'Tableur',
+};
 
 @Component({
   selector: 'app-trash-page',
@@ -17,6 +40,8 @@ interface FilterOption {
 })
 export class TrashPageComponent implements OnInit {
   readonly trashStore = inject(TrashStore);
+  private dialog = inject(MatDialog);
+  private destroyRef = inject(DestroyRef);
 
   readonly filterOptions: FilterOption[] = [
     { label: 'Tous', value: null, icon: 'select_all' },
@@ -25,6 +50,7 @@ export class TrashPageComponent implements OnInit {
     { label: 'Événements', value: 'event', icon: 'event' },
     { label: 'Bases de données', value: 'database', icon: 'storage' },
     { label: 'Tâches', value: 'database_row', icon: 'task_alt' },
+    { label: 'Tableurs', value: 'spreadsheet', icon: 'grid_on' },
     { label: 'Commentaires', value: 'comment', icon: 'comment' },
   ];
 
@@ -41,37 +67,57 @@ export class TrashPageComponent implements OnInit {
   }
 
   onPermanentDelete(item: TrashItem): void {
-    this.trashStore.permanentDeleteItem(item);
+    const dialogRef = this.dialog.open<ConfirmDialogComponent, ConfirmDialogData, boolean>(
+      ConfirmDialogComponent,
+      {
+        width: '500px',
+        data: {
+          title: 'Supprimer définitivement',
+          message: `Voulez-vous supprimer définitivement "${item.display_name}" ? Cette action est irréversible.`,
+          permanent: true,
+        },
+      },
+    );
+
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((confirmed) => {
+      if (confirmed) {
+        this.trashStore.permanentDeleteItem(item);
+      }
+    });
   }
 
   onEmptyTrash(): void {
-    this.trashStore.emptyTrash();
+    const dialogRef = this.dialog.open<ConfirmDialogComponent, ConfirmDialogData, boolean>(
+      ConfirmDialogComponent,
+      {
+        width: '500px',
+        data: {
+          title: 'Vider la corbeille',
+          message: `Voulez-vous supprimer définitivement les ${this.trashStore.items().length} éléments de la corbeille ?`,
+          warningTitle: 'Action irréversible',
+          warningMessage: 'Tous les éléments seront supprimés définitivement et ne pourront pas être récupérés.',
+          permanent: true,
+        },
+      },
+    );
+
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((confirmed) => {
+      if (confirmed) {
+        this.trashStore.emptyTrash();
+      }
+    });
+  }
+
+  isProcessing(itemId: string): boolean {
+    return this.trashStore.processingIds().includes(itemId);
   }
 
   getItemIcon(itemType: TrashItemType): string {
-    const icons: Record<TrashItemType, string> = {
-      document: 'description',
-      project: 'folder',
-      event: 'event',
-      database: 'storage',
-      database_row: 'task_alt',
-      comment: 'comment',
-      spreadsheet: 'grid_on',
-    };
-    return icons[itemType] || 'delete';
+    return ITEM_ICONS[itemType] || 'delete';
   }
 
   getItemTypeLabel(itemType: TrashItemType): string {
-    const labels: Record<TrashItemType, string> = {
-      document: 'Document',
-      project: 'Projet',
-      event: 'Événement',
-      database: 'Base de données',
-      database_row: 'Tâche',
-      comment: 'Commentaire',
-      spreadsheet: 'Tableur',
-    };
-    return labels[itemType] || itemType;
+    return ITEM_TYPE_LABELS[itemType] || itemType;
   }
 
   getRelativeTime(dateStr: string): string {

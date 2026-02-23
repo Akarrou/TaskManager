@@ -52,7 +52,7 @@ export const updateProjectFailure = createAction(
 
 export const deleteProject = createAction(
     '[Projects Page] Delete Project',
-    props<{ projectId: string }>()
+    props<{ projectId: string; projectName: string }>()
 );
 
 export const deleteProjectSuccess = createAction(

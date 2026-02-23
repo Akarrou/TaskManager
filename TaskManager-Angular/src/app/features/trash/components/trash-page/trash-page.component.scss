@@ -206,6 +206,15 @@
     background: rgba(v.$primary-color, 0.03);
   }
 
+  &--processing {
+    opacity: 0.6;
+    pointer-events: none;
+
+    .c-trash-item__actions {
+      opacity: 1;
+    }
+  }
+
   &__icon {
     display: flex;
     align-items: center;

@@ -9,7 +9,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatDialog } from '@angular/material/dialog';
-import { Subject, takeUntil, debounceTime, switchMap } from 'rxjs';
+import { Subject, forkJoin, of, takeUntil, debounceTime, switchMap } from 'rxjs';
 import {
   DatabaseConfig,
   DatabaseRow,
@@ -565,25 +565,23 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
           this.rows.update((rows) => rows.filter((row) => !rowIds.includes(row.id)));
           this.totalCount.update((count: number) => count - rowIds.length);
 
-          // Register each row in trash_items
-          for (const rowId of rowIds) {
+          // Register all rows in trash_items via batched forkJoin
+          const nameCol = findNameColumn(dbConfig.columns);
+          const trashInserts$ = rowIds.map(rowId => {
             const row = deletedRows.find(r => r.id === rowId);
-            const nameCol = findNameColumn(dbConfig.columns);
             const displayName = (nameCol && row ? String(row.cells[nameCol.id] || '') : '') || `Ligne ${rowId.slice(0, 8)}`;
+            return this.trashService.softDeleteTrashOnly(
+              'database_row',
+              rowId,
+              tableName,
+              displayName,
+              { databaseName, databaseId: this.databaseId },
+            );
+          });
 
-            this.trashService
-              .softDeleteTrashOnly(
-                'database_row',
-                rowId,
-                tableName,
-                displayName,
-                { databaseName, databaseId: this.databaseId },
-              )
-              .pipe(takeUntil(this.destroy$))
-              .subscribe();
-          }
-
-          this.trashStore.loadTrashCount();
+          (trashInserts$.length > 0 ? forkJoin(trashInserts$) : of([]))
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(() => this.trashStore.loadTrashCount());
 
           const snackRef = this.snackBar.open(
             `${rowIds.length} ligne(s) déplacée(s) dans la corbeille`,

@@ -55,6 +55,9 @@ import { DatabaseTableRendererDirective } from '../directives/database-table-ren
 import { DatabaseService } from '../services/database.service';
 import { DEFAULT_DATABASE_CONFIG } from '../models/database.model';
 import { StorageService } from '../../../core/services/storage.service';
+import { Store } from '@ngrx/store';
+import { AppState } from '../../../app.state';
+import * as DocumentActions from '../store/document.actions';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { DeleteChildDocumentDialogComponent, DeleteChildDocumentDialogData } from '../components/delete-child-document-dialog/delete-child-document-dialog.component';
 import { BlockIdExtension, extractBlockIdsFromContent, setCommentBadgeClickHandler } from '../extensions/block-id.extension';
@@ -87,6 +90,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   private databaseService = inject(DatabaseService);
   private storageService = inject(StorageService);
   private blockCommentService = inject(BlockCommentService);
+  private store = inject(Store<AppState>);
   private pageId = crypto.randomUUID();
 
   // Track document file URLs for cleanup when links are deleted
@@ -649,17 +653,11 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       } as DeleteChildDocumentDialogData
     });
 
-    dialogRef.afterClosed().subscribe(async (confirmed: boolean) => {
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
       if (confirmed) {
-        console.log('Deleting child document cascade:', documentId);
-        const success = await this.documentService.deleteDocumentCascade(documentId);
-        if (success) {
-          console.log('Successfully deleted document and descendants:', documentId);
-        } else {
-          console.error('Failed to delete document cascade:', documentId);
-        }
-      } else {
-        console.log('Child document deletion cancelled:', documentId);
+        const documentTitle = docInfo.title || 'Sans titre';
+        const projectId = this.documentState().project_id ?? undefined;
+        this.store.dispatch(DocumentActions.deleteDocument({ documentId, documentTitle, projectId }));
       }
     });
   }

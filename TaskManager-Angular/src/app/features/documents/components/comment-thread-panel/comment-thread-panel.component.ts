@@ -1,5 +1,6 @@
 import {
   Component,
+  DestroyRef,
   Input,
   Output,
   EventEmitter,
@@ -10,6 +11,7 @@ import {
   ElementRef,
   ViewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -20,7 +22,6 @@ import { BlockCommentService } from '../../services/block-comment.service';
 import { TrashService } from '../../../../core/services/trash.service';
 import { TrashStore } from '../../../trash/store/trash.store';
 import { CommentItemComponent } from '../comment-item/comment-item.component';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-comment-thread-panel',
@@ -51,6 +52,7 @@ export class CommentThreadPanelComponent implements OnChanges {
   private commentService = inject(BlockCommentService);
   private trashService = inject(TrashService);
   private trashStore = inject(TrashStore);
+  private destroyRef = inject(DestroyRef);
 
   comments = signal<BlockComment[]>([]);
   isLoading = signal(false);
@@ -142,7 +144,7 @@ export class CommentThreadPanelComponent implements OnChanges {
       'block_comments',
       displayName,
       this.documentId ? { documentId: this.documentId } : undefined,
-    ).subscribe({
+    ).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.comments.update((list) => list.filter((c) => c.id !== commentId));
         this.commentDeleted.emit(commentId);

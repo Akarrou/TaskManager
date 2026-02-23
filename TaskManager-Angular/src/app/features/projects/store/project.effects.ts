@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType, OnInitEffects } from '@ngrx/effects';
 import { of } from 'rxjs';
-import { catchError, map, mergeMap, tap, filter, switchMap } from 'rxjs/operators';
+import { catchError, map, mergeMap, tap, filter } from 'rxjs/operators';
 import * as ProjectActions from './project.actions';
 import { ProjectService } from '../services/project.service';
 import { TrashService } from '../../../core/services/trash.service';
@@ -89,25 +89,18 @@ export class ProjectEffects implements OnInitEffects {
     deleteProject$ = createEffect(() =>
         this.actions$.pipe(
             ofType(ProjectActions.deleteProject),
-            mergeMap(({ projectId }) =>
-                // Get project info for trash record, then soft delete
-                this.projectService.getProjects().pipe(
-                    switchMap((projects) => {
-                        const project = projects.find(p => p.id === projectId);
-                        const displayName = project?.name || 'Projet sans nom';
-                        return this.trashService.softDelete(
-                            'project',
-                            projectId,
-                            'projects',
-                            displayName,
-                        ).pipe(
-                            tap(() => this.trashStore.loadTrashCount()),
-                            map(() => ProjectActions.deleteProjectSuccess({ projectId })),
-                        );
-                    }),
+            mergeMap(({ projectId, projectName }) =>
+                this.trashService.softDelete(
+                    'project',
+                    projectId,
+                    'projects',
+                    projectName || 'Projet sans nom',
+                ).pipe(
+                    tap(() => this.trashStore.loadTrashCount()),
+                    map(() => ProjectActions.deleteProjectSuccess({ projectId })),
                     catchError((error) =>
                         of(ProjectActions.deleteProjectFailure({ error }))
-                    )
+                    ),
                 )
             )
         )

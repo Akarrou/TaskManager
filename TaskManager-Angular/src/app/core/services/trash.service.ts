@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from './supabase';
 import { from, Observable, throwError, of } from 'rxjs';
-import { map, catchError, switchMap } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
 import { TrashItem, TrashItemType } from '../models/trash.model';
 
 @Injectable({
@@ -15,7 +15,8 @@ export class TrashService {
   }
 
   /**
-   * Soft delete an item: sets deleted_at on original table + inserts into trash_items
+   * Atomic soft delete via RPC: sets deleted_at on original table + inserts into trash_items
+   * in a single database transaction. Prevents orphaned items.
    */
   softDelete(
     itemType: TrashItemType,
@@ -24,54 +25,24 @@ export class TrashService {
     displayName: string,
     parentInfo?: Record<string, string>,
   ): Observable<TrashItem> {
-    const now = new Date().toISOString();
-
-    // 0. Get current user ID for RLS compliance
-    return from(this.client.auth.getUser()).pipe(
-      switchMap(({ data: authData, error: authError }) => {
-        if (authError || !authData.user) {
-          return throwError(() => new Error('User not authenticated'));
-        }
-        const userId = authData.user.id;
-
-        // 1. Update deleted_at on the original table
-        return from(
-          this.client
-            .from(tableName)
-            .update({ deleted_at: now })
-            .eq('id', itemId),
-        ).pipe(
-          switchMap(({ error: updateError }) => {
-            if (updateError) {
-              console.error('[TrashService.softDelete] Update error:', updateError);
-              return throwError(() => new Error(`Failed to mark item as deleted: ${updateError.message}`));
-            }
-
-            // 2. Insert into trash_items
-            return from(
-              this.client
-                .from('trash_items')
-                .insert({
-                  item_type: itemType,
-                  item_id: itemId,
-                  item_table: tableName,
-                  display_name: displayName,
-                  parent_info: parentInfo ?? null,
-                  user_id: userId,
-                  deleted_at: now,
-                })
-                .select()
-                .single(),
-            );
-          }),
-        );
+    return from(
+      this.client.rpc('soft_delete_item', {
+        p_item_type: itemType,
+        p_item_id: itemId,
+        p_item_table: tableName,
+        p_display_name: displayName,
+        p_parent_info: parentInfo ?? null,
       }),
+    ).pipe(
       map(({ data, error }) => {
         if (error) {
-          console.error('[TrashService.softDelete] Insert error:', error);
+          console.error('[TrashService.softDelete] RPC error:', error);
           throw error;
         }
-        return data as TrashItem;
+        if (!data?.success) {
+          throw new Error('Soft delete failed');
+        }
+        return data.trash_item as TrashItem;
       }),
       catchError((err) => {
         console.error('[TrashService.softDelete] Error:', err);
@@ -81,8 +52,8 @@ export class TrashService {
   }
 
   /**
-   * Insert into trash_items only (deleted_at already set by another service).
-   * Used when the caller has already set deleted_at on the original table.
+   * Insert into trash_items only via RPC (deleted_at already set by another service).
+   * Uses auth.uid() server-side to avoid N client-side getUser() calls.
    */
   softDeleteTrashOnly(
     itemType: TrashItemType,
@@ -91,36 +62,24 @@ export class TrashService {
     displayName: string,
     parentInfo?: Record<string, string>,
   ): Observable<TrashItem> {
-    const now = new Date().toISOString();
-
-    return from(this.client.auth.getUser()).pipe(
-      switchMap(({ data: authData, error: authError }) => {
-        if (authError || !authData.user) {
-          return throwError(() => new Error('User not authenticated'));
-        }
-
-        return from(
-          this.client
-            .from('trash_items')
-            .insert({
-              item_type: itemType,
-              item_id: itemId,
-              item_table: tableName,
-              display_name: displayName,
-              parent_info: parentInfo ?? null,
-              user_id: authData.user.id,
-              deleted_at: now,
-            })
-            .select()
-            .single(),
-        );
+    return from(
+      this.client.rpc('soft_delete_trash_only', {
+        p_item_type: itemType,
+        p_item_id: itemId,
+        p_item_table: tableName,
+        p_display_name: displayName,
+        p_parent_info: parentInfo ?? null,
       }),
+    ).pipe(
       map(({ data, error }) => {
         if (error) {
-          console.error('[TrashService.softDeleteTrashOnly] Insert error:', error);
+          console.error('[TrashService.softDeleteTrashOnly] RPC error:', error);
           throw error;
         }
-        return data as TrashItem;
+        if (!data?.success) {
+          throw new Error('Soft delete trash only failed');
+        }
+        return data.trash_item as TrashItem;
       }),
       catchError((err) => {
         console.error('[TrashService.softDeleteTrashOnly] Error:', err);
@@ -130,34 +89,21 @@ export class TrashService {
   }
 
   /**
-   * Restore an item from trash: clears deleted_at on original table + removes from trash_items
+   * Atomic restore via RPC: clears deleted_at on original table + removes from trash_items
    */
   restore(trashItem: TrashItem): Observable<boolean> {
-    // 1. Clear deleted_at on original table
     return from(
-      this.client
-        .from(trashItem.item_table)
-        .update({ deleted_at: null })
-        .eq('id', trashItem.item_id),
-    ).pipe(
-      switchMap(({ error: updateError }) => {
-        if (updateError) {
-          console.error('[TrashService.restore] Update error:', updateError);
-          return throwError(() => new Error(`Failed to restore item: ${updateError.message}`));
-        }
-
-        // 2. Remove from trash_items
-        return from(
-          this.client
-            .from('trash_items')
-            .delete()
-            .eq('id', trashItem.id),
-        );
+      this.client.rpc('restore_item', {
+        p_trash_item_id: trashItem.id,
       }),
-      map(({ error }) => {
+    ).pipe(
+      map(({ data, error }) => {
         if (error) {
-          console.error('[TrashService.restore] Delete error:', error);
+          console.error('[TrashService.restore] RPC error:', error);
           throw error;
+        }
+        if (!data?.success) {
+          throw new Error('Restore failed');
         }
         return true;
       }),
@@ -169,34 +115,22 @@ export class TrashService {
   }
 
   /**
-   * Permanently delete an item from trash (hard delete from original table + trash_items)
+   * Atomic permanent delete via RPC (hard delete from original table + trash_items)
+   * For projects, cascades to child documents and embedded items.
    */
   permanentDelete(trashItem: TrashItem): Observable<boolean> {
-    // 1. Hard delete from original table
     return from(
-      this.client
-        .from(trashItem.item_table)
-        .delete()
-        .eq('id', trashItem.item_id),
-    ).pipe(
-      switchMap(({ error: deleteError }) => {
-        if (deleteError) {
-          console.error('[TrashService.permanentDelete] Delete error:', deleteError);
-          // Continue to clean up trash_items even if original deletion fails
-        }
-
-        // 2. Remove from trash_items
-        return from(
-          this.client
-            .from('trash_items')
-            .delete()
-            .eq('id', trashItem.id),
-        );
+      this.client.rpc('permanent_delete_item', {
+        p_trash_item_id: trashItem.id,
       }),
-      map(({ error }) => {
+    ).pipe(
+      map(({ data, error }) => {
         if (error) {
-          console.error('[TrashService.permanentDelete] Trash cleanup error:', error);
+          console.error('[TrashService.permanentDelete] RPC error:', error);
           throw error;
+        }
+        if (!data?.success) {
+          throw new Error('Permanent delete failed');
         }
         return true;
       }),
@@ -256,44 +190,46 @@ export class TrashService {
   }
 
   /**
-   * Empty all trash items (permanent delete for all)
+   * Empty all trash items via atomic RPC (permanent delete for all)
    */
   emptyTrash(): Observable<boolean> {
-    return this.getTrashItems().pipe(
-      switchMap((items) => {
-        if (items.length === 0) return of(true);
-
-        // Delete from original tables first
-        const deletePromises = items.map((item) =>
-          this.client
-            .from(item.item_table)
-            .delete()
-            .eq('id', item.item_id),
-        );
-
-        return from(Promise.all(deletePromises)).pipe(
-          switchMap(() =>
-            // Then clear all trash_items
-            from(
-              this.client
-                .from('trash_items')
-                .delete()
-                .neq('id', '00000000-0000-0000-0000-000000000000'), // delete all
-            ),
-          ),
-          map(({ error }) => {
-            if (error) {
-              console.error('[TrashService.emptyTrash] Error:', error);
-              throw error;
-            }
-            return true;
-          }),
-        );
+    return from(
+      this.client.rpc('empty_user_trash'),
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) {
+          console.error('[TrashService.emptyTrash] RPC error:', error);
+          throw error;
+        }
+        if (!data?.success) {
+          throw new Error('Failed to empty trash');
+        }
+        return true;
       }),
       catchError((err) => {
         console.error('[TrashService.emptyTrash] Error:', err);
         return throwError(() => new Error(`Failed to empty trash: ${err.message}`));
       }),
+    );
+  }
+
+  /**
+   * Check if a parent document exists and is not soft-deleted.
+   * Used before restoring embedded items (databases/spreadsheets).
+   */
+  checkParentDocument(documentId: string): Observable<{ exists: boolean; deleted: boolean }> {
+    return from(
+      this.client
+        .from('documents')
+        .select('id, deleted_at')
+        .eq('id', documentId)
+        .maybeSingle(),
+    ).pipe(
+      map(({ data, error }) => {
+        if (error || !data) return { exists: false, deleted: false };
+        return { exists: true, deleted: data.deleted_at !== null };
+      }),
+      catchError(() => of({ exists: false, deleted: false })),
     );
   }
 }
