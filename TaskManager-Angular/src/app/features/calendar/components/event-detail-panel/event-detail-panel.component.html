@@ -92,6 +92,46 @@
         </div>
       }
 
+      <!-- Attendees -->
+      @if (event.attendees && event.attendees.length > 0) {
+        <mat-divider></mat-divider>
+        <div class="panel-section panel-section--top">
+          <mat-icon class="section-icon">group</mat-icon>
+          <div class="section-content">
+            <span class="section-label">Invités ({{ event.attendees.length }})</span>
+            <div class="attendees-detail-list">
+              @for (attendee of event.attendees; track attendee.email) {
+                <div class="attendee-detail-row">
+                  <div class="attendee-detail-avatar" [class.attendee-detail-avatar--organizer]="attendee.isOrganizer">
+                    {{ getInitials(attendee) }}
+                  </div>
+                  <div class="attendee-detail-info">
+                    <span class="attendee-detail-name">
+                      {{ attendee.displayName || attendee.email }}
+                      @if (attendee.isOrganizer) {
+                        <span class="attendee-detail-badge">Organisateur</span>
+                      }
+                    </span>
+                    @if (attendee.displayName) {
+                      <span class="attendee-detail-email">{{ attendee.email }}</span>
+                    }
+                  </div>
+                  <mat-icon
+                    class="attendee-detail-rsvp"
+                    [class.rsvp--accepted]="attendee.rsvpStatus === 'accepted'"
+                    [class.rsvp--declined]="attendee.rsvpStatus === 'declined'"
+                    [class.rsvp--tentative]="attendee.rsvpStatus === 'tentative'"
+                    [class.rsvp--needsAction]="attendee.rsvpStatus === 'needsAction'"
+                    [matTooltip]="getRsvpLabel(attendee.rsvpStatus)">
+                    {{ getRsvpIcon(attendee.rsvpStatus) }}
+                  </mat-icon>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
       <!-- Description -->
       @if (event.description) {
         <mat-divider></mat-divider>

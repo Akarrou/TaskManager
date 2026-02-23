@@ -11,3 +11,4 @@ export { registerSpreadsheetTools } from './spreadsheets.js';
 export { registerSnapshotTools } from './snapshots.js';
 export { registerTiptapDocsTools } from './tiptap-docs.js';
 export { registerCalendarDocsTools } from './calendar-docs.js';
+export { registerTrashTools } from './trash.js';

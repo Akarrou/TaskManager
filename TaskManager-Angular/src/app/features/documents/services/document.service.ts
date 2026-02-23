@@ -66,6 +66,7 @@ export class DocumentService {
       this.client
         .from('documents')
         .select('*')
+        .is('deleted_at', null)
         .order('updated_at', { ascending: false })
     ).pipe(
       map(response => {
@@ -81,6 +82,7 @@ export class DocumentService {
         .from('documents')
         .select('*')
         .eq('id', id)
+        .is('deleted_at', null)
         .single()
     ).pipe(
       map(response => {
@@ -212,7 +214,8 @@ export class DocumentService {
       const { data, error } = await this.client
         .from('documents')
         .select('id')
-        .eq('parent_id', currentId);
+        .eq('parent_id', currentId)
+        .is('deleted_at', null);
 
       if (error) {
         console.error(`Error fetching children for document ${currentId}:`, error);
@@ -475,6 +478,7 @@ export class DocumentService {
       .from('documents')
       .select('id, title, parent_id, database_id')
       .eq('id', documentId)
+      .is('deleted_at', null)
       .single();
 
     if (currentDocResult.error || !currentDocResult.data) {
@@ -497,6 +501,7 @@ export class DocumentService {
           .from('documents')
           .select('id, title')
           .eq('id', databaseResult.data.document_id)
+          .is('deleted_at', null)
           .single();
 
         if (!parentDocResult.error && parentDocResult.data) {
@@ -524,6 +529,7 @@ export class DocumentService {
           .from('documents')
           .select('id, title, parent_id')
           .eq('id', currentId)
+          .is('deleted_at', null)
           .single();
 
         if (result.error || !result.data) break;
@@ -749,6 +755,7 @@ export class DocumentService {
         .from('documents')
         .select('*')
         .eq('project_id', projectId)
+        .is('deleted_at', null)
         .order('updated_at', { ascending: false })
     ).pipe(
       map(response => {

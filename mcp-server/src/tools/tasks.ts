@@ -13,14 +13,16 @@ async function getUserTaskDatabases(supabase: ReturnType<typeof getSupabaseClien
   const { data: databases, error } = await supabase
     .from('document_databases')
     .select('*, documents!inner(user_id)')
-    .eq('documents.user_id', userId);
+    .eq('documents.user_id', userId)
+    .is('deleted_at', null);
 
   if (error) {
     // Fallback: get standalone databases (no document_id) - these might be user's own
     const { data: standaloneDbs } = await supabase
       .from('document_databases')
       .select('*')
-      .is('document_id', null);
+      .is('document_id', null)
+      .is('deleted_at', null);
 
     return (standaloneDbs || []).filter((db: Record<string, unknown>) => {
       const config = db.config as { type?: string } | undefined;
@@ -98,6 +100,7 @@ export function registerTaskTools(server: McpServer): void {
           let query = supabase
             .from(tableName)
             .select('*')
+            .is('deleted_at', null)
             .limit(limit);
 
           const { data: rows, error: rowError } = await query;
@@ -170,7 +173,7 @@ export function registerTaskTools(server: McpServer): void {
 
         for (const db of taskDatabases) {
           const tableName = `database_${(db.database_id as string).replace('db-', '').replace(/-/g, '_')}`;
-          const { data: rows } = await supabase.from(tableName).select('*');
+          const { data: rows } = await supabase.from(tableName).select('*').is('deleted_at', null);
 
           for (const row of rows || []) {
             const task = normalizeRowToTask(row, db);
@@ -615,6 +618,7 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
           .from(tableName)
           .select('*')
           .eq('id', row_id)
+          .is('deleted_at', null)
           .single();
 
         if (error || !row) {
@@ -679,6 +683,7 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
             .from(tableName)
             .select('*')
             .eq(colName, task_number)
+            .is('deleted_at', null)
             .maybeSingle();
 
           if (error || !row) continue;
@@ -695,6 +700,7 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
               .eq('database_id', db.database_id as string)
               .eq('database_row_id', row.id as string)
               .eq('user_id', userId)
+              .is('deleted_at', null)
               .maybeSingle();
             document = doc;
           }
@@ -749,6 +755,7 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
           .eq('database_id', database_id)
           .eq('database_row_id', row_id)
           .eq('user_id', userId)
+          .is('deleted_at', null)
           .maybeSingle();
 
         if (error) {
@@ -911,14 +918,14 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
   );
 
   // =========================================================================
-  // delete_task - Delete a task
+  // delete_task - Soft delete a task (move to trash)
   // =========================================================================
   server.tool(
     'delete_task',
-    `Permanently delete a task from a database. This removes the row from the task database. The deletion is immediate and cannot be undone. Returns confirmation with the deleted task's information. Any links to documents (via link_task_to_document) are also removed. Consider using update_task_status to set status to "cancelled" instead if you want to preserve history.`,
+    `Soft delete a task (move to trash). Sets deleted_at and registers in trash_items. The task can be restored from trash within 30 days. Returns confirmation with the deleted task's information. Consider using update_task_status to set status to "cancelled" instead if you want to keep the task visible. Related tools: restore_from_trash (undo).`,
     {
       database_id: z.string().describe('The database ID containing the task to delete. Format: db-uuid.'),
-      row_id: z.string().uuid().describe('The task/row ID to permanently delete.'),
+      row_id: z.string().uuid().describe('The task/row ID to soft delete.'),
     },
     async ({ database_id, row_id }) => {
       try {
@@ -948,8 +955,9 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
         }
 
         const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
+        const databaseName = (dbMeta.name as string) || database_id;
 
-        // Get task info before deleting
+        // Get task info before soft-deleting
         const { data: taskRow } = await supabase
           .from(tableName)
           .select('*')
@@ -963,29 +971,44 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
             entityId: row_id,
             tableName,
             toolName: 'delete_task',
-            operation: 'delete',
+            operation: 'soft_delete',
             data: taskRow,
             userId,
           });
           snapshotToken = snapshot.token;
         }
 
+        const now = new Date().toISOString();
+
+        // Soft delete: set deleted_at
         const { error } = await supabase
           .from(tableName)
-          .delete()
+          .update({ deleted_at: now })
           .eq('id', row_id);
 
         if (error) {
           return {
-            content: [{ type: 'text', text: `Error deleting task: ${error.message}` }],
+            content: [{ type: 'text', text: `Error soft-deleting task: ${error.message}` }],
             isError: true,
           };
         }
 
+        // Register in trash_items
         const task = taskRow ? normalizeRowToTask(taskRow, dbMeta) : { id: row_id };
+        const displayName = (task as Record<string, unknown>).title as string || `Task ${row_id.slice(0, 8)}`;
+
+        await supabase.from('trash_items').insert({
+          item_type: 'database_row',
+          item_id: row_id,
+          item_table: tableName,
+          display_name: displayName,
+          parent_info: { databaseName, databaseId: database_id },
+          user_id: userId,
+          deleted_at: now,
+        });
 
         return {
-          content: [{ type: 'text', text: `Task deleted (snapshot: ${snapshotToken}):\n${JSON.stringify(task, null, 2)}` }],
+          content: [{ type: 'text', text: `Task moved to trash (snapshot: ${snapshotToken}):\n${JSON.stringify(task, null, 2)}` }],
         };
       } catch (err) {
         return {

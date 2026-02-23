@@ -159,6 +159,7 @@ export class DatabaseService {
         .from('document_databases')
         .select('*')
         .eq('database_id', databaseId)
+        .is('deleted_at', null)
         .maybeSingle()
     ).pipe(
       map(response => {
@@ -183,6 +184,7 @@ export class DatabaseService {
       this.client
         .from('document_databases')
         .select('*')
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
     ).pipe(
       map(response => {
@@ -205,6 +207,7 @@ export class DatabaseService {
         .from('document_databases')
         .select('document_id')
         .eq('database_id', databaseId)
+        .is('deleted_at', null)
         .maybeSingle()
     ).pipe(
       map(response => {
@@ -223,6 +226,7 @@ export class DatabaseService {
         .from('document_databases')
         .select('*')
         .eq('document_id', documentId)
+        .is('deleted_at', null)
         .order('created_at', { ascending: true })
     ).pipe(
       map(response => {
@@ -321,6 +325,134 @@ export class DatabaseService {
     );
   }
 
+  /**
+   * Soft delete a database: sets deleted_at on document_databases.
+   * Returns the metadata (with UUID id) for trash registration.
+   */
+  softDeleteDatabase(databaseId: string): Observable<DocumentDatabase> {
+    const now = new Date().toISOString();
+    return from(
+      this.client
+        .from('document_databases')
+        .update({ deleted_at: now })
+        .eq('database_id', databaseId)
+        .select()
+        .single()
+    ).pipe(
+      map(({ data, error }: { data: any; error: any }) => {
+        if (error) {
+          console.error('[softDeleteDatabase] Error:', error);
+          throw error;
+        }
+        return data as DocumentDatabase;
+      }),
+      catchError((err: any) => {
+        console.error('[softDeleteDatabase] Error:', err);
+        return throwError(() => new Error(`Failed to soft delete database: ${err.message}`));
+      })
+    );
+  }
+
+  /**
+   * Restore a soft-deleted database: clears deleted_at + removes trash_items entry.
+   */
+  restoreDatabase(databaseUuid: string): Observable<boolean> {
+    return from(
+      this.client
+        .from('document_databases')
+        .update({ deleted_at: null })
+        .eq('id', databaseUuid)
+    ).pipe(
+      switchMap(({ error }) => {
+        if (error) throw error;
+        return from(
+          this.client
+            .from('trash_items')
+            .delete()
+            .eq('item_id', databaseUuid)
+        );
+      }),
+      map(({ error }) => {
+        if (error) throw error;
+        return true;
+      }),
+      catchError((err: any) => {
+        console.error('[restoreDatabase] Error:', err);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  /**
+   * Restore a database node into its parent document's TipTap content.
+   * Reads the database metadata, builds a databaseTable node, and appends it to the document.
+   */
+  restoreDatabaseToDocument(databaseUuid: string, documentId: string): Observable<boolean> {
+    // 1. Get the database metadata (already restored, deleted_at = null)
+    return from(
+      this.client
+        .from('document_databases')
+        .select('*')
+        .eq('id', databaseUuid)
+        .single()
+    ).pipe(
+      switchMap(({ data: dbMeta, error: metaError }) => {
+        if (metaError || !dbMeta) {
+          return throwError(() => metaError || new Error('Database not found'));
+        }
+
+        // 2. Get the document content
+        return from(
+          this.client
+            .from('documents')
+            .select('content')
+            .eq('id', documentId)
+            .single()
+        ).pipe(
+          switchMap(({ data: doc, error: docError }) => {
+            if (docError || !doc) {
+              return throwError(() => docError || new Error('Document not found'));
+            }
+
+            // 3. Build the databaseTable TipTap node
+            const databaseNode = {
+              type: 'databaseTable',
+              attrs: {
+                databaseId: dbMeta.database_id,
+                config: dbMeta.config,
+                storageMode: 'supabase',
+                isLinked: false,
+              },
+            };
+
+            // 4. Insert the node at the end of the document content
+            const content = doc.content || { type: 'doc', content: [] };
+            if (!content.content) {
+              content.content = [];
+            }
+            content.content.push(databaseNode);
+
+            // 5. Save the updated document
+            return from(
+              this.client
+                .from('documents')
+                .update({ content, updated_at: new Date().toISOString() })
+                .eq('id', documentId)
+            );
+          }),
+        );
+      }),
+      map(({ error }: { error: any }) => {
+        if (error) throw error;
+        return true;
+      }),
+      catchError((err: any) => {
+        console.error('[restoreDatabaseToDocument] Error:', err);
+        return throwError(() => err);
+      }),
+    );
+  }
+
   // =====================================================================
   // Row Operations
   // =====================================================================
@@ -341,6 +473,7 @@ export class DatabaseService {
         let query = this.client
           .from(tableName)
           .select('*')
+          .is('deleted_at', null)
           .order(sortColumn, {
             ascending: params.sortOrder !== 'desc',
           });
@@ -385,6 +518,7 @@ export class DatabaseService {
         let query = this.client
           .from(tableName)
           .select('*', { count: 'exact' })
+          .is('deleted_at', null)
           .order(sortColumn, {
             ascending: params.sortOrder !== 'desc',
           });
@@ -568,7 +702,7 @@ export class DatabaseService {
       switchMap(metadata => {
         const tableName = metadata.table_name;
         return from(
-          this.client.from(tableName).select('*').eq('id', rowId).maybeSingle()
+          this.client.from(tableName).select('*').eq('id', rowId).is('deleted_at', null).maybeSingle()
         );
       }),
       map(response => {
@@ -584,15 +718,20 @@ export class DatabaseService {
   }
 
   /**
-   * Delete rows
+   * Soft delete rows (sets deleted_at instead of hard delete)
    */
   deleteRows(request: DeleteRowsRequest): Observable<boolean> {
+    const now = new Date().toISOString();
+
     return this.getDatabaseMetadata(request.databaseId).pipe(
       switchMap(metadata => {
         const tableName = metadata.table_name;
 
         return from(
-          this.client.from(tableName).delete().in('id', request.rowIds)
+          this.client
+            .from(tableName)
+            .update({ deleted_at: now })
+            .in('id', request.rowIds)
         );
       }),
       map(response => {
@@ -600,7 +739,44 @@ export class DatabaseService {
         return true;
       }),
       catchError(error => {
-        console.error('Failed to delete rows:', error);
+        console.error('Failed to soft-delete rows:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Restore soft-deleted rows (clear deleted_at)
+   */
+  restoreRows(databaseId: string, rowIds: string[]): Observable<boolean> {
+    return this.getDatabaseMetadata(databaseId).pipe(
+      switchMap(metadata => {
+        const tableName = metadata.table_name;
+
+        return from(
+          this.client
+            .from(tableName)
+            .update({ deleted_at: null })
+            .in('id', rowIds)
+        );
+      }),
+      switchMap(response => {
+        if (response.error) throw response.error;
+
+        // Also clean up trash_items entries
+        return from(
+          this.client
+            .from('trash_items')
+            .delete()
+            .in('item_id', rowIds)
+        );
+      }),
+      map(response => {
+        if (response.error) throw response.error;
+        return true;
+      }),
+      catchError(error => {
+        console.error('Failed to restore rows:', error);
         return throwError(() => error);
       })
     );
@@ -702,6 +878,7 @@ export class DatabaseService {
         .select('*')
         .eq('database_id', databaseId)
         .eq('database_row_id', rowId)
+        .is('deleted_at', null)
         .maybeSingle()
     ).pipe(
       map(response => {

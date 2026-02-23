@@ -61,6 +61,17 @@
         }
       </div>
 
+      <!-- Attendees trigger button -->
+      <div class="form-group form-group--inline attendees-toggle-row">
+        <button type="button" class="attendees-trigger-btn" (click)="toggleAttendeesPanel()">
+          <mat-icon>group</mat-icon>
+          <span>Invités</span>
+          @if (form.controls.attendees.value.length > 0) {
+            <span class="attendees-trigger-count">{{ form.controls.attendees.value.length }}</span>
+          }
+        </button>
+      </div>
+
       <!-- Date/Time Row: Start -->
       <div class="form-group">
         <label class="form-label">Date de début <span class="required">*</span></label>
@@ -320,8 +331,27 @@
             </button>
           </div>
         </div>
+      } @else if (showAttendeesPanel()) {
+        <!-- Attendees overlay panel -->
+        <div class="attendees-overlay-panel">
+          <div class="attendees-overlay__header">
+            <h3 class="attendees-overlay__title">
+              <mat-icon class="attendees-overlay__icon">group</mat-icon>
+              Invités
+            </h3>
+            <button mat-icon-button (click)="toggleAttendeesPanel()" class="attendees-overlay__close">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+          <div class="attendees-overlay__body">
+            <app-event-attendees-picker formControlName="attendees"></app-event-attendees-picker>
+            @if (hasAttendees()) {
+              <app-event-guest-permissions formControlName="guestPermissions"></app-event-guest-permissions>
+            }
+          </div>
+        </div>
       } @else {
-        <!-- Linked Items (default) -->
+        <!-- Linked Items -->
         <div class="linked-items-panel">
           <h3 class="linked-items-panel__title">
             <mat-icon class="linked-items-panel__icon">link</mat-icon>

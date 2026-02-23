@@ -218,6 +218,10 @@ export class DatabaseFiltersComponent {
         'is_empty',
         'is_not_empty',
       ],
+      json: [
+        'is_empty',
+        'is_not_empty',
+      ],
     };
 
     return type ? operatorsByType[type] : [];
@@ -239,6 +243,7 @@ export class DatabaseFiltersComponent {
       url: 'contains',
       email: 'contains',
       'linked-items': 'is_not_empty',
+      json: 'is_not_empty',
     };
 
     return defaultOperators[type];

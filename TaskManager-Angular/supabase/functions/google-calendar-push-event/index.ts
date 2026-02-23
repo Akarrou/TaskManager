@@ -11,6 +11,20 @@ import {
   errorResponse,
 } from "../_shared/google-auth-helpers.ts"
 
+interface EventAttendee {
+  email: string
+  displayName?: string
+  rsvpStatus?: string
+  isOrganizer?: boolean
+  isOptional?: boolean
+}
+
+interface EventGuestPermissions {
+  guestsCanModify?: boolean
+  guestsCanInviteOthers?: boolean
+  guestsCanSeeOtherGuests?: boolean
+}
+
 interface EventData {
   title: string
   description?: string
@@ -24,6 +38,8 @@ interface EventData {
   event_number?: number
   reminders?: Array<{ method: string; minutes: number }>
   add_google_meet?: boolean
+  attendees?: EventAttendee[]
+  guest_permissions?: EventGuestPermissions
 }
 
 Deno.serve(async (req) => {
@@ -41,6 +57,25 @@ Deno.serve(async (req) => {
     }
 
     const eventData = event_data as EventData
+
+    // Check that the event row is not soft-deleted before pushing to Google Calendar
+    const { data: dbMeta } = await supabaseAdmin
+      .from('document_databases')
+      .select('table_name')
+      .eq('id', kodo_database_id)
+      .single()
+
+    if (dbMeta) {
+      const { data: eventRow } = await supabaseAdmin
+        .from(dbMeta.table_name as string)
+        .select('id, deleted_at')
+        .eq('id', kodo_row_id)
+        .single()
+
+      if (!eventRow || eventRow.deleted_at !== null) {
+        return errorResponse(404, 'Event has been deleted and cannot be pushed to Google Calendar')
+      }
+    }
 
     // C10: Get sync config with user_id check via join
     const { data: syncConfig, error: configError } = await supabaseAdmin
@@ -116,6 +151,25 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Map attendees to Google Calendar format
+    if (eventData.attendees && eventData.attendees.length > 0) {
+      googleEvent.attendees = eventData.attendees.map(a => ({
+        email: a.email,
+        displayName: a.displayName ?? undefined,
+        responseStatus: a.rsvpStatus === 'needsAction' ? 'needsAction' : (a.rsvpStatus ?? 'needsAction'),
+        optional: a.isOptional ?? false,
+        organizer: a.isOrganizer ?? false,
+      }))
+    }
+
+    // Map guest permissions
+    if (eventData.guest_permissions) {
+      const perms = eventData.guest_permissions
+      if (perms.guestsCanModify !== undefined) googleEvent.guestsCanModify = perms.guestsCanModify
+      if (perms.guestsCanInviteOthers !== undefined) googleEvent.guestsCanInviteOthers = perms.guestsCanInviteOthers
+      if (perms.guestsCanSeeOtherGuests !== undefined) googleEvent.guestsCanSeeOtherGuests = perms.guestsCanSeeOtherGuests
+    }
+
     // Store Kodo metadata in extended properties
     googleEvent.extendedProperties = {
       private: {
@@ -136,7 +190,14 @@ Deno.serve(async (req) => {
     const calendarId = encodeURIComponent(syncConfig.google_calendar_id)
     // Add conferenceDataVersion=1 when Meet is requested or already exists (to preserve it on updates)
     const needsConferenceParam = eventData.add_google_meet || !!existingMapping
-    const conferenceParam = needsConferenceParam ? '?conferenceDataVersion=1' : ''
+    const hasAttendees = eventData.attendees && eventData.attendees.length > 0
+
+    // Build query params
+    const queryParams = new URLSearchParams()
+    if (needsConferenceParam) queryParams.set('conferenceDataVersion', '1')
+    if (hasAttendees) queryParams.set('sendUpdates', 'all')
+    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : ''
+
     let googleEventId: string
     let meetLink: string | null = null
 
@@ -144,7 +205,7 @@ Deno.serve(async (req) => {
       // Update existing Google event — don't send createRequest if Meet already exists
       const eventId = encodeURIComponent(existingMapping.google_event_id)
       const response = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}${conferenceParam}`,
+        `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}${queryString}`,
         {
           method: 'PUT',
           headers: {
@@ -180,7 +241,7 @@ Deno.serve(async (req) => {
     } else {
       // Create new Google event
       const response = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events${conferenceParam}`,
+        `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events${queryString}`,
         {
           method: 'POST',
           headers: {
@@ -219,11 +280,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Store Meet link in Kodo database if available
-    if (meetLink) {
-      await storeMeetLinkInKodo(supabaseAdmin, kodo_database_id, kodo_row_id, meetLink)
-    }
-
     return new Response(
       JSON.stringify({ success: true, google_event_id: googleEventId, meet_link: meetLink }),
       {
@@ -240,9 +296,6 @@ Deno.serve(async (req) => {
 // Helper Functions
 // =============================================================================
 
-// deno-lint-ignore no-explicit-any
-type SupabaseAdmin = ReturnType<typeof createSupabaseAdmin>
-
 /**
  * Extract Meet link from a Google Calendar event response.
  * Checks conferenceData.entryPoints first, then hangoutLink as fallback.
@@ -255,95 +308,4 @@ function extractMeetLink(event: Record<string, unknown>): string | null {
     (ep) => ep.entryPointType === 'video'
   )
   return videoEntry?.uri ?? (event.hangoutLink as string) ?? null
-}
-
-/**
- * Store the Meet link in the Kodo database row's "Google Meet" column.
- * If the column doesn't exist yet (older databases), it is auto-created.
- */
-async function storeMeetLinkInKodo(
-  supabaseAdmin: SupabaseAdmin,
-  kodoDatabaseId: string,
-  kodoRowId: string,
-  meetLink: string
-): Promise<void> {
-  try {
-    // Get database metadata to find the "Google Meet" column
-    const { data: dbMeta, error: metaError } = await supabaseAdmin
-      .from('document_databases')
-      .select('table_name, config')
-      .eq('id', kodoDatabaseId)
-      .single()
-
-    if (metaError || !dbMeta) {
-      console.warn('Could not find database metadata for Meet link storage')
-      return
-    }
-
-    const config = dbMeta.config as { columns: Array<{ id: string; name: string; order?: number; [k: string]: unknown }> }
-    let meetCol = config.columns?.find((c) => c.name === 'Google Meet')
-
-    // Auto-create the column if it doesn't exist
-    if (!meetCol) {
-      const newColId = crypto.randomUUID()
-      const maxOrder = Math.max(...(config.columns || []).map(c => (c.order as number) ?? 0), 0)
-
-      // 1. Add physical column FIRST
-      const physColName = `col_${newColId.replace(/-/g, '_')}`
-      const tableName = dbMeta.table_name as string
-      const { data: addResult } = await supabaseAdmin.rpc('add_column_to_table', {
-        table_name: tableName,
-        column_name: physColName,
-        column_type: 'TEXT',
-      })
-
-      if (addResult && !(addResult as Record<string, unknown>).success) {
-        console.error('Failed to add physical Meet column:', addResult)
-        return
-      }
-
-      // Notify PostgREST to reload its schema cache
-      await supabaseAdmin.rpc('reload_schema_cache')
-      await new Promise(resolve => setTimeout(resolve, 500))
-
-      // 2. Update config JSON AFTER physical column exists
-      const newColumn = {
-        id: newColId,
-        name: 'Google Meet',
-        type: 'url',
-        visible: true,
-        readonly: true,
-        order: maxOrder + 1,
-        width: 250,
-        color: 'green',
-      }
-
-      config.columns.push(newColumn)
-
-      const { error: configError } = await supabaseAdmin
-        .from('document_databases')
-        .update({ config })
-        .eq('id', kodoDatabaseId)
-
-      if (configError) {
-        console.error('Failed to update database config for Meet column:', configError)
-        return
-      }
-
-      console.log(`Auto-created "Google Meet" column in table "${tableName}"`)
-      meetCol = { id: newColId, name: 'Google Meet' }
-    }
-
-    const colName = `col_${meetCol.id.replace(/-/g, '_')}`
-    const { error: updateError } = await supabaseAdmin
-      .from(dbMeta.table_name as string)
-      .update({ [colName]: meetLink })
-      .eq('id', kodoRowId)
-
-    if (updateError) {
-      console.error('Failed to store Meet link in Kodo row:', updateError)
-    }
-  } catch (err) {
-    console.error('Error storing Meet link in Kodo:', err)
-  }
 }

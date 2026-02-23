@@ -284,6 +284,90 @@ $database-color-bg: #f5f3ff;
 }
 
 // ============================================================================
+// Attendees
+// ============================================================================
+
+.attendees-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: 4px;
+}
+
+.attendee-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.attendee-detail-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #e0e7ff;
+  color: #4f46e5;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &--organizer {
+    background-color: #ede9fe;
+    color: #7c3aed;
+  }
+}
+
+.attendee-detail-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.attendee-detail-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.attendee-detail-email {
+  font-size: 11px;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attendee-detail-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background-color: #ede9fe;
+  color: #7c3aed;
+  white-space: nowrap;
+}
+
+.attendee-detail-rsvp {
+  font-size: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+  flex-shrink: 0;
+}
+
+.rsvp--accepted { color: #16a34a; }
+.rsvp--declined { color: #dc2626; }
+.rsvp--tentative { color: #d97706; }
+.rsvp--needsAction { color: #6b7280; }
+
+// ============================================================================
 // Google Calendar Sync
 // ============================================================================
 

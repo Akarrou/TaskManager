@@ -84,6 +84,7 @@ export class SpreadsheetService {
         .from('document_spreadsheets')
         .select('*')
         .eq('spreadsheet_id', spreadsheetId)
+        .is('deleted_at', null)
         .maybeSingle()
     ).pipe(
       map(response => {
@@ -148,6 +149,125 @@ export class SpreadsheetService {
         console.error('[deleteSpreadsheet] Error:', error);
         return throwError(() => new Error(`Failed to delete spreadsheet: ${error.message}`));
       })
+    );
+  }
+
+  /**
+   * Soft delete a spreadsheet: sets deleted_at on document_spreadsheets.
+   * Returns the metadata (with UUID id) for trash registration.
+   */
+  softDeleteSpreadsheet(spreadsheetId: string): Observable<DocumentSpreadsheet> {
+    const now = new Date().toISOString();
+    return from(
+      this.client
+        .from('document_spreadsheets')
+        .update({ deleted_at: now })
+        .eq('spreadsheet_id', spreadsheetId)
+        .select()
+        .single()
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) {
+          console.error('[softDeleteSpreadsheet] Error:', error);
+          throw error;
+        }
+        return data as DocumentSpreadsheet;
+      }),
+      catchError(error => {
+        console.error('[softDeleteSpreadsheet] Error:', error);
+        return throwError(() => new Error(`Failed to soft delete spreadsheet: ${error.message}`));
+      })
+    );
+  }
+
+  /**
+   * Restore a soft-deleted spreadsheet: clears deleted_at + removes trash_items entry.
+   */
+  restoreSpreadsheet(uuid: string): Observable<boolean> {
+    return from(
+      this.client
+        .from('document_spreadsheets')
+        .update({ deleted_at: null })
+        .eq('id', uuid)
+    ).pipe(
+      switchMap(({ error }) => {
+        if (error) throw error;
+        return from(
+          this.client
+            .from('trash_items')
+            .delete()
+            .eq('item_id', uuid)
+        );
+      }),
+      map(({ error }) => {
+        if (error) throw error;
+        return true;
+      }),
+      catchError(error => {
+        console.error('[restoreSpreadsheet] Error:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Restore a spreadsheet node into its parent document's TipTap content.
+   */
+  restoreSpreadsheetToDocument(uuid: string, documentId: string): Observable<boolean> {
+    return from(
+      this.client
+        .from('document_spreadsheets')
+        .select('*')
+        .eq('id', uuid)
+        .single()
+    ).pipe(
+      switchMap(({ data: ssMeta, error: metaError }) => {
+        if (metaError || !ssMeta) {
+          return throwError(() => metaError || new Error('Spreadsheet not found'));
+        }
+
+        return from(
+          this.client
+            .from('documents')
+            .select('content')
+            .eq('id', documentId)
+            .single()
+        ).pipe(
+          switchMap(({ data: doc, error: docError }) => {
+            if (docError || !doc) {
+              return throwError(() => docError || new Error('Document not found'));
+            }
+
+            const spreadsheetNode = {
+              type: 'spreadsheet',
+              attrs: {
+                spreadsheetId: ssMeta.spreadsheet_id,
+                config: ssMeta.config,
+                storageMode: 'supabase',
+              },
+            };
+
+            const content = doc.content || { type: 'doc', content: [] };
+            if (!content.content) content.content = [];
+            content.content.push(spreadsheetNode);
+
+            return from(
+              this.client
+                .from('documents')
+                .update({ content, updated_at: new Date().toISOString() })
+                .eq('id', documentId)
+            );
+          }),
+        );
+      }),
+      map(({ error }: { error: any }) => {
+        if (error) throw error;
+        return true;
+      }),
+      catchError(error => {
+        console.error('[restoreSpreadsheetToDocument] Error:', error);
+        return throwError(() => error);
+      }),
     );
   }
 

@@ -1,17 +1,23 @@
 import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType, OnInitEffects } from '@ngrx/effects';
 import { of } from 'rxjs';
-import { catchError, map, mergeMap, tap, filter } from 'rxjs/operators';
+import { catchError, map, mergeMap, tap, filter, switchMap } from 'rxjs/operators';
 import * as ProjectActions from './project.actions';
 import { ProjectService } from '../services/project.service';
+import { TrashService } from '../../../core/services/trash.service';
+import { TrashStore } from '../../trash/store/trash.store';
 import { Router } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Action } from '@ngrx/store';
 
 @Injectable()
 export class ProjectEffects implements OnInitEffects {
     private actions$ = inject(Actions);
     private projectService = inject(ProjectService);
+    private trashService = inject(TrashService);
+    private trashStore = inject(TrashStore);
     private router = inject(Router);
+    private snackBar = inject(MatSnackBar);
 
     init$ = createEffect(() =>
         this.actions$.pipe(
@@ -84,14 +90,37 @@ export class ProjectEffects implements OnInitEffects {
         this.actions$.pipe(
             ofType(ProjectActions.deleteProject),
             mergeMap(({ projectId }) =>
-                this.projectService.deleteProject(projectId).pipe(
-                    map(() => ProjectActions.deleteProjectSuccess({ projectId })),
+                // Get project info for trash record, then soft delete
+                this.projectService.getProjects().pipe(
+                    switchMap((projects) => {
+                        const project = projects.find(p => p.id === projectId);
+                        const displayName = project?.name || 'Projet sans nom';
+                        return this.trashService.softDelete(
+                            'project',
+                            projectId,
+                            'projects',
+                            displayName,
+                        ).pipe(
+                            tap(() => this.trashStore.loadTrashCount()),
+                            map(() => ProjectActions.deleteProjectSuccess({ projectId })),
+                        );
+                    }),
                     catchError((error) =>
                         of(ProjectActions.deleteProjectFailure({ error }))
                     )
                 )
             )
         )
+    );
+
+    deleteProjectSuccess$ = createEffect(() =>
+        this.actions$.pipe(
+            ofType(ProjectActions.deleteProjectSuccess),
+            tap(() => {
+                this.snackBar.open('Projet déplacé dans la corbeille', 'Fermer', { duration: 3000 });
+            })
+        ),
+        { dispatch: false }
     );
 
     archiveProject$ = createEffect(() =>

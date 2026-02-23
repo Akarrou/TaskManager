@@ -1,0 +1,123 @@
+<div class="c-trash-layout">
+  <div class="c-trash-container">
+    <!-- Header -->
+    <div class="c-trash-header">
+      <div class="c-trash-header__left">
+        <h1 class="c-trash-title">Corbeille</h1>
+        @if (trashStore.items().length > 0) {
+          <span class="c-trash-count">{{ trashStore.items().length }}</span>
+        }
+      </div>
+      @if (trashStore.items().length > 0) {
+        <button
+          class="c-btn c-btn--danger"
+          (click)="onEmptyTrash()"
+          [disabled]="trashStore.loading()">
+          <span class="material-icons-outlined">delete_forever</span>
+          <span>Vider la corbeille</span>
+        </button>
+      }
+    </div>
+
+    <p class="c-trash-subtitle">
+      Les éléments supprimés sont conservés 30 jours avant d'être définitivement effacés.
+    </p>
+
+    <!-- Filters -->
+    @if (trashStore.items().length > 0) {
+      <div class="c-trash-filters">
+        @for (option of filterOptions; track option.value) {
+          <button
+            class="c-filter-chip"
+            [class.c-filter-chip--active]="trashStore.filter() === option.value"
+            (click)="onFilterChange(option.value)">
+            <span class="material-icons-outlined">{{ option.icon }}</span>
+            <span>{{ option.label }}</span>
+          </button>
+        }
+      </div>
+    }
+
+    <!-- Loading -->
+    @if (trashStore.loading()) {
+      <div class="c-trash-loading">
+        <span class="c-spinner c-spinner--large"></span>
+        <span>Chargement...</span>
+      </div>
+    }
+
+    <!-- Items list -->
+    @if (!trashStore.loading() && trashStore.filteredItems().length > 0) {
+      <div class="c-trash-card">
+        <div class="c-trash-list">
+          @for (item of trashStore.filteredItems(); track item.id; let last = $last) {
+            <div class="c-trash-item">
+              <div class="c-trash-item__icon" [attr.data-type]="item.item_type">
+                <span class="material-icons-outlined">{{ getItemIcon(item.item_type) }}</span>
+              </div>
+              <div class="c-trash-item__content">
+                <div class="c-trash-item__name">{{ item.display_name }}</div>
+                <div class="c-trash-item__meta">
+                  <span class="c-trash-item__type">{{ getItemTypeLabel(item.item_type) }}</span>
+                  @if (getParentContext(item)) {
+                    <span class="c-trash-item__separator"></span>
+                    <span class="c-trash-item__parent">{{ getParentContext(item) }}</span>
+                  }
+                  <span class="c-trash-item__separator"></span>
+                  <span>Supprimé {{ getRelativeTime(item.deleted_at) }}</span>
+                  <span class="c-trash-item__separator"></span>
+                  <span class="c-trash-item__expiry" [class.c-trash-item__expiry--soon]="getDaysUntilExpiry(item.expires_at) <= 3">
+                    Expire dans {{ getDaysUntilExpiry(item.expires_at) }}j
+                  </span>
+                </div>
+              </div>
+              <div class="c-trash-item__actions">
+                <button
+                  class="c-icon-btn c-icon-btn--restore"
+                  title="Restaurer"
+                  (click)="onRestore(item)">
+                  <span class="material-icons-outlined">restore</span>
+                </button>
+                <button
+                  class="c-icon-btn c-icon-btn--delete"
+                  title="Supprimer définitivement"
+                  (click)="onPermanentDelete(item)">
+                  <span class="material-icons-outlined">delete_forever</span>
+                </button>
+              </div>
+            </div>
+            @if (!last) {
+              <div class="c-trash-divider"></div>
+            }
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Empty state -->
+    @if (!trashStore.loading() && trashStore.isEmpty()) {
+      <div class="c-trash-card">
+        <div class="c-trash-empty">
+          <div class="c-trash-empty__icon">
+            <span class="material-icons-outlined">delete_outline</span>
+          </div>
+          <h2 class="c-trash-empty__title">La corbeille est vide</h2>
+          <p class="c-trash-empty__text">Les éléments que vous supprimez apparaîtront ici.</p>
+        </div>
+      </div>
+    }
+
+    <!-- No results for filter -->
+    @if (!trashStore.loading() && !trashStore.isEmpty() && trashStore.filteredItems().length === 0) {
+      <div class="c-trash-card">
+        <div class="c-trash-empty">
+          <div class="c-trash-empty__icon c-trash-empty__icon--muted">
+            <span class="material-icons-outlined">filter_list_off</span>
+          </div>
+          <h2 class="c-trash-empty__title">Aucun résultat</h2>
+          <p class="c-trash-empty__text">Aucun élément de ce type dans la corbeille.</p>
+        </div>
+      </div>
+    }
+  </div>
+</div>

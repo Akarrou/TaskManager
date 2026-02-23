@@ -28,6 +28,7 @@ export function registerDocumentTools(server: McpServer): void {
           .from('documents')
           .select('id, title, parent_id, project_id, database_id, database_row_id, created_at, updated_at', { count: 'exact' })
           .eq('user_id', userId) // Filter by current user
+          .is('deleted_at', null)
           .order('updated_at', { ascending: false })
           .range(offset, offset + limit - 1);
 
@@ -88,6 +89,7 @@ export function registerDocumentTools(server: McpServer): void {
           .select('*')
           .eq('id', document_id)
           .eq('user_id', userId) // Verify ownership
+          .is('deleted_at', null)
           .single();
 
         if (error) {
@@ -255,24 +257,23 @@ export function registerDocumentTools(server: McpServer): void {
   );
 
   // =========================================================================
-  // delete_document - Delete a document
+  // delete_document - Soft delete a document (move to trash)
   // =========================================================================
   server.tool(
     'delete_document',
-    `Delete a document from the workspace. By default, only deletes the specified document - child documents become orphaned. Use cascade=true to delete the entire document tree including all nested child documents and any embedded databases. WARNING: Deleted documents cannot be recovered. Returns confirmation with count of deleted items when cascade is used. Comments and file attachments linked to deleted documents are also removed.`,
+    `Move a document to the trash (soft delete). The document is marked as deleted but can be restored within 30 days using restore_from_trash. Only the top-level document is marked — child documents remain intact but become inaccessible. On restore, the entire hierarchy reappears. A snapshot is taken before deletion for additional recovery.`,
     {
-      document_id: z.string().uuid().describe('The UUID of the document to delete.'),
-      cascade: z.boolean().optional().default(false).describe('Set to true to also delete all child documents and embedded databases recursively. Default false deletes only the specified document.'),
+      document_id: z.string().uuid().describe('The UUID of the document to move to trash.'),
     },
-    async ({ document_id, cascade }) => {
+    async ({ document_id }) => {
       try {
         const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
 
-        // First verify ownership
+        // Verify ownership and get document info
         const { data: doc, error: verifyError } = await supabase
           .from('documents')
-          .select('id')
+          .select('*')
           .eq('id', document_id)
           .eq('user_id', userId)
           .single();
@@ -284,94 +285,54 @@ export function registerDocumentTools(server: McpServer): void {
           };
         }
 
-        if (cascade) {
-          // Get all descendant document IDs (already filtered by user in getAllDescendantIds)
-          const descendantIds = await getAllDescendantIds(supabase, document_id, userId);
-          const allDocIds = [...descendantIds, document_id];
+        // Snapshot before soft delete
+        let snapshotToken = '';
+        const snapshot = await saveSnapshot({
+          entityType: 'document',
+          entityId: document_id,
+          tableName: 'documents',
+          toolName: 'delete_document',
+          operation: 'soft_delete',
+          data: doc,
+          userId,
+        });
+        snapshotToken = snapshot.token;
 
-          // Snapshot all documents before deletion
-          const snapshotTokens: string[] = [];
-          for (const docId of allDocIds) {
-            const { data: docData } = await supabase
-              .from('documents')
-              .select('*')
-              .eq('id', docId)
-              .eq('user_id', userId)
-              .single();
+        const now = new Date().toISOString();
 
-            if (docData) {
-              const snapshot = await saveSnapshot({
-                entityType: 'document',
-                entityId: docId,
-                tableName: 'documents',
-                toolName: 'delete_document',
-                operation: 'delete',
-                data: docData,
-                userId,
-              });
-              snapshotTokens.push(snapshot.token);
-            }
-          }
+        // Soft delete: set deleted_at
+        const { error: updateError } = await supabase
+          .from('documents')
+          .update({ deleted_at: now })
+          .eq('id', document_id)
+          .eq('user_id', userId);
 
-          // Delete in reverse order (children first)
-          for (const docId of allDocIds.reverse()) {
-            const { error } = await supabase
-              .from('documents')
-              .delete()
-              .eq('id', docId)
-              .eq('user_id', userId); // Extra safety
-
-            if (error) {
-              return {
-                content: [{ type: 'text', text: `Error deleting document ${docId}: ${error.message}` }],
-                isError: true,
-              };
-            }
-          }
-
+        if (updateError) {
           return {
-            content: [{ type: 'text', text: `Document and ${descendantIds.length} child documents deleted (snapshots: ${snapshotTokens.join(', ')}).` }],
-          };
-        } else {
-          // Snapshot before simple delete
-          const { data: currentDoc } = await supabase
-            .from('documents')
-            .select('*')
-            .eq('id', document_id)
-            .eq('user_id', userId)
-            .single();
-
-          let snapshotToken = '';
-          if (currentDoc) {
-            const snapshot = await saveSnapshot({
-              entityType: 'document',
-              entityId: document_id,
-              tableName: 'documents',
-              toolName: 'delete_document',
-              operation: 'delete',
-              data: currentDoc,
-              userId,
-            });
-            snapshotToken = snapshot.token;
-          }
-
-          const { error } = await supabase
-            .from('documents')
-            .delete()
-            .eq('id', document_id)
-            .eq('user_id', userId); // Verify ownership
-
-          if (error) {
-            return {
-              content: [{ type: 'text', text: `Error deleting document: ${error.message}` }],
-              isError: true,
-            };
-          }
-
-          return {
-            content: [{ type: 'text', text: `Document deleted (snapshot: ${snapshotToken}).` }],
+            content: [{ type: 'text', text: `Error soft-deleting document: ${updateError.message}` }],
+            isError: true,
           };
         }
+
+        // Insert into trash_items
+        const parentInfo: Record<string, string> = {};
+        if (doc.project_id) parentInfo.projectId = doc.project_id;
+
+        await supabase
+          .from('trash_items')
+          .insert({
+            item_type: 'document',
+            item_id: document_id,
+            item_table: 'documents',
+            display_name: doc.title || 'Untitled document',
+            parent_info: Object.keys(parentInfo).length > 0 ? parentInfo : null,
+            user_id: userId,
+            deleted_at: now,
+          });
+
+        return {
+          content: [{ type: 'text', text: `Document moved to trash (snapshot: ${snapshotToken}). Use restore_from_trash to recover it.` }],
+        };
       } catch (err) {
         return {
           content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
@@ -400,6 +361,7 @@ export function registerDocumentTools(server: McpServer): void {
           .from('documents')
           .select('id, title, parent_id, project_id, updated_at')
           .eq('user_id', userId) // Filter by current user
+          .is('deleted_at', null)
           .ilike('title', `%${query}%`)
           .order('updated_at', { ascending: false })
           .limit(limit);
@@ -451,6 +413,7 @@ export function registerDocumentTools(server: McpServer): void {
             .select('id, title, parent_id')
             .eq('id', currentId)
             .eq('user_id', userId) // Filter by current user
+            .is('deleted_at', null)
             .single();
 
           if (error || !docData) break;
@@ -489,7 +452,8 @@ export function registerDocumentTools(server: McpServer): void {
         let countQuery = supabase
           .from('documents')
           .select('id', { count: 'exact', head: true })
-          .eq('user_id', userId); // Filter by current user
+          .eq('user_id', userId) // Filter by current user
+          .is('deleted_at', null);
 
         if (project_id) {
           countQuery = countQuery.eq('project_id', project_id);
@@ -505,6 +469,7 @@ export function registerDocumentTools(server: McpServer): void {
           .from('documents')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', userId) // Filter by current user
+          .is('deleted_at', null)
           .gte('created_at', weekAgo.toISOString());
 
         if (project_id) {
@@ -518,6 +483,7 @@ export function registerDocumentTools(server: McpServer): void {
           .from('documents')
           .select('id, title, updated_at')
           .eq('user_id', userId) // Filter by current user
+          .is('deleted_at', null)
           .order('updated_at', { ascending: false })
           .limit(1);
 
@@ -561,7 +527,8 @@ async function getAllDescendantIds(supabase: ReturnType<typeof getSupabaseClient
       .from('documents')
       .select('id')
       .eq('parent_id', currentId)
-      .eq('user_id', userId); // Filter by current user
+      .eq('user_id', userId) // Filter by current user
+      .is('deleted_at', null);
 
     if (error || !data) continue;
 

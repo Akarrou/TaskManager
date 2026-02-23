@@ -62,6 +62,7 @@ export class FullCalendarAdapterService {
    * Blend hex color with 75% white for a pastel background
    */
   private hexToPastel(hex: string): string {
+    if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) return '#f3f4f6'; // gray-100 fallback
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
@@ -77,6 +78,7 @@ export class FullCalendarAdapterService {
    * Darken hex color to 30% for readable text
    */
   private darkenHex(hex: string): string {
+    if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) return '#374151'; // gray-700 fallback
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);

@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, computed, output } from '@angular/core';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -23,6 +23,8 @@ type SyncStatusType = 'idle' | 'syncing' | 'error' | 'disconnected';
 export class SyncStatusIndicatorComponent {
   private readonly store = inject(GoogleCalendarStore);
 
+  readonly syncCompleted = output<void>();
+
   protected readonly syncStatus = this.store.syncStatus;
   protected readonly isConnected = this.store.isConnected;
 
@@ -46,9 +48,10 @@ export class SyncStatusIndicatorComponent {
     return iconMap[this.syncStatus()];
   });
 
-  onClick(): void {
+  async onClick(): Promise<void> {
     if (this.syncStatus() !== 'syncing') {
-      this.store.triggerSync();
+      await this.store.triggerSync();
+      this.syncCompleted.emit();
     }
   }
 }

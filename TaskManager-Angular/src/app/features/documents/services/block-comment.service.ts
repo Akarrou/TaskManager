@@ -32,6 +32,7 @@ export class BlockCommentService {
         .from('block_comments')
         .select('*')
         .eq('document_id', documentId)
+        .is('deleted_at', null)
         .order('created_at', { ascending: true })
     ).pipe(
       map(({ data, error }) => {
@@ -58,6 +59,7 @@ export class BlockCommentService {
         .select('*')
         .eq('document_id', documentId)
         .eq('block_id', blockId)
+        .is('deleted_at', null)
         .order('created_at', { ascending: true })
     ).pipe(
       map(({ data, error }) => {
@@ -177,6 +179,7 @@ export class BlockCommentService {
         .from('block_comments')
         .select('block_id')
         .eq('document_id', documentId)
+        .is('deleted_at', null)
     ).pipe(
       map(({ data, error }) => {
         if (error) {
@@ -217,6 +220,7 @@ export class BlockCommentService {
         .select('id', { count: 'exact', head: true })
         .eq('document_id', documentId)
         .eq('block_id', blockId)
+        .is('deleted_at', null)
     ).pipe(
       map(({ count, error }) => {
         if (error) {

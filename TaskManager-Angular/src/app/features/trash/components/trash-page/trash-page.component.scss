@@ -1,0 +1,439 @@
+@use '../../../../styles/variables' as v;
+
+:host {
+  display: block;
+}
+
+// Layout
+.c-trash-layout {
+  min-height: calc(100vh - 64px);
+  background: linear-gradient(135deg, v.$background-color-page 0%, #eef2ff 100%);
+  padding: v.$space-6;
+}
+
+.c-trash-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-5;
+}
+
+// Header
+.c-trash-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$space-4;
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: v.$space-3;
+  }
+}
+
+.c-trash-title {
+  font-size: v.$font-size-2xl;
+  font-weight: 700;
+  color: v.$text-color-darkest;
+  margin: 0;
+  letter-spacing: -0.025em;
+}
+
+.c-trash-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(v.$error-color, 0.1);
+  color: v.$error-color;
+  padding: 2px 10px;
+  border-radius: v.$border-radius-full;
+  font-size: v.$font-size-xs;
+  font-weight: v.$font-weight-semibold;
+  min-width: 24px;
+}
+
+.c-trash-subtitle {
+  color: v.$text-color-light;
+  font-size: v.$font-size-sm;
+  margin: -(v.$space-2) 0 0;
+  line-height: 1.5;
+}
+
+// Buttons
+.c-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: v.$space-2 v.$space-4;
+  border-radius: v.$border-radius-lg;
+  font-weight: v.$font-weight-semibold;
+  font-size: v.$font-size-sm;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: v.$space-2;
+
+  .material-icons-outlined {
+    font-size: 18px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--danger {
+    background: transparent;
+    color: v.$error-color;
+    border-color: rgba(v.$error-color, 0.3);
+
+    &:hover:not(:disabled) {
+      background: rgba(v.$error-color, 0.08);
+      border-color: v.$error-color;
+    }
+  }
+}
+
+// Filters
+.c-trash-filters {
+  display: flex;
+  gap: v.$space-2;
+  flex-wrap: wrap;
+}
+
+.c-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: v.$space-1;
+  padding: v.$space-2 v.$space-3;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid v.$border-color-light;
+  border-radius: v.$border-radius-full;
+  font-size: v.$font-size-xs;
+  font-weight: v.$font-weight-medium;
+  color: v.$text-color-medium;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  .material-icons-outlined {
+    font-size: 16px;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: v.$border-color-medium;
+    color: v.$text-color-dark;
+  }
+
+  &--active {
+    background: v.$primary-color;
+    color: white;
+    border-color: v.$primary-color;
+
+    &:hover {
+      background: v.$primary-color-dark;
+      border-color: v.$primary-color-dark;
+      color: white;
+    }
+  }
+}
+
+// Loading
+.c-trash-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: v.$space-4;
+  padding: v.$space-10;
+  color: v.$text-color-light;
+  font-size: v.$font-size-sm;
+}
+
+.c-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(v.$primary-color, 0.2);
+  border-radius: 50%;
+  border-top-color: v.$primary-color;
+  animation: spinner 0.8s linear infinite;
+
+  &--large {
+    width: 32px;
+    height: 32px;
+    border-width: 3px;
+  }
+}
+
+@keyframes spinner {
+  to { transform: rotate(360deg); }
+}
+
+// Card
+.c-trash-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: v.$border-radius-xl;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+// List
+.c-trash-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.c-trash-divider {
+  height: 1px;
+  background: v.$border-color-light;
+  margin: 0 v.$space-6;
+}
+
+// Item
+.c-trash-item {
+  display: flex;
+  align-items: center;
+  gap: v.$space-4;
+  padding: v.$space-4 v.$space-6;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: rgba(v.$primary-color, 0.03);
+  }
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: v.$border-radius-md;
+    flex-shrink: 0;
+    background: rgba(v.$primary-color, 0.08);
+
+    .material-icons-outlined {
+      font-size: 20px;
+      color: v.$primary-color;
+    }
+
+    &[data-type="project"] {
+      background: rgba(#8b5cf6, 0.08);
+
+      .material-icons-outlined {
+        color: #8b5cf6;
+      }
+    }
+
+    &[data-type="event"] {
+      background: rgba(#059669, 0.08);
+
+      .material-icons-outlined {
+        color: #059669;
+      }
+    }
+
+    &[data-type="database"] {
+      background: rgba(#6366f1, 0.08);
+
+      .material-icons-outlined {
+        color: #6366f1;
+      }
+    }
+
+    &[data-type="database_row"] {
+      background: rgba(#f59e0b, 0.08);
+
+      .material-icons-outlined {
+        color: #d97706;
+      }
+    }
+
+    &[data-type="comment"] {
+      background: rgba(#6b7280, 0.08);
+
+      .material-icons-outlined {
+        color: #6b7280;
+      }
+    }
+
+    &[data-type="spreadsheet"] {
+      background: rgba(#10b981, 0.08);
+
+      .material-icons-outlined {
+        color: #10b981;
+      }
+    }
+  }
+
+  &__content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__name {
+    font-weight: v.$font-weight-medium;
+    font-size: v.$font-size-sm;
+    color: v.$text-color-dark;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    font-size: v.$font-size-xs;
+    color: v.$text-color-light;
+    margin-top: 2px;
+    flex-wrap: wrap;
+  }
+
+  &__type {
+    font-weight: v.$font-weight-medium;
+    color: v.$text-color-medium;
+  }
+
+  &__separator {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: v.$border-color-medium;
+    flex-shrink: 0;
+  }
+
+  &__parent {
+    color: v.$text-color-light;
+  }
+
+  &__expiry {
+    &--soon {
+      color: v.$error-color;
+      font-weight: v.$font-weight-medium;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    gap: v.$space-1;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  &:hover &__actions {
+    opacity: 1;
+  }
+}
+
+// Icon buttons
+.c-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: v.$border-radius-md;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  .material-icons-outlined {
+    font-size: 20px;
+  }
+
+  &--restore {
+    color: v.$text-color-light;
+
+    &:hover {
+      background: rgba(v.$primary-color, 0.1);
+      color: v.$primary-color;
+    }
+  }
+
+  &--delete {
+    color: v.$text-color-light;
+
+    &:hover {
+      background: rgba(v.$error-color, 0.1);
+      color: v.$error-color;
+    }
+  }
+}
+
+// Empty state
+.c-trash-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: v.$space-10 v.$space-6;
+  text-align: center;
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: rgba(v.$primary-color, 0.08);
+    margin-bottom: v.$space-5;
+
+    .material-icons-outlined {
+      font-size: 36px;
+      color: v.$primary-color;
+    }
+
+    &--muted {
+      background: rgba(v.$secondary-color, 0.08);
+
+      .material-icons-outlined {
+        color: v.$secondary-color;
+      }
+    }
+  }
+
+  &__title {
+    margin: 0 0 v.$space-2;
+    font-size: v.$font-size-lg;
+    font-weight: v.$font-weight-semibold;
+    color: v.$text-color-dark;
+  }
+
+  &__text {
+    margin: 0;
+    font-size: v.$font-size-sm;
+    color: v.$text-color-light;
+    line-height: 1.5;
+  }
+}
+
+// Responsive
+@media (max-width: v.$breakpoint-sm) {
+  .c-trash-layout {
+    padding: v.$space-4;
+  }
+
+  .c-trash-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .c-trash-item {
+    padding: v.$space-3 v.$space-4;
+
+    &__actions {
+      opacity: 1;
+    }
+  }
+
+  .c-trash-divider {
+    margin: 0 v.$space-4;
+  }
+}

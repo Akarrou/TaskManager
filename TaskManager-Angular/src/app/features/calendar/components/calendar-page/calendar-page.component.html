@@ -105,7 +105,7 @@
         </div>
 
         <!-- Sync status indicator -->
-        <app-sync-status-indicator></app-sync-status-indicator>
+        <app-sync-status-indicator (syncCompleted)="reloadEvents()"></app-sync-status-indicator>
 
         <!-- Create event button -->
         <button
@@ -137,7 +137,7 @@
         <full-calendar
           #calendar
           [options]="calendarOptions()"
-          [events]="calendarEvents">
+          [events]="calendarEvents()">
         </full-calendar>
       </div>
 

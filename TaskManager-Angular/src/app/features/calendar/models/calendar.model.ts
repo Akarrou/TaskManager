@@ -17,5 +17,7 @@ export interface CalendarEventCreateData {
     location?: string;
     recurrence?: string;
     linked_items?: Array<{ type: string; id: string; databaseId?: string; label: string }>;
+    attendees?: import('./attendee.model').EventAttendee[];
+    guest_permissions?: import('./attendee.model').EventGuestPermissions;
   };
 }

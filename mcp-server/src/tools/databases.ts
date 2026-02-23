@@ -47,6 +47,7 @@ export function registerDatabaseTools(server: McpServer): void {
         let query = supabase
           .from('document_databases')
           .select('*, documents!left(user_id)')
+          .is('deleted_at', null)
           .order('created_at', { ascending: false });
 
         if (document_id) {
@@ -135,6 +136,7 @@ Column IDs are standard UUIDs (e.g., "a1b2c3d4-e5f6-..."). Essential for underst
           .from('document_databases')
           .select('*')
           .eq('database_id', database_id)
+          .is('deleted_at', null)
           .single();
 
         if (error) {
@@ -232,7 +234,8 @@ Column IDs are standard UUIDs (e.g., "a1b2c3d4-e5f6-..."). Essential for underst
 
         let query = supabase
           .from(tableName)
-          .select('*', { count: 'exact' });
+          .select('*', { count: 'exact' })
+          .is('deleted_at', null);
 
         // Apply sorting
         if (sort_by) {
@@ -495,11 +498,11 @@ Example: { "Status": "completed", "Priority": "high", "Progress": 100 }. Related
   );
 
   // =========================================================================
-  // delete_database_rows - Delete rows from a database
+  // delete_database_rows - Soft delete rows from a database (move to trash)
   // =========================================================================
   server.tool(
     'delete_database_rows',
-    `Delete one or more rows from a database permanently. Accepts an array of row UUIDs to delete in a single operation. Deletion is immediate and cannot be undone. For task databases, use delete_task instead if you want confirmation logging. Returns count of deleted rows. Related tools: get_database_rows (find rows), update_database_row.`,
+    `Soft delete one or more rows from a database (move to trash). Sets deleted_at and registers in trash_items. Rows can be restored from trash within 30 days. Accepts an array of row UUIDs. For task databases, use delete_task instead. Returns count of soft-deleted rows. Related tools: get_database_rows (find rows), update_database_row, restore_from_trash (undo).`,
     {
       database_id: z.string().describe('The database ID. Format: db-uuid.'),
       row_ids: z.array(z.string().uuid()).min(1).describe('Array of row UUIDs to delete. Get these from get_database_rows (_id field).'),
@@ -520,7 +523,15 @@ Example: { "Status": "completed", "Priority": "high", "Progress": 100 }. Related
 
         const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
 
-        // Snapshot before delete
+        // Get database name for trash context
+        const { data: dbMeta } = await supabase
+          .from('document_databases')
+          .select('name')
+          .eq('database_id', database_id)
+          .single();
+        const databaseName = (dbMeta?.name as string) || database_id;
+
+        // Snapshot before soft delete
         const { data: currentRows } = await supabase.from(tableName).select('*').in('id', row_ids);
         const snapshotTokens: string[] = [];
         if (currentRows) {
@@ -530,7 +541,7 @@ Example: { "Status": "completed", "Priority": "high", "Progress": 100 }. Related
               entityId: row.id as string,
               tableName,
               toolName: 'delete_database_rows',
-              operation: 'delete',
+              operation: 'soft_delete',
               data: row,
               userId,
             });
@@ -538,20 +549,40 @@ Example: { "Status": "completed", "Priority": "high", "Progress": 100 }. Related
           }
         }
 
-        const { error, count } = await supabase
+        const now = new Date().toISOString();
+
+        // Soft delete: set deleted_at
+        const { error } = await supabase
           .from(tableName)
-          .delete()
+          .update({ deleted_at: now })
           .in('id', row_ids);
 
         if (error) {
           return {
-            content: [{ type: 'text', text: `Error deleting rows: ${error.message}` }],
+            content: [{ type: 'text', text: `Error soft-deleting rows: ${error.message}` }],
             isError: true,
           };
         }
 
+        // Insert into trash_items
+        const trashInserts = row_ids.map(rowId => {
+          const row = currentRows?.find(r => (r.id as string) === rowId);
+          const displayName = (row && typeof row === 'object' ? String(Object.values(row).find(v => typeof v === 'string' && v.length > 0 && v !== rowId) || '') : '') || `Row ${rowId.slice(0, 8)}`;
+          return {
+            item_type: 'database_row',
+            item_id: rowId,
+            item_table: tableName,
+            display_name: displayName,
+            parent_info: { databaseName, databaseId: database_id },
+            user_id: userId,
+            deleted_at: now,
+          };
+        });
+
+        await supabase.from('trash_items').insert(trashInserts);
+
         return {
-          content: [{ type: 'text', text: `Successfully deleted ${count || row_ids.length} row(s) (snapshots: ${snapshotTokens.join(', ')}).` }],
+          content: [{ type: 'text', text: `Moved ${row_ids.length} row(s) to trash (snapshots: ${snapshotTokens.join(', ')}). Use restore_from_trash to recover.` }],
         };
       } catch (err) {
         return {
@@ -806,11 +837,11 @@ Returns the created database with its generated database_id. Related tools: add_
   );
 
   // =========================================================================
-  // delete_database - Delete a database
+  // delete_database - Soft-delete a database (move to trash)
   // =========================================================================
   server.tool(
     'delete_database',
-    `DESTRUCTIVE: Permanently delete a database and ALL its data (rows, linked documents). This action CANNOT be undone. The confirm parameter must be explicitly set to true as a safety measure. Use list_databases to see database_id. Consider exporting data first if needed. Returns confirmation of successful deletion. WARNING: All rows in the database are permanently lost.`,
+    `Move a database to the trash (soft delete). The database and its data are preserved for 30 days before permanent deletion. The confirm parameter must be explicitly set to true as a safety measure. Use list_databases to see database_id.`,
     {
       database_id: z.string().describe('The database ID to delete. Format: db-uuid.'),
       confirm: z.boolean().describe('REQUIRED: Must be true to proceed. Safety measure against accidental deletion.'),
@@ -836,51 +867,54 @@ Returns the created database with its generated database_id. Related tools: add_
           };
         }
 
-        // Snapshot before delete
+        // Snapshot before soft delete
         const { data: currentDb } = await supabase.from('document_databases').select('*').eq('database_id', database_id).single();
-        let snapshotToken = '';
-        if (currentDb) {
-          const snapshot = await saveSnapshot({
-            entityType: 'database_config',
-            entityId: database_id,
-            tableName: 'document_databases',
-            toolName: 'delete_database',
-            operation: 'delete',
-            data: currentDb,
-            userId,
-          });
-          snapshotToken = snapshot.token;
+        if (!currentDb) {
+          return {
+            content: [{ type: 'text', text: `Database not found: ${database_id}` }],
+            isError: true,
+          };
         }
 
-        // Try to use cascade delete RPC if available
-        const { error: rpcError } = await supabase.rpc('delete_database_cascade', {
-          p_database_id: database_id,
+        let snapshotToken = '';
+        const snapshot = await saveSnapshot({
+          entityType: 'database_config',
+          entityId: database_id,
+          tableName: 'document_databases',
+          toolName: 'delete_database',
+          operation: 'soft_delete',
+          data: currentDb,
+          userId,
+        });
+        snapshotToken = snapshot.token;
+
+        // Soft delete: set deleted_at on document_databases
+        const now = new Date().toISOString();
+        const { error: updateError } = await supabase
+          .from('document_databases')
+          .update({ deleted_at: now })
+          .eq('database_id', database_id);
+
+        if (updateError) {
+          return {
+            content: [{ type: 'text', text: `Error soft-deleting database: ${updateError.message}` }],
+            isError: true,
+          };
+        }
+
+        // Insert into trash_items
+        await supabase.from('trash_items').insert({
+          item_type: 'database',
+          item_id: currentDb.id,
+          item_table: 'document_databases',
+          display_name: currentDb.name || database_id,
+          parent_info: { databaseId: database_id, documentId: currentDb.document_id },
+          user_id: userId,
+          deleted_at: now,
         });
 
-        if (rpcError) {
-          // Fallback to manual deletion
-          // Delete linked documents
-          await supabase
-            .from('documents')
-            .delete()
-            .eq('database_id', database_id);
-
-          // Delete metadata
-          const { error: metaError } = await supabase
-            .from('document_databases')
-            .delete()
-            .eq('database_id', database_id);
-
-          if (metaError) {
-            return {
-              content: [{ type: 'text', text: `Error deleting database: ${metaError.message}` }],
-              isError: true,
-            };
-          }
-        }
-
         return {
-          content: [{ type: 'text', text: `Database ${database_id} deleted (snapshot: ${snapshotToken}).` }],
+          content: [{ type: 'text', text: `Database "${currentDb.name}" moved to trash (snapshot: ${snapshotToken}). It will be permanently deleted after 30 days.` }],
         };
       } catch (err) {
         return {

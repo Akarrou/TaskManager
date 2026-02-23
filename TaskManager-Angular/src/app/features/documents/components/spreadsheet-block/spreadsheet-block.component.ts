@@ -25,7 +25,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { Subject, debounceTime, takeUntil } from 'rxjs';
+import { Subject, debounceTime, takeUntil, switchMap } from 'rxjs';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { TrashService } from '../../../../core/services/trash.service';
+import { TrashStore } from '../../../trash/store/trash.store';
 
 import { SpreadsheetService } from '../../services/spreadsheet.service';
 import { SpreadsheetIOService } from '../../services/spreadsheet-io.service';
@@ -83,6 +86,9 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
   private formulaEngine = inject(FormulaEngineService);
   private ioService = inject(SpreadsheetIOService);
   private dialog = inject(MatDialog);
+  private snackBar = inject(MatSnackBar);
+  private trashService = inject(TrashService);
+  private trashStore = inject(TrashStore);
   private ngZone = inject(NgZone);
   private cdr = inject(ChangeDetectorRef);
   private destroy$ = new Subject<void>();
@@ -1401,13 +1407,43 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
   }
 
   /**
-   * Delete this spreadsheet
+   * Soft-delete this spreadsheet (move to trash + remove TipTap node)
    */
   deleteSpreadsheet() {
     if (!this.spreadsheetId) return;
 
-    this.spreadsheetService.deleteSpreadsheet(this.spreadsheetId).subscribe({
+    let ssUuid = '';
+    const ssName = this.config?.name || 'Tableur';
+
+    this.spreadsheetService.softDeleteSpreadsheet(this.spreadsheetId).pipe(
+      switchMap((metadata) => {
+        ssUuid = metadata.id;
+        return this.trashService.softDeleteTrashOnly(
+          'spreadsheet',
+          metadata.id,
+          'document_spreadsheets',
+          ssName,
+          { spreadsheetId: this.spreadsheetId, documentId: this.documentId },
+        );
+      }),
+      takeUntil(this.destroy$),
+    ).subscribe({
       next: () => {
+        this.trashStore.loadItems();
+
+        const snackBarRef = this.snackBar.open(
+          'Tableur déplacé dans la corbeille',
+          'Annuler',
+          { duration: 5000 },
+        );
+
+        snackBarRef.onAction().subscribe(() => {
+          this.spreadsheetService
+            .restoreSpreadsheet(ssUuid)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(() => this.trashStore.loadItems());
+        });
+
         // Notify parent to remove the node
         if (this.onDataChange) {
           this.onDataChange({
@@ -1419,7 +1455,8 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
         }
       },
       error: (err) => {
-        console.error('[SpreadsheetBlock] Failed to delete spreadsheet:', err);
+        console.error('[SpreadsheetBlock] Failed to soft-delete spreadsheet:', err);
+        this.snackBar.open('Erreur lors de la suppression', 'OK', { duration: 5000 });
       },
     });
   }

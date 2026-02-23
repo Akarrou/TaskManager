@@ -11,7 +11,7 @@ export class ProjectService {
 
     getProjects() {
         return from(
-            this.supabase.client.from('projects').select('*').returns<Project[]>()
+            this.supabase.client.from('projects').select('*').is('deleted_at', null).returns<Project[]>()
         ).pipe(
             map(response => {
                 if (response.error) {

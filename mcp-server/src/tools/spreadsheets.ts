@@ -23,6 +23,7 @@ export function registerSpreadsheetTools(server: McpServer): void {
         let query = supabase
           .from('document_spreadsheets')
           .select('*')
+          .is('deleted_at', null)
           .order('created_at', { ascending: false });
 
         if (document_id) {
@@ -66,6 +67,7 @@ export function registerSpreadsheetTools(server: McpServer): void {
           .from('document_spreadsheets')
           .select('*')
           .eq('spreadsheet_id', spreadsheet_id)
+          .is('deleted_at', null)
           .single();
 
         if (error) {

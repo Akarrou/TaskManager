@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from './supabase';
-import { from, Observable, throwError, forkJoin, of } from 'rxjs';
+import { from, Observable, throwError, forkJoin, of, concat, toArray } from 'rxjs';
 import { map, catchError, switchMap, tap } from 'rxjs/operators';
 import {
   DatabaseRow,
@@ -9,10 +9,13 @@ import {
   DatabaseColumn,
   DatabaseConfigExtended,
   LinkedItem,
+  ColumnType,
+  PropertyColor,
 } from '../../features/documents/models/database.model';
 import { DatabaseService } from '../../features/documents/services/database.service';
 import { EventCategory, DEFAULT_CATEGORIES } from '../../shared/models/event-constants';
 import { GoogleCalendarReminder } from '../../features/google-calendar/models/google-calendar.model';
+import { EventAttendee, EventGuestPermissions } from '../../features/calendar/models/attendee.model';
 
 /**
  * EventEntry - Normalized event entry from database rows
@@ -36,6 +39,10 @@ export interface EventEntry {
   linked_items?: LinkedItem[];
   project_id?: string;
   event_number?: string;
+
+  // Attendees
+  attendees?: EventAttendee[];
+  guest_permissions?: EventGuestPermissions;
 
   // Google Calendar sync
   google_event_id?: string;
@@ -70,6 +77,20 @@ export class EventDatabaseService {
   // Metadata cache for performance optimization
   private metadataCache = new Map<string, DocumentDatabase>();
   private cacheExpiry = 5 * 60 * 1000; // 5 minutes
+
+  // Required columns that must exist on event databases
+  private readonly REQUIRED_EVENT_COLUMNS: Array<{
+    name: string;
+    type: ColumnType;
+    visible: boolean;
+    readonly: boolean;
+    width: number;
+    color: PropertyColor;
+  }> = [
+    { name: 'Google Meet', type: 'url', visible: true, readonly: true, width: 250, color: 'green' },
+    { name: 'Color', type: 'text', visible: false, readonly: true, width: 120, color: 'gray' },
+    { name: 'Attendees', type: 'json', visible: false, readonly: true, width: 250, color: 'blue' },
+  ];
 
   // =====================================================================
   // Public API Methods
@@ -180,7 +201,7 @@ export class EventDatabaseService {
    * Create a new event in a specific database
    */
   createEvent(databaseId: string, eventData: Partial<EventEntry>): Observable<EventEntry> {
-    return this.getDatabaseMetadata(databaseId).pipe(
+    return this.ensureEventColumns(databaseId).pipe(
       switchMap(dbMetadata => {
         const columnMapping = this.getColumnMapping(dbMetadata.config.columns);
         const cells: Record<string, CellValue> = {};
@@ -222,6 +243,12 @@ export class EventDatabaseService {
         if (eventData.meet_link && columnMapping['Google Meet']) {
           cells[columnMapping['Google Meet']] = eventData.meet_link;
         }
+        if ((eventData.attendees || eventData.guest_permissions) && columnMapping['Attendees']) {
+          cells[columnMapping['Attendees']] = JSON.stringify({
+            attendees: eventData.attendees ?? [],
+            permissions: eventData.guest_permissions ?? {},
+          });
+        }
 
         return this.databaseService.addRow({
           databaseId,
@@ -242,7 +269,7 @@ export class EventDatabaseService {
    * Update an existing event in a specific database
    */
   updateEvent(databaseId: string, rowId: string, updates: Partial<EventEntry>): Observable<EventEntry> {
-    return this.getDatabaseMetadata(databaseId).pipe(
+    return this.ensureEventColumns(databaseId).pipe(
       switchMap(dbMetadata => {
         const columnMapping = this.getColumnMapping(dbMetadata.config.columns);
         const cells: Record<string, CellValue> = {};
@@ -284,33 +311,43 @@ export class EventDatabaseService {
         if (updates.meet_link !== undefined && columnMapping['Google Meet']) {
           cells[columnMapping['Google Meet']] = updates.meet_link ?? null;
         }
+        if ((updates.attendees !== undefined || updates.guest_permissions !== undefined) && columnMapping['Attendees']) {
+          cells[columnMapping['Attendees']] = JSON.stringify({
+            attendees: updates.attendees ?? [],
+            permissions: updates.guest_permissions ?? {},
+          });
+        }
 
         return this.databaseService.updateRow(databaseId, rowId, cells).pipe(
           map(() => {
-            // Reconstruct EventEntry from the updates we just applied
-            // (RLS prevents reading the row back, so we build it from inputs)
+            // Return only the fields that were actually updated.
+            // The CalendarStore merges these onto the existing event in state,
+            // so omitting a field here preserves the existing value.
             const now = new Date().toISOString();
-            return {
+            const result: Partial<EventEntry> & { id: string; databaseId: string; databaseName: string; updated_at: string } = {
               id: rowId,
               databaseId,
               databaseName: dbMetadata.name,
-              title: (updates.title ?? '') as string,
-              description: updates.description,
-              start_date: updates.start_date ?? now,
-              end_date: updates.end_date ?? now,
-              all_day: updates.all_day ?? false,
-              category: updates.category ?? 'other',
-              location: updates.location,
-              recurrence: updates.recurrence,
-              linked_items: updates.linked_items,
-              project_id: updates.project_id,
-              event_number: updates.event_number,
-              reminders: updates.reminders,
-              meet_link: updates.meet_link,
-              created_at: updates.created_at ?? now,
               updated_at: now,
-              row_order: updates.row_order ?? 0,
-            } as EventEntry;
+            };
+
+            if (updates.title !== undefined) result.title = updates.title;
+            if (updates.description !== undefined) result.description = updates.description;
+            if (updates.start_date !== undefined) result.start_date = updates.start_date;
+            if (updates.end_date !== undefined) result.end_date = updates.end_date;
+            if (updates.all_day !== undefined) result.all_day = updates.all_day;
+            if (updates.category !== undefined) result.category = updates.category;
+            if (updates.location !== undefined) result.location = updates.location;
+            if (updates.recurrence !== undefined) result.recurrence = updates.recurrence;
+            if (updates.linked_items !== undefined) result.linked_items = updates.linked_items;
+            if (updates.project_id !== undefined) result.project_id = updates.project_id;
+            if (updates.event_number !== undefined) result.event_number = updates.event_number;
+            if (updates.reminders !== undefined) result.reminders = updates.reminders;
+            if (updates.meet_link !== undefined) result.meet_link = updates.meet_link;
+            if (updates.attendees !== undefined) result.attendees = updates.attendees;
+            if (updates.guest_permissions !== undefined) result.guest_permissions = updates.guest_permissions;
+
+            return result as EventEntry;
           }),
         );
       }),
@@ -355,6 +392,72 @@ export class EventDatabaseService {
     );
   }
 
+  /**
+   * Invalidate cached metadata for a database
+   */
+  invalidateMetadataCache(databaseId: string): void {
+    this.metadataCache.delete(databaseId);
+  }
+
+  /**
+   * Ensure all required event columns exist on the database.
+   * Idempotent: if columns already exist, does a single metadata fetch and returns.
+   * When columns are missing, adds them sequentially then re-fetches metadata.
+   */
+  ensureEventColumns(databaseId: string): Observable<DocumentDatabase> {
+    // Always fetch fresh metadata (bypass cache)
+    this.metadataCache.delete(databaseId);
+
+    return this.databaseService.getDatabaseMetadata(databaseId).pipe(
+      switchMap(metadata => {
+        const existingColumnNames = new Set(metadata.config.columns.map(c => c.name));
+        const missingColumns = this.REQUIRED_EVENT_COLUMNS.filter(
+          col => !existingColumnNames.has(col.name)
+        );
+
+        if (missingColumns.length === 0) {
+          // All columns present — update cache and return
+          this.metadataCache.set(databaseId, metadata);
+          setTimeout(() => this.metadataCache.delete(databaseId), this.cacheExpiry);
+          return of(metadata);
+        }
+
+        // Add missing columns sequentially
+        const maxOrder = Math.max(...metadata.config.columns.map(c => c.order), -1);
+        const addOps = missingColumns.map((col, index) => {
+          const column: DatabaseColumn = {
+            id: crypto.randomUUID(),
+            name: col.name,
+            type: col.type,
+            visible: col.visible,
+            readonly: col.readonly,
+            width: col.width,
+            color: col.color,
+            order: maxOrder + 1 + index,
+          };
+          return this.databaseService.addColumn({ databaseId, column });
+        });
+
+        return concat(...addOps).pipe(
+          toArray(),
+          switchMap(() => {
+            // Re-fetch fresh metadata after adding columns
+            return this.databaseService.getDatabaseMetadata(databaseId).pipe(
+              tap(freshMetadata => {
+                this.metadataCache.set(databaseId, freshMetadata);
+                setTimeout(() => this.metadataCache.delete(databaseId), this.cacheExpiry);
+              })
+            );
+          })
+        );
+      }),
+      catchError(err => {
+        console.error('[ensureEventColumns] Failed:', err);
+        return throwError(() => err);
+      })
+    );
+  }
+
   // =====================================================================
   // Private Helper Methods
   // =====================================================================
@@ -382,6 +485,7 @@ export class EventDatabaseService {
       event_number: this.getCellValue(row, columnMapping, 'Event Number') as string,
       reminders: this.parseReminders(this.getCellValue(row, columnMapping, 'Reminders') as string),
       meet_link: this.getCellValue(row, columnMapping, 'Google Meet') as string,
+      ...this.parseAttendees(this.getCellValue(row, columnMapping, 'Attendees')),
       color: (this.getCellValue(row, columnMapping, 'Color') as string) || undefined,
       created_at: row.created_at,
       updated_at: row.updated_at,
@@ -444,6 +548,22 @@ export class EventDatabaseService {
 
     // Pass through as-is (custom category or unknown)
     return normalized;
+  }
+
+  /**
+   * Parse attendees from JSONB value
+   */
+  private parseAttendees(value: CellValue): { attendees?: EventAttendee[]; guest_permissions?: EventGuestPermissions } {
+    if (!value) return {};
+    try {
+      const data = typeof value === 'string' ? JSON.parse(value) : value;
+      return {
+        attendees: Array.isArray(data.attendees) ? data.attendees : undefined,
+        guest_permissions: data.permissions ?? undefined,
+      };
+    } catch {
+      return {};
+    }
   }
 
   /**

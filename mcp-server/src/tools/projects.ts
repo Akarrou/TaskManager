@@ -27,6 +27,7 @@ export function registerProjectTools(server: McpServer): void {
           .from('projects')
           .select('*')
           .eq('owner_id', userId)
+          .is('deleted_at', null)
           .order('created_at', { ascending: false });
 
         if (!include_archived) {
@@ -94,6 +95,7 @@ export function registerProjectTools(server: McpServer): void {
           .from('projects')
           .select('*')
           .eq('id', project_id)
+          .is('deleted_at', null)
           .single();
 
         if (error) {
@@ -374,100 +376,76 @@ export function registerProjectTools(server: McpServer): void {
   );
 
   // =========================================================================
-  // delete_project - Delete a project and all its related data
+  // delete_project - Soft delete a project (move to trash)
   // =========================================================================
   server.tool(
     'delete_project',
-    `DESTRUCTIVE: Permanently delete a project and ALL its related data including documents, databases, database rows, tasks, tabs, sections, comments, and file attachments. This action CANNOT be undone. For temporary removal, use archive_project instead. The confirm parameter must be explicitly set to true as a safety measure. Returns confirmation of what was deleted. WARNING: Use with extreme caution.`,
+    `Move a project to the trash (soft delete). The project is marked as deleted but can be restored within 30 days using restore_from_trash. Child documents remain intact but are inaccessible while the project is in the trash. On restore, everything reappears. For temporary hiding without deletion, use archive_project instead. A snapshot is taken before deletion for additional recovery.`,
     {
-      project_id: z.string().uuid().describe('The UUID of the project to permanently delete. All related data will be destroyed.'),
-      confirm: z.boolean().describe('REQUIRED: Must be explicitly set to true to proceed with deletion. This is a safety measure to prevent accidental data loss.'),
+      project_id: z.string().uuid().describe('The UUID of the project to move to trash.'),
     },
-    async ({ project_id, confirm }) => {
-      if (!confirm) {
-        return {
-          content: [{ type: 'text', text: 'Deletion not confirmed. Set confirm=true to proceed with deletion.' }],
-          isError: true,
-        };
-      }
-
+    async ({ project_id }) => {
       try {
         const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
 
-        // First, get the project to make sure it exists
+        // Get the project info
         const { data: project, error: projectError } = await supabase
           .from('projects')
           .select('*')
           .eq('id', project_id)
           .single();
 
-        if (projectError) {
+        if (projectError || !project) {
           return {
-            content: [{ type: 'text', text: `Error finding project: ${projectError.message}` }],
+            content: [{ type: 'text', text: `Project not found: ${project_id}` }],
             isError: true,
           };
         }
 
-        // Snapshot before deletion
+        // Snapshot before soft delete
         let snapshotToken = '';
-        if (project) {
-          const snapshot = await saveSnapshot({
-            entityType: 'project',
-            entityId: project_id,
-            tableName: 'projects',
-            toolName: 'delete_project',
-            operation: 'delete',
-            data: project,
-            userId,
-          });
-          snapshotToken = snapshot.token;
-        }
+        const snapshot = await saveSnapshot({
+          entityType: 'project',
+          entityId: project_id,
+          tableName: 'projects',
+          toolName: 'delete_project',
+          operation: 'soft_delete',
+          data: project,
+          userId,
+        });
+        snapshotToken = snapshot.token;
 
-        // Delete project members
-        await supabase
-          .from('project_members')
-          .delete()
-          .eq('project_id', project_id);
+        const now = new Date().toISOString();
 
-        // Delete project invitations
-        await supabase
-          .from('project_invitations')
-          .delete()
-          .eq('project_id', project_id);
-
-        // Delete document tabs, groups, sections for this project
-        await supabase
-          .from('document_tabs')
-          .delete()
-          .eq('project_id', project_id);
-
-        await supabase
-          .from('document_tab_groups')
-          .delete()
-          .eq('project_id', project_id);
-
-        // Delete documents (this will cascade to related data via DB triggers/constraints)
-        await supabase
-          .from('documents')
-          .delete()
-          .eq('project_id', project_id);
-
-        // Finally delete the project itself
-        const { error: deleteError } = await supabase
+        // Soft delete: set deleted_at
+        const { error: updateError } = await supabase
           .from('projects')
-          .delete()
+          .update({ deleted_at: now })
           .eq('id', project_id);
 
-        if (deleteError) {
+        if (updateError) {
           return {
-            content: [{ type: 'text', text: `Error deleting project: ${deleteError.message}` }],
+            content: [{ type: 'text', text: `Error soft-deleting project: ${updateError.message}` }],
             isError: true,
           };
         }
 
+        // Insert into trash_items
+        await supabase
+          .from('trash_items')
+          .insert({
+            item_type: 'project',
+            item_id: project_id,
+            item_table: 'projects',
+            display_name: project.name || 'Untitled project',
+            parent_info: null,
+            user_id: userId,
+            deleted_at: now,
+          });
+
         return {
-          content: [{ type: 'text', text: `Project "${project.name}" (${project_id}) deleted (snapshot: ${snapshotToken}).` }],
+          content: [{ type: 'text', text: `Project "${project.name}" moved to trash (snapshot: ${snapshotToken}). Use restore_from_trash to recover it.` }],
         };
       } catch (err) {
         return {

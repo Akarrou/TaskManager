@@ -23,7 +23,8 @@ export type ColumnType =
   | 'multi-select'
   | 'url'
   | 'email'
-  | 'linked-items';
+  | 'linked-items'
+  | 'json';
 
 /**
  * Predefined colors for pinned properties
@@ -514,6 +515,7 @@ export const COLUMN_TYPE_TO_PG_TYPE: Record<ColumnType, string> = {
   url: 'TEXT',
   email: 'TEXT',
   'linked-items': 'JSONB',
+  json: 'JSONB',
 };
 
 /**
@@ -531,6 +533,7 @@ export const DEFAULT_COLUMN_WIDTHS: Record<ColumnType, number> = {
   url: 250,
   email: 200,
   'linked-items': 300,
+  json: 250,
 };
 
 // =====================================================================

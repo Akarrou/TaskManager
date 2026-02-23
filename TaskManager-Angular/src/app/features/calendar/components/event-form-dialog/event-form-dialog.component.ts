@@ -47,8 +47,11 @@ import {
   LinkedItem,
 } from '../../../../features/documents/models/database.model';
 import { GoogleCalendarReminder } from '../../../google-calendar/models/google-calendar.model';
+import { EventAttendee, EventGuestPermissions, DEFAULT_GUEST_PERMISSIONS } from '../../models/attendee.model';
 import { RecurrencePickerComponent } from '../recurrence-picker/recurrence-picker.component';
 import { LinkedItemsPickerComponent } from '../linked-items-picker/linked-items-picker.component';
+import { EventAttendeesPickerComponent } from '../event-attendees-picker/event-attendees-picker.component';
+import { EventGuestPermissionsComponent } from '../event-guest-permissions/event-guest-permissions.component';
 import { EventCategoryStore } from '../../../../core/stores/event-category.store';
 
 // =====================================================================
@@ -74,6 +77,8 @@ export interface EventFormDialogResult {
   recurrence: string;
   linked_items: LinkedItem[];
   reminders: GoogleCalendarReminder[];
+  attendees: EventAttendee[];
+  guest_permissions: EventGuestPermissions;
   databaseId: string;
   add_google_meet: boolean;
 }
@@ -92,6 +97,8 @@ interface EventForm {
   recurrence: FormControl<string>;
   linkedItems: FormControl<LinkedItem[]>;
   reminders: FormControl<GoogleCalendarReminder[]>;
+  attendees: FormControl<EventAttendee[]>;
+  guestPermissions: FormControl<EventGuestPermissions>;
   databaseId: FormControl<string>;
 }
 
@@ -120,6 +127,8 @@ interface CategoryOption {
     TextFieldModule,
     RecurrencePickerComponent,
     LinkedItemsPickerComponent,
+    EventAttendeesPickerComponent,
+    EventGuestPermissionsComponent,
   ],
   templateUrl: './event-form-dialog.component.html',
   styleUrls: ['./event-form-dialog.component.scss'],
@@ -137,8 +146,9 @@ export class EventFormDialogComponent implements OnInit {
   readonly eventDatabases = signal<DocumentDatabase[]>([]);
   readonly showDatabaseSelector = signal(false);
 
-  // Category panel state
+  // Panel state
   readonly showCategoryPanel = signal(false);
+  readonly showAttendeesPanel = signal(false);
   readonly editingKey = signal<string | null>(null);
   readonly editLabel = new FormControl('', { nonNullable: true });
   readonly editColorKey = signal('blue');
@@ -151,6 +161,9 @@ export class EventFormDialogComponent implements OnInit {
   // Mode
   readonly isEditMode = this.data.mode === 'edit';
   readonly dialogTitle = this.isEditMode ? 'Modifier l\'événement' : 'Nouvel événement';
+
+  // Whether to show guest permissions (at least 1 attendee)
+  readonly hasAttendees = signal(false);
 
   // Category options from store
   readonly categoryOptions = computed<CategoryOption[]>(() =>
@@ -183,6 +196,8 @@ export class EventFormDialogComponent implements OnInit {
     recurrence: new FormControl<string>('', { nonNullable: true }),
     linkedItems: new FormControl<LinkedItem[]>([], { nonNullable: true }),
     reminders: new FormControl<GoogleCalendarReminder[]>([], { nonNullable: true }),
+    attendees: new FormControl<EventAttendee[]>([], { nonNullable: true }),
+    guestPermissions: new FormControl<EventGuestPermissions>({ ...DEFAULT_GUEST_PERMISSIONS }, { nonNullable: true }),
     databaseId: new FormControl<string>('', {
       nonNullable: true,
       validators: [Validators.required],
@@ -211,8 +226,8 @@ export class EventFormDialogComponent implements OnInit {
       const endTime = group.controls.endTime?.value ?? '00:00';
       const [sh, sm] = startTime.split(':').map(Number);
       const [eh, em] = endTime.split(':').map(Number);
-      start.setHours(sh ?? 0, sm ?? 0, 0, 0);
-      end.setHours(eh ?? 0, em ?? 0, 0, 0);
+      start.setHours(isNaN(sh) ? 0 : sh, isNaN(sm) ? 0 : sm, 0, 0);
+      end.setHours(isNaN(eh) ? 0 : eh, isNaN(em) ? 0 : em, 0, 0);
     }
 
     return end < start ? { dateRange: true } : null;
@@ -225,6 +240,12 @@ export class EventFormDialogComponent implements OnInit {
   ngOnInit(): void {
     this.loadEventDatabases();
     this.populateFormFromData();
+
+    // Track whether attendees exist for showing permissions
+    this.form.controls.attendees.valueChanges.subscribe(attendees => {
+      this.hasAttendees.set(attendees.length > 0);
+    });
+    this.hasAttendees.set(this.form.controls.attendees.value.length > 0);
   }
 
   // =====================================================================
@@ -232,9 +253,15 @@ export class EventFormDialogComponent implements OnInit {
   // =====================================================================
 
   toggleCategoryPanel(): void {
+    this.showAttendeesPanel.set(false);
     this.showCategoryPanel.update(v => !v);
     this.editingKey.set(null);
     this.confirmDeleteKey.set(null);
+  }
+
+  toggleAttendeesPanel(): void {
+    this.showCategoryPanel.set(false);
+    this.showAttendeesPanel.update(v => !v);
   }
 
   onAddCategory(): void {
@@ -337,6 +364,8 @@ export class EventFormDialogComponent implements OnInit {
         recurrence: event.recurrence ?? '',
         linkedItems: event.linked_items ?? [],
         reminders: event.reminders ?? [],
+        attendees: event.attendees ?? [],
+        guestPermissions: event.guest_permissions ?? { ...DEFAULT_GUEST_PERMISSIONS },
         databaseId: event.databaseId,
       });
 
@@ -370,7 +399,7 @@ export class EventFormDialogComponent implements OnInit {
         const startDate = this.form.controls.startDate.value!;
         const [h, m] = this.form.controls.startTime.value.split(':').map(Number);
         const defaultEnd = new Date(startDate);
-        defaultEnd.setHours((h ?? 0) + 1, m ?? 0, 0, 0);
+        defaultEnd.setHours((isNaN(h) ? 0 : h) + 1, isNaN(m) ? 0 : m, 0, 0);
         this.form.controls.endDate.setValue(defaultEnd);
         this.form.controls.endTime.setValue(this.formatTime(defaultEnd));
       }
@@ -422,6 +451,8 @@ export class EventFormDialogComponent implements OnInit {
       recurrence: formValue.recurrence,
       linked_items: formValue.linkedItems,
       reminders: formValue.reminders,
+      attendees: formValue.attendees,
+      guest_permissions: formValue.guestPermissions,
       databaseId: formValue.databaseId,
       add_google_meet: formValue.addGoogleMeet,
     };

@@ -1,12 +1,18 @@
-import { Component, Inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 export interface ConfirmDialogData {
   title: string;
   message: string;
+  /** Name of the item being deleted (shown in bold) */
+  itemName?: string;
+  /** Optional warning block title */
+  warningTitle?: string;
+  /** Optional warning block message */
+  warningMessage?: string;
 }
 
 @Component({
@@ -16,18 +22,10 @@ export interface ConfirmDialogData {
     CommonModule,
     MatDialogModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
   ],
   templateUrl: './confirm-dialog.component.html',
 })
 export class ConfirmDialogComponent {
-
-  constructor(
-    public dialogRef: MatDialogRef<ConfirmDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: ConfirmDialogData
-  ) {}
-
-  onNoClick(): void {
-    this.dialogRef.close();
-  }
-} 
+  data = inject<ConfirmDialogData>(MAT_DIALOG_DATA);
+}

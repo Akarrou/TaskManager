@@ -80,7 +80,8 @@
       "WebFetch(domain:upload.wikimedia.org)",
       "WebFetch(domain:iconify.design)",
       "WebFetch(domain:worldvectorlogo.com)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(python3:*)"
     ],
     "deny": [
       "Read(./.env)",

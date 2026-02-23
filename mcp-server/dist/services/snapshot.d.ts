@@ -3,7 +3,7 @@ export interface SnapshotParams {
     entityId: string;
     tableName?: string;
     toolName: string;
-    operation: 'update' | 'delete';
+    operation: 'update' | 'delete' | 'soft_delete';
     data: unknown;
     userId?: string;
 }

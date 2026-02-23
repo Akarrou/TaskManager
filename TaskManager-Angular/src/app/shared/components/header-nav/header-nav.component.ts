@@ -4,6 +4,7 @@ import { Router, RouterModule, NavigationEnd, Event as RouterEvent } from '@angu
 import { AuthService } from '../../../core/services/auth';
 import { LogoComponent } from '../logo/logo.component';
 import { ProjectSelectorComponent } from '../../../features/projects/components/project-selector/project-selector.component';
+import { TrashStore } from '../../../features/trash/store/trash.store';
 
 @Component({
   selector: 'app-header-nav',
@@ -15,8 +16,10 @@ import { ProjectSelectorComponent } from '../../../features/projects/components/
 export class HeaderNavComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private trashStore = inject(TrashStore);
 
   currentUser = this.authService.currentUser;
+  trashCount = this.trashStore.trashCount;
 
   activeRoute = signal('dashboard');
   notificationCount = signal(3);
@@ -34,6 +37,9 @@ export class HeaderNavComponent {
         this.checkLoginRoute(event.urlAfterRedirects);
       }
     });
+
+    // Load trash count for badge
+    this.trashStore.loadTrashCount();
   }
 
   private checkLoginRoute(url: string): void {

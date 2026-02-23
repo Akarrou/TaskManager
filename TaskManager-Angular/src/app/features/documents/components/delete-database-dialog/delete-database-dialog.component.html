@@ -43,16 +43,16 @@
     </button>
   </mat-dialog-actions>
 } @else {
-  <!-- Original database: delete everything -->
+  <!-- Original database: move to trash -->
   <h2 mat-dialog-title class="dialog-title-danger">
-    <mat-icon>warning</mat-icon>
-    Confirmer la suppression
+    <mat-icon>delete</mat-icon>
+    Déplacer vers la corbeille
   </h2>
 
   <mat-dialog-content class="dialog-content">
     <p>
-      Voulez-vous vraiment supprimer la base de données
-      <strong>"{{ data.databaseName }}"</strong> ?
+      Voulez-vous déplacer la base de données
+      <strong>"{{ data.databaseName }}"</strong> dans la corbeille ?
     </p>
 
     @if (data.rowCount > 0) {
@@ -64,7 +64,7 @@
             ligne{{ data.rowCount > 1 ? 's' : '' }}
           </p>
           <p>
-            Toutes les lignes seront <strong>définitivement supprimées</strong>.
+            Les lignes associées seront aussi déplacées dans la corbeille.
           </p>
         </div>
       </div>
@@ -72,7 +72,7 @@
 
     <p class="text-sm text-gray-600">
       <mat-icon class="text-base align-middle">info</mat-icon>
-      Cette action est irréversible et supprimera la table PostgreSQL associée.
+      L'élément sera conservé 30 jours avant suppression définitive.
     </p>
   </mat-dialog-content>
 
@@ -91,7 +91,7 @@
       [mat-dialog-close]="true"
       cdkFocusInitial>
       <mat-icon>delete</mat-icon>
-      Supprimer définitivement
+      Déplacer vers la corbeille
     </button>
   </mat-dialog-actions>
 }

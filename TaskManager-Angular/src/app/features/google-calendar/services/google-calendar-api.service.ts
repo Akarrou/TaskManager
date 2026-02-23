@@ -8,6 +8,12 @@ import {
   SyncResult,
 } from '../models/google-calendar.model';
 
+export interface GoogleContact {
+  email: string;
+  displayName?: string;
+  photoUrl?: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -161,6 +167,7 @@ export class GoogleCalendarApiService {
     databaseId: string,
   ): Promise<GoogleCalendarSyncConfig | null> {
     // 1. Try exact match: resolve database_id → UUID, then match kodo_database_id
+    //    Only match writable calendars (bidirectional or to_google)
     const dbUuid = await this.resolveDatabaseUuid(databaseId);
 
     if (dbUuid) {
@@ -169,6 +176,7 @@ export class GoogleCalendarApiService {
         .select('*')
         .eq('kodo_database_id', dbUuid)
         .eq('is_enabled', true)
+        .in('sync_direction', ['bidirectional', 'to_google'])
         .maybeSingle();
 
       if (data) {
@@ -176,8 +184,7 @@ export class GoogleCalendarApiService {
       }
     }
 
-    // 2. Fallback: find any enabled sync config with compatible direction
-    //    Exclude read-only calendars (holidays, birthdays, etc.)
+    // 2. Fallback: find any enabled writable sync config
     //    (RLS ensures only the current user's configs are returned)
     const { data: fallbackList, error } = await this.client
       .from('google_calendar_sync_config')
@@ -185,8 +192,6 @@ export class GoogleCalendarApiService {
       .eq('is_enabled', true)
       .in('sync_direction', ['bidirectional', 'to_google']);
 
-    // Prefer configs with owner/writer access (sync_direction already filters for writable)
-    // The sync_direction is set based on accessRole during initial calendar discovery
     const fallback = (fallbackList ?? [])[0] ?? null;
 
     if (error) {
@@ -194,6 +199,22 @@ export class GoogleCalendarApiService {
     }
 
     return fallback as GoogleCalendarSyncConfig | null;
+  }
+
+  async searchContacts(query: string): Promise<GoogleContact[]> {
+    const { data, error } = await this.client.functions.invoke('google-contacts-search', {
+      body: { query },
+    });
+
+    if (error) {
+      throw new Error(`Failed to search contacts: ${error.message}`);
+    }
+
+    if (!data || !Array.isArray(data.contacts)) {
+      return [];
+    }
+
+    return data.contacts as GoogleContact[];
   }
 
   /**

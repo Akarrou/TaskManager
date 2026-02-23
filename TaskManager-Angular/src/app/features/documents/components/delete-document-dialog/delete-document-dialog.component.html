@@ -1,12 +1,12 @@
 <h2 mat-dialog-title class="dialog-title-danger">
-  <mat-icon>warning</mat-icon>
-  Confirmer la suppression
+  <mat-icon>delete</mat-icon>
+  Déplacer vers la corbeille
 </h2>
 
 <mat-dialog-content class="dialog-content">
   <p>
-    Voulez-vous vraiment supprimer le document
-    <strong>"{{ data.documentTitle }}"</strong> ?
+    Voulez-vous déplacer le document
+    <strong>"{{ data.documentTitle }}"</strong> dans la corbeille ?
   </p>
 
   @if (data.databaseCount > 0) {
@@ -18,8 +18,7 @@
           base{{ data.databaseCount > 1 ? 's' : '' }} de données
         </p>
         <p>
-          Toutes les bases de données et leurs tables PostgreSQL associées seront
-          <strong>définitivement supprimées</strong>.
+          Les bases de données associées seront aussi déplacées dans la corbeille.
         </p>
       </div>
     </div>
@@ -27,7 +26,7 @@
 
   <p class="text-sm text-gray-600">
     <mat-icon class="text-base align-middle">info</mat-icon>
-    Cette action est irréversible.
+    L'élément sera conservé 30 jours avant suppression définitive.
   </p>
 </mat-dialog-content>
 
@@ -46,6 +45,6 @@
     [mat-dialog-close]="true"
     cdkFocusInitial>
     <mat-icon>delete</mat-icon>
-    Supprimer définitivement
+    Déplacer vers la corbeille
   </button>
 </mat-dialog-actions>

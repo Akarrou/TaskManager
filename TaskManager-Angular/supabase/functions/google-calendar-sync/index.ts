@@ -121,9 +121,10 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Ensure "Google Meet" and "Color" columns exist in the database (migrate older databases)
+    // Ensure "Google Meet", "Color", and "Attendees" columns exist in the database (migrate older databases)
     resolvedDb = await ensureMeetColumn(resolvedDb, supabaseAdmin)
     resolvedDb = await ensureColorColumn(resolvedDb, supabaseAdmin)
+    resolvedDb = await ensureAttendeesColumn(resolvedDb, supabaseAdmin)
 
     // Build request parameters
     const params = new URLSearchParams({
@@ -158,6 +159,17 @@ Deno.serve(async (req) => {
       errors: [],
       status: 'success',
       sync_token: null,
+    }
+
+    // Pre-load all existing mappings for this Google calendar
+    const { data: existingMappings } = await supabaseAdmin
+      .from('google_calendar_event_mapping')
+      .select('*')
+      .eq('google_calendar_id', config.google_calendar_id)
+
+    const mappingsByGoogleEventId = new Map<string, Record<string, unknown>>()
+    for (const m of existingMappings ?? []) {
+      mappingsByGoogleEventId.set(m.google_event_id as string, m)
     }
 
     // Paginate through all events
@@ -195,7 +207,7 @@ Deno.serve(async (req) => {
       // Process each event
       for (const event of events) {
         try {
-          await processEvent(event, config, resolvedDb, user.id, supabaseAdmin, result)
+          await processEvent(event, config, resolvedDb, user.id, supabaseAdmin, result, mappingsByGoogleEventId)
         } catch (eventError) {
           result.errors.push({
             event_id: String(event.id ?? ''),
@@ -298,8 +310,6 @@ async function autoCreateEventDatabase(
     .single()
 
   const isReadOnly = syncCfg?.sync_direction === 'from_google'
-    || (syncCfg?.google_calendar_id as string)?.includes('#holiday')
-    || (syncCfg?.google_calendar_id as string)?.endsWith('@group.v.calendar.google.com')
 
   const dbName = isReadOnly ? (calendarName || 'Google Calendar Events') : 'Calendrier'
 
@@ -379,6 +389,7 @@ async function autoCreateEventDatabase(
     { id: crypto.randomUUID(), name: 'Event Number', type: 'text', visible: true, readonly: true, required: false, order: 10, width: 120, color: 'gray' },
     { id: crypto.randomUUID(), name: 'Color', type: 'text', visible: false, readonly: true, order: 11, width: 120, color: 'gray' },
     { id: crypto.randomUUID(), name: 'Google Meet', type: 'url', visible: true, readonly: true, order: 12, width: 250, color: 'green' },
+    { id: crypto.randomUUID(), name: 'Attendees', type: 'json', visible: false, readonly: true, order: 13, width: 250, color: 'blue' },
   ]
 
   const config = {
@@ -479,7 +490,7 @@ async function ensureMeetColumn(
     column_type: 'TEXT',
   })
 
-  if (addResult && !(addResult as Record<string, unknown>).success) {
+  if (!addResult || !(addResult as Record<string, unknown>).success) {
     console.error('Failed to add physical Meet column:', addResult)
     return resolvedDb
   }
@@ -555,7 +566,7 @@ async function ensureColorColumn(
     column_type: 'TEXT',
   })
 
-  if (addResult && !(addResult as Record<string, unknown>).success) {
+  if (!addResult || !(addResult as Record<string, unknown>).success) {
     console.error('Failed to add physical Color column:', addResult)
     return resolvedDb
   }
@@ -607,6 +618,79 @@ async function ensureColorColumn(
   }
 }
 
+/**
+ * Ensure the "Attendees" column exists in an existing event database.
+ * If missing, adds both the config entry and the physical column.
+ * Returns the updated ResolvedDatabase with the new column included.
+ */
+async function ensureAttendeesColumn(
+  resolvedDb: ResolvedDatabase,
+  supabaseAdmin: SupabaseAdmin
+): Promise<ResolvedDatabase> {
+  const hasAttendeesCol = resolvedDb.columns.some(c => c.name === 'Attendees')
+  if (hasAttendeesCol) return resolvedDb
+
+  const newColId = crypto.randomUUID()
+  const newColumn: DatabaseColumn = { id: newColId, name: 'Attendees', type: 'json' }
+
+  const physColName = `col_${newColId.replace(/-/g, '_')}`
+  const { data: addResult } = await supabaseAdmin.rpc('add_column_to_table', {
+    table_name: resolvedDb.tableName,
+    column_name: physColName,
+    column_type: 'JSONB',
+  })
+
+  if (!addResult || !(addResult as Record<string, unknown>).success) {
+    console.error('Failed to add physical Attendees column:', addResult)
+    return resolvedDb
+  }
+
+  await supabaseAdmin.rpc('reload_schema_cache')
+  await new Promise(resolve => setTimeout(resolve, 500))
+
+  const { data: dbMeta, error: metaError } = await supabaseAdmin
+    .from('document_databases')
+    .select('config')
+    .eq('id', resolvedDb.dbMetaId)
+    .single()
+
+  if (metaError || !dbMeta) {
+    console.error('Failed to read database config for Attendees column migration:', metaError)
+    return resolvedDb
+  }
+
+  const config = dbMeta.config as { columns: Array<Record<string, unknown>> }
+  const maxOrder = Math.max(...config.columns.map(c => (c.order as number) ?? 0), 0)
+
+  config.columns.push({
+    id: newColId,
+    name: 'Attendees',
+    type: 'json',
+    visible: false,
+    readonly: true,
+    order: maxOrder + 1,
+    width: 250,
+    color: 'blue',
+  })
+
+  const { error: configError } = await supabaseAdmin
+    .from('document_databases')
+    .update({ config })
+    .eq('id', resolvedDb.dbMetaId)
+
+  if (configError) {
+    console.error('Failed to update database config for Attendees column:', configError)
+    return resolvedDb
+  }
+
+  console.log(`Migrated database "${resolvedDb.tableName}": added "Attendees" column`)
+
+  return {
+    ...resolvedDb,
+    columns: [...resolvedDb.columns, newColumn],
+  }
+}
+
 // =============================================================================
 // Event Processing
 // =============================================================================
@@ -617,17 +701,13 @@ async function processEvent(
   resolvedDb: ResolvedDatabase,
   userId: string,
   supabaseAdmin: SupabaseAdmin,
-  result: SyncResult
+  result: SyncResult,
+  mappingsByGoogleEventId: Map<string, Record<string, unknown>>
 ): Promise<void> {
   const googleEventId = event.id as string
 
-  // Check existing mapping by google_calendar_id (stable across reconnections)
-  let { data: existingMapping } = await supabaseAdmin
-    .from('google_calendar_event_mapping')
-    .select('*')
-    .eq('google_calendar_id', config.google_calendar_id)
-    .eq('google_event_id', googleEventId)
-    .maybeSingle()
+  // Look up from pre-loaded mappings instead of querying DB each time
+  let existingMapping = mappingsByGoogleEventId.get(googleEventId) ?? null
 
   // If found with a stale sync_config_id, update it to point to the current config
   if (existingMapping && existingMapping.sync_config_id !== config.id) {
@@ -636,6 +716,7 @@ async function processEvent(
       .update({ sync_config_id: config.id })
       .eq('id', existingMapping.id)
     existingMapping = { ...existingMapping, sync_config_id: config.id }
+    mappingsByGoogleEventId.set(googleEventId, existingMapping)
   }
 
   // Handle cancelled events
@@ -683,6 +764,7 @@ async function processEvent(
         targetDb = await resolveEventDatabase(existingMapping.kodo_database_id, supabaseAdmin)
         targetDb = await ensureMeetColumn(targetDb, supabaseAdmin)
         targetDb = await ensureColorColumn(targetDb, supabaseAdmin)
+        targetDb = await ensureAttendeesColumn(targetDb, supabaseAdmin)
       } catch {
         targetDb = resolvedDb
       }
@@ -742,6 +824,7 @@ async function processEvent(
     const { data: maxOrderRow } = await supabaseAdmin
       .from(resolvedDb.tableName)
       .select('row_order')
+      .is('deleted_at', null)
       .order('row_order', { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -761,7 +844,7 @@ async function processEvent(
 
     // Create linked document (Notion-style)
     const title = (event.summary as string) ?? 'Untitled'
-    await supabaseAdmin
+    const { error: docInsertError } = await supabaseAdmin
       .from('documents')
       .insert({
         title,
@@ -770,6 +853,12 @@ async function processEvent(
         content: { type: 'doc', content: [] },
         user_id: userId,
       })
+
+    if (docInsertError) {
+      // Rollback: delete orphaned row
+      await supabaseAdmin.from(resolvedDb.tableName).delete().eq('id', newRow.id)
+      throw new Error(`Failed to create linked document: ${docInsertError.message}`)
+    }
 
     // C9: Create mapping with upsert to handle race conditions
     const { error: mappingError } = await supabaseAdmin
@@ -858,6 +947,47 @@ function mapGoogleEventToKodo(
   const meetLink = videoEntry?.uri ?? (event.hangoutLink as string) ?? null
   if (meetLink) {
     setField('Google Meet', meetLink)
+  }
+
+  // Map Google Calendar reminders
+  const reminders = event.reminders as {
+    useDefault?: boolean
+    overrides?: Array<{ method: string; minutes: number }>
+  } | undefined
+
+  if (reminders?.overrides && reminders.overrides.length > 0) {
+    setField('Reminders', JSON.stringify(reminders.overrides))
+  }
+
+  // Extract attendees and guest permissions from Google Calendar event
+  const googleAttendees = event.attendees as Array<{
+    email: string
+    displayName?: string
+    responseStatus?: string
+    optional?: boolean
+    organizer?: boolean
+    self?: boolean
+  }> | undefined
+
+  if (googleAttendees && googleAttendees.length > 0) {
+    const mappedAttendees = googleAttendees.map(a => ({
+      email: a.email,
+      displayName: a.displayName ?? a.email.split('@')[0],
+      rsvpStatus: a.responseStatus ?? 'needsAction',
+      isOrganizer: a.organizer ?? false,
+      isOptional: a.optional ?? false,
+    }))
+
+    const permissions = {
+      guestsCanModify: (event.guestsCanModify as boolean) ?? false,
+      guestsCanInviteOthers: (event.guestsCanInviteOthers as boolean) ?? true,
+      guestsCanSeeOtherGuests: (event.guestsCanSeeOtherGuests as boolean) ?? true,
+    }
+
+    setField('Attendees', JSON.stringify({
+      attendees: mappedAttendees,
+      permissions,
+    }))
   }
 
   return rowData

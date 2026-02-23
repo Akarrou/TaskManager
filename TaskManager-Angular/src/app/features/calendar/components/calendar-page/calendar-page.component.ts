@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, computed, inject, OnInit, OnDestroy, ViewChild, effect, Renderer2 } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed, inject, OnInit, OnDestroy, ViewChild, effect, Renderer2, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
@@ -25,6 +25,7 @@ import { GoogleCalendarStore } from '../../../google-calendar/store/google-calen
 import { selectActiveProjects } from '../../../projects/store/project.selectors';
 import { loadProjects } from '../../../projects/store/project.actions';
 import { switchMap } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { of } from 'rxjs';
 import { DatabaseService } from '../../../documents/services/database.service';
 import { DocumentService } from '../../../documents/services/document.service';
@@ -63,7 +64,6 @@ import { CATEGORY_COLOR_PALETTE } from '../../../../shared/models/event-constant
 })
 export class CalendarPageComponent implements OnInit, OnDestroy {
   private calendarStore = inject(CalendarStore);
-  private cdr = inject(ChangeDetectorRef);
   private dialog = inject(MatDialog);
   private adapter = inject(FullCalendarAdapterService);
   private store = inject(Store);
@@ -74,6 +74,7 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
   private renderer = inject(Renderer2);
   private categoryStore = inject(EventCategoryStore);
   private gcalStore = inject(GoogleCalendarStore);
+  private destroyRef = inject(DestroyRef);
 
   readonly isGoogleCalendarConnected = this.gcalStore.isConnected;
   readonly hasEnabledSyncConfigs = computed(() => this.gcalStore.enabledSyncConfigs().length > 0);
@@ -178,14 +179,18 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
   }
 
   private async initializeGoogleCalendar(): Promise<void> {
-    await this.gcalStore.loadConnection();
-    await this.gcalStore.loadSyncConfigs();
-    // Only enter setup mode when connected but no calendars are enabled yet
-    if (this.isGoogleCalendarConnected() && !this.hasEnabledSyncConfigs()) {
-      this.calendarSetupMode.set(true);
+    try {
+      await this.gcalStore.loadConnection();
+      await this.gcalStore.loadSyncConfigs();
+      // Only enter setup mode when connected but no calendars are enabled yet
+      if (this.isGoogleCalendarConnected() && !this.hasEnabledSyncConfigs()) {
+        this.calendarSetupMode.set(true);
+      }
+    } catch (err) {
+      console.error('[CalendarPage] Failed to initialize Google Calendar:', err);
+    } finally {
+      this.initialLoadComplete.set(true);
     }
-    this.initialLoadComplete.set(true);
-    this.cdr.markForCheck();
   }
 
   ngOnDestroy(): void {
@@ -207,6 +212,9 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
     // Trigger sync for all enabled calendars, then show the calendar
     await this.gcalStore.triggerSync();
     this.calendarSetupMode.set(false);
+    // Calendar will render and datesSet triggers loadEvents automatically;
+    // also reload explicitly in case the calendar was already mounted
+    this.reloadEvents();
   }
 
   navigatePrev(): void {
@@ -283,7 +291,6 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
       }
     });
     this.calendarComponent?.getApi()?.unselect();
-    this.cdr.markForCheck();
   }
 
   handleEventClick(clickInfo: EventClickArg): void {
@@ -294,7 +301,6 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
       this.showDetailPanel.set(true);
       this.calendarStore.selectEvent(eventId);
     }
-    this.cdr.markForCheck();
   }
 
   handleEventDrop(dropInfo: EventDropArg): void {
@@ -309,7 +315,6 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
         },
       });
     }
-    this.cdr.markForCheck();
   }
 
   handleEventResize(resizeInfo: EventResizeDoneArg): void {
@@ -324,7 +329,6 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
         },
       });
     }
-    this.cdr.markForCheck();
   }
 
   handleDatesSet(dateInfo: { startStr: string; endStr: string; view: { title: string } }): void {
@@ -334,7 +338,6 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
       end: dateInfo.endStr,
       projectId: this.selectedProjectId() || undefined,
     });
-    this.cdr.markForCheck();
   }
 
   // =====================================================================
@@ -375,8 +378,13 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
           database_row_id: data.rowId,
         });
       }),
-    ).subscribe(document => {
-      this.router.navigate(['/documents', document.id], { queryParams: { from: 'calendar' } });
+    ).subscribe({
+      next: (document) => {
+        this.router.navigate(['/documents', document.id], { queryParams: { from: 'calendar' } });
+      },
+      error: (err) => {
+        console.error('[CalendarPage] Failed to navigate to source:', err);
+      },
     });
   }
 
@@ -401,8 +409,13 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
                 database_row_id: item.id,
               });
             }),
-          ).subscribe(document => {
-            this.router.navigate(['/documents', document.id]);
+          ).subscribe({
+            next: (document) => {
+              this.router.navigate(['/documents', document.id]);
+            },
+            error: (err) => {
+              console.error('[CalendarPage] Failed to navigate to linked item:', err);
+            },
           });
         }
         break;
@@ -431,15 +444,15 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
   // Computed calendar events for FullCalendar
   // =====================================================================
 
-  get calendarEvents(): EventInput[] {
-    return this.adapter.eventEntriesToCalendarEvents(this.events());
-  }
+  readonly calendarEvents = computed(() =>
+    this.adapter.eventEntriesToCalendarEvents(this.events())
+  );
 
   // =====================================================================
   // Private Methods
   // =====================================================================
 
-  private reloadEvents(): void {
+  reloadEvents(): void {
     const api = this.calendarComponent?.getApi();
     if (api) {
       const view = api.view;
@@ -453,9 +466,10 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
 
   private loadProjects(): void {
     this.store.dispatch(loadProjects());
-    this.store.select(selectActiveProjects).subscribe(projects => {
+    this.store.select(selectActiveProjects).pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(projects => {
       this.projects.set(projects.map(p => ({ id: p.id, name: p.name })));
-      this.cdr.markForCheck();
     });
   }
 }

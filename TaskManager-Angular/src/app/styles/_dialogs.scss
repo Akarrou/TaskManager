@@ -11,9 +11,9 @@
 // ============================================================================
 
 .dialog-title {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
   font-size: v.$font-size-xl !important;
   font-weight: v.$font-weight-semibold !important;
   color: v.$text-color-dark !important;
@@ -21,10 +21,16 @@
   padding: 1.5rem 1.5rem 1rem 1.5rem !important;
   border-bottom: 1px solid v.$border-color-light;
 
+  &::before {
+    display: none !important;
+  }
+
   mat-icon {
     font-size: 1.5rem;
     width: 1.5rem;
     height: 1.5rem;
+    flex-shrink: 0;
+    line-height: 1;
   }
 }
 
@@ -190,6 +196,30 @@
 
   &:focus {
     outline: 2px solid v.$error-color !important;
+    outline-offset: 2px !important;
+  }
+
+  &:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+  }
+}
+
+// Warn button (Trash, Move, Warning actions)
+.dialog-btn-warn {
+  @extend .dialog-btn;
+  color: white !important;
+  background-color: v.$warning-color !important;
+  border: none !important;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2) !important;
+
+  &:hover {
+    background-color: #d97706 !important;
+    box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3) !important;
+  }
+
+  &:focus {
+    outline: 2px solid v.$warning-color !important;
     outline-offset: 2px !important;
   }
 

@@ -9,7 +9,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatDialog } from '@angular/material/dialog';
-import { Subject, takeUntil, debounceTime } from 'rxjs';
+import { Subject, takeUntil, debounceTime, switchMap } from 'rxjs';
 import {
   DatabaseConfig,
   DatabaseRow,
@@ -65,6 +65,9 @@ import { DatabaseKanbanView } from '../database-kanban-view/database-kanban-view
 import { DatabaseCalendarView } from '../database-calendar-view/database-calendar-view';
 import { DatabaseTimelineView } from '../database-timeline-view/database-timeline-view';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { TrashService } from '../../../../core/services/trash.service';
+import { TrashStore } from '../../../trash/store/trash.store';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 import {
   DateRangePickerDialogComponent,
   DateRangePickerDialogData,
@@ -112,6 +115,8 @@ import { AddToEventDialogComponent, AddToEventDialogData } from '../../../calend
 export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   private databaseService = inject(DatabaseService);
   private documentService = inject(DocumentService);
+  private trashService = inject(TrashService);
+  private trashStore = inject(TrashStore);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private router = inject(Router);
@@ -519,14 +524,34 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Delete rows
+   * Soft delete rows (move to trash)
    */
   onDeleteRows(rowIds: string[]) {
-    const confirmDelete = confirm(
-      `Supprimer ${rowIds.length} ligne(s) ? Cette action est irréversible.`
+    const count = rowIds.length;
+    const dialogRef = this.dialog.open<ConfirmDialogComponent, ConfirmDialogData, boolean>(
+      ConfirmDialogComponent,
+      {
+        width: '500px',
+        data: {
+          title: 'Déplacer vers la corbeille',
+          message: '',
+          itemName: `${count} ligne(s)`,
+        },
+      },
     );
-    if (!confirmDelete) return;
 
+    dialogRef.afterClosed().pipe(takeUntil(this.destroy$)).subscribe(confirmed => {
+      if (!confirmed) return;
+      this.executeDeleteRows(rowIds);
+    });
+  }
+
+  private executeDeleteRows(rowIds: string[]) {
+    const dbConfig = this.databaseConfig();
+    const tableName = `database_${this.databaseId.replace('db-', '').replace(/-/g, '_')}`;
+    const databaseName = dbConfig.name || 'Base de données';
+
+    // Soft-delete in the database table (sets deleted_at)
     this.databaseService
       .deleteRows({
         databaseId: this.databaseId,
@@ -535,13 +560,49 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
+          // Remove from local view
+          const deletedRows = this.rows().filter((row) => rowIds.includes(row.id));
           this.rows.update((rows) => rows.filter((row) => !rowIds.includes(row.id)));
-          // Update total count
           this.totalCount.update((count: number) => count - rowIds.length);
+
+          // Register each row in trash_items
+          for (const rowId of rowIds) {
+            const row = deletedRows.find(r => r.id === rowId);
+            const nameCol = findNameColumn(dbConfig.columns);
+            const displayName = (nameCol && row ? String(row.cells[nameCol.id] || '') : '') || `Ligne ${rowId.slice(0, 8)}`;
+
+            this.trashService
+              .softDeleteTrashOnly(
+                'database_row',
+                rowId,
+                tableName,
+                displayName,
+                { databaseName, databaseId: this.databaseId },
+              )
+              .pipe(takeUntil(this.destroy$))
+              .subscribe();
+          }
+
+          this.trashStore.loadTrashCount();
+
+          const snackRef = this.snackBar.open(
+            `${rowIds.length} ligne(s) déplacée(s) dans la corbeille`,
+            'Annuler',
+            { duration: 5000 },
+          );
+
+          snackRef.onAction().pipe(takeUntil(this.destroy$)).subscribe(() => {
+            this.databaseService.restoreRows(this.databaseId, rowIds)
+              .pipe(takeUntil(this.destroy$))
+              .subscribe(() => {
+                this.loadRows();
+                this.trashStore.loadTrashCount();
+              });
+          });
         },
         error: (err) => {
-          console.error('Failed to delete rows:', err);
-          alert('Impossible de supprimer les lignes');
+          console.error('Failed to soft-delete rows:', err);
+          this.snackBar.open('Impossible de supprimer les lignes', 'OK', { duration: 3000 });
         },
       });
   }
@@ -748,14 +809,23 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const confirmDelete = confirm(
-      `Supprimer la colonne "${column.name}" ? Toutes les données de cette colonne seront perdues.`
+    const dialogRef = this.dialog.open<ConfirmDialogComponent, ConfirmDialogData, boolean>(
+      ConfirmDialogComponent,
+      {
+        width: '500px',
+        data: {
+          title: 'Supprimer la colonne',
+          message: `Voulez-vous supprimer la colonne "${column.name}" ? Toutes les données de cette colonne seront définitivement perdues.`,
+        },
+      },
     );
-    if (!confirmDelete) return;
 
-    this.databaseService
-      .deleteColumn({
-        databaseId: this.databaseId,
+    dialogRef.afterClosed().pipe(takeUntil(this.destroy$)).subscribe(confirmed => {
+      if (!confirmed) return;
+
+      this.databaseService
+        .deleteColumn({
+          databaseId: this.databaseId,
         columnId,
       })
       .pipe(takeUntil(this.destroy$))
@@ -779,9 +849,10 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Failed to delete column:', err);
-          alert('Impossible de supprimer la colonne');
+          this.snackBar.open('Impossible de supprimer la colonne', 'OK', { duration: 3000 });
         },
       });
+    });
   }
 
   /**
@@ -1315,11 +1386,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     const selectedIds = Array.from(this.selectedRowIds()) as string[];
     if (selectedIds.length === 0) return;
 
-    const confirmMessage = `Voulez-vous vraiment supprimer ${selectedIds.length} ligne(s) ?`;
-    if (!confirm(confirmMessage)) return;
-
     this.onDeleteRows(selectedIds);
-    // Clear selection after deletion
     this.selectedRowIds.set(new Set());
   }
 
@@ -1411,18 +1478,44 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Delete an owned database (removes PostgreSQL table, metadata, and TipTap node)
+   * Soft-delete an owned database (moves to trash + removes TipTap node)
    */
   private deleteOwnedDatabase(): void {
     this.isLoading.set(true);
+    const dbName = this.databaseConfig()?.name || 'Base de données';
+    let dbUuid = '';
+
     this.databaseService
-      .deleteDatabase(this.databaseId)
-      .pipe(takeUntil(this.destroy$))
+      .softDeleteDatabase(this.databaseId)
+      .pipe(
+        switchMap((metadata) => {
+          dbUuid = metadata.id;
+          return this.trashService.softDeleteTrashOnly(
+            'database',
+            metadata.id,
+            'document_databases',
+            dbName,
+            { databaseId: this.databaseId, documentId: this.documentId },
+          );
+        }),
+        takeUntil(this.destroy$),
+      )
       .subscribe({
         next: () => {
           this.isLoading.set(false);
-          this.snackBar.open('Base de données supprimée avec succès', 'OK', {
-            duration: 3000,
+          this.trashStore.loadItems();
+
+          const snackBarRef = this.snackBar.open(
+            'Base de données déplacée dans la corbeille',
+            'Annuler',
+            { duration: 5000 },
+          );
+
+          snackBarRef.onAction().subscribe(() => {
+            this.databaseService
+              .restoreDatabase(dbUuid)
+              .pipe(takeUntil(this.destroy$))
+              .subscribe(() => this.trashStore.loadItems());
           });
 
           // Notify parent component (TipTap editor) to remove the node
@@ -1437,13 +1530,11 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
         },
         error: (err: unknown) => {
           this.isLoading.set(false);
-          console.error('Failed to delete database:', err);
+          console.error('Failed to soft-delete database:', err);
           const errorMessage = err instanceof Error
             ? err.message
             : 'Erreur lors de la suppression de la base de données';
-          this.snackBar.open(errorMessage, 'OK', {
-            duration: 5000,
-          });
+          this.snackBar.open(errorMessage, 'OK', { duration: 5000 });
         },
       });
   }

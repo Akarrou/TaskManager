@@ -65,6 +65,14 @@
           <div class="dropdown-divider"></div>
           <ul class="dropdown-menu">
             <li><a routerLink="/profile" class="dropdown-item" (click)="closeProfileMenu()">Mon profil</a></li>
+            <li>
+              <a routerLink="/trash" class="dropdown-item" (click)="closeProfileMenu()">
+                Corbeille
+                @if (trashCount() > 0) {
+                  <span class="trash-badge">{{ trashCount() }}</span>
+                }
+              </a>
+            </li>
             <li class="dropdown-divider"></li>
             <li><button (click)="logout()" class="dropdown-item logout-btn">Déconnexion</button></li>
           </ul>

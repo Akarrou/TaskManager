@@ -17,6 +17,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { BlockComment } from '../../models/block-comment.model';
 import { BlockCommentService } from '../../services/block-comment.service';
+import { TrashService } from '../../../../core/services/trash.service';
+import { TrashStore } from '../../../trash/store/trash.store';
 import { CommentItemComponent } from '../comment-item/comment-item.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -47,6 +49,8 @@ export class CommentThreadPanelComponent implements OnChanges {
   @ViewChild('commentInput') commentInput?: ElementRef<HTMLTextAreaElement>;
 
   private commentService = inject(BlockCommentService);
+  private trashService = inject(TrashService);
+  private trashStore = inject(TrashStore);
 
   comments = signal<BlockComment[]>([]);
   isLoading = signal(false);
@@ -129,10 +133,20 @@ export class CommentThreadPanelComponent implements OnChanges {
   }
 
   onDeleteComment(commentId: string): void {
-    this.commentService.deleteComment(commentId).subscribe({
+    const comment = this.comments().find(c => c.id === commentId);
+    const displayName = comment?.content?.substring(0, 50) || 'Commentaire';
+
+    this.trashService.softDelete(
+      'comment',
+      commentId,
+      'block_comments',
+      displayName,
+      this.documentId ? { documentId: this.documentId } : undefined,
+    ).subscribe({
       next: () => {
         this.comments.update((list) => list.filter((c) => c.id !== commentId));
         this.commentDeleted.emit(commentId);
+        this.trashStore.loadTrashCount();
       },
       error: (err) => {
         console.error('Failed to delete comment:', err);

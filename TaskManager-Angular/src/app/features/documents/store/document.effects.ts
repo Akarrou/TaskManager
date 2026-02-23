@@ -1,16 +1,20 @@
 import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { of } from 'rxjs';
-import { map, catchError, mergeMap, tap } from 'rxjs/operators';
+import { map, catchError, mergeMap, tap, switchMap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DocumentService } from '../services/document.service';
+import { TrashService } from '../../../core/services/trash.service';
+import { TrashStore } from '../../trash/store/trash.store';
 import * as DocumentActions from './document.actions';
 
 @Injectable()
 export class DocumentEffects {
     private actions$ = inject(Actions);
     private documentService = inject(DocumentService);
+    private trashService = inject(TrashService);
+    private trashStore = inject(TrashStore);
     private router = inject(Router);
     private snackBar = inject(MatSnackBar);
 
@@ -104,8 +108,24 @@ export class DocumentEffects {
         this.actions$.pipe(
             ofType(DocumentActions.deleteDocument),
             mergeMap(({ documentId }) =>
-                this.documentService.deleteDocument(documentId).pipe(
-                    map(() => DocumentActions.deleteDocumentSuccess({ documentId })),
+                // Get document info for the trash record, then soft delete
+                this.documentService.getDocument(documentId).pipe(
+                    switchMap((doc) => {
+                        const displayName = doc?.title || 'Document sans titre';
+                        const parentInfo: Record<string, string> = {};
+                        if (doc?.project_id) {
+                            parentInfo['projectId'] = doc.project_id;
+                        }
+                        return this.trashService.softDelete(
+                            'document',
+                            documentId,
+                            'documents',
+                            displayName,
+                            Object.keys(parentInfo).length > 0 ? parentInfo : undefined,
+                        ).pipe(
+                            map(() => DocumentActions.deleteDocumentSuccess({ documentId })),
+                        );
+                    }),
                     catchError((error) => of(DocumentActions.deleteDocumentFailure({ error })))
                 )
             )
@@ -116,7 +136,8 @@ export class DocumentEffects {
         this.actions$.pipe(
             ofType(DocumentActions.deleteDocumentSuccess),
             tap(() => {
-                this.snackBar.open('Document supprimé', 'Fermer', { duration: 2000 });
+                this.trashStore.loadTrashCount();
+                this.snackBar.open('Document déplacé dans la corbeille', 'Fermer', { duration: 3000 });
                 this.router.navigate(['/documents']);
             })
         ),

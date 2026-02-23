@@ -35,7 +35,21 @@ export function registerEventTools(server) {
                 const query = supabase
                     .from(tableName)
                     .select('*')
-                    .limit(limit);
+                    .is('deleted_at', null)
+                    .limit(250); // Reasonable per-database cap
+                // Try to apply date filters SQL-side
+                const config = db.config;
+                const columns = config.columns || [];
+                const startDateCol = columns.find(c => c.name === 'Start Date');
+                const endDateCol = columns.find(c => c.name === 'End Date');
+                if (start_date && endDateCol) {
+                    const endColName = `col_${endDateCol.id.replace(/-/g, '_')}`;
+                    query.gte(endColName, start_date);
+                }
+                if (end_date && startDateCol) {
+                    const startColName = `col_${startDateCol.id.replace(/-/g, '_')}`;
+                    query.lte(startColName, end_date);
+                }
                 const { data: rows, error: rowError } = await query;
                 if (rowError) {
                     console.error(`Error fetching from ${tableName}:`, rowError);
@@ -287,6 +301,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
                 .from(tableName)
                 .select('*')
                 .eq('id', row_id)
+                .is('deleted_at', null)
                 .single();
             if (error || !row) {
                 return {
@@ -338,6 +353,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
                     .from(tableName)
                     .select('*')
                     .eq(colName, event_number)
+                    .is('deleted_at', null)
                     .maybeSingle();
                 if (error || !row)
                     continue;
@@ -352,6 +368,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
                         .eq('database_id', db.database_id)
                         .eq('database_row_id', row.id)
                         .eq('user_id', userId)
+                        .is('deleted_at', null)
                         .maybeSingle();
                     document = doc;
                 }
@@ -397,6 +414,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
                 .eq('database_id', database_id)
                 .eq('database_row_id', row_id)
                 .eq('user_id', userId)
+                .is('deleted_at', null)
                 .maybeSingle();
             if (error) {
                 return {
@@ -552,11 +570,11 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
         }
     });
     // =========================================================================
-    // delete_event - Delete an event
+    // delete_event - Soft delete an event (move to trash)
     // =========================================================================
-    server.tool('delete_event', `Permanently delete an event from a database. This removes the row from the event database. The deletion is immediate and cannot be undone. Returns confirmation with the deleted event's information. A snapshot is taken before deletion for recovery purposes. Note: if Google Calendar sync is active for the event's database, the corresponding Google event will also be deleted when the event is removed via the Angular app (but not via MCP).`, {
+    server.tool('delete_event', `Move an event to the trash (soft delete). The event is marked as deleted but can be restored within 30 days using restore_from_trash. A snapshot is taken before deletion for additional recovery. Note: if Google Calendar sync is active, the corresponding Google event will also be deleted when the event is removed via the Angular app.`, {
         database_id: z.string().describe('The database ID containing the event to delete. Format: db-uuid.'),
-        row_id: z.string().uuid().describe('The event/row ID to permanently delete.'),
+        row_id: z.string().uuid().describe('The event/row ID to move to trash.'),
     }, async ({ database_id, row_id }) => {
         try {
             const userId = getCurrentUserId();
@@ -581,7 +599,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
                 };
             }
             const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
-            // Get event info before deleting
+            // Get event info before soft deleting
             const { data: eventRow } = await supabase
                 .from(tableName)
                 .select('*')
@@ -594,25 +612,40 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
                     entityId: row_id,
                     tableName,
                     toolName: 'delete_event',
-                    operation: 'delete',
+                    operation: 'soft_delete',
                     data: eventRow,
                     userId,
                 });
                 snapshotToken = snapshot.token;
             }
-            const { error } = await supabase
+            const now = new Date().toISOString();
+            const event = eventRow ? normalizeRowToEvent(eventRow, dbMeta) : null;
+            const displayName = event?.title || 'Event';
+            // Soft delete: set deleted_at on the row
+            const { error: updateError } = await supabase
                 .from(tableName)
-                .delete()
+                .update({ deleted_at: now })
                 .eq('id', row_id);
-            if (error) {
+            if (updateError) {
                 return {
-                    content: [{ type: 'text', text: `Error deleting event: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error soft-deleting event: ${updateError.message}` }],
                     isError: true,
                 };
             }
-            const event = eventRow ? normalizeRowToEvent(eventRow, dbMeta) : { id: row_id };
+            // Insert into trash_items
+            await supabase
+                .from('trash_items')
+                .insert({
+                item_type: 'event',
+                item_id: row_id,
+                item_table: tableName,
+                display_name: displayName,
+                parent_info: { databaseId: database_id, databaseName: dbMeta.name },
+                user_id: userId,
+                deleted_at: now,
+            });
             return {
-                content: [{ type: 'text', text: `Event deleted (snapshot: ${snapshotToken}):\n${JSON.stringify(event, null, 2)}` }],
+                content: [{ type: 'text', text: `Event moved to trash (snapshot: ${snapshotToken}). Use restore_from_trash to recover it.\n${JSON.stringify(event || { id: row_id }, null, 2)}` }],
             };
         }
         catch (err) {
@@ -635,13 +668,15 @@ async function getUserEventDatabases(supabase, userId) {
     const { data: databases, error } = await supabase
         .from('document_databases')
         .select('*, documents!inner(user_id)')
-        .eq('documents.user_id', userId);
+        .eq('documents.user_id', userId)
+        .is('deleted_at', null);
     if (error) {
         // Fallback: get standalone databases (no document_id) - these might be user's own
         const { data: standaloneDbs } = await supabase
             .from('document_databases')
             .select('*')
-            .is('document_id', null);
+            .is('document_id', null)
+            .is('deleted_at', null);
         return (standaloneDbs || []).filter((db) => {
             const config = db.config;
             return config?.type === 'event';
@@ -699,7 +734,7 @@ function normalizeRowToEvent(row, dbMeta) {
         recurrence: getCell('Recurrence'),
         linked_items: getCell('Linked Items'),
         project_id: getCell('Project ID'),
-        reminders: getCell('Reminders'),
+        reminders: parseReminders(getCell('Reminders')),
         meet_link: getCell('Google Meet'),
         color: getCell('Color'),
         created_at: row.created_at,
@@ -725,5 +760,19 @@ function mapCellsToColumns(cells) {
 function getCellFromRow(row, columnId) {
     const colName = `col_${columnId.replace(/-/g, '_')}`;
     return row[colName];
+}
+/**
+ * Parse reminders from JSON string stored in database
+ */
+function parseReminders(value) {
+    if (!value)
+        return null;
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : null;
+    }
+    catch {
+        return null;
+    }
 }
 //# sourceMappingURL=events.js.map

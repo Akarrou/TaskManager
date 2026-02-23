@@ -196,15 +196,25 @@ export const GoogleCalendarStore = signalStore(
       eventData: Record<string, unknown>,
     ): Promise<{ meet_link?: string } | null> {
       try {
-        const syncConfig = await apiService.getEnabledSyncConfigForDatabase(databaseId);
-        if (!syncConfig?.kodo_database_id) {
-          return null;
-        }
-        // Use the ACTUAL database UUID where the event lives, not the sync config's
-        // (they may differ when events are created in a different Kodo database)
         const actualDbUuid = await apiService.resolveDatabaseUuid(databaseId);
-        const kodoDatabaseId = actualDbUuid ?? syncConfig.kodo_database_id;
-        const result = await apiService.pushEvent(syncConfig.id, kodoDatabaseId, rowId, eventData);
+        if (!actualDbUuid) return null;
+
+        // 1. Check if this event already has a Google Calendar mapping
+        //    If so, use its sync_config_id to push to the SAME calendar
+        const existingMapping = await apiService.getEventMapping(databaseId, rowId);
+
+        let syncConfigId: string;
+
+        if (existingMapping) {
+          syncConfigId = existingMapping.sync_config_id;
+        } else {
+          // 2. New event: find a writable sync config
+          const syncConfig = await apiService.getEnabledSyncConfigForDatabase(databaseId);
+          if (!syncConfig) return null;
+          syncConfigId = syncConfig.id;
+        }
+
+        const result = await apiService.pushEvent(syncConfigId, actualDbUuid, rowId, eventData);
         return { meet_link: result.meet_link };
       } catch (error) {
         console.error('[GoogleCalendarStore] triggerSyncForEvent failed:', error);

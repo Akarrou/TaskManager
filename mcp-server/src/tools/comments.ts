@@ -27,6 +27,7 @@ export function registerCommentTools(server: McpServer): void {
           .from('block_comments')
           .select('*', { count: 'exact' })
           .eq('document_id', document_id)
+          .is('deleted_at', null)
           .order('created_at', { ascending: true })
           .range(offset, offset + limit - 1);
 
@@ -193,7 +194,8 @@ export function registerCommentTools(server: McpServer): void {
         let query = supabase
           .from('block_comments')
           .select('id', { count: 'exact', head: true })
-          .eq('document_id', document_id);
+          .eq('document_id', document_id)
+          .is('deleted_at', null);
 
         if (block_id) {
           query = query.eq('block_id', block_id);
@@ -235,7 +237,8 @@ export function registerCommentTools(server: McpServer): void {
         const { data, error } = await supabase
           .from('block_comments')
           .select('block_id')
-          .eq('document_id', document_id);
+          .eq('document_id', document_id)
+          .is('deleted_at', null);
 
         if (error) {
           return {

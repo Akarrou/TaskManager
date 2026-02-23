@@ -17,6 +17,7 @@ export function registerSpreadsheetTools(server) {
             let query = supabase
                 .from('document_spreadsheets')
                 .select('*')
+                .is('deleted_at', null)
                 .order('created_at', { ascending: false });
             if (document_id) {
                 query = query.eq('document_id', document_id);
@@ -51,6 +52,7 @@ export function registerSpreadsheetTools(server) {
                 .from('document_spreadsheets')
                 .select('*')
                 .eq('spreadsheet_id', spreadsheet_id)
+                .is('deleted_at', null)
                 .single();
             if (error) {
                 return {

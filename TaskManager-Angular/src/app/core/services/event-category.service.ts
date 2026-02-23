@@ -41,7 +41,7 @@ export class EventCategoryService {
   addCategory(params: { key: string; label: string; colorKey: string; sortOrder: number }): Observable<CategoryDefinition> {
     return from(this.client.auth.getUser()).pipe(
       switchMap(({ data: authData, error: authError }) => {
-        if (authError || !authData.user) {
+        if (authError || !authData?.user) {
           return throwError(() => new Error('User not authenticated'));
         }
         return from(
@@ -70,7 +70,7 @@ export class EventCategoryService {
   updateCategory(key: string, updates: { label?: string; colorKey?: string }): Observable<CategoryDefinition> {
     return from(this.client.auth.getUser()).pipe(
       switchMap(({ data: authData, error: authError }) => {
-        if (authError || !authData.user) {
+        if (authError || !authData?.user) {
           return throwError(() => new Error('User not authenticated'));
         }
 
@@ -100,7 +100,7 @@ export class EventCategoryService {
   deleteCategory(key: string): Observable<void> {
     return from(this.client.auth.getUser()).pipe(
       switchMap(({ data: authData, error: authError }) => {
-        if (authError || !authData.user) {
+        if (authError || !authData?.user) {
           return throwError(() => new Error('User not authenticated'));
         }
         return from(

@@ -21,6 +21,7 @@ export function registerCommentTools(server) {
                 .from('block_comments')
                 .select('*', { count: 'exact' })
                 .eq('document_id', document_id)
+                .is('deleted_at', null)
                 .order('created_at', { ascending: true })
                 .range(offset, offset + limit - 1);
             if (block_id) {
@@ -157,7 +158,8 @@ export function registerCommentTools(server) {
             let query = supabase
                 .from('block_comments')
                 .select('id', { count: 'exact', head: true })
-                .eq('document_id', document_id);
+                .eq('document_id', document_id)
+                .is('deleted_at', null);
             if (block_id) {
                 query = query.eq('block_id', block_id);
             }
@@ -190,7 +192,8 @@ export function registerCommentTools(server) {
             const { data, error } = await supabase
                 .from('block_comments')
                 .select('block_id')
-                .eq('document_id', document_id);
+                .eq('document_id', document_id)
+                .is('deleted_at', null);
             if (error) {
                 return {
                     content: [{ type: 'text', text: `Error getting blocks with comments: ${error.message}` }],

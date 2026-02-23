@@ -1,0 +1,108 @@
+<!-- Attendees Panel -->
+<div class="attendees-panel">
+  <!-- Search Input -->
+  @if (!isDisabled()) {
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="attendees-search-field">
+      <input
+        matInput
+        [formControl]="searchControl"
+        [matAutocomplete]="auto"
+        placeholder="Ajouter un invité (email)..."
+        (keyup.enter)="addAttendeeFromInput()" />
+      <mat-icon matPrefix class="attendees-search-icon">person_add</mat-icon>
+      @if (isSearching()) {
+        <mat-spinner matSuffix diameter="18"></mat-spinner>
+      }
+      <mat-autocomplete #auto="matAutocomplete" class="attendees-autocomplete">
+        @for (user of suggestions(); track user.id) {
+          <mat-option [value]="user.email" (onSelectionChange)="addAttendeeFromSuggestion(user)">
+            <div class="suggestion-row">
+              @if (user.photoUrl) {
+                <img [src]="user.photoUrl" class="suggestion-photo" alt="" referrerpolicy="no-referrer" />
+              } @else {
+                <div class="suggestion-avatar">
+                  {{ (user.displayName || user.email)[0].toUpperCase() }}
+                </div>
+              }
+              <div class="suggestion-info">
+                @if (user.displayName) {
+                  <span class="suggestion-name">{{ user.displayName }}</span>
+                }
+                <span class="suggestion-email">{{ user.email }}</span>
+              </div>
+              @if (user.source === 'google') {
+                <mat-icon class="suggestion-source-icon" matTooltip="Contact Google">contacts</mat-icon>
+              }
+            </div>
+          </mat-option>
+        }
+      </mat-autocomplete>
+    </mat-form-field>
+  }
+
+  <!-- Attendees List -->
+  @if (attendees().length > 0) {
+    <div class="attendees-list">
+      @for (attendee of attendees(); track attendee.email) {
+        <div class="attendee-card" [class.attendee-card--organizer]="attendee.isOrganizer">
+          <!-- Avatar -->
+          <div class="attendee-avatar" [class.attendee-avatar--organizer]="attendee.isOrganizer">
+            {{ getInitials(attendee) }}
+          </div>
+
+          <!-- Info -->
+          <div class="attendee-info">
+            <div class="attendee-name-row">
+              <span class="attendee-name">{{ attendee.displayName || attendee.email }}</span>
+              @if (attendee.isOrganizer) {
+                <span class="attendee-badge attendee-badge--organizer">Organisateur</span>
+              }
+              @if (attendee.isOptional) {
+                <span class="attendee-badge attendee-badge--optional">Optionnel</span>
+              }
+            </div>
+            @if (attendee.displayName) {
+              <span class="attendee-email">{{ attendee.email }}</span>
+            }
+          </div>
+
+          <!-- RSVP status icon -->
+          <mat-icon
+            class="attendee-rsvp"
+            [class.rsvp--accepted]="attendee.rsvpStatus === 'accepted'"
+            [class.rsvp--declined]="attendee.rsvpStatus === 'declined'"
+            [class.rsvp--tentative]="attendee.rsvpStatus === 'tentative'"
+            [class.rsvp--needsAction]="attendee.rsvpStatus === 'needsAction'"
+            [matTooltip]="getRsvpLabel(attendee.rsvpStatus)">
+            {{ getRsvpIcon(attendee.rsvpStatus) }}
+          </mat-icon>
+
+          <!-- Actions menu -->
+          @if (!isDisabled() && !attendee.isOrganizer) {
+            <button
+              type="button"
+              class="attendee-menu-btn"
+              [matMenuTriggerFor]="attendeeMenu">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #attendeeMenu="matMenu">
+              <button mat-menu-item (click)="toggleOptional(attendee)">
+                <mat-icon>{{ attendee.isOptional ? 'person' : 'person_outline' }}</mat-icon>
+                <span>{{ attendee.isOptional ? 'Marquer requis' : 'Marquer optionnel' }}</span>
+              </button>
+              <button mat-menu-item (click)="removeAttendee(attendee)">
+                <mat-icon color="warn">remove_circle</mat-icon>
+                <span>Retirer</span>
+              </button>
+            </mat-menu>
+          }
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="attendees-empty">
+      <mat-icon class="attendees-empty__icon">person_add</mat-icon>
+      <span class="attendees-empty__text">Aucun invité</span>
+    </div>
+  }
+</div>

@@ -1,0 +1,26 @@
+<div class="permissions-panel">
+  <h4 class="permissions-title">
+    <mat-icon class="permissions-icon">admin_panel_settings</mat-icon>
+    Autorisations des invités
+  </h4>
+  <div class="permissions-list">
+    <mat-checkbox
+      [checked]="permissions().guestsCanModify"
+      [disabled]="isDisabled()"
+      (change)="onGuestsCanModifyChange($event.checked)">
+      Modifier l'événement
+    </mat-checkbox>
+    <mat-checkbox
+      [checked]="permissions().guestsCanInviteOthers"
+      [disabled]="isDisabled()"
+      (change)="onGuestsCanInviteOthersChange($event.checked)">
+      Inviter d'autres personnes
+    </mat-checkbox>
+    <mat-checkbox
+      [checked]="permissions().guestsCanSeeOtherGuests"
+      [disabled]="isDisabled()"
+      (change)="onGuestsCanSeeOtherGuestsChange($event.checked)">
+      Voir la liste des invités
+    </mat-checkbox>
+  </div>
+</div>

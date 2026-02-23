@@ -10,6 +10,7 @@ import { getCategoryLabel, getCategoryColors, formatReminder } from '../../../..
 import { LinkedItem } from '../../../documents/models/database.model';
 import { RruleToTextPipe } from '../../pipes/rrule-to-text.pipe';
 import { GoogleCalendarReminder } from '../../../google-calendar/models/google-calendar.model';
+import { EventAttendee, RsvpStatus } from '../../models/attendee.model';
 import { EventCategoryStore } from '../../../../core/stores/event-category.store';
 
 @Component({
@@ -112,6 +113,36 @@ export class EventDetailPanelComponent {
 
   formatReminder(reminder: GoogleCalendarReminder): string {
     return formatReminder(reminder);
+  }
+
+  getInitials(attendee: EventAttendee): string {
+    if (attendee.displayName) {
+      return attendee.displayName
+        .split(' ')
+        .map(n => n[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase();
+    }
+    return attendee.email[0].toUpperCase();
+  }
+
+  getRsvpIcon(status: RsvpStatus): string {
+    switch (status) {
+      case 'accepted': return 'check_circle';
+      case 'declined': return 'cancel';
+      case 'tentative': return 'help';
+      case 'needsAction': return 'schedule';
+    }
+  }
+
+  getRsvpLabel(status: RsvpStatus): string {
+    switch (status) {
+      case 'accepted': return 'Accepté';
+      case 'declined': return 'Refusé';
+      case 'tentative': return 'Peut-être';
+      case 'needsAction': return 'En attente';
+    }
   }
 
   private formatDateTime(isoDate: string, allDay: boolean): string {

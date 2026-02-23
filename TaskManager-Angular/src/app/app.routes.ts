@@ -78,6 +78,12 @@ export const routes: Routes = [
     title: 'Connexion Google Calendar - Kōdo'
   },
   {
+    path: 'trash',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/trash/components/trash-page/trash-page.component').then(m => m.TrashPageComponent),
+    title: 'Corbeille - Kōdo'
+  },
+  {
     path: '**',
     redirectTo: '/dashboard'
   }

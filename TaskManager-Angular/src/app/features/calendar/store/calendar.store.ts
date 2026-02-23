@@ -1,7 +1,7 @@
 import { computed, inject } from '@angular/core';
 import { signalStore, withState, withMethods, withComputed, patchState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, tap, switchMap, catchError, of } from 'rxjs';
+import { pipe, tap, switchMap, catchError, EMPTY, firstValueFrom } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { EventEntry, EventDatabaseService } from '../../../core/services/event-database.service';
 import { GoogleCalendarStore } from '../../google-calendar/store/google-calendar.store';
@@ -58,7 +58,7 @@ export const CalendarStore = signalStore(
             catchError((error: Error) => {
               patchState(store, { loading: false, error: error.message });
               snackBar.open(error.message || 'Erreur lors du chargement', 'Fermer', { duration: 5000 });
-              return of(null);
+              return EMPTY;
             }),
           ),
         ),
@@ -87,20 +87,32 @@ export const CalendarStore = signalStore(
                 location: created.location,
                 recurrence: created.recurrence,
                 reminders: created.reminders,
+                attendees: created.attendees,
+                guest_permissions: created.guest_permissions,
                 add_google_meet: (event as Record<string, unknown>)['add_google_meet'] ?? false,
-              }).then(result => {
+              }).then(async result => {
                 if (result?.meet_link) {
                   const withMeet = { ...created, meet_link: result.meet_link };
                   patchState(store, {
                     events: store.events().map(e => e.id === withMeet.id ? withMeet : e),
                   });
+                  // Persist meet_link to Kodo DB
+                  try {
+                    await firstValueFrom(
+                      eventDbService.updateEvent(created.databaseId, created.id, { meet_link: result.meet_link })
+                    );
+                  } catch (err) {
+                    console.error('[CalendarStore] Failed to persist meet_link:', err);
+                  }
                 }
+              }).catch(err => {
+                console.error('[CalendarStore] Google Calendar sync failed:', err);
               });
             }),
             catchError((error: Error) => {
               patchState(store, { loading: false, error: error.message });
               snackBar.open(error.message || 'Erreur lors de la création', 'Fermer', { duration: 5000 });
-              return of(null);
+              return EMPTY;
             }),
           ),
         ),
@@ -113,36 +125,50 @@ export const CalendarStore = signalStore(
         switchMap(({ databaseId, rowId, updates }) =>
           eventDbService.updateEvent(databaseId, rowId, updates).pipe(
             tap((updated) => {
+              // Merge partial updated fields with existing event for a complete object
+              const existing = store.events().find(e => e.id === updated.id);
+              const merged = existing ? { ...existing, ...updated } : updated;
               patchState(store, {
-                events: store.events().map(e => e.id === updated.id ? updated : e),
+                events: store.events().map(e => e.id === updated.id ? merged : e),
                 loading: false,
               });
               snackBar.open('Événement mis à jour', 'Fermer', { duration: 2000 });
-              // Sync to Google Calendar if applicable
-              gcalStore.triggerSyncForEvent(updated.databaseId, updated.id, {
-                title: updated.title,
-                description: updated.description,
-                start_date: updated.start_date,
-                end_date: updated.end_date,
-                all_day: updated.all_day,
-                category: updated.category,
-                location: updated.location,
-                recurrence: updated.recurrence,
-                reminders: updated.reminders,
+              // Sync to Google Calendar using the full merged event
+              gcalStore.triggerSyncForEvent(merged.databaseId, merged.id, {
+                title: merged.title,
+                description: merged.description,
+                start_date: merged.start_date,
+                end_date: merged.end_date,
+                all_day: merged.all_day,
+                category: merged.category,
+                location: merged.location,
+                recurrence: merged.recurrence,
+                reminders: merged.reminders,
+                attendees: merged.attendees,
+                guest_permissions: merged.guest_permissions,
                 add_google_meet: (updates as Record<string, unknown>)['add_google_meet'] ?? false,
-              }).then(result => {
+              }).then(async result => {
                 if (result?.meet_link) {
-                  const withMeet = { ...updated, meet_link: result.meet_link };
                   patchState(store, {
-                    events: store.events().map(e => e.id === withMeet.id ? withMeet : e),
+                    events: store.events().map(e => e.id === merged.id ? { ...e, meet_link: result.meet_link } : e),
                   });
+                  // Persist meet_link to Kodo DB
+                  try {
+                    await firstValueFrom(
+                      eventDbService.updateEvent(merged.databaseId, merged.id, { meet_link: result.meet_link })
+                    );
+                  } catch (err) {
+                    console.error('[CalendarStore] Failed to persist meet_link:', err);
+                  }
                 }
+              }).catch(err => {
+                console.error('[CalendarStore] Google Calendar sync failed:', err);
               });
             }),
             catchError((error: Error) => {
               patchState(store, { loading: false, error: error.message });
               snackBar.open(error.message || 'Erreur lors de la mise à jour', 'Fermer', { duration: 5000 });
-              return of(null);
+              return EMPTY;
             }),
           ),
         ),
@@ -167,7 +193,7 @@ export const CalendarStore = signalStore(
             catchError((error: Error) => {
               patchState(store, { loading: false, error: error.message });
               snackBar.open(error.message || 'Erreur lors de la suppression', 'Fermer', { duration: 5000 });
-              return of(null);
+              return EMPTY;
             }),
           ),
         ),
