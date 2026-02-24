@@ -400,7 +400,15 @@ Content is a JSON array of blocks:
   { "type": "quote", "text": "A blockquote" },
   { "type": "code", "language": "ts", "text": "const x = 42;" },
   { "type": "divider" },
-  { "type": "table", "headers": ["Col1", "Col2"], "rows": [["a", "b"]] }
+  { "type": "table", "headers": ["Col1", "Col2"], "rows": [["a", "b"]] },
+  { "type": "accordion", "items": [
+    { "title": "Section 1", "content": "Simple text content" },
+    { "title": "Section 2", "content": [
+      { "type": "paragraph", "text": "Rich content with **bold**" },
+      { "type": "list", "items": ["Point 1", "Point 2"] }
+    ], "icon": "settings", "iconColor": "#10b981" }
+  ]},
+  { "type": "columns", "columns": ["Left column", [{ "type": "paragraph", "text": "Right column" }]] }
 ]
 \`\`\`
 

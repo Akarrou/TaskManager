@@ -15,10 +15,17 @@
  *   { "type": "quote", "text": "A blockquote" },
  *   { "type": "code", "language": "ts", "text": "const x = 42;" },
  *   { "type": "divider" },
- *   { "type": "table", "headers": ["Name", "Age"], "rows": [["Alice", "30"]] }
+ *   { "type": "table", "headers": ["Name", "Age"], "rows": [["Alice", "30"]] },
+ *   { "type": "accordion", "items": [{ "title": "Section", "content": "Text or blocks array", "icon": "description", "iconColor": "#3b82f6" }] },
+ *   { "type": "columns", "columns": ["Col 1 text", [{ "type": "paragraph", "text": "Col 2" }]] }
  * ]
  *
  * Text values support inline Markdown: **bold**, *italic*, ~~strike~~, `code`, [link](url)
+ *
+ * Also supports:
+ * - Raw TipTap JSON passthrough (accordionGroup, bulletList, columns, databaseTable, etc.)
+ * - Markdown strings (converted via markdown-to-tiptap)
+ * - Plain text strings (wrapped in paragraphs)
  */
 import { convertMarkdownToTiptap } from './markdown-to-tiptap.js';
 import { parseInlineMarkdown } from './markdown-to-tiptap.js';
@@ -34,7 +41,7 @@ const TIPTAP_BLOCK_TYPES = new Set([
 // Kodo Content JSON block types
 const KODO_BLOCK_TYPES = new Set([
     'heading', 'paragraph', 'list', 'ordered_list', 'checklist',
-    'quote', 'code', 'divider', 'table', 'image',
+    'quote', 'code', 'divider', 'table', 'image', 'accordion', 'columns',
 ]);
 // =============================================================================
 // Main entry point
@@ -210,6 +217,10 @@ function convertKodoBlock(block) {
                     alignment: 'center',
                 },
             };
+        case 'accordion':
+            return convertAccordion(block.items || []);
+        case 'columns':
+            return convertColumns(block.columns || []);
         default:
             // Unknown block type — render as paragraph
             if (block.text) {
@@ -245,6 +256,96 @@ function convertChecklist(items) {
         };
     });
     return { type: 'taskList', content: taskItems };
+}
+// =============================================================================
+// Columns converter
+// =============================================================================
+function convertColumns(cols) {
+    if (cols.length === 0) {
+        // Default: 2 empty columns
+        cols = ['', ''];
+    }
+    const columnNodes = cols.map((col) => {
+        let contentBlocks;
+        if (typeof col === 'string') {
+            // Simple text → single paragraph
+            contentBlocks = col.trim()
+                ? [{ type: 'paragraph', content: parseInline(col) }]
+                : [{ type: 'paragraph' }];
+        }
+        else if (Array.isArray(col) && col.length > 0) {
+            // Array of Kodo blocks
+            contentBlocks = col
+                .map((block) => convertKodoBlock(block))
+                .filter((n) => n !== null);
+            if (contentBlocks.length === 0) {
+                contentBlocks = [{ type: 'paragraph' }];
+            }
+        }
+        else {
+            contentBlocks = [{ type: 'paragraph' }];
+        }
+        return {
+            type: 'column',
+            content: contentBlocks,
+        };
+    });
+    return {
+        type: 'columns',
+        content: columnNodes,
+    };
+}
+// =============================================================================
+// Accordion converter
+// =============================================================================
+function convertAccordion(items) {
+    if (items.length === 0) {
+        // At least one item required by schema
+        items = [{ title: 'Section', content: '' }];
+    }
+    const accordionItems = items.map((item) => {
+        const titleNode = {
+            type: 'accordionTitle',
+            attrs: {
+                icon: item.icon || 'description',
+                iconColor: item.iconColor || '#3b82f6',
+                titleColor: item.titleColor || '#1f2937',
+                collapsed: false,
+            },
+            content: parseInline(item.title || 'Section'),
+        };
+        let contentBlocks;
+        if (typeof item.content === 'string') {
+            // Simple text content → single paragraph
+            contentBlocks = item.content.trim()
+                ? [{ type: 'paragraph', content: parseInline(item.content) }]
+                : [{ type: 'paragraph' }];
+        }
+        else if (Array.isArray(item.content) && item.content.length > 0) {
+            // Array of Kodo blocks → convert each one
+            contentBlocks = item.content
+                .map((block) => convertKodoBlock(block))
+                .filter((n) => n !== null);
+            if (contentBlocks.length === 0) {
+                contentBlocks = [{ type: 'paragraph' }];
+            }
+        }
+        else {
+            contentBlocks = [{ type: 'paragraph' }];
+        }
+        const contentNode = {
+            type: 'accordionContent',
+            content: contentBlocks,
+        };
+        return {
+            type: 'accordionItem',
+            content: [titleNode, contentNode],
+        };
+    });
+    return {
+        type: 'accordionGroup',
+        content: accordionItems,
+    };
 }
 // =============================================================================
 // Table converter

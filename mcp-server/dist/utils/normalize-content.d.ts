@@ -15,10 +15,17 @@
  *   { "type": "quote", "text": "A blockquote" },
  *   { "type": "code", "language": "ts", "text": "const x = 42;" },
  *   { "type": "divider" },
- *   { "type": "table", "headers": ["Name", "Age"], "rows": [["Alice", "30"]] }
+ *   { "type": "table", "headers": ["Name", "Age"], "rows": [["Alice", "30"]] },
+ *   { "type": "accordion", "items": [{ "title": "Section", "content": "Text or blocks array", "icon": "description", "iconColor": "#3b82f6" }] },
+ *   { "type": "columns", "columns": ["Col 1 text", [{ "type": "paragraph", "text": "Col 2" }]] }
  * ]
  *
  * Text values support inline Markdown: **bold**, *italic*, ~~strike~~, `code`, [link](url)
+ *
+ * Also supports:
+ * - Raw TipTap JSON passthrough (accordionGroup, bulletList, columns, databaseTable, etc.)
+ * - Markdown strings (converted via markdown-to-tiptap)
+ * - Plain text strings (wrapped in paragraphs)
  */
 export interface TipTapNode {
     type: string;

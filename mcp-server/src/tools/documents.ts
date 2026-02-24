@@ -206,7 +206,12 @@ Example:
   { "type": "divider" },
   { "type": "checklist", "items": [{ "text": "Done", "checked": true }, { "text": "To do", "checked": false }] },
   { "type": "table", "headers": ["Name", "Role"], "rows": [["Alice", "Dev"], ["Bob", "PM"]] },
-  { "type": "image", "url": "https://example.com/img.png", "alt": "Screenshot" }
+  { "type": "image", "url": "https://example.com/img.png", "alt": "Screenshot" },
+  { "type": "accordion", "items": [
+    { "title": "Section 1", "content": "Simple text" },
+    { "title": "Section 2", "content": [{ "type": "paragraph", "text": "Rich content" }], "icon": "settings", "iconColor": "#10b981" }
+  ]},
+  { "type": "columns", "columns": ["Left column text", [{ "type": "paragraph", "text": "Right column" }]] }
 ]
 
 Available block types:
@@ -220,6 +225,8 @@ Available block types:
 - divider: {} — Horizontal rule
 - table: { headers: string[], rows: string[][] } — Table with headers and rows
 - image: { url, alt? } — Image
+- accordion: { items: [{ title, content, icon?, iconColor?, titleColor? }] } — Collapsible accordion (content can be a string or an array of blocks)
+- columns: { columns: [col1, col2, ...] } — Multi-column layout (each column can be a string or an array of blocks, 2-3 columns recommended)
 
 Text values support inline markdown: **bold**, *italic*, ~~strikethrough~~, \`code\`, [link](url).
 
@@ -667,7 +674,7 @@ Examples:
 4. Remove a section:
    { "action": "remove", "target": "Obsolete Section", "end_target": 8 }
 
-Content uses Kodo Content JSON (same format as create_document). A snapshot is created before any modification.
+Content uses Kodo Content JSON (same format as create_document, including accordion). A snapshot is created before any modification.
 
 WHEN TO USE WHICH TOOL:
 - edit_document → modify parts of an existing document (add, edit, remove sections)
