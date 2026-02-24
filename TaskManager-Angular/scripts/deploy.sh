@@ -125,6 +125,13 @@ echo "   Restarting Edge Functions container..."
 ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH/OBS && docker compose up -d functions"
 echo -e "${GREEN}   ✅ Edge Functions container restarted${NC}"
 
+# Restart Realtime container if migrations were applied (picks up publication changes)
+if [ $PENDING_COUNT -gt 0 ]; then
+    echo "   Restarting Realtime container..."
+    ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH/OBS && docker compose restart realtime"
+    echo -e "${GREEN}   ✅ Realtime container restarted${NC}"
+fi
+
 # Install MCP server dependencies and restart
 echo "   Installing MCP server dependencies..."
 ssh "$VPS_USER@$VPS_HOST" "cd /opt/mcp-server && pnpm install --prod --frozen-lockfile"

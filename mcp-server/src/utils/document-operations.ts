@@ -24,6 +24,264 @@ interface DocumentStructure {
   blocks: BlockInfo[];
 }
 
+// --- edit_document types ---
+
+export interface EditOperation {
+  action: 'insert_after' | 'insert_before' | 'replace' | 'remove' | 'append';
+  target?: number | string;
+  end_target?: number | string;
+  content?: TipTapNode[];
+}
+
+export interface HeadingMatch {
+  index: number;
+  level: number;
+  text: string;
+}
+
+export interface ApplyResult {
+  doc: TipTapNode;
+  operationsApplied: number;
+  warnings: string[];
+}
+
+// =============================================================================
+// Complex block detection
+// =============================================================================
+
+const COMPLEX_BLOCK_TYPES = new Set([
+  'columns',
+  'accordionGroup',
+  'databaseTable',
+  'spreadsheet',
+  'mindmap',
+]);
+
+/**
+ * Returns true if the document content contains any complex blocks
+ * that would be destroyed by a full content replacement.
+ */
+export function hasComplexBlocks(content: unknown): boolean {
+  const doc = content as TipTapNode | null;
+  if (!doc || !Array.isArray(doc.content)) return false;
+  return doc.content.some((node) => COMPLEX_BLOCK_TYPES.has(node.type));
+}
+
+/**
+ * Returns the list of complex block types found in a document.
+ */
+export function getComplexBlockTypes(content: unknown): string[] {
+  const doc = content as TipTapNode | null;
+  if (!doc || !Array.isArray(doc.content)) return [];
+  const types = new Set<string>();
+  for (const node of doc.content) {
+    if (COMPLEX_BLOCK_TYPES.has(node.type)) {
+      types.add(mapTiptapTypeToReadable(node.type));
+    }
+  }
+  return [...types];
+}
+
+// =============================================================================
+// Heading search
+// =============================================================================
+
+/**
+ * Find headings in a document by text (case-insensitive substring match).
+ */
+export function findHeadingMatches(doc: TipTapNode, search: string): HeadingMatch[] {
+  if (!doc.content) return [];
+  const needle = search.toLowerCase();
+  const matches: HeadingMatch[] = [];
+
+  for (let i = 0; i < doc.content.length; i++) {
+    const node = doc.content[i];
+    if (node.type !== 'heading') continue;
+    const text = extractText(node).trim();
+    if (text.toLowerCase().includes(needle)) {
+      matches.push({
+        index: i,
+        level: (node.attrs?.level as number) || 1,
+        text,
+      });
+    }
+  }
+
+  return matches;
+}
+
+// =============================================================================
+// Edit operations engine
+// =============================================================================
+
+/**
+ * Resolve a target (number index or heading text) to a numeric index.
+ * Returns the index or null if not found, plus any warnings.
+ */
+function resolveTarget(
+  doc: TipTapNode,
+  target: number | string | undefined,
+  label: string,
+): { index: number | null; warnings: string[] } {
+  const warnings: string[] = [];
+
+  if (target === undefined || target === null) {
+    return { index: null, warnings };
+  }
+
+  if (typeof target === 'number') {
+    const total = doc.content?.length || 0;
+    if (target < 0 || target >= total) {
+      const clamped = Math.max(0, Math.min(target, total - 1));
+      warnings.push(`${label} index ${target} out of range (0-${total - 1}), clamped to ${clamped}`);
+      return { index: clamped, warnings };
+    }
+    return { index: target, warnings };
+  }
+
+  // String: search for heading
+  const matches = findHeadingMatches(doc, target);
+  if (matches.length === 0) {
+    warnings.push(`${label} heading "${target}" not found`);
+    return { index: null, warnings };
+  }
+  if (matches.length > 1) {
+    const list = matches.map((m) => `[${m.index}] "${m.text}"`).join(', ');
+    warnings.push(`${label} heading "${target}" matched ${matches.length} headings (${list}), using first`);
+  }
+  return { index: matches[0].index, warnings };
+}
+
+/**
+ * Apply a list of edit operations to a TipTap document.
+ * Operations are sorted by target index and applied with cumulative delta adjustment.
+ */
+export function applyEditOperations(
+  doc: TipTapNode,
+  operations: EditOperation[],
+): ApplyResult {
+  const warnings: string[] = [];
+  let workingDoc = { ...doc, content: [...(doc.content || [])] };
+  let operationsApplied = 0;
+
+  // Separate append operations (always last, no index needed)
+  const appendOps: EditOperation[] = [];
+  const indexedOps: Array<{ op: EditOperation; targetIndex: number; endTargetIndex?: number }> = [];
+
+  for (let i = 0; i < operations.length; i++) {
+    const op = operations[i];
+    const opLabel = `Op[${i}] ${op.action}`;
+
+    if (op.action === 'append') {
+      if (!op.content || op.content.length === 0) {
+        warnings.push(`${opLabel}: no content provided, skipped`);
+        continue;
+      }
+      appendOps.push(op);
+      continue;
+    }
+
+    // Validate content for insert/replace
+    if ((op.action === 'insert_after' || op.action === 'insert_before' || op.action === 'replace') &&
+        (!op.content || op.content.length === 0)) {
+      warnings.push(`${opLabel}: no content provided, skipped`);
+      continue;
+    }
+
+    // Resolve target
+    const { index: targetIndex, warnings: targetWarnings } = resolveTarget(workingDoc, op.target, `${opLabel} target`);
+    warnings.push(...targetWarnings);
+
+    if (targetIndex === null) {
+      warnings.push(`${opLabel}: target could not be resolved, skipped`);
+      continue;
+    }
+
+    // Resolve end_target for range operations (replace, remove)
+    let endTargetIndex: number | undefined;
+    if (op.end_target !== undefined && op.end_target !== null) {
+      const { index: endIdx, warnings: endWarnings } = resolveTarget(workingDoc, op.end_target, `${opLabel} end_target`);
+      warnings.push(...endWarnings);
+      if (endIdx !== null) {
+        if (endIdx < targetIndex) {
+          warnings.push(`${opLabel}: end_target (${endIdx}) < target (${targetIndex}), skipped`);
+          continue;
+        }
+        endTargetIndex = endIdx;
+      }
+    }
+
+    indexedOps.push({ op, targetIndex, endTargetIndex });
+  }
+
+  // Sort by target index (ascending) for deterministic delta computation
+  indexedOps.sort((a, b) => a.targetIndex - b.targetIndex);
+
+  // Apply indexed operations with cumulative delta
+  let delta = 0;
+
+  for (const { op, targetIndex, endTargetIndex } of indexedOps) {
+    const adjustedTarget = targetIndex + delta;
+    const content = workingDoc.content;
+
+    switch (op.action) {
+      case 'insert_after': {
+        const insertPos = adjustedTarget + 1;
+        const blocks = op.content!;
+        content.splice(insertPos, 0, ...blocks);
+        delta += blocks.length;
+        operationsApplied++;
+        break;
+      }
+
+      case 'insert_before': {
+        const blocks = op.content!;
+        content.splice(adjustedTarget, 0, ...blocks);
+        delta += blocks.length;
+        operationsApplied++;
+        break;
+      }
+
+      case 'replace': {
+        // Inclusive range: [target, end_target] → splice(start, count, ...new)
+        const endInclusive = endTargetIndex !== undefined ? endTargetIndex + delta : adjustedTarget;
+        const count = endInclusive - adjustedTarget + 1;
+        const blocks = op.content!;
+        content.splice(adjustedTarget, count, ...blocks);
+        delta += blocks.length - count;
+        operationsApplied++;
+        break;
+      }
+
+      case 'remove': {
+        const endInclusive = endTargetIndex !== undefined ? endTargetIndex + delta : adjustedTarget;
+        const count = endInclusive - adjustedTarget + 1;
+        content.splice(adjustedTarget, count);
+        delta -= count;
+        operationsApplied++;
+        break;
+      }
+    }
+  }
+
+  // Apply append operations at the end
+  for (const op of appendOps) {
+    workingDoc.content.push(...op.content!);
+    operationsApplied++;
+  }
+
+  // Ensure doc is never empty
+  if (workingDoc.content.length === 0) {
+    workingDoc.content = [{ type: 'paragraph' }];
+  }
+
+  return {
+    doc: workingDoc,
+    operationsApplied,
+    warnings,
+  };
+}
+
 // =============================================================================
 // Structure extraction
 // =============================================================================
@@ -116,55 +374,3 @@ function extractText(node: TipTapNode): string {
   return node.content.map(extractText).join('');
 }
 
-// =============================================================================
-// Block manipulation
-// =============================================================================
-
-/**
- * Insert blocks at a specific position in a TipTap document.
- * Position 0 = beginning, position N = after block N-1.
- * Returns the modified document.
- */
-export function insertBlocksAt(
-  doc: TipTapNode,
-  position: number,
-  newBlocks: TipTapNode[],
-): TipTapNode {
-  const content = [...(doc.content || [])];
-  const insertPos = Math.max(0, Math.min(position, content.length));
-  content.splice(insertPos, 0, ...newBlocks);
-  return { ...doc, content };
-}
-
-/**
- * Replace blocks in a range [start, end) with new blocks.
- * start is inclusive, end is exclusive.
- */
-export function replaceBlocksRange(
-  doc: TipTapNode,
-  start: number,
-  end: number,
-  newBlocks: TipTapNode[],
-): TipTapNode {
-  const content = [...(doc.content || [])];
-  const safeStart = Math.max(0, Math.min(start, content.length));
-  const safeEnd = Math.max(safeStart, Math.min(end, content.length));
-  content.splice(safeStart, safeEnd - safeStart, ...newBlocks);
-  return { ...doc, content };
-}
-
-/**
- * Remove blocks in a range [start, end).
- * start is inclusive, end is exclusive.
- */
-export function removeBlocksRange(
-  doc: TipTapNode,
-  start: number,
-  end: number,
-): TipTapNode {
-  const content = [...(doc.content || [])];
-  const safeStart = Math.max(0, Math.min(start, content.length));
-  const safeEnd = Math.max(safeStart, Math.min(end, content.length));
-  content.splice(safeStart, safeEnd - safeStart);
-  return { ...doc, content: content.length > 0 ? content : [{ type: 'paragraph' }] };
-}

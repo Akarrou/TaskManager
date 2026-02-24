@@ -8,9 +8,10 @@ import { convertToMarkdown } from '../utils/tiptap-to-markdown.js';
 import { normalizeContent, type TipTapNode } from '../utils/normalize-content.js';
 import {
   getDocumentStructure,
-  insertBlocksAt,
-  replaceBlocksRange,
-  removeBlocksRange,
+  hasComplexBlocks,
+  getComplexBlockTypes,
+  applyEditOperations,
+  type EditOperation,
 } from '../utils/document-operations.js';
 
 /**
@@ -92,24 +93,20 @@ export function registerDocumentTools(server: McpServer): void {
       description: `Get a document's full details including its rich-text content. Returns the complete document object with: id, title, content, parent_id, project_id, database_id (if linked to a database row), and timestamps.
 
 Available formats via the "format" parameter:
-- "markdown" (default): human-readable Markdown, most token-efficient for reading and editing.
+- "markdown" (default): human-readable Markdown + block structure map (indices, types, previews). Includes everything needed to read AND edit a document in a single call.
+- "structure": block structure map only (no content) — lightweight alternative when you only need block indices.
 - "html": HTML fragment, useful for rendering or embedding.
 - "styled_html": full standalone HTML document with professional CSS styles and print layout — use this when the user needs to export, print, or generate a PDF.
-- "json": raw TipTap internal JSON, only for debugging or custom extensions.
 
 When the user asks for HTML, export, or PDF, use format="styled_html". Use list_documents first to find document IDs.
 
-EDITING DOCUMENTS: To modify an existing document, NEVER use update_document (it replaces everything and loses complex blocks). Instead, always use this workflow:
-1. get_document_structure → see block indices and types
-2. insert_document_content / replace_document_blocks / remove_document_blocks → modify specific sections
+EDITING DOCUMENTS: To modify an existing document, call get_document (markdown format gives you both content and structure), then use \`edit_document\` to apply targeted operations (insert, replace, remove, append). Target blocks by heading text (e.g. "Introduction") or by numeric index from the structure map. Only use \`update_document\` to rename a document (title only) or to rewrite simple documents from scratch.
 
-Only use update_document to rename a document (title only) or to write entirely new content from scratch.
-
-Related tools: get_document_structure (block map), insert_document_content (add sections), replace_document_blocks (edit sections), remove_document_blocks (delete sections), get_document_breadcrumb (path), list_comments (see comments).`,
+Related tools: edit_document (modify content), get_document_breadcrumb (path), list_comments (see comments).`,
       inputSchema: {
         document_id: z.string().uuid().describe('The UUID of the document to retrieve. Get this from list_documents or search_documents.'),
-        format: z.enum(['json', 'markdown', 'html', 'styled_html']).optional().default('markdown')
-          .describe('Output format for document content. "markdown" (default): human-readable Markdown, recommended for reading and editing. "json": raw internal JSON, use only for debugging or custom extensions. "html": formatted HTML fragment. "styled_html": full HTML document with professional print styles, suitable for PDF export.'),
+        format: z.enum(['markdown', 'html', 'styled_html', 'structure']).optional().default('markdown')
+          .describe('Output format. "markdown" (default): human-readable content + block structure map, ideal for reading and editing. "structure": block map only (lightweight). "html": HTML fragment. "styled_html": full HTML with print styles, for PDF export.'),
       },
       annotations: { readOnlyHint: true },
     },
@@ -132,36 +129,52 @@ Related tools: get_document_structure (block map), insert_document_content (add 
           };
         }
 
-        if (format !== 'json' && data.content) {
-          let convertedContent: string;
-          if (format === 'styled_html') {
-            convertedContent = convertToStyledHtml(data.content as Record<string, unknown>, data.title || 'Sans titre');
-          } else if (format === 'html') {
-            convertedContent = convertToHtml(data.content as Record<string, unknown>);
-          } else {
-            convertedContent = convertToMarkdown(data.content as Record<string, unknown>);
-          }
-
+        // Structure format: return block map for edit_document targeting
+        if (format === 'structure') {
+          const structure = getDocumentStructure(data.content);
           const result = {
             id: data.id,
             title: data.title,
-            content: convertedContent,
             format,
+            structure,
             parent_id: data.parent_id,
             project_id: data.project_id,
-            database_id: data.database_id,
-            database_row_id: data.database_row_id,
-            created_at: data.created_at,
             updated_at: data.updated_at,
           };
-
           return {
             content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
           };
         }
 
+        let convertedContent: string;
+        if (format === 'styled_html') {
+          convertedContent = data.content ? convertToStyledHtml(data.content as Record<string, unknown>, data.title || 'Sans titre') : '';
+        } else if (format === 'html') {
+          convertedContent = data.content ? convertToHtml(data.content as Record<string, unknown>) : '';
+        } else {
+          convertedContent = data.content ? convertToMarkdown(data.content as Record<string, unknown>) : '';
+        }
+
+        const result: Record<string, unknown> = {
+          id: data.id,
+          title: data.title,
+          content: convertedContent,
+          format,
+          parent_id: data.parent_id,
+          project_id: data.project_id,
+          database_id: data.database_id,
+          database_row_id: data.database_row_id,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+        };
+
+        // Include structure in markdown responses for edit_document targeting
+        if (format === 'markdown') {
+          result.structure = getDocumentStructure(data.content);
+        }
+
         return {
-          content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
       } catch (err) {
         return {
@@ -214,7 +227,7 @@ Fallback: a plain markdown string is also accepted but the JSON array format abo
 
 To embed a database table in a document, use create_database with a document_id — the server handles the embedding automatically.
 
-Related tools: update_document (modify content), create_database (embed a table).`,
+Related tools: edit_document (modify content), create_database (embed a table).`,
       inputSchema: {
         title: z.string().min(1).max(500).describe('The document title displayed in navigation and breadcrumbs. Should be descriptive.'),
         project_id: z.string().uuid().optional().describe('Project to associate this document with. Required for the document to appear in project navigation.'),
@@ -286,11 +299,7 @@ Related tools: update_document (modify content), create_database (embed a table)
 
 ⚠️ WARNING: Passing "content" REPLACES THE ENTIRE DOCUMENT. All existing blocks (accordions, columns, databases, tables, etc.) will be LOST and replaced.
 
-DO NOT use this tool to add, edit, or remove sections of an existing document. Use the partial update tools instead:
-1. get_document_structure → see block indices and types
-2. insert_document_content → add new blocks at a specific position
-3. replace_document_blocks → replace specific blocks by index
-4. remove_document_blocks → remove specific blocks by index
+DO NOT use this tool to add, edit, or remove sections of an existing document. Use \`edit_document\` instead — it combines structure inspection + targeted edits in one call, preserving complex blocks.
 
 VALID use cases for update_document:
 - Rename a document: pass only "title", omit "content"
@@ -330,6 +339,15 @@ The "content" field accepts Kodo Content JSON (JSON array of blocks, see create_
           .eq('id', document_id)
           .eq('user_id', userId)
           .single();
+
+        // Guard: block full content replacement if document has complex blocks
+        if (content !== undefined && currentDoc && hasComplexBlocks(currentDoc.content)) {
+          const complexTypes = getComplexBlockTypes(currentDoc.content);
+          return {
+            content: [{ type: 'text', text: `ERROR: Cannot replace content — this document contains complex blocks (${complexTypes.join(', ')}) that would be destroyed.\n\nUse \`edit_document\` instead to safely modify specific sections while preserving complex blocks.\n\nTo rename the document, call update_document with only the "title" parameter (omit "content").` }],
+            isError: true,
+          };
+        }
 
         let snapshotToken = '';
         if (currentDoc) {
@@ -614,94 +632,60 @@ The "content" field accepts Kodo Content JSON (JSON array of blocks, see create_
   );
 
   // =========================================================================
-  // get_document_structure - Get block structure of a document
+  // edit_document - Compound tool for safe document editing
   // =========================================================================
   server.registerTool(
-    'get_document_structure',
+    'edit_document',
     {
-      description: `Get the structural outline of a document's content as a list of top-level blocks with their indices, types, and text previews. Use this BEFORE insert_document_content, replace_document_blocks, or remove_document_blocks to identify the correct block positions.
+      description: `The PREFERRED tool for modifying existing documents. Combines structure inspection + targeted edits in a single call, preserving complex blocks (accordions, columns, databases, spreadsheets, mindmaps).
 
-Returns an array of blocks like:
-[
-  { "index": 0, "type": "heading", "attrs": { "level": 2 }, "preview": "Project Overview" },
-  { "index": 1, "type": "paragraph", "preview": "This document describes..." },
-  { "index": 2, "type": "heading", "attrs": { "level": 3 }, "preview": "Summary" },
-  { "index": 3, "type": "columns", "preview": "[2 columns]" },
-  { "index": 4, "type": "accordion", "preview": "[accordion: 5 items]" },
-  { "index": 5, "type": "database_table", "preview": "[database table]" }
-]
+Performs one or more operations on a document's blocks. Each operation targets blocks by numeric index OR by heading text (case-insensitive search).
 
-The "index" is what you pass to insert_document_content (position), replace_document_blocks (start/end), or remove_document_blocks (start/end).`,
+Operations:
+- "insert_after": Insert new blocks after the target block
+- "insert_before": Insert new blocks before the target block
+- "replace": Replace target block(s) with new content (use end_target for a range)
+- "remove": Remove target block(s) (use end_target for a range)
+- "append": Add blocks at the end of the document (no target needed)
+
+Target can be:
+- A number: block index (use get_document with format="structure" to find indices)
+- A string: heading text (case-insensitive search, e.g. "Introduction")
+
+Ranges: target and end_target are both INCLUSIVE. Example: target=3, end_target=5 → blocks 3, 4, 5.
+
+Examples:
+1. Insert after a heading:
+   { "action": "insert_after", "target": "Introduction", "content": [{ "type": "paragraph", "text": "New paragraph" }] }
+
+2. Replace blocks 3-5 by index:
+   { "action": "replace", "target": 3, "end_target": 5, "content": [{ "type": "heading", "level": 2, "text": "Updated" }] }
+
+3. Append at end:
+   { "action": "append", "content": [{ "type": "heading", "level": 2, "text": "Conclusion" }] }
+
+4. Remove a section:
+   { "action": "remove", "target": "Obsolete Section", "end_target": 8 }
+
+Content uses Kodo Content JSON (same format as create_document). A snapshot is created before any modification.
+
+WHEN TO USE WHICH TOOL:
+- edit_document → modify parts of an existing document (add, edit, remove sections)
+- update_document → rename a document (title only) or full rewrite of simple documents
+- create_document → create a new document from scratch`,
       inputSchema: {
-        document_id: z.string().uuid().describe('The UUID of the document to inspect.'),
-      },
-      annotations: { readOnlyHint: true },
-    },
-    async ({ document_id }) => {
-      try {
-        const userId = getCurrentUserId();
-        const supabase = getSupabaseClient();
-
-        const { data, error } = await supabase
-          .from('documents')
-          .select('content')
-          .eq('id', document_id)
-          .eq('user_id', userId)
-          .is('deleted_at', null)
-          .single();
-
-        if (error) {
-          return {
-            content: [{ type: 'text', text: `Error: ${error.message}` }],
-            isError: true,
-          };
-        }
-
-        const structure = getDocumentStructure(data.content);
-
-        return {
-          content: [{ type: 'text', text: JSON.stringify(structure, null, 2) }],
-        };
-      } catch (err) {
-        return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
-          isError: true,
-        };
-      }
-    }
-  );
-
-  // =========================================================================
-  // insert_document_content - Insert content at a specific position
-  // =========================================================================
-  server.registerTool(
-    'insert_document_content',
-    {
-      description: `Insert new content blocks at a specific position in a document WITHOUT replacing existing content. This is the preferred way to add content to an existing document that contains complex elements (accordions, columns, databases, etc.).
-
-Workflow:
-1. Call get_document_structure to see current blocks and their indices
-2. Choose the position where you want to insert (0 = beginning, N = after block N-1)
-3. Pass your new content as Kodo Content JSON (same format as create_document)
-
-Example: To insert a new section between block 6 and block 7, use position=7.
-
-The "content" field accepts the same Kodo Content JSON format as create_document:
-[
-  { "type": "heading", "level": 3, "text": "New Section" },
-  { "type": "paragraph", "text": "Content with **bold** and *italic*" },
-  { "type": "list", "items": ["Point 1", "Point 2"] }
-]
-
-A plain markdown string is also accepted as fallback. A snapshot is created before modification for easy recovery.`,
-      inputSchema: {
-        document_id: z.string().uuid().describe('The UUID of the document to modify.'),
-        position: z.number().int().min(0).describe('Block index where new content will be inserted. Use get_document_structure to find the right position. 0 = beginning, N = after block N-1. Use a large number (e.g. 9999) to append at the end.'),
-        content: z.any().describe('New content to insert. Accepts Kodo Content JSON array of blocks (recommended) or a plain markdown string. See create_document for the full format reference.'),
+        document_id: z.string().uuid().describe('The UUID of the document to edit.'),
+        title: z.string().min(1).max(500).optional().describe('Optional new title. Leave undefined to keep current title.'),
+        operations: z.array(z.object({
+          action: z.enum(['insert_after', 'insert_before', 'replace', 'remove', 'append']).describe('The edit action to perform.'),
+          target: z.union([z.number().int(), z.string()]).optional().describe('Block index (number) or heading text (string) to target. Not needed for "append".'),
+          end_target: z.union([z.number().int(), z.string()]).optional().describe('End of range (inclusive). For multi-block replace/remove. Can be index or heading text.'),
+          content: z.any().optional().describe('New content blocks (Kodo Content JSON array or markdown string). Required for insert_after, insert_before, replace, append.'),
+        })).min(1).describe('List of edit operations to apply in order.'),
       },
       annotations: { idempotentHint: false },
     },
-    async ({ document_id, position, content }) => {
+    async ({ document_id, title, operations }) => {
       try {
         const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
@@ -722,42 +706,62 @@ A plain markdown string is also accepted as fallback. A snapshot is created befo
           };
         }
 
-        // Normalize the new content and extract blocks
-        const normalizedNew = normalizeContent(content);
-        const newBlocks = normalizedNew.content || [];
+        // Parse current content as TipTap doc
+        const currentContent = (currentDoc.content || { type: 'doc', content: [] }) as TipTapNode;
+        const doc = currentContent.type === 'doc' ? currentContent : { type: 'doc' as const, content: [currentContent] };
 
-        if (newBlocks.length === 0) {
+        const structureBefore = getDocumentStructure(doc);
+
+        // Normalize content in each operation
+        const normalizedOps: EditOperation[] = operations.map((op: { action: string; target?: number | string; end_target?: number | string; content?: unknown }) => {
+          const editOp: EditOperation = {
+            action: op.action as EditOperation['action'],
+            target: op.target,
+            end_target: op.end_target,
+          };
+
+          if (op.content !== undefined && op.content !== null) {
+            const normalized = normalizeContent(op.content);
+            editOp.content = normalized.content || [];
+          }
+
+          return editOp;
+        });
+
+        // Apply operations
+        const result = applyEditOperations(doc, normalizedOps);
+
+        if (result.operationsApplied === 0) {
           return {
-            content: [{ type: 'text', text: 'Error: No content blocks to insert.' }],
+            content: [{ type: 'text', text: `Error: No operations could be applied.\n\nWarnings:\n${result.warnings.map((w) => `- ${w}`).join('\n')}\n\nCurrent structure:\n${JSON.stringify(structureBefore, null, 2)}` }],
             isError: true,
           };
         }
 
-        // Get current doc as TipTap
-        const currentContent = (currentDoc.content || { type: 'doc', content: [] }) as TipTapNode;
-        const doc = currentContent.type === 'doc' ? currentContent : { type: 'doc' as const, content: [currentContent] };
-
-        // Insert blocks
-        const updatedDoc = insertBlocksAt(doc, position, newBlocks);
-
-        // Snapshot
+        // Snapshot before saving
         const snapshot = await saveSnapshot({
           entityType: 'document',
           entityId: document_id,
           tableName: 'documents',
-          toolName: 'insert_document_content',
+          toolName: 'edit_document',
           operation: 'update',
           data: currentDoc,
           userId,
         });
 
+        // Build updates
+        const updates: Record<string, unknown> = {
+          content: result.doc,
+          updated_at: new Date().toISOString(),
+        };
+        if (title !== undefined) {
+          updates.title = title;
+        }
+
         // Save
         const { data: updated, error: updateError } = await supabase
           .from('documents')
-          .update({
-            content: updatedDoc,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updates)
           .eq('id', document_id)
           .eq('user_id', userId)
           .select('id, title, updated_at')
@@ -765,243 +769,27 @@ A plain markdown string is also accepted as fallback. A snapshot is created befo
 
         if (updateError) {
           return {
-            content: [{ type: 'text', text: `Error updating document: ${updateError.message}` }],
+            content: [{ type: 'text', text: `Error saving document: ${updateError.message}` }],
             isError: true,
           };
         }
 
-        const totalBlocks = updatedDoc.content?.length || 0;
+        const structureAfter = getDocumentStructure(result.doc);
 
-        return {
-          content: [{ type: 'text', text: `Inserted ${newBlocks.length} block(s) at position ${position} (snapshot: ${snapshot.token}). Document now has ${totalBlocks} blocks.\n${JSON.stringify(updated, null, 2)}` }],
+        const response: Record<string, unknown> = {
+          snapshot_token: snapshot.token,
+          operations_applied: result.operationsApplied,
+          structure_before: structureBefore,
+          structure_after: structureAfter,
+          document: updated,
         };
-      } catch (err) {
-        return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
-          isError: true,
-        };
-      }
-    }
-  );
 
-  // =========================================================================
-  // replace_document_blocks - Replace a range of blocks
-  // =========================================================================
-  server.registerTool(
-    'replace_document_blocks',
-    {
-      description: `Replace a range of blocks in a document with new content. Use this to update specific sections without touching the rest of the document.
-
-Workflow:
-1. Call get_document_structure to see current blocks and their indices
-2. Identify the start and end indices of the blocks to replace
-3. Pass the replacement content as Kodo Content JSON
-
-The range is [start_index, end_index) — start is inclusive, end is exclusive.
-Example: replace_document_blocks(doc_id, 2, 4, content) replaces blocks at index 2 and 3.
-
-The "content" field accepts the same Kodo Content JSON format as create_document. A plain markdown string is also accepted. A snapshot is created before modification.`,
-      inputSchema: {
-        document_id: z.string().uuid().describe('The UUID of the document to modify.'),
-        start_index: z.number().int().min(0).describe('First block index to replace (inclusive). Use get_document_structure to find indices.'),
-        end_index: z.number().int().min(0).describe('Block index after the last block to replace (exclusive). Example: start=2, end=4 replaces blocks 2 and 3.'),
-        content: z.any().describe('Replacement content. Accepts Kodo Content JSON array of blocks (recommended) or a plain markdown string. See create_document for format reference.'),
-      },
-      annotations: { idempotentHint: false },
-    },
-    async ({ document_id, start_index, end_index, content }) => {
-      try {
-        const userId = getCurrentUserId();
-        const supabase = getSupabaseClient();
-
-        if (end_index <= start_index) {
-          return {
-            content: [{ type: 'text', text: 'Error: end_index must be greater than start_index.' }],
-            isError: true,
-          };
+        if (result.warnings.length > 0) {
+          response.warnings = result.warnings;
         }
-
-        // Fetch current document
-        const { data: currentDoc, error: fetchError } = await supabase
-          .from('documents')
-          .select('*')
-          .eq('id', document_id)
-          .eq('user_id', userId)
-          .is('deleted_at', null)
-          .single();
-
-        if (fetchError || !currentDoc) {
-          return {
-            content: [{ type: 'text', text: `Error: Document not found or access denied.` }],
-            isError: true,
-          };
-        }
-
-        // Normalize replacement content
-        const normalizedNew = normalizeContent(content);
-        const newBlocks = normalizedNew.content || [];
-
-        // Get current doc as TipTap
-        const currentContent = (currentDoc.content || { type: 'doc', content: [] }) as TipTapNode;
-        const doc = currentContent.type === 'doc' ? currentContent : { type: 'doc' as const, content: [currentContent] };
-
-        const totalBefore = doc.content?.length || 0;
-        if (start_index >= totalBefore) {
-          return {
-            content: [{ type: 'text', text: `Error: start_index ${start_index} is out of range. Document has ${totalBefore} blocks (indices 0-${totalBefore - 1}).` }],
-            isError: true,
-          };
-        }
-
-        // Replace blocks
-        const updatedDoc = replaceBlocksRange(doc, start_index, end_index, newBlocks);
-
-        // Snapshot
-        const snapshot = await saveSnapshot({
-          entityType: 'document',
-          entityId: document_id,
-          tableName: 'documents',
-          toolName: 'replace_document_blocks',
-          operation: 'update',
-          data: currentDoc,
-          userId,
-        });
-
-        // Save
-        const { data: updated, error: updateError } = await supabase
-          .from('documents')
-          .update({
-            content: updatedDoc,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', document_id)
-          .eq('user_id', userId)
-          .select('id, title, updated_at')
-          .single();
-
-        if (updateError) {
-          return {
-            content: [{ type: 'text', text: `Error updating document: ${updateError.message}` }],
-            isError: true,
-          };
-        }
-
-        const replacedCount = Math.min(end_index, totalBefore) - start_index;
-        const totalAfter = updatedDoc.content?.length || 0;
 
         return {
-          content: [{ type: 'text', text: `Replaced ${replacedCount} block(s) [${start_index}..${start_index + replacedCount - 1}] with ${newBlocks.length} new block(s) (snapshot: ${snapshot.token}). Document: ${totalBefore} → ${totalAfter} blocks.\n${JSON.stringify(updated, null, 2)}` }],
-        };
-      } catch (err) {
-        return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
-          isError: true,
-        };
-      }
-    }
-  );
-
-  // =========================================================================
-  // remove_document_blocks - Remove a range of blocks
-  // =========================================================================
-  server.registerTool(
-    'remove_document_blocks',
-    {
-      description: `Remove a range of blocks from a document. Use this to delete specific sections without touching the rest of the document.
-
-Workflow:
-1. Call get_document_structure to see current blocks and their indices
-2. Identify the start and end indices of the blocks to remove
-
-The range is [start_index, end_index) — start is inclusive, end is exclusive.
-Example: remove_document_blocks(doc_id, 2, 4) removes blocks at index 2 and 3.
-
-A snapshot is created before modification for easy recovery via restore_snapshot.`,
-      inputSchema: {
-        document_id: z.string().uuid().describe('The UUID of the document to modify.'),
-        start_index: z.number().int().min(0).describe('First block index to remove (inclusive).'),
-        end_index: z.number().int().min(0).describe('Block index after the last block to remove (exclusive).'),
-      },
-      annotations: { destructiveHint: true },
-    },
-    async ({ document_id, start_index, end_index }) => {
-      try {
-        const userId = getCurrentUserId();
-        const supabase = getSupabaseClient();
-
-        if (end_index <= start_index) {
-          return {
-            content: [{ type: 'text', text: 'Error: end_index must be greater than start_index.' }],
-            isError: true,
-          };
-        }
-
-        // Fetch current document
-        const { data: currentDoc, error: fetchError } = await supabase
-          .from('documents')
-          .select('*')
-          .eq('id', document_id)
-          .eq('user_id', userId)
-          .is('deleted_at', null)
-          .single();
-
-        if (fetchError || !currentDoc) {
-          return {
-            content: [{ type: 'text', text: `Error: Document not found or access denied.` }],
-            isError: true,
-          };
-        }
-
-        // Get current doc as TipTap
-        const currentContent = (currentDoc.content || { type: 'doc', content: [] }) as TipTapNode;
-        const doc = currentContent.type === 'doc' ? currentContent : { type: 'doc' as const, content: [currentContent] };
-
-        const totalBefore = doc.content?.length || 0;
-        if (start_index >= totalBefore) {
-          return {
-            content: [{ type: 'text', text: `Error: start_index ${start_index} is out of range. Document has ${totalBefore} blocks (indices 0-${totalBefore - 1}).` }],
-            isError: true,
-          };
-        }
-
-        // Remove blocks
-        const updatedDoc = removeBlocksRange(doc, start_index, end_index);
-
-        // Snapshot
-        const snapshot = await saveSnapshot({
-          entityType: 'document',
-          entityId: document_id,
-          tableName: 'documents',
-          toolName: 'remove_document_blocks',
-          operation: 'update',
-          data: currentDoc,
-          userId,
-        });
-
-        // Save
-        const { data: updated, error: updateError } = await supabase
-          .from('documents')
-          .update({
-            content: updatedDoc,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', document_id)
-          .eq('user_id', userId)
-          .select('id, title, updated_at')
-          .single();
-
-        if (updateError) {
-          return {
-            content: [{ type: 'text', text: `Error updating document: ${updateError.message}` }],
-            isError: true,
-          };
-        }
-
-        const removedCount = Math.min(end_index, totalBefore) - start_index;
-        const totalAfter = updatedDoc.content?.length || 0;
-
-        return {
-          content: [{ type: 'text', text: `Removed ${removedCount} block(s) [${start_index}..${start_index + removedCount - 1}] (snapshot: ${snapshot.token}). Document: ${totalBefore} → ${totalAfter} blocks.\n${JSON.stringify(updated, null, 2)}` }],
+          content: [{ type: 'text', text: JSON.stringify(response, null, 2) }],
         };
       } catch (err) {
         return {

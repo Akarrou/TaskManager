@@ -16,26 +16,44 @@ interface DocumentStructure {
     total_blocks: number;
     blocks: BlockInfo[];
 }
+export interface EditOperation {
+    action: 'insert_after' | 'insert_before' | 'replace' | 'remove' | 'append';
+    target?: number | string;
+    end_target?: number | string;
+    content?: TipTapNode[];
+}
+export interface HeadingMatch {
+    index: number;
+    level: number;
+    text: string;
+}
+export interface ApplyResult {
+    doc: TipTapNode;
+    operationsApplied: number;
+    warnings: string[];
+}
+/**
+ * Returns true if the document content contains any complex blocks
+ * that would be destroyed by a full content replacement.
+ */
+export declare function hasComplexBlocks(content: unknown): boolean;
+/**
+ * Returns the list of complex block types found in a document.
+ */
+export declare function getComplexBlockTypes(content: unknown): string[];
+/**
+ * Find headings in a document by text (case-insensitive substring match).
+ */
+export declare function findHeadingMatches(doc: TipTapNode, search: string): HeadingMatch[];
+/**
+ * Apply a list of edit operations to a TipTap document.
+ * Operations are sorted by target index and applied with cumulative delta adjustment.
+ */
+export declare function applyEditOperations(doc: TipTapNode, operations: EditOperation[]): ApplyResult;
 /**
  * Extract a structural summary of a TipTap document.
  * Returns top-level block types with index and a short text preview.
  */
 export declare function getDocumentStructure(content: unknown): DocumentStructure;
-/**
- * Insert blocks at a specific position in a TipTap document.
- * Position 0 = beginning, position N = after block N-1.
- * Returns the modified document.
- */
-export declare function insertBlocksAt(doc: TipTapNode, position: number, newBlocks: TipTapNode[]): TipTapNode;
-/**
- * Replace blocks in a range [start, end) with new blocks.
- * start is inclusive, end is exclusive.
- */
-export declare function replaceBlocksRange(doc: TipTapNode, start: number, end: number, newBlocks: TipTapNode[]): TipTapNode;
-/**
- * Remove blocks in a range [start, end).
- * start is inclusive, end is exclusive.
- */
-export declare function removeBlocksRange(doc: TipTapNode, start: number, end: number): TipTapNode;
 export {};
 //# sourceMappingURL=document-operations.d.ts.map

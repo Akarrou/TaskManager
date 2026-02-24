@@ -379,4 +379,67 @@ Would you like me to customize any section of this template?`,
       };
     }
   );
+
+  // =========================================================================
+  // edit_document - Guide the AI through safe document editing
+  // =========================================================================
+  server.registerPrompt(
+    'edit_document',
+    {
+      title: 'Edit Document',
+      description: 'Guide the workflow for safely editing an existing document without losing complex blocks.',
+      argsSchema: {
+        document_id: z.string().uuid().describe('The UUID of the document to edit'),
+        task_description: z.string().describe('What changes to make to the document'),
+      },
+    },
+    async ({ document_id, task_description }) => {
+      return {
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: `Edit the document with ID: ${document_id}
+
+Task: ${task_description}
+
+## Workflow
+
+1. First, read the document to understand its current content:
+   \`get_document\` with document_id="${document_id}" and format="markdown"
+
+2. Then, apply your changes using \`edit_document\`:
+   - Target blocks by heading text (e.g., "Introduction") or by index
+   - Use operations: insert_after, insert_before, replace, remove, append
+   - Content uses Kodo Content JSON format (see below)
+
+## Kodo Content JSON Format
+
+Content is a JSON array of blocks:
+\`\`\`json
+[
+  { "type": "heading", "level": 2, "text": "Section Title" },
+  { "type": "paragraph", "text": "Text with **bold** and *italic*" },
+  { "type": "list", "items": ["Point 1", "Point 2"] },
+  { "type": "ordered_list", "items": ["First", "Second"] },
+  { "type": "checklist", "items": [{ "text": "Done", "checked": true }, { "text": "To do" }] },
+  { "type": "quote", "text": "A blockquote" },
+  { "type": "code", "language": "ts", "text": "const x = 42;" },
+  { "type": "divider" },
+  { "type": "table", "headers": ["Col1", "Col2"], "rows": [["a", "b"]] }
+]
+\`\`\`
+
+## Critical Rules
+
+- NEVER use \`update_document\` with content on an existing document — it replaces everything and destroys complex blocks (accordions, columns, databases, spreadsheets, mindmaps)
+- Always use \`edit_document\` for modifications
+- \`update_document\` is only safe for renaming (title parameter only)`,
+            },
+          },
+        ],
+      };
+    }
+  );
 }
