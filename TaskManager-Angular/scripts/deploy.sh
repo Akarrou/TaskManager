@@ -125,9 +125,11 @@ echo "   Restarting Edge Functions container..."
 ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH/OBS && docker compose up -d functions"
 echo -e "${GREEN}   ✅ Edge Functions container restarted${NC}"
 
-# Restart MCP server
+# Install MCP server dependencies and restart
+echo "   Installing MCP server dependencies..."
+ssh "$VPS_USER@$VPS_HOST" "cd /opt/mcp-server && pnpm install --prod --frozen-lockfile"
 echo "   Restarting MCP server..."
-ssh "$VPS_USER@$VPS_HOST" "sudo systemctl restart mcp-server"
+ssh "$VPS_USER@$VPS_HOST" "sudo systemctl restart mcp-server && sleep 2 && sudo systemctl is-active mcp-server"
 echo -e "${GREEN}   ✅ MCP server restarted${NC}"
 
 echo ""

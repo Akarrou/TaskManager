@@ -284,7 +284,7 @@ export function registerResources(server: McpServer): void {
         capabilities: {
           tools: 96,
           resources: 5,
-          prompts: 9,
+          prompts: 13,
         },
         features: [
           'Projects management',

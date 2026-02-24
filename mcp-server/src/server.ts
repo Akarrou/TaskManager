@@ -55,7 +55,7 @@ export function createMcpServer(): McpServer {
   // Register prompts
   registerPrompts(server);
 
-  logger.info('MCP server configured with 96 tools, 5 resources, 9 prompts');
+  logger.info('MCP server configured with 96 tools, 5 resources, 13 prompts');
 
   return server;
 }

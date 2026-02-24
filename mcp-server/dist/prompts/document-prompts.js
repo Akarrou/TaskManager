@@ -12,8 +12,9 @@ export function registerDocumentPrompts(server) {
         argsSchema: {
             topic: z.string().describe('The topic or subject of the document'),
             document_type: z.enum(['technical', 'meeting', 'analysis', 'proposal', 'guide']).optional().default('technical').describe('Type of document'),
+            project_id: z.string().uuid().optional().describe('Optional project ID for context'),
         },
-    }, async ({ topic, document_type }) => {
+    }, async ({ topic, document_type, project_id }) => {
         const typeGuidelines = {
             technical: 'Focus on technical accuracy, include code examples where relevant, and structure for developer audience.',
             meeting: 'Include attendees, agenda, discussion points, decisions, and action items sections.',
@@ -31,6 +32,7 @@ export function registerDocumentPrompts(server) {
 
 "${topic}"
 
+${project_id ? `Context: First use \`list_documents\` with project_id="${project_id}" and \`search_documents\` with query related to "${topic}" to check if similar documents already exist and understand the existing documentation structure.\n` : ''}
 Guidelines: ${typeGuidelines[document_type]}
 
 Please provide:
@@ -60,7 +62,7 @@ Provide a hierarchical outline with:
 ### Notes for Author
 [Tips for writing this document effectively]
 
-After approval, I can help create the document using \`create_document\`.`,
+After approval, use \`create_document\`${project_id ? ` with project_id="${project_id}"` : ''} to create the document. Content should be provided as a Kodo Content JSON array of blocks (heading, paragraph, list, code, table, etc.).`,
                     },
                 },
             ],
@@ -91,11 +93,7 @@ After approval, I can help create the document using \`create_document\`.`,
 "${feature_name}"
 
 ${projectContext}
-
-Follow the project's PRD conventions:
-- Slug format: kebab-case without accents
-- Branch naming: prd/<slug>
-- Include Gherkin acceptance criteria
+${project_id ? `Also use \`list_tasks\` with project_id="${project_id}" to understand existing work items and \`list_databases\` to see available databases.\n` : ''}
 
 ## PRD Template
 
@@ -185,7 +183,10 @@ Feature: ${feature_name}
 
 ---
 
-After finalizing, save this PRD using \`create_document\` with the project_id${project_id ? `="${project_id}"` : ''}.`,
+After finalizing:
+1. Save this PRD using \`create_document\` with the project_id${project_id ? `="${project_id}"` : ''}
+2. Use \`create_task\` to create implementation tasks derived from the functional requirements
+3. Use \`create_event\` to add milestones from section 7 to the project calendar`,
                     },
                 },
             ],
@@ -200,8 +201,10 @@ After finalizing, save this PRD using \`create_document\` with the project_id${p
         argsSchema: {
             meeting_type: z.enum(['standup', 'planning', 'retrospective', 'review', 'general']).optional().default('general').describe('Type of meeting'),
             meeting_title: z.string().optional().describe('Optional title for the meeting'),
+            project_id: z.string().uuid().optional().describe('Optional project ID to pre-fill attendees'),
+            event_id: z.string().uuid().optional().describe('Optional calendar event ID to pre-fill meeting details'),
         },
-    }, async ({ meeting_type, meeting_title }) => {
+    }, async ({ meeting_type, meeting_title, project_id, event_id }) => {
         const templates = {
             standup: `## Daily Standup - [Date]
 
@@ -331,16 +334,21 @@ After finalizing, save this PRD using \`create_document\` with the project_id${p
                     role: 'user',
                     content: {
                         type: 'text',
-                        text: `Generate meeting notes using this ${meeting_type} template:
+                        text: `Generate meeting notes for a ${meeting_type} meeting.
+
+${event_id ? `First, use \`get_event\` with event_id="${event_id}" to get meeting details (title, date, time, attendees, description). Use this information to pre-fill the template below.\n` : ''}${project_id ? `Use \`list_project_members\` with project_id="${project_id}" to get the team member list for the attendees section.\n` : ''}${meeting_type === 'standup' ? `Consider also using the \`daily_standup\` prompt for an automated standup summary based on task data.\n` : ''}
+
+Template:
 
 ${templates[meeting_type]}
 
 ---
 
-This template is ready to be filled in. After the meeting, you can:
-1. Fill in the details
-2. Use \`create_document\` to save it to the project
-3. Link relevant tasks using the task mention feature
+After the meeting:
+1. Fill in the details and use \`create_document\`${project_id ? ` with project_id="${project_id}"` : ''} to save the notes
+2. Use \`create_task\` to create action items from the meeting
+3. ${event_id ? `The notes are linked to calendar event ${event_id}` : 'Use \\`create_event\\` to schedule the next meeting if needed'}
+4. Use \`search_documents\` to find notes from previous related meetings for reference
 
 Would you like me to customize any section of this template?`,
                     },
