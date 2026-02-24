@@ -89,7 +89,10 @@
       "WebFetch(domain:lobehub.com)",
       "WebFetch(domain:www.philschmid.de)",
       "WebFetch(domain:skywork.ai)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(node:*)",
+      "Bash(cd:*)",
+      "mcp__claude_ai_Kodo__get_document"
     ],
     "deny": [],
     "ask": [

@@ -8,11 +8,12 @@ const baseConfig = {
     level: process.env.LOG_LEVEL || 'info',
     base: {
         service: 'kodo-mcp',
-        version: '0.3.0',
+        version: '0.3.1',
     },
     timestamp: pino.stdTimeFunctions.isoTime,
 };
 // Use pino-pretty for development, JSON for production
+// IMPORTANT: Always write to stderr (fd 2) to avoid corrupting MCP stdio transport on stdout
 const transport = process.env.NODE_ENV === 'production'
     ? undefined
     : {
@@ -21,12 +22,12 @@ const transport = process.env.NODE_ENV === 'production'
             colorize: true,
             translateTime: 'HH:MM:ss.l',
             ignore: 'pid,hostname',
+            destination: 2, // stderr — stdout is reserved for MCP JSON-RPC
         },
     };
-export const logger = pino({
-    ...baseConfig,
-    transport,
-});
+export const logger = transport
+    ? pino({ ...baseConfig, transport })
+    : pino(baseConfig, pino.destination(2));
 /**
  * Create a child logger with session context
  */

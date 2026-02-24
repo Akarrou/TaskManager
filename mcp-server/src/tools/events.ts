@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
 import { getCurrentUserId } from '../services/user-auth.js';
 import { saveSnapshot } from '../services/snapshot.js';
+import { userHasDatabaseAccess, getUserDatabasesByType } from '../utils/database-access.js';
 
 // Event category — accepts any string to support custom categories
 const EventCategoryEnum = z.string().describe('Event category. Default values: meeting, deadline, milestone, reminder, personal, other. Custom category keys are also accepted.');
@@ -55,8 +56,8 @@ export function registerEventTools(server: McpServer): void {
         const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
 
-        // Get event databases accessible to this user
-        const eventDatabases = await getUserEventDatabases(supabase, userId);
+        // Get event databases accessible to this user (cached)
+        const eventDatabases = await getUserDatabasesByType(supabase, userId, 'event');
 
         if (eventDatabases.length === 0) {
           return {
@@ -64,61 +65,75 @@ export function registerEventTools(server: McpServer): void {
           };
         }
 
-        // Aggregate events from all databases
-        const allEvents: Record<string, unknown>[] = [];
+        // Aggregate events from all databases in parallel
+        const dbResults = await Promise.all(
+          eventDatabases.map(async (db) => {
+            const tableName = `database_${(db.database_id as string).replace('db-', '').replace(/-/g, '_')}`;
 
-        for (const db of eventDatabases) {
-          const tableName = `database_${(db.database_id as string).replace('db-', '').replace(/-/g, '_')}`;
+            const config = db.config as { columns?: Array<{ id: string; name: string }> };
+            const columns = config.columns || [];
+            const startDateCol = columns.find(c => c.name === 'Start Date');
+            const endDateCol = columns.find(c => c.name === 'End Date');
 
-          const query = supabase
-            .from(tableName)
-            .select('*')
-            .is('deleted_at', null)
-            .limit(250); // Reasonable per-database cap
+            let query = supabase
+              .from(tableName)
+              .select('*')
+              .is('deleted_at', null)
+              .limit(250);
 
-          // Try to apply date filters SQL-side
-          const config = db.config as { columns?: Array<{ id: string; name: string }> };
-          const columns = config.columns || [];
-          const startDateCol = columns.find(c => c.name === 'Start Date');
-          const endDateCol = columns.find(c => c.name === 'End Date');
-
-          if (start_date && endDateCol) {
-            const endColName = `col_${endDateCol.id.replace(/-/g, '_')}`;
-            query.gte(endColName, start_date);
-          }
-          if (end_date && startDateCol) {
-            const startColName = `col_${startDateCol.id.replace(/-/g, '_')}`;
-            query.lte(startColName, end_date);
-          }
-
-          const { data: rows, error: rowError } = await query;
-
-          if (rowError) {
-            console.error(`Error fetching from ${tableName}:`, rowError);
-            continue;
-          }
-
-          // Normalize rows to event entries
-          for (const row of rows || []) {
-            const event = normalizeRowToEvent(row, db);
-
-            // Apply filters
-            if (category && event.category !== category) continue;
-            if (project_id && event.project_id !== project_id) continue;
-            if (start_date && event.start_date) {
-              const eventStart = new Date(event.start_date as string).getTime();
-              const filterStart = new Date(start_date).getTime();
-              if (eventStart < filterStart) continue;
+            // Push date filters SQL-side
+            if (start_date && endDateCol) {
+              const endColName = `col_${endDateCol.id.replace(/-/g, '_')}`;
+              query = query.gte(endColName, start_date);
             }
-            if (end_date && event.end_date) {
-              const eventEnd = new Date(event.end_date as string).getTime();
-              const filterEnd = new Date(end_date).getTime();
-              if (eventEnd > filterEnd) continue;
+            if (end_date && startDateCol) {
+              const startColName = `col_${startDateCol.id.replace(/-/g, '_')}`;
+              query = query.lte(startColName, end_date);
             }
 
-            allEvents.push(event);
-          }
-        }
+            // Push category filter SQL-side
+            if (category) {
+              const categoryCol = columns.find(c => c.name === 'Category');
+              if (categoryCol) {
+                query = query.eq(`col_${categoryCol.id.replace(/-/g, '_')}`, category);
+              }
+            }
+
+            // Push project_id filter SQL-side
+            if (project_id) {
+              const projectCol = columns.find(c => c.name === 'Project ID');
+              if (projectCol) {
+                query = query.eq(`col_${projectCol.id.replace(/-/g, '_')}`, project_id);
+              }
+            }
+
+            const { data: rows, error: rowError } = await query;
+
+            if (rowError) {
+              console.error(`Error fetching from ${tableName}:`, rowError);
+              return [];
+            }
+
+            const events = (rows || []).map((row: Record<string, unknown>) => normalizeRowToEvent(row, db));
+
+            // Apply remaining date filters that couldn't be fully pushed to SQL
+            return events.filter(event => {
+              if (start_date && event.start_date) {
+                const eventStart = new Date(event.start_date as string).getTime();
+                const filterStart = new Date(start_date).getTime();
+                if (eventStart < filterStart) return false;
+              }
+              if (end_date && event.end_date) {
+                const eventEnd = new Date(event.end_date as string).getTime();
+                const filterEnd = new Date(end_date).getTime();
+                if (eventEnd > filterEnd) return false;
+              }
+              return true;
+            });
+          })
+        );
+
+        const allEvents = dbResults.flat();
 
         // Sort by start_date ascending
         allEvents.sort((a, b) => {
@@ -471,7 +486,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
         const supabase = getSupabaseClient();
 
         // Get event databases accessible to this user
-        const eventDatabases = await getUserEventDatabases(supabase, userId);
+        const eventDatabases = await getUserDatabasesByType(supabase, userId, 'event');
 
         if (eventDatabases.length === 0) {
           return {
@@ -895,58 +910,6 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
 // =============================================================================
 // Helper functions
 // =============================================================================
-
-/**
- * Get event databases accessible to the current user
- * Databases are accessible if they belong to a document owned by the user
- */
-async function getUserEventDatabases(supabase: ReturnType<typeof getSupabaseClient>, userId: string): Promise<Record<string, unknown>[]> {
-  // Get databases linked to documents the user owns
-  const { data: databases, error } = await supabase
-    .from('document_databases')
-    .select('*, documents!inner(user_id)')
-    .eq('documents.user_id', userId)
-    .is('deleted_at', null);
-
-  if (error) {
-    // Fallback: get standalone databases (no document_id) - these might be user's own
-    const { data: standaloneDbs } = await supabase
-      .from('document_databases')
-      .select('*')
-      .is('document_id', null)
-      .is('deleted_at', null);
-
-    return (standaloneDbs || []).filter((db: Record<string, unknown>) => {
-      const config = db.config as { type?: string } | undefined;
-      return config?.type === 'event';
-    });
-  }
-
-  return (databases || []).filter((db: Record<string, unknown>) => {
-    const config = db.config as { type?: string } | undefined;
-    return config?.type === 'event';
-  });
-}
-
-/**
- * Check if user has access to a specific database
- */
-async function userHasDatabaseAccess(supabase: ReturnType<typeof getSupabaseClient>, databaseId: string, userId: string): Promise<boolean> {
-  // Check if database belongs to a document owned by the user
-  const { data } = await supabase
-    .from('document_databases')
-    .select('document_id, documents(user_id)')
-    .eq('database_id', databaseId)
-    .single();
-
-  if (!data) return false;
-
-  // If no document linked, allow access (standalone database)
-  if (!data.document_id) return true;
-
-  const doc = data.documents as unknown as { user_id: string } | null;
-  return doc?.user_id === userId;
-}
 
 /**
  * Helper: Normalize a database row to an event-like object

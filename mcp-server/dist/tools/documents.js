@@ -388,7 +388,7 @@ The "content" field accepts the same Kodo Content JSON format as create_document
     // search_documents - Search documents by title
     // =========================================================================
     server.registerTool('search_documents', {
-        description: `Search for documents by title using case-insensitive partial matching. Use this to find documents when you know part of the title. Returns matching documents sorted by last updated. More efficient than list_documents when looking for specific content. The search uses SQL ILIKE for partial matching - "meeting" would match "Team Meeting Notes" and "Q4 meeting minutes". Related tools: list_documents (browse all), get_document (full content).`,
+        description: `Search for documents by title using case-insensitive partial matching. Use this to find documents when you know part of the title. Returns matching documents sorted by last updated. For full-text search across titles AND content, use search_documents_content instead. The search uses SQL ILIKE for partial matching - "meeting" would match "Team Meeting Notes" and "Q4 meeting minutes". Related tools: search_documents_content (full-text), list_documents (browse all), get_document (full content).`,
         inputSchema: {
             query: z.string().min(1).describe('Search term to match against document titles. Partial matches are supported (e.g., "report" matches "Q4 Report").'),
             project_id: z.string().uuid().optional().describe('Limit search to a specific project. Omit to search across all projects.'),
@@ -458,6 +458,53 @@ The "content" field accepts the same Kodo Content JSON format as create_document
             }
             return {
                 content: [{ type: 'text', text: JSON.stringify(breadcrumb, null, 2) }],
+            };
+        }
+        catch (err) {
+            return {
+                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                isError: true,
+            };
+        }
+    });
+    // =========================================================================
+    // search_documents_content - Full-text search across titles AND content
+    // =========================================================================
+    server.registerTool('search_documents_content', {
+        description: `Full-text search across document titles AND content. More powerful than search_documents (title-only). Uses PostgreSQL full-text search with French stemming — handles conjugations, accents, and partial words. Returns documents with highlighted excerpts (matching terms wrapped in >>> and <<<), relevance scores, and metadata. Use this when you need to find information inside document bodies, not just titles.`,
+        inputSchema: {
+            query: z.string().min(1).describe('Search query. Supports natural language with French stemming (e.g., "réunion" matches "réunions", "se réunir").'),
+            project_id: z.string().uuid().optional().describe('Limit search to a specific project.'),
+            limit: z.number().min(1).max(50).optional().default(20).describe('Maximum results. Default 20, max 50.'),
+            offset: z.number().min(0).optional().default(0).describe('Number of results to skip for pagination.'),
+        },
+        annotations: { readOnlyHint: true },
+    }, async ({ query, project_id, limit, offset }) => {
+        try {
+            const userId = getCurrentUserId();
+            const supabase = getSupabaseClient();
+            const { data, error } = await supabase.rpc('search_documents_fulltext', {
+                p_user_id: userId,
+                p_query: query,
+                p_project_id: project_id || null,
+                p_limit: limit,
+                p_offset: offset,
+            });
+            if (error) {
+                // Check if the RPC function doesn't exist yet (migration not deployed)
+                if (error.message.includes('search_documents_fulltext') || error.code === '42883') {
+                    return {
+                        content: [{ type: 'text', text: `Full-text search is not available yet. The SQL migration '20260225100001_add_document_fulltext_search.sql' must be deployed to Supabase first. Use search_documents (title-only) as a fallback.` }],
+                        isError: true,
+                    };
+                }
+                return {
+                    content: [{ type: 'text', text: `Error searching documents: ${error.message}` }],
+                    isError: true,
+                };
+            }
+            return {
+                content: [{ type: 'text', text: `Found ${data.length} documents:\n${JSON.stringify(data, null, 2)}` }],
             };
         }
         catch (err) {

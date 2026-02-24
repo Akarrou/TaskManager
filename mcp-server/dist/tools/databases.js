@@ -2,24 +2,7 @@ import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
 import { getCurrentUserId } from '../services/user-auth.js';
 import { saveSnapshot } from '../services/snapshot.js';
-/**
- * Check if user has access to a specific database
- * Databases are accessible if they belong to a document owned by the user
- */
-async function userHasDatabaseAccess(supabase, databaseId, userId) {
-    const { data } = await supabase
-        .from('document_databases')
-        .select('document_id, documents(user_id)')
-        .eq('database_id', databaseId)
-        .single();
-    if (!data)
-        return false;
-    // If no document linked, allow access (standalone database)
-    if (!data.document_id)
-        return true;
-    const doc = data.documents;
-    return doc?.user_id === userId;
-}
+import { userHasDatabaseAccess, invalidateDbCaches } from '../utils/database-access.js';
 /**
  * Register all database-related tools (for dynamic Notion-like databases)
  */
@@ -157,16 +140,18 @@ Column IDs are standard UUIDs (e.g., "a1b2c3d4-e5f6-..."). Essential for underst
     // get_database_rows - Query rows from a database
     // =========================================================================
     server.registerTool('get_database_rows', {
-        description: `Query rows from a database with pagination. Returns denormalized rows with column names as keys (not column IDs), plus metadata fields prefixed with underscore: _id (row UUID), _row_order, _created_at, _updated_at. Also returns total_count for pagination. For task databases, use list_tasks instead which provides normalized task fields. Use get_database_schema first to understand available columns. Related tools: add_database_row, update_database_row, delete_database_rows.`,
+        description: `Query rows from a database with pagination, text search, and column filters. Returns denormalized rows with column names as keys (not column IDs), plus metadata fields prefixed with underscore: _id (row UUID), _row_order, _created_at, _updated_at. Also returns total_count for pagination. Supports "search" for text search across all text columns and "filters" for exact/partial column matching. For task databases, use list_tasks instead which provides normalized task fields. Use get_database_schema first to understand available columns. Related tools: add_database_row, update_database_row, delete_database_rows.`,
         inputSchema: {
             database_id: z.string().describe('The database ID. Format: db-uuid.'),
             limit: z.number().min(1).max(100).optional().default(50).describe('Maximum rows per page. Default 50, max 100.'),
             offset: z.number().min(0).optional().default(0).describe('Number of rows to skip for pagination.'),
             sort_by: z.string().optional().describe('Column name to sort by. Currently sorts by row_order.'),
             sort_order: z.enum(['asc', 'desc']).optional().default('asc').describe('Sort direction: asc (ascending) or desc (descending).'),
+            search: z.string().optional().describe('Text search across all text/select/url/email columns. Uses ILIKE partial matching.'),
+            filters: z.record(z.string()).optional().describe('Column filters as { "ColumnName": "value" }. Exact match for select/checkbox columns, partial match (ILIKE) for text columns. Example: { "Status": "in_progress", "Priority": "high" }.'),
         },
         annotations: { readOnlyHint: true },
-    }, async ({ database_id, limit, offset, sort_by, sort_order }) => {
+    }, async ({ database_id, limit, offset, sort_by, sort_order, search, filters }) => {
         try {
             const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
@@ -191,14 +176,39 @@ Column IDs are standard UUIDs (e.g., "a1b2c3d4-e5f6-..."). Essential for underst
                 };
             }
             const tableName = `database_${database_id.replace('db-', '').replace(/-/g, '_')}`;
+            const config = dbMeta.config;
+            const columns = config.columns || [];
             let query = supabase
                 .from(tableName)
                 .select('*', { count: 'exact' })
                 .is('deleted_at', null);
+            // Apply text search across all text-like columns
+            if (search) {
+                const searchableCols = columns.filter(c => ['text', 'select', 'url', 'email'].includes(c.type));
+                if (searchableCols.length > 0) {
+                    const orFilter = searchableCols
+                        .map(c => `col_${c.id.replace(/-/g, '_')}.ilike.%${search}%`)
+                        .join(',');
+                    query = query.or(orFilter);
+                }
+            }
+            // Apply column-specific filters
+            if (filters) {
+                for (const [colName, filterValue] of Object.entries(filters)) {
+                    const col = columns.find(c => c.name === colName);
+                    if (!col)
+                        continue;
+                    const dbColName = `col_${col.id.replace(/-/g, '_')}`;
+                    if (['select', 'checkbox', 'multi-select'].includes(col.type)) {
+                        query = query.eq(dbColName, filterValue);
+                    }
+                    else {
+                        query = query.ilike(dbColName, `%${filterValue}%`);
+                    }
+                }
+            }
             // Apply sorting
             if (sort_by) {
-                // For cell-based sorting, we sort by row_order or created_at
-                // Full cell sorting would require client-side sort
                 query = query.order('row_order', { ascending: sort_order === 'asc' });
             }
             else {
@@ -213,8 +223,6 @@ Column IDs are standard UUIDs (e.g., "a1b2c3d4-e5f6-..."). Essential for underst
                 };
             }
             // Denormalize rows using column metadata (reads individual columns col_xxx)
-            const config = dbMeta.config;
-            const columns = config.columns || [];
             const denormalizedRows = (data || []).map((row) => {
                 const denormalized = {
                     _id: row.id,
@@ -698,6 +706,8 @@ Returns the created database with its generated database_id. Related tools: add_
                     isError: true,
                 };
             }
+            // Invalidate caches after database creation
+            invalidateDbCaches();
             // Build the TipTap databaseTable node
             const tiptapNode = {
                 type: 'databaseTable',
@@ -832,6 +842,8 @@ Returns the created database with its generated database_id. Related tools: add_
                 user_id: userId,
                 deleted_at: now,
             });
+            // Invalidate caches after database deletion
+            invalidateDbCaches();
             return {
                 content: [{ type: 'text', text: `Database "${currentDb.name}" moved to trash (snapshot: ${snapshotToken}). It will be permanently deleted after 30 days.` }],
             };
@@ -942,6 +954,7 @@ Column names must be unique within the database. Returns the created column with
                     isError: true,
                 };
             }
+            invalidateDbCaches();
             return {
                 content: [{ type: 'text', text: `Column "${name}" added (snapshot: ${snapshotToken}):\n${JSON.stringify(newColumn, null, 2)}` }],
             };
@@ -1046,6 +1059,7 @@ Column names must be unique within the database. Returns the created column with
                     isError: true,
                 };
             }
+            invalidateDbCaches();
             return {
                 content: [{ type: 'text', text: `Column updated (snapshot: ${snapshotToken}):\n${JSON.stringify(columns[columnIndex], null, 2)}` }],
             };
@@ -1126,6 +1140,7 @@ Column names must be unique within the database. Returns the created column with
                     isError: true,
                 };
             }
+            invalidateDbCaches();
             return {
                 content: [{ type: 'text', text: `Column "${deletedColumn.name}" deleted (snapshot: ${snapshotToken}).` }],
             };

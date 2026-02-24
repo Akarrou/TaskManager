@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
 import { getCurrentUserId } from '../services/user-auth.js';
 import { saveSnapshot } from '../services/snapshot.js';
+import { userHasDatabaseAccess, getUserDatabasesByType } from '../utils/database-access.js';
 // Event category — accepts any string to support custom categories
 const EventCategoryEnum = z.string().describe('Event category. Default values: meeting, deadline, milestone, reminder, personal, other. Custom category keys are also accepted.');
 // Attendee schema matching Angular EventAttendee interface
@@ -45,63 +46,72 @@ export function registerEventTools(server) {
         try {
             const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
-            // Get event databases accessible to this user
-            const eventDatabases = await getUserEventDatabases(supabase, userId);
+            // Get event databases accessible to this user (cached)
+            const eventDatabases = await getUserDatabasesByType(supabase, userId, 'event');
             if (eventDatabases.length === 0) {
                 return {
                     content: [{ type: 'text', text: 'No event databases found. Create an event database first.' }],
                 };
             }
-            // Aggregate events from all databases
-            const allEvents = [];
-            for (const db of eventDatabases) {
+            // Aggregate events from all databases in parallel
+            const dbResults = await Promise.all(eventDatabases.map(async (db) => {
                 const tableName = `database_${db.database_id.replace('db-', '').replace(/-/g, '_')}`;
-                const query = supabase
-                    .from(tableName)
-                    .select('*')
-                    .is('deleted_at', null)
-                    .limit(250); // Reasonable per-database cap
-                // Try to apply date filters SQL-side
                 const config = db.config;
                 const columns = config.columns || [];
                 const startDateCol = columns.find(c => c.name === 'Start Date');
                 const endDateCol = columns.find(c => c.name === 'End Date');
+                let query = supabase
+                    .from(tableName)
+                    .select('*')
+                    .is('deleted_at', null)
+                    .limit(250);
+                // Push date filters SQL-side
                 if (start_date && endDateCol) {
                     const endColName = `col_${endDateCol.id.replace(/-/g, '_')}`;
-                    query.gte(endColName, start_date);
+                    query = query.gte(endColName, start_date);
                 }
                 if (end_date && startDateCol) {
                     const startColName = `col_${startDateCol.id.replace(/-/g, '_')}`;
-                    query.lte(startColName, end_date);
+                    query = query.lte(startColName, end_date);
+                }
+                // Push category filter SQL-side
+                if (category) {
+                    const categoryCol = columns.find(c => c.name === 'Category');
+                    if (categoryCol) {
+                        query = query.eq(`col_${categoryCol.id.replace(/-/g, '_')}`, category);
+                    }
+                }
+                // Push project_id filter SQL-side
+                if (project_id) {
+                    const projectCol = columns.find(c => c.name === 'Project ID');
+                    if (projectCol) {
+                        query = query.eq(`col_${projectCol.id.replace(/-/g, '_')}`, project_id);
+                    }
                 }
                 const { data: rows, error: rowError } = await query;
                 if (rowError) {
                     console.error(`Error fetching from ${tableName}:`, rowError);
-                    continue;
+                    return [];
                 }
-                // Normalize rows to event entries
-                for (const row of rows || []) {
-                    const event = normalizeRowToEvent(row, db);
-                    // Apply filters
-                    if (category && event.category !== category)
-                        continue;
-                    if (project_id && event.project_id !== project_id)
-                        continue;
+                const events = (rows || []).map((row) => normalizeRowToEvent(row, db));
+                // Apply remaining date filters that couldn't be fully pushed to SQL
+                return events.filter(event => {
                     if (start_date && event.start_date) {
                         const eventStart = new Date(event.start_date).getTime();
                         const filterStart = new Date(start_date).getTime();
                         if (eventStart < filterStart)
-                            continue;
+                            return false;
                     }
                     if (end_date && event.end_date) {
                         const eventEnd = new Date(event.end_date).getTime();
                         const filterEnd = new Date(end_date).getTime();
                         if (eventEnd > filterEnd)
-                            continue;
+                            return false;
                     }
-                    allEvents.push(event);
-                }
-            }
+                    return true;
+                });
+            }));
+            const allEvents = dbResults.flat();
             // Sort by start_date ascending
             allEvents.sort((a, b) => {
                 const dateA = a.start_date ? new Date(a.start_date).getTime() : 0;
@@ -416,7 +426,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
             const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
             // Get event databases accessible to this user
-            const eventDatabases = await getUserEventDatabases(supabase, userId);
+            const eventDatabases = await getUserDatabasesByType(supabase, userId, 'event');
             if (eventDatabases.length === 0) {
                 return {
                     content: [{ type: 'text', text: 'No event databases found.' }],
@@ -800,52 +810,6 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
 // =============================================================================
 // Helper functions
 // =============================================================================
-/**
- * Get event databases accessible to the current user
- * Databases are accessible if they belong to a document owned by the user
- */
-async function getUserEventDatabases(supabase, userId) {
-    // Get databases linked to documents the user owns
-    const { data: databases, error } = await supabase
-        .from('document_databases')
-        .select('*, documents!inner(user_id)')
-        .eq('documents.user_id', userId)
-        .is('deleted_at', null);
-    if (error) {
-        // Fallback: get standalone databases (no document_id) - these might be user's own
-        const { data: standaloneDbs } = await supabase
-            .from('document_databases')
-            .select('*')
-            .is('document_id', null)
-            .is('deleted_at', null);
-        return (standaloneDbs || []).filter((db) => {
-            const config = db.config;
-            return config?.type === 'event';
-        });
-    }
-    return (databases || []).filter((db) => {
-        const config = db.config;
-        return config?.type === 'event';
-    });
-}
-/**
- * Check if user has access to a specific database
- */
-async function userHasDatabaseAccess(supabase, databaseId, userId) {
-    // Check if database belongs to a document owned by the user
-    const { data } = await supabase
-        .from('document_databases')
-        .select('document_id, documents(user_id)')
-        .eq('database_id', databaseId)
-        .single();
-    if (!data)
-        return false;
-    // If no document linked, allow access (standalone database)
-    if (!data.document_id)
-        return true;
-    const doc = data.documents;
-    return doc?.user_id === userId;
-}
 /**
  * Helper: Normalize a database row to an event-like object
  * Reads individual columns (col_xxx) matching Angular's pattern

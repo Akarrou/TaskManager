@@ -13,6 +13,7 @@ import { registerEventTools } from './tools/events.js';
 import { registerCalendarDocsTools } from './tools/calendar-docs.js';
 import { registerEventCategoryTools } from './tools/event-categories.js';
 import { registerTrashTools } from './tools/trash.js';
+import { registerSearchTools } from './tools/search.js';
 import { registerPrompts } from './prompts/index.js';
 import { registerResources } from './resources/index.js';
 import { logger } from './services/logger.js';
@@ -48,6 +49,7 @@ export function createMcpServer(): McpServer {
   registerCalendarDocsTools(server);
   registerEventCategoryTools(server);
   registerTrashTools(server);
+  registerSearchTools(server);
 
   // Register resources
   registerResources(server);
@@ -55,7 +57,7 @@ export function createMcpServer(): McpServer {
   // Register prompts
   registerPrompts(server);
 
-  logger.info('MCP server configured with 96 tools, 5 resources, 13 prompts');
+  logger.info('MCP server configured with 98 tools, 5 resources, 13 prompts');
 
   return server;
 }

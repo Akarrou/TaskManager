@@ -3,58 +3,7 @@ import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
 import { getCurrentUserId } from '../services/user-auth.js';
 import { saveSnapshot } from '../services/snapshot.js';
-
-/**
- * Get task databases accessible to the current user
- * Databases are accessible if they belong to a document owned by the user
- */
-async function getUserTaskDatabases(supabase: ReturnType<typeof getSupabaseClient>, userId: string): Promise<Record<string, unknown>[]> {
-  // Get databases linked to documents the user owns
-  const { data: databases, error } = await supabase
-    .from('document_databases')
-    .select('*, documents!inner(user_id)')
-    .eq('documents.user_id', userId)
-    .is('deleted_at', null);
-
-  if (error) {
-    // Fallback: get standalone databases (no document_id) - these might be user's own
-    const { data: standaloneDbs } = await supabase
-      .from('document_databases')
-      .select('*')
-      .is('document_id', null)
-      .is('deleted_at', null);
-
-    return (standaloneDbs || []).filter((db: Record<string, unknown>) => {
-      const config = db.config as { type?: string } | undefined;
-      return config?.type === 'task';
-    });
-  }
-
-  return (databases || []).filter((db: Record<string, unknown>) => {
-    const config = db.config as { type?: string } | undefined;
-    return config?.type === 'task';
-  });
-}
-
-/**
- * Check if user has access to a specific database
- */
-async function userHasDatabaseAccess(supabase: ReturnType<typeof getSupabaseClient>, databaseId: string, userId: string): Promise<boolean> {
-  // Check if database belongs to a document owned by the user
-  const { data } = await supabase
-    .from('document_databases')
-    .select('document_id, documents(user_id)')
-    .eq('database_id', databaseId)
-    .single();
-
-  if (!data) return false;
-
-  // If no document linked, allow access (standalone database)
-  if (!data.document_id) return true;
-
-  const doc = data.documents as unknown as { user_id: string } | null;
-  return doc?.user_id === userId;
-}
+import { userHasDatabaseAccess, getUserDatabasesByType } from '../utils/database-access.js';
 
 // Task status and priority enums
 const TaskStatusEnum = z.enum(['backlog', 'pending', 'in_progress', 'completed', 'cancelled', 'blocked', 'awaiting_info']);
@@ -85,8 +34,8 @@ export function registerTaskTools(server: McpServer): void {
         const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
 
-        // Get task databases accessible to this user
-        const taskDatabases = await getUserTaskDatabases(supabase, userId);
+        // Get task databases accessible to this user (cached)
+        const taskDatabases = await getUserDatabasesByType(supabase, userId, 'task');
 
         if (taskDatabases.length === 0) {
           return {
@@ -94,37 +43,51 @@ export function registerTaskTools(server: McpServer): void {
           };
         }
 
-        // Aggregate tasks from all databases
-        const allTasks: Record<string, unknown>[] = [];
+        // Aggregate tasks from all databases in parallel
+        const dbResults = await Promise.all(
+          taskDatabases.map(async (db) => {
+            const tableName = `database_${(db.database_id as string).replace('db-', '').replace(/-/g, '_')}`;
+            const config = db.config as { columns?: Array<{ id: string; name: string }> };
+            const columns = config.columns || [];
 
-        for (const db of taskDatabases) {
-          const tableName = `database_${(db.database_id as string).replace('db-', '').replace(/-/g, '_')}`;
+            let query = supabase
+              .from(tableName)
+              .select('*')
+              .is('deleted_at', null)
+              .limit(limit);
 
-          let query = supabase
-            .from(tableName)
-            .select('*')
-            .is('deleted_at', null)
-            .limit(limit);
+            // Push filters to SQL side
+            if (status) {
+              const statusCol = columns.find(c => c.name === 'Status');
+              if (statusCol) {
+                query = query.eq(`col_${statusCol.id.replace(/-/g, '_')}`, status);
+              }
+            }
+            if (priority) {
+              const priorityCol = columns.find(c => c.name === 'Priority');
+              if (priorityCol) {
+                query = query.eq(`col_${priorityCol.id.replace(/-/g, '_')}`, priority);
+              }
+            }
+            if (project_id) {
+              const projectCol = columns.find(c => c.name === 'Project ID');
+              if (projectCol) {
+                query = query.eq(`col_${projectCol.id.replace(/-/g, '_')}`, project_id);
+              }
+            }
 
-          const { data: rows, error: rowError } = await query;
+            const { data: rows, error: rowError } = await query;
 
-          if (rowError) {
-            console.error(`Error fetching from ${tableName}:`, rowError);
-            continue;
-          }
+            if (rowError) {
+              console.error(`Error fetching from ${tableName}:`, rowError);
+              return [];
+            }
 
-          // Normalize rows to task entries
-          for (const row of rows || []) {
-            const task = normalizeRowToTask(row, db);
+            return (rows || []).map((row: Record<string, unknown>) => normalizeRowToTask(row, db));
+          })
+        );
 
-            // Apply filters
-            if (status && task.status !== status) continue;
-            if (priority && task.priority !== priority) continue;
-            if (project_id && task.project_id !== project_id) continue;
-
-            allTasks.push(task);
-          }
-        }
+        const allTasks = dbResults.flat();
 
         // Sort by updated_at descending
         allTasks.sort((a, b) => {
@@ -162,8 +125,8 @@ export function registerTaskTools(server: McpServer): void {
         const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
 
-        // Get task databases accessible to this user
-        const taskDatabases = await getUserTaskDatabases(supabase, userId);
+        // Get task databases accessible to this user (cached)
+        const taskDatabases = await getUserDatabasesByType(supabase, userId, 'task');
 
         const stats = {
           total: 0,
@@ -177,18 +140,35 @@ export function registerTaskTools(server: McpServer): void {
           completionRate: 0,
         };
 
-        for (const db of taskDatabases) {
-          const tableName = `database_${(db.database_id as string).replace('db-', '').replace(/-/g, '_')}`;
-          const { data: rows } = await supabase.from(tableName).select('*').is('deleted_at', null);
+        // Fetch all databases in parallel
+        const dbResults = await Promise.all(
+          taskDatabases.map(async (db) => {
+            const tableName = `database_${(db.database_id as string).replace('db-', '').replace(/-/g, '_')}`;
+            const config = db.config as { columns?: Array<{ id: string; name: string }> };
+            const columns = config.columns || [];
 
-          for (const row of rows || []) {
-            const task = normalizeRowToTask(row, db);
+            let query = supabase.from(tableName).select('*').is('deleted_at', null);
+
+            // Push project_id filter to SQL side
+            if (project_id) {
+              const projectCol = columns.find(c => c.name === 'Project ID');
+              if (projectCol) {
+                query = query.eq(`col_${projectCol.id.replace(/-/g, '_')}`, project_id);
+              }
+            }
+
+            const { data: rows } = await query;
+            return (rows || []).map((row: Record<string, unknown>) => normalizeRowToTask(row, db));
+          })
+        );
+
+        for (const tasks of dbResults) {
+          for (const task of tasks) {
             if (project_id && task.project_id !== project_id) continue;
-
             stats.total++;
-            const status = task.status as keyof typeof stats;
-            if (status in stats && typeof stats[status] === 'number') {
-              (stats[status] as number)++;
+            const taskStatus = task.status as keyof typeof stats;
+            if (taskStatus in stats && typeof stats[taskStatus] === 'number') {
+              (stats[taskStatus] as number)++;
             }
           }
         }
@@ -677,8 +657,8 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
         const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
 
-        // Get task databases accessible to this user
-        const taskDatabases = await getUserTaskDatabases(supabase, userId);
+        // Get task databases accessible to this user (cached)
+        const taskDatabases = await getUserDatabasesByType(supabase, userId, 'task');
 
         if (taskDatabases.length === 0) {
           return {
