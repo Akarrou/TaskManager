@@ -6,8 +6,12 @@ export function registerTaskPrompts(server) {
     // =========================================================================
     // daily_standup - Generate daily standup summary
     // =========================================================================
-    server.prompt('daily_standup', 'Generate a daily standup summary with what was done, what is planned, and blockers.', {
-        project_id: z.string().uuid().optional().describe('Optional project ID to filter tasks'),
+    server.registerPrompt('daily_standup', {
+        title: 'Daily Standup',
+        description: 'Generate a daily standup summary with what was done, what is planned, and blockers.',
+        argsSchema: {
+            project_id: z.string().uuid().optional().describe('Optional project ID to filter tasks'),
+        },
     }, async ({ project_id }) => {
         const projectFilter = project_id ? ` for project ${project_id}` : '';
         return {
@@ -52,9 +56,13 @@ Keep it concise - this is for a quick team sync.`,
     // =========================================================================
     // task_breakdown - Help break down a task into subtasks
     // =========================================================================
-    server.prompt('task_breakdown', 'Help decompose a task or feature into smaller, actionable subtasks.', {
-        task_description: z.string().describe('Description of the task or feature to break down'),
-        task_type: z.enum(['epic', 'feature', 'task']).optional().default('feature').describe('Type of work item'),
+    server.registerPrompt('task_breakdown', {
+        title: 'Task Breakdown',
+        description: 'Help decompose a task or feature into smaller, actionable subtasks.',
+        argsSchema: {
+            task_description: z.string().describe('Description of the task or feature to break down'),
+            task_type: z.enum(['epic', 'feature', 'task']).optional().default('feature').describe('Type of work item'),
+        },
     }, async ({ task_description, task_type }) => {
         return {
             messages: [
@@ -100,10 +108,14 @@ After I approve the breakdown, I can use the \`create_task\` tool to add these t
     // =========================================================================
     // sprint_planning - Help plan a sprint
     // =========================================================================
-    server.prompt('sprint_planning', 'Help plan a sprint by selecting and prioritizing tasks.', {
-        project_id: z.string().uuid().describe('The project ID for sprint planning'),
-        sprint_duration: z.number().min(1).max(4).optional().default(2).describe('Sprint duration in weeks'),
-        team_capacity: z.number().optional().describe('Team capacity in hours (optional)'),
+    server.registerPrompt('sprint_planning', {
+        title: 'Sprint Planning',
+        description: 'Help plan a sprint by selecting and prioritizing tasks.',
+        argsSchema: {
+            project_id: z.string().uuid().describe('The project ID for sprint planning'),
+            sprint_duration: z.number().min(1).max(4).optional().default(2).describe('Sprint duration in weeks'),
+            team_capacity: z.number().optional().describe('Team capacity in hours (optional)'),
+        },
     }, async ({ project_id, sprint_duration, team_capacity }) => {
         const capacityNote = team_capacity
             ? `Team capacity: ${team_capacity} hours`
@@ -160,8 +172,12 @@ After review, I can help update task statuses using \`update_task_status\`.`,
     // =========================================================================
     // blocked_tasks_review - Analyze blocked tasks
     // =========================================================================
-    server.prompt('blocked_tasks_review', 'Review and analyze blocked tasks to identify resolution paths.', {
-        project_id: z.string().uuid().optional().describe('Optional project ID to filter'),
+    server.registerPrompt('blocked_tasks_review', {
+        title: 'Blocked Tasks Review',
+        description: 'Review and analyze blocked tasks to identify resolution paths.',
+        argsSchema: {
+            project_id: z.string().uuid().optional().describe('Optional project ID to filter'),
+        },
     }, async ({ project_id }) => {
         const filter = project_id ? ` for project ${project_id}` : '';
         return {

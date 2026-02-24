@@ -29,10 +29,12 @@ const TOPIC_DESCRIPTIONS: Record<TopicName, string> = {
 };
 
 export function registerCalendarDocsTools(server: McpServer): void {
-  server.tool(
+  server.registerTool(
     'list_calendar_docs',
-    `List all calendar/event documentation topics available in Kodo. Call this to discover what documentation exists before retrieving details. Related tools: get_calendar_doc (full documentation for one topic).`,
-    {},
+    {
+      description: `List all calendar/event documentation topics available in Kodo. Call this to discover what documentation exists before retrieving details. Related tools: get_calendar_doc (full documentation for one topic).`,
+      annotations: { readOnlyHint: true },
+    },
     async () => {
       const list = VALID_TOPICS.map(
         (name) => `- **${name}**: ${TOPIC_DESCRIPTIONS[name]}`
@@ -49,13 +51,16 @@ export function registerCalendarDocsTools(server: McpServer): void {
     }
   );
 
-  server.tool(
+  server.registerTool(
     'get_calendar_doc',
-    `Get the complete documentation for a specific calendar/event topic in Kodo. Call this tool before creating or modifying events to understand the system architecture, categories, linked items, recurrence rules, or Google Calendar sync. Related tools: list_calendar_docs (discover available topics).`,
     {
-      topic: z
-        .enum(VALID_TOPICS)
-        .describe('The documentation topic to retrieve.'),
+      description: `Get the complete documentation for a specific calendar/event topic in Kodo. Call this tool before creating or modifying events to understand the system architecture, categories, linked items, recurrence rules, or Google Calendar sync. Related tools: list_calendar_docs (discover available topics).`,
+      inputSchema: {
+        topic: z
+          .enum(VALID_TOPICS)
+          .describe('The documentation topic to retrieve.'),
+      },
+      annotations: { readOnlyHint: true },
     },
     async ({ topic }) => {
       try {

@@ -22,7 +22,10 @@ const TOPIC_DESCRIPTIONS = {
     recurrence: 'RRULE format (RFC 5545), common patterns, FullCalendar rendering, Google sync',
 };
 export function registerCalendarDocsTools(server) {
-    server.tool('list_calendar_docs', `List all calendar/event documentation topics available in Kodo. Call this to discover what documentation exists before retrieving details. Related tools: get_calendar_doc (full documentation for one topic).`, {}, async () => {
+    server.registerTool('list_calendar_docs', {
+        description: `List all calendar/event documentation topics available in Kodo. Call this to discover what documentation exists before retrieving details. Related tools: get_calendar_doc (full documentation for one topic).`,
+        annotations: { readOnlyHint: true },
+    }, async () => {
         const list = VALID_TOPICS.map((name) => `- **${name}**: ${TOPIC_DESCRIPTIONS[name]}`).join('\n');
         return {
             content: [
@@ -33,10 +36,14 @@ export function registerCalendarDocsTools(server) {
             ],
         };
     });
-    server.tool('get_calendar_doc', `Get the complete documentation for a specific calendar/event topic in Kodo. Call this tool before creating or modifying events to understand the system architecture, categories, linked items, recurrence rules, or Google Calendar sync. Related tools: list_calendar_docs (discover available topics).`, {
-        topic: z
-            .enum(VALID_TOPICS)
-            .describe('The documentation topic to retrieve.'),
+    server.registerTool('get_calendar_doc', {
+        description: `Get the complete documentation for a specific calendar/event topic in Kodo. Call this tool before creating or modifying events to understand the system architecture, categories, linked items, recurrence rules, or Google Calendar sync. Related tools: list_calendar_docs (discover available topics).`,
+        inputSchema: {
+            topic: z
+                .enum(VALID_TOPICS)
+                .describe('The documentation topic to retrieve.'),
+        },
+        annotations: { readOnlyHint: true },
     }, async ({ topic }) => {
         try {
             const filePath = join(DOCS_DIR, `${topic}.md`);

@@ -6,9 +6,13 @@ export function registerDocumentPrompts(server) {
     // =========================================================================
     // document_outline - Generate a document outline
     // =========================================================================
-    server.prompt('document_outline', 'Generate a structured outline for a new document.', {
-        topic: z.string().describe('The topic or subject of the document'),
-        document_type: z.enum(['technical', 'meeting', 'analysis', 'proposal', 'guide']).optional().default('technical').describe('Type of document'),
+    server.registerPrompt('document_outline', {
+        title: 'Document Outline',
+        description: 'Generate a structured outline for a new document.',
+        argsSchema: {
+            topic: z.string().describe('The topic or subject of the document'),
+            document_type: z.enum(['technical', 'meeting', 'analysis', 'proposal', 'guide']).optional().default('technical').describe('Type of document'),
+        },
     }, async ({ topic, document_type }) => {
         const typeGuidelines = {
             technical: 'Focus on technical accuracy, include code examples where relevant, and structure for developer audience.',
@@ -65,9 +69,13 @@ After approval, I can help create the document using \`create_document\`.`,
     // =========================================================================
     // prd_template - Generate a PRD template
     // =========================================================================
-    server.prompt('prd_template', 'Generate a Product Requirements Document (PRD) template following project conventions.', {
-        feature_name: z.string().describe('Name of the feature to document'),
-        project_id: z.string().uuid().optional().describe('Optional project ID for context'),
+    server.registerPrompt('prd_template', {
+        title: 'PRD Template',
+        description: 'Generate a Product Requirements Document (PRD) template following project conventions.',
+        argsSchema: {
+            feature_name: z.string().describe('Name of the feature to document'),
+            project_id: z.string().uuid().optional().describe('Optional project ID for context'),
+        },
     }, async ({ feature_name, project_id }) => {
         const projectContext = project_id
             ? `First, use \`get_project\` with project_id="${project_id}" to understand the project context.`
@@ -186,9 +194,13 @@ After finalizing, save this PRD using \`create_document\` with the project_id${p
     // =========================================================================
     // meeting_notes - Generate meeting notes template
     // =========================================================================
-    server.prompt('meeting_notes', 'Generate a meeting notes template.', {
-        meeting_type: z.enum(['standup', 'planning', 'retrospective', 'review', 'general']).optional().default('general').describe('Type of meeting'),
-        meeting_title: z.string().optional().describe('Optional title for the meeting'),
+    server.registerPrompt('meeting_notes', {
+        title: 'Meeting Notes',
+        description: 'Generate a meeting notes template.',
+        argsSchema: {
+            meeting_type: z.enum(['standup', 'planning', 'retrospective', 'review', 'general']).optional().default('general').describe('Type of meeting'),
+            meeting_title: z.string().optional().describe('Optional title for the meeting'),
+        },
     }, async ({ meeting_type, meeting_title }) => {
         const templates = {
             standup: `## Daily Standup - [Date]

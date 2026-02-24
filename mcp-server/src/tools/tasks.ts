@@ -68,14 +68,17 @@ export function registerTaskTools(server: McpServer): void {
   // =========================================================================
   // list_tasks - List tasks from all task databases
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'list_tasks',
-    `List tasks aggregated from all task-type databases in the workspace. Tasks are stored as rows in "task" type databases with standardized columns: Title, Description, Status, Priority, Type, Assigned To, Due Date. This tool scans all task databases and returns a unified view. Results are normalized and sorted by last updated. Status values: backlog, pending, in_progress, completed, cancelled, blocked, awaiting_info. Priority values: low, medium, high, critical. Related tools: create_task, update_task, get_task_stats.`,
     {
-      status: TaskStatusEnum.optional().describe('Filter to only tasks with this status. Valid: backlog, pending, in_progress, completed, cancelled, blocked, awaiting_info.'),
-      priority: TaskPriorityEnum.optional().describe('Filter to only tasks with this priority. Valid: low, medium, high, critical.'),
-      project_id: z.string().uuid().optional().describe('Filter to tasks associated with this project.'),
-      limit: z.number().min(1).max(100).optional().default(50).describe('Maximum tasks to return. Default 50, max 100.'),
+      description: `List tasks aggregated from all task-type databases in the workspace. Tasks are stored as rows in "task" type databases with standardized columns: Title, Description, Status, Priority, Type, Assigned To, Due Date. This tool scans all task databases and returns a unified view. Results are normalized and sorted by last updated. Status values: backlog, pending, in_progress, completed, cancelled, blocked, awaiting_info. Priority values: low, medium, high, critical. Related tools: create_task, update_task, get_task_stats.`,
+      inputSchema: {
+        status: TaskStatusEnum.optional().describe('Filter to only tasks with this status. Valid: backlog, pending, in_progress, completed, cancelled, blocked, awaiting_info.'),
+        priority: TaskPriorityEnum.optional().describe('Filter to only tasks with this priority. Valid: low, medium, high, critical.'),
+        project_id: z.string().uuid().optional().describe('Filter to tasks associated with this project.'),
+        limit: z.number().min(1).max(100).optional().default(50).describe('Maximum tasks to return. Default 50, max 100.'),
+      },
+      annotations: { readOnlyHint: true },
     },
     async ({ status, priority, project_id, limit }) => {
       try {
@@ -145,11 +148,14 @@ export function registerTaskTools(server: McpServer): void {
   // =========================================================================
   // get_task_stats - Get aggregated task statistics
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'get_task_stats',
-    `Get aggregated statistics for all tasks across all task databases. Returns: total count, count per status (backlog, pending, in_progress, completed, cancelled, blocked, awaiting_info), and completion rate percentage. Useful for dashboards, progress reports, and understanding workload distribution. Can be filtered to a specific project. Related tools: list_tasks (see individual tasks), get_documents_stats (document metrics).`,
     {
-      project_id: z.string().uuid().optional().describe('Filter statistics to tasks in this project only. Omit for workspace-wide stats.'),
+      description: `Get aggregated statistics for all tasks across all task databases. Returns: total count, count per status (backlog, pending, in_progress, completed, cancelled, blocked, awaiting_info), and completion rate percentage. Useful for dashboards, progress reports, and understanding workload distribution. Can be filtered to a specific project. Related tools: list_tasks (see individual tasks), get_documents_stats (document metrics).`,
+      inputSchema: {
+        project_id: z.string().uuid().optional().describe('Filter statistics to tasks in this project only. Omit for workspace-wide stats.'),
+      },
+      annotations: { readOnlyHint: true },
     },
     async ({ project_id }) => {
       try {
@@ -204,13 +210,16 @@ export function registerTaskTools(server: McpServer): void {
   // =========================================================================
   // update_task_status - Update a task's status
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'update_task_status',
-    `Quickly update just the status of a task. This is a convenience tool for the common operation of changing task status (e.g., moving from "pending" to "in_progress"). For updating multiple fields at once, use update_task instead. The database must have a "Status" column. Valid statuses: backlog, pending, in_progress, completed, cancelled, blocked, awaiting_info.`,
     {
-      database_id: z.string().describe('The database ID where the task lives. Format: db-uuid. Get this from list_tasks result.'),
-      row_id: z.string().uuid().describe('The row/task ID to update. Get this from list_tasks or get_task.'),
-      status: TaskStatusEnum.describe('New status: backlog, pending, in_progress, completed, cancelled, blocked, or awaiting_info.'),
+      description: `Quickly update just the status of a task. This is a convenience tool for the common operation of changing task status (e.g., moving from "pending" to "in_progress"). For updating multiple fields at once, use update_task instead. The database must have a "Status" column. Valid statuses: backlog, pending, in_progress, completed, cancelled, blocked, awaiting_info.`,
+      inputSchema: {
+        database_id: z.string().describe('The database ID where the task lives. Format: db-uuid. Get this from list_tasks result.'),
+        row_id: z.string().uuid().describe('The row/task ID to update. Get this from list_tasks or get_task.'),
+        status: TaskStatusEnum.describe('New status: backlog, pending, in_progress, completed, cancelled, blocked, or awaiting_info.'),
+      },
+      annotations: { idempotentHint: true },
     },
     async ({ database_id, row_id, status }) => {
       try {
@@ -303,13 +312,16 @@ export function registerTaskTools(server: McpServer): void {
   // =========================================================================
   // update_task_priority - Update a task's priority
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'update_task_priority',
-    `Quickly update just the priority of a task. This is a convenience tool for changing task urgency. For updating multiple fields at once, use update_task instead. The database must have a "Priority" column. Priority affects task ordering in Kanban views. Valid priorities: low, medium, high, critical.`,
     {
-      database_id: z.string().describe('The database ID where the task lives. Format: db-uuid. Get this from list_tasks result.'),
-      row_id: z.string().uuid().describe('The row/task ID to update. Get this from list_tasks or get_task.'),
-      priority: TaskPriorityEnum.describe('New priority: low, medium, high, or critical.'),
+      description: `Quickly update just the priority of a task. This is a convenience tool for changing task urgency. For updating multiple fields at once, use update_task instead. The database must have a "Priority" column. Priority affects task ordering in Kanban views. Valid priorities: low, medium, high, critical.`,
+      inputSchema: {
+        database_id: z.string().describe('The database ID where the task lives. Format: db-uuid. Get this from list_tasks result.'),
+        row_id: z.string().uuid().describe('The row/task ID to update. Get this from list_tasks or get_task.'),
+        priority: TaskPriorityEnum.describe('New priority: low, medium, high, or critical.'),
+      },
+      annotations: { idempotentHint: true },
     },
     async ({ database_id, row_id, priority }) => {
       try {
@@ -401,9 +413,10 @@ export function registerTaskTools(server: McpServer): void {
   // =========================================================================
   // create_task - Create a new task in a database
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'create_task',
-    `Create a new task in a task-type database. A linked document is automatically created (Notion-style).
+    {
+      description: `Create a new task in a task-type database. A linked document is automatically created (Notion-style).
 
 ⚠️ MANDATORY WORKFLOW - DO NOT SKIP ANY STEP ⚠️
 
@@ -434,16 +447,17 @@ STEP 5: Create the task
 → Only NOW call create_task with all collected information
 
 Returns: { task, document }. Related tools: list_databases, create_database.`,
-    {
-      database_id: z.string().describe('The task database to add to. Format: db-uuid. Get this from list_databases or the database where you want the task.'),
-      title: z.string().min(1).describe('Task title - the main identifier shown in lists and Kanban cards.'),
-      description: z.string().optional().describe('Detailed description of the task. Supports plain text.'),
-      status: TaskStatusEnum.optional().default('pending').describe('Initial status. Default "pending". Options: backlog, pending, in_progress, completed, cancelled, blocked, awaiting_info.'),
-      priority: TaskPriorityEnum.optional().default('medium').describe('Task priority. Default "medium". Options: low, medium, high, critical.'),
-      type: TaskTypeEnum.optional().default('task').describe('Task type for categorization. Default "task". Options: epic (large feature), feature (deliverable), task (work item).'),
-      assigned_to: z.string().optional().describe('Name or identifier of the person assigned. Free text field.'),
-      due_date: z.string().optional().describe('Due date in ISO format (e.g., "2024-12-31" or "2024-12-31T09:00:00Z").'),
-      user_id: z.string().uuid().optional().describe('User ID to assign ownership of the linked document. Required for RLS access. Get this from list_users or get_profile.'),
+      inputSchema: {
+        database_id: z.string().describe('The task database to add to. Format: db-uuid. Get this from list_databases or the database where you want the task.'),
+        title: z.string().min(1).describe('Task title - the main identifier shown in lists and Kanban cards.'),
+        description: z.string().optional().describe('Detailed description of the task. Supports plain text.'),
+        status: TaskStatusEnum.optional().default('pending').describe('Initial status. Default "pending". Options: backlog, pending, in_progress, completed, cancelled, blocked, awaiting_info.'),
+        priority: TaskPriorityEnum.optional().default('medium').describe('Task priority. Default "medium". Options: low, medium, high, critical.'),
+        type: TaskTypeEnum.optional().default('task').describe('Task type for categorization. Default "task". Options: epic (large feature), feature (deliverable), task (work item).'),
+        assigned_to: z.string().optional().describe('Name or identifier of the person assigned. Free text field.'),
+        due_date: z.string().optional().describe('Due date in ISO format (e.g., "2024-12-31" or "2024-12-31T09:00:00Z").'),
+        user_id: z.string().uuid().optional().describe('User ID to assign ownership of the linked document. Required for RLS access. Get this from list_users or get_profile.'),
+      },
     },
     async ({ database_id, title, description, status, priority, type, assigned_to, due_date, user_id }) => {
       try {
@@ -578,12 +592,15 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
   // =========================================================================
   // get_task - Get a specific task by ID
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'get_task',
-    `Get full details of a specific task including all fields. Returns normalized task object with: id, database_id, title, description, status, priority, type, assigned_to, due_date, and timestamps. Use this when you need complete task information after getting an ID from list_tasks. The response includes the database_id and database_name for context. Related tools: update_task (modify), delete_task (remove), link_task_to_document (associate with docs).`,
     {
-      database_id: z.string().describe('The database ID containing the task. Format: db-uuid.'),
-      row_id: z.string().uuid().describe('The specific task/row ID to retrieve.'),
+      description: `Get full details of a specific task including all fields. Returns normalized task object with: id, database_id, title, description, status, priority, type, assigned_to, due_date, and timestamps. Use this when you need complete task information after getting an ID from list_tasks. The response includes the database_id and database_name for context. Related tools: update_task (modify), delete_task (remove), link_task_to_document (associate with docs).`,
+      inputSchema: {
+        database_id: z.string().describe('The database ID containing the task. Format: db-uuid.'),
+        row_id: z.string().uuid().describe('The specific task/row ID to retrieve.'),
+      },
+      annotations: { readOnlyHint: true },
     },
     async ({ database_id, row_id }) => {
       try {
@@ -645,12 +662,15 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
   // =========================================================================
   // get_task_by_number - Search task by number (e.g., "ID-0208")
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'get_task_by_number',
-    `Search for a task by its task number (e.g., "ID-0208") and return the task with its linked document. Task numbers are auto-generated when tasks are created in task-type databases. This tool searches across all accessible task databases. Returns both the task details and the associated Notion-style document.`,
     {
-      task_number: z.string().describe('The task number to search for (e.g., "ID-0208", "ID-0001")'),
-      include_document: z.boolean().optional().default(true).describe('Include the linked document in the response (default: true)'),
+      description: `Search for a task by its task number (e.g., "ID-0208") and return the task with its linked document. Task numbers are auto-generated when tasks are created in task-type databases. This tool searches across all accessible task databases. Returns both the task details and the associated Notion-style document.`,
+      inputSchema: {
+        task_number: z.string().describe('The task number to search for (e.g., "ID-0208", "ID-0001")'),
+        include_document: z.boolean().optional().default(true).describe('Include the linked document in the response (default: true)'),
+      },
+      annotations: { readOnlyHint: true },
     },
     async ({ task_number, include_document }) => {
       try {
@@ -727,12 +747,15 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
   // =========================================================================
   // get_task_document - Get the document linked to a task
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'get_task_document',
-    `Get the document linked to a task. Each task in a task database has an associated document (Notion-style) that can contain rich content, notes, and details. The document is automatically created when the task is created. Use this to retrieve the document for viewing or editing its content. Returns the full document object including id, title, content, and metadata.`,
     {
-      database_id: z.string().describe('The database ID where the task lives. Format: db-uuid.'),
-      row_id: z.string().uuid().describe('The task/row ID to get the document for.'),
+      description: `Get the document linked to a task. Each task in a task database has an associated document (Notion-style) that can contain rich content, notes, and details. The document is automatically created when the task is created. Use this to retrieve the document for viewing or editing its content. Returns the full document object including id, title, content, and metadata.`,
+      inputSchema: {
+        database_id: z.string().describe('The database ID where the task lives. Format: db-uuid.'),
+        row_id: z.string().uuid().describe('The task/row ID to get the document for.'),
+      },
+      annotations: { readOnlyHint: true },
     },
     async ({ database_id, row_id }) => {
       try {
@@ -786,19 +809,22 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
   // =========================================================================
   // update_task - Update all fields of a task
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'update_task',
-    `Update one or more fields of an existing task. Only provide the fields you want to change - unspecified fields remain unchanged. This is the comprehensive update tool; use update_task_status or update_task_priority for single-field updates. Returns the complete updated task. At least one field must be provided. All field values use the same format as create_task.`,
     {
-      database_id: z.string().describe('The database ID containing the task. Format: db-uuid.'),
-      row_id: z.string().uuid().describe('The task/row ID to update.'),
-      title: z.string().min(1).optional().describe('New title. Leave undefined to keep current.'),
-      description: z.string().optional().describe('New description. Leave undefined to keep current.'),
-      status: TaskStatusEnum.optional().describe('New status: backlog, pending, in_progress, completed, cancelled, blocked, awaiting_info.'),
-      priority: TaskPriorityEnum.optional().describe('New priority: low, medium, high, critical.'),
-      type: TaskTypeEnum.optional().describe('New type: epic, feature, task.'),
-      assigned_to: z.string().optional().describe('New assignee name/identifier.'),
-      due_date: z.string().optional().describe('New due date in ISO format.'),
+      description: `Update one or more fields of an existing task. Only provide the fields you want to change - unspecified fields remain unchanged. This is the comprehensive update tool; use update_task_status or update_task_priority for single-field updates. Returns the complete updated task. At least one field must be provided. All field values use the same format as create_task.`,
+      inputSchema: {
+        database_id: z.string().describe('The database ID containing the task. Format: db-uuid.'),
+        row_id: z.string().uuid().describe('The task/row ID to update.'),
+        title: z.string().min(1).optional().describe('New title. Leave undefined to keep current.'),
+        description: z.string().optional().describe('New description. Leave undefined to keep current.'),
+        status: TaskStatusEnum.optional().describe('New status: backlog, pending, in_progress, completed, cancelled, blocked, awaiting_info.'),
+        priority: TaskPriorityEnum.optional().describe('New priority: low, medium, high, critical.'),
+        type: TaskTypeEnum.optional().describe('New type: epic, feature, task.'),
+        assigned_to: z.string().optional().describe('New assignee name/identifier.'),
+        due_date: z.string().optional().describe('New due date in ISO format.'),
+      },
+      annotations: { idempotentHint: true },
     },
     async ({ database_id, row_id, title, description, status, priority, type, assigned_to, due_date }) => {
       try {
@@ -920,12 +946,15 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
   // =========================================================================
   // delete_task - Soft delete a task (move to trash)
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'delete_task',
-    `Soft delete a task (move to trash). Sets deleted_at and registers in trash_items. The task can be restored from trash within 30 days. Returns confirmation with the deleted task's information. Consider using update_task_status to set status to "cancelled" instead if you want to keep the task visible. Related tools: restore_from_trash (undo).`,
     {
-      database_id: z.string().describe('The database ID containing the task to delete. Format: db-uuid.'),
-      row_id: z.string().uuid().describe('The task/row ID to soft delete.'),
+      description: `Soft delete a task (move to trash). Sets deleted_at and registers in trash_items. The task can be restored from trash within 30 days. Returns confirmation with the deleted task's information. Consider using update_task_status to set status to "cancelled" instead if you want to keep the task visible. Related tools: restore_from_trash (undo).`,
+      inputSchema: {
+        database_id: z.string().describe('The database ID containing the task to delete. Format: db-uuid.'),
+        row_id: z.string().uuid().describe('The task/row ID to soft delete.'),
+      },
+      annotations: { destructiveHint: true },
     },
     async ({ database_id, row_id }) => {
       try {

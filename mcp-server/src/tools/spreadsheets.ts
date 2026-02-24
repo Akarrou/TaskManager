@@ -11,11 +11,14 @@ export function registerSpreadsheetTools(server: McpServer): void {
   // =========================================================================
   // list_spreadsheets - List all spreadsheets
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'list_spreadsheets',
-    `List all Excel-like spreadsheets in the workspace. Spreadsheets are grid-based calculation tools embedded in documents, separate from Notion-like databases. They support formulas, multiple sheets, and cell formatting. Returns spreadsheet metadata (id, document_id, config). Use get_spreadsheet for full details or get_cells to access data. Related tools: create_spreadsheet, get_cells, update_cell.`,
     {
-      document_id: z.string().uuid().optional().describe('Filter to spreadsheets in a specific document.'),
+      description: `List all Excel-like spreadsheets in the workspace. Spreadsheets are grid-based calculation tools embedded in documents, separate from Notion-like databases. They support formulas, multiple sheets, and cell formatting. Returns spreadsheet metadata (id, document_id, config). Use get_spreadsheet for full details or get_cells to access data. Related tools: create_spreadsheet, get_cells, update_cell.`,
+      inputSchema: {
+        document_id: z.string().uuid().optional().describe('Filter to spreadsheets in a specific document.'),
+      },
+      annotations: { readOnlyHint: true },
     },
     async ({ document_id }) => {
       try {
@@ -54,11 +57,14 @@ export function registerSpreadsheetTools(server: McpServer): void {
   // =========================================================================
   // get_spreadsheet - Get a spreadsheet with its configuration
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'get_spreadsheet',
-    `Get a spreadsheet's full configuration including sheets list, active sheet, and table name. Does not return cell data - use get_cells for that. Config includes: name, sheets array (each with id, name, rowCount, columnCount, frozen rows/cols), activeSheet. Related tools: get_cells (data), update_spreadsheet (config changes).`,
     {
-      spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID. Get from list_spreadsheets.'),
+      description: `Get a spreadsheet's full configuration including sheets list, active sheet, and table name. Does not return cell data - use get_cells for that. Config includes: name, sheets array (each with id, name, rowCount, columnCount, frozen rows/cols), activeSheet. Related tools: get_cells (data), update_spreadsheet (config changes).`,
+      inputSchema: {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID. Get from list_spreadsheets.'),
+      },
+      annotations: { readOnlyHint: true },
     },
     async ({ spreadsheet_id }) => {
       try {
@@ -92,14 +98,16 @@ export function registerSpreadsheetTools(server: McpServer): void {
   // =========================================================================
   // create_spreadsheet - Create a new spreadsheet
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'create_spreadsheet',
-    `Create a new Excel-like spreadsheet embedded in a document. Starts with one empty sheet ("Sheet 1"). Columns are limited to 26 (A-Z). Cells support values, numbers, and formulas (starting with "="). Use update_cell or update_cells_batch to populate data. Returns the created spreadsheet with its UUID. Related tools: add_sheet (multiple sheets), update_cell (add data).`,
     {
-      document_id: z.string().uuid().describe('The parent document to embed this spreadsheet in.'),
-      name: z.string().min(1).max(255).optional().default('Spreadsheet').describe('Display name for the spreadsheet.'),
-      rows: z.number().min(1).max(1000).optional().default(100).describe('Initial row count. Default 100, max 1000.'),
-      columns: z.number().min(1).max(26).optional().default(10).describe('Initial column count. Default 10, max 26 (A-Z).'),
+      description: `Create a new Excel-like spreadsheet embedded in a document. Starts with one empty sheet ("Sheet 1"). Columns are limited to 26 (A-Z). Cells support values, numbers, and formulas (starting with "="). Use update_cell or update_cells_batch to populate data. Returns the created spreadsheet with its UUID. Related tools: add_sheet (multiple sheets), update_cell (add data).`,
+      inputSchema: {
+        document_id: z.string().uuid().describe('The parent document to embed this spreadsheet in.'),
+        name: z.string().min(1).max(255).optional().default('Spreadsheet').describe('Display name for the spreadsheet.'),
+        rows: z.number().min(1).max(1000).optional().default(100).describe('Initial row count. Default 100, max 1000.'),
+        columns: z.number().min(1).max(26).optional().default(10).describe('Initial column count. Default 10, max 26 (A-Z).'),
+      },
     },
     async ({ document_id, name, rows, columns }) => {
       try {
@@ -171,12 +179,15 @@ export function registerSpreadsheetTools(server: McpServer): void {
   // =========================================================================
   // update_spreadsheet - Update spreadsheet configuration
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'update_spreadsheet',
-    `Update a spreadsheet's configuration (metadata, not cell data). Config is merged with existing - only provide fields to change. Can update name, activeSheet, or sheet properties. To update cell values, use update_cell or update_cells_batch instead. Related tools: get_spreadsheet (current config), add_sheet.`,
     {
-      spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID to update.'),
-      config: z.record(z.unknown()).describe('Config fields to merge. Example: { name: "New Name", activeSheet: "sheet2" }.'),
+      description: `Update a spreadsheet's configuration (metadata, not cell data). Config is merged with existing - only provide fields to change. Can update name, activeSheet, or sheet properties. To update cell values, use update_cell or update_cells_batch instead. Related tools: get_spreadsheet (current config), add_sheet.`,
+      inputSchema: {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID to update.'),
+        config: z.record(z.unknown()).describe('Config fields to merge. Example: { name: "New Name", activeSheet: "sheet2" }.'),
+      },
+      annotations: { idempotentHint: true },
     },
     async ({ spreadsheet_id, config }) => {
       try {
@@ -245,12 +256,15 @@ export function registerSpreadsheetTools(server: McpServer): void {
   // =========================================================================
   // delete_spreadsheet - Delete a spreadsheet
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'delete_spreadsheet',
-    `DESTRUCTIVE: Permanently delete a spreadsheet and ALL its cell data across all sheets. This action CANNOT be undone. The confirm parameter must be true as a safety measure. Consider exporting data first. Returns confirmation of deletion. WARNING: All sheets and cells are permanently lost.`,
     {
-      spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID to delete.'),
-      confirm: z.boolean().describe('REQUIRED: Must be true to proceed. Safety measure.'),
+      description: `DESTRUCTIVE: Permanently delete a spreadsheet and ALL its cell data across all sheets. This action CANNOT be undone. The confirm parameter must be true as a safety measure. Consider exporting data first. Returns confirmation of deletion. WARNING: All sheets and cells are permanently lost.`,
+      inputSchema: {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID to delete.'),
+        confirm: z.boolean().describe('REQUIRED: Must be true to proceed. Safety measure.'),
+      },
+      annotations: { destructiveHint: true },
     },
     async ({ spreadsheet_id, confirm }) => {
       if (!confirm) {
@@ -320,16 +334,19 @@ export function registerSpreadsheetTools(server: McpServer): void {
   // =========================================================================
   // get_cells - Get cells from a spreadsheet
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'get_cells',
-    `Get cell data from a spreadsheet for a specified range. Returns cells with row, col, value, and formula (if any). Cells without data are not returned (sparse). Uses 0-based indexing: row 0 is row 1 in UI, col 0 is column A. Default range is A1:J100 (first 10 columns, 100 rows). Use smaller ranges for better performance. Related tools: update_cell, update_cells_batch, clear_range.`,
     {
-      spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID.'),
-      sheet_id: z.string().optional().default('sheet1').describe('Which sheet to read. Default "sheet1".'),
-      start_row: z.number().min(0).optional().default(0).describe('Starting row, 0-indexed. 0 = row 1 in UI.'),
-      start_col: z.number().min(0).optional().default(0).describe('Starting column, 0-indexed. 0 = column A.'),
-      end_row: z.number().min(0).optional().default(99).describe('Ending row, inclusive. Default 99 (row 100).'),
-      end_col: z.number().min(0).optional().default(9).describe('Ending column, inclusive. Default 9 (column J).'),
+      description: `Get cell data from a spreadsheet for a specified range. Returns cells with row, col, value, and formula (if any). Cells without data are not returned (sparse). Uses 0-based indexing: row 0 is row 1 in UI, col 0 is column A. Default range is A1:J100 (first 10 columns, 100 rows). Use smaller ranges for better performance. Related tools: update_cell, update_cells_batch, clear_range.`,
+      inputSchema: {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID.'),
+        sheet_id: z.string().optional().default('sheet1').describe('Which sheet to read. Default "sheet1".'),
+        start_row: z.number().min(0).optional().default(0).describe('Starting row, 0-indexed. 0 = row 1 in UI.'),
+        start_col: z.number().min(0).optional().default(0).describe('Starting column, 0-indexed. 0 = column A.'),
+        end_row: z.number().min(0).optional().default(99).describe('Ending row, inclusive. Default 99 (row 100).'),
+        end_col: z.number().min(0).optional().default(9).describe('Ending column, inclusive. Default 9 (column J).'),
+      },
+      annotations: { readOnlyHint: true },
     },
     async ({ spreadsheet_id, sheet_id, start_row, start_col, end_row, end_col }) => {
       try {
@@ -381,15 +398,18 @@ export function registerSpreadsheetTools(server: McpServer): void {
   // =========================================================================
   // update_cell - Update a single cell
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'update_cell',
-    `Update a single cell's value. Values starting with "=" are treated as formulas. Uses 0-based indexing (row 0 = row 1, col 0 = column A). Creates the cell if it doesn't exist (upsert). For updating many cells, use update_cells_batch for better performance. Related tools: get_cells, update_cells_batch, clear_range.`,
     {
-      spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID.'),
-      sheet_id: z.string().optional().default('sheet1').describe('Which sheet. Default "sheet1".'),
-      row: z.number().min(0).describe('Row index, 0-based. 0 = row 1 in UI.'),
-      col: z.number().min(0).describe('Column index, 0-based. 0 = column A, 1 = B, etc.'),
-      value: z.unknown().describe('Cell value: string, number, or formula (start with "="). Examples: "Hello", 42, "=SUM(A1:A10)".'),
+      description: `Update a single cell's value. Values starting with "=" are treated as formulas. Uses 0-based indexing (row 0 = row 1, col 0 = column A). Creates the cell if it doesn't exist (upsert). For updating many cells, use update_cells_batch for better performance. Related tools: get_cells, update_cells_batch, clear_range.`,
+      inputSchema: {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID.'),
+        sheet_id: z.string().optional().default('sheet1').describe('Which sheet. Default "sheet1".'),
+        row: z.number().min(0).describe('Row index, 0-based. 0 = row 1 in UI.'),
+        col: z.number().min(0).describe('Column index, 0-based. 0 = column A, 1 = B, etc.'),
+        value: z.unknown().describe('Cell value: string, number, or formula (start with "="). Examples: "Hello", 42, "=SUM(A1:A10)".'),
+      },
+      annotations: { idempotentHint: true },
     },
     async ({ spreadsheet_id, sheet_id, row, col, value }) => {
       try {
@@ -472,17 +492,20 @@ export function registerSpreadsheetTools(server: McpServer): void {
   // =========================================================================
   // update_cells_batch - Update multiple cells at once
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'update_cells_batch',
-    `Update multiple cells in a single operation (batch). More efficient than multiple update_cell calls. Each cell in the array specifies row, col, and value. Values starting with "=" are formulas. All cells must be in the same sheet. Returns count of updated cells. Use this for populating data or making bulk changes. Related tools: update_cell (single), get_cells, clear_range.`,
     {
-      spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID.'),
-      sheet_id: z.string().optional().default('sheet1').describe('Which sheet. All cells go to this sheet.'),
-      cells: z.array(z.object({
-        row: z.number().min(0).describe('Row index, 0-based.'),
-        col: z.number().min(0).describe('Column index, 0-based.'),
-        value: z.unknown().describe('Cell value or formula.'),
-      })).min(1).describe('Array of { row, col, value } objects to update.'),
+      description: `Update multiple cells in a single operation (batch). More efficient than multiple update_cell calls. Each cell in the array specifies row, col, and value. Values starting with "=" are formulas. All cells must be in the same sheet. Returns count of updated cells. Use this for populating data or making bulk changes. Related tools: update_cell (single), get_cells, clear_range.`,
+      inputSchema: {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID.'),
+        sheet_id: z.string().optional().default('sheet1').describe('Which sheet. All cells go to this sheet.'),
+        cells: z.array(z.object({
+          row: z.number().min(0).describe('Row index, 0-based.'),
+          col: z.number().min(0).describe('Column index, 0-based.'),
+          value: z.unknown().describe('Cell value or formula.'),
+        })).min(1).describe('Array of { row, col, value } objects to update.'),
+      },
+      annotations: { idempotentHint: true },
     },
     async ({ spreadsheet_id, sheet_id, cells }) => {
       try {
@@ -560,14 +583,16 @@ export function registerSpreadsheetTools(server: McpServer): void {
   // =========================================================================
   // add_sheet - Add a new sheet to a spreadsheet
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'add_sheet',
-    `Add a new sheet (tab) to an existing spreadsheet. Similar to adding worksheet tabs in Excel. Each sheet has its own grid of cells. Sheet ID is auto-generated (sheet2, sheet3, etc.). New sheet starts empty. Returns the generated sheet ID. Related tools: rename_sheet, delete_sheet, get_spreadsheet (list sheets).`,
     {
-      spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID to add a sheet to.'),
-      name: z.string().min(1).max(100).describe('Sheet tab name displayed in UI.'),
-      rows: z.number().min(1).max(1000).optional().default(100).describe('Initial row count. Default 100.'),
-      columns: z.number().min(1).max(26).optional().default(10).describe('Initial column count. Default 10 (A-J).'),
+      description: `Add a new sheet (tab) to an existing spreadsheet. Similar to adding worksheet tabs in Excel. Each sheet has its own grid of cells. Sheet ID is auto-generated (sheet2, sheet3, etc.). New sheet starts empty. Returns the generated sheet ID. Related tools: rename_sheet, delete_sheet, get_spreadsheet (list sheets).`,
+      inputSchema: {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID to add a sheet to.'),
+        name: z.string().min(1).max(100).describe('Sheet tab name displayed in UI.'),
+        rows: z.number().min(1).max(1000).optional().default(100).describe('Initial row count. Default 100.'),
+        columns: z.number().min(1).max(26).optional().default(10).describe('Initial column count. Default 10 (A-J).'),
+      },
     },
     async ({ spreadsheet_id, name, rows, columns }) => {
       try {
@@ -632,13 +657,16 @@ export function registerSpreadsheetTools(server: McpServer): void {
   // =========================================================================
   // rename_sheet - Rename a sheet
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'rename_sheet',
-    `Rename a sheet's display name in the spreadsheet tabs. Does not affect cell data or formulas referencing this sheet. Get current sheet IDs from get_spreadsheet config.sheets array. Returns confirmation of rename.`,
     {
-      spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID.'),
-      sheet_id: z.string().describe('The sheet ID to rename (e.g., "sheet1", "sheet2").'),
-      name: z.string().min(1).max(100).describe('New tab name.'),
+      description: `Rename a sheet's display name in the spreadsheet tabs. Does not affect cell data or formulas referencing this sheet. Get current sheet IDs from get_spreadsheet config.sheets array. Returns confirmation of rename.`,
+      inputSchema: {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID.'),
+        sheet_id: z.string().describe('The sheet ID to rename (e.g., "sheet1", "sheet2").'),
+        name: z.string().min(1).max(100).describe('New tab name.'),
+      },
+      annotations: { idempotentHint: true },
     },
     async ({ spreadsheet_id, sheet_id, name }) => {
       try {
@@ -714,12 +742,15 @@ export function registerSpreadsheetTools(server: McpServer): void {
   // =========================================================================
   // delete_sheet - Delete a sheet
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'delete_sheet',
-    `Delete a sheet from a spreadsheet. WARNING: All cells in the sheet are permanently deleted. Cannot delete the last remaining sheet - a spreadsheet must have at least one. If deleting the active sheet, another sheet becomes active. Returns confirmation with deleted sheet name.`,
     {
-      spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID.'),
-      sheet_id: z.string().describe('The sheet ID to delete (e.g., "sheet1").'),
+      description: `Delete a sheet from a spreadsheet. WARNING: All cells in the sheet are permanently deleted. Cannot delete the last remaining sheet - a spreadsheet must have at least one. If deleting the active sheet, another sheet becomes active. Returns confirmation with deleted sheet name.`,
+      inputSchema: {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID.'),
+        sheet_id: z.string().describe('The sheet ID to delete (e.g., "sheet1").'),
+      },
+      annotations: { destructiveHint: true },
     },
     async ({ spreadsheet_id, sheet_id }) => {
       try {
@@ -815,16 +846,19 @@ export function registerSpreadsheetTools(server: McpServer): void {
   // =========================================================================
   // clear_range - Clear a range of cells
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'clear_range',
-    `Clear (delete) all cells in a rectangular range. Both values and formulas are removed. Uses 0-based indexing. Clears from (start_row, start_col) to (end_row, end_col) inclusive. Returns count of cleared cells. Use this to reset areas before re-populating or to remove unwanted data. Related tools: update_cells_batch (replace data), get_cells.`,
     {
-      spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID.'),
-      sheet_id: z.string().optional().default('sheet1').describe('Which sheet. Default "sheet1".'),
-      start_row: z.number().min(0).describe('Starting row, 0-based.'),
-      start_col: z.number().min(0).describe('Starting column, 0-based. 0 = column A.'),
-      end_row: z.number().min(0).describe('Ending row, inclusive.'),
-      end_col: z.number().min(0).describe('Ending column, inclusive.'),
+      description: `Clear (delete) all cells in a rectangular range. Both values and formulas are removed. Uses 0-based indexing. Clears from (start_row, start_col) to (end_row, end_col) inclusive. Returns count of cleared cells. Use this to reset areas before re-populating or to remove unwanted data. Related tools: update_cells_batch (replace data), get_cells.`,
+      inputSchema: {
+        spreadsheet_id: z.string().uuid().describe('The spreadsheet UUID.'),
+        sheet_id: z.string().optional().default('sheet1').describe('Which sheet. Default "sheet1".'),
+        start_row: z.number().min(0).describe('Starting row, 0-based.'),
+        start_col: z.number().min(0).describe('Starting column, 0-based. 0 = column A.'),
+        end_row: z.number().min(0).describe('Ending row, inclusive.'),
+        end_col: z.number().min(0).describe('Ending column, inclusive.'),
+      },
+      annotations: { destructiveHint: true },
     },
     async ({ spreadsheet_id, sheet_id, start_row, start_col, end_row, end_col }) => {
       try {

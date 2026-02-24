@@ -36,7 +36,10 @@ export function registerEventCategoryTools(server) {
     // =========================================================================
     // list_event_categories - List all event categories (default + custom)
     // =========================================================================
-    server.tool('list_event_categories', `List all event categories including built-in defaults and user-created custom categories. Default categories (meeting, deadline, milestone, reminder, personal, other) are always included and cannot be deleted. Custom categories are per-user and stored in the event_categories table. Each category has a key (used in event creation), label (display name), colorKey (from palette: blue, red, purple, yellow, green, gray, orange, teal, pink, indigo, cyan, rose), and isDefault flag. Use category keys when creating or updating events via create_event/update_event.`, {}, async () => {
+    server.registerTool('list_event_categories', {
+        description: `List all event categories including built-in defaults and user-created custom categories. Default categories (meeting, deadline, milestone, reminder, personal, other) are always included and cannot be deleted. Custom categories are per-user and stored in the event_categories table. Each category has a key (used in event creation), label (display name), colorKey (from palette: blue, red, purple, yellow, green, gray, orange, teal, pink, indigo, cyan, rose), and isDefault flag. Use category keys when creating or updating events via create_event/update_event.`,
+        annotations: { readOnlyHint: true },
+    }, async () => {
         try {
             const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
@@ -73,9 +76,12 @@ export function registerEventCategoryTools(server) {
     // =========================================================================
     // create_event_category - Create a custom event category
     // =========================================================================
-    server.tool('create_event_category', `Create a new custom event category. The key is auto-generated from the label using slugification (lowercase, remove diacritics, replace non-alphanumeric with hyphens). The colorKey must be one of the available palette colors: blue, red, purple, yellow, green, gray, orange, teal, pink, indigo, cyan, rose. Custom categories are per-user and can be used in create_event/update_event just like default categories. Cannot create categories with keys that conflict with default categories (meeting, deadline, milestone, reminder, personal, other).`, {
-        label: z.string().min(1).describe('Display name for the category (e.g., "Team standup", "Client call").'),
-        color_key: z.enum(['blue', 'red', 'purple', 'yellow', 'green', 'gray', 'orange', 'teal', 'pink', 'indigo', 'cyan', 'rose']).describe('Color key from the palette.'),
+    server.registerTool('create_event_category', {
+        description: `Create a new custom event category. The key is auto-generated from the label using slugification (lowercase, remove diacritics, replace non-alphanumeric with hyphens). The colorKey must be one of the available palette colors: blue, red, purple, yellow, green, gray, orange, teal, pink, indigo, cyan, rose. Custom categories are per-user and can be used in create_event/update_event just like default categories. Cannot create categories with keys that conflict with default categories (meeting, deadline, milestone, reminder, personal, other).`,
+        inputSchema: {
+            label: z.string().min(1).describe('Display name for the category (e.g., "Team standup", "Client call").'),
+            color_key: z.enum(['blue', 'red', 'purple', 'yellow', 'green', 'gray', 'orange', 'teal', 'pink', 'indigo', 'cyan', 'rose']).describe('Color key from the palette.'),
+        },
     }, async ({ label, color_key }) => {
         try {
             const userId = getCurrentUserId();
@@ -141,10 +147,14 @@ export function registerEventCategoryTools(server) {
     // =========================================================================
     // update_event_category - Update a custom event category
     // =========================================================================
-    server.tool('update_event_category', `Update an existing custom event category. Only custom categories can be updated — default categories (meeting, deadline, milestone, reminder, personal, other) cannot be modified. You can update the label, color_key, or both. At least one update field must be provided.`, {
-        key: z.string().describe('The key of the custom category to update (e.g., "team-standup").'),
-        label: z.string().min(1).optional().describe('New display name for the category.'),
-        color_key: z.enum(['blue', 'red', 'purple', 'yellow', 'green', 'gray', 'orange', 'teal', 'pink', 'indigo', 'cyan', 'rose']).optional().describe('New color key from the palette.'),
+    server.registerTool('update_event_category', {
+        description: `Update an existing custom event category. Only custom categories can be updated — default categories (meeting, deadline, milestone, reminder, personal, other) cannot be modified. You can update the label, color_key, or both. At least one update field must be provided.`,
+        inputSchema: {
+            key: z.string().describe('The key of the custom category to update (e.g., "team-standup").'),
+            label: z.string().min(1).optional().describe('New display name for the category.'),
+            color_key: z.enum(['blue', 'red', 'purple', 'yellow', 'green', 'gray', 'orange', 'teal', 'pink', 'indigo', 'cyan', 'rose']).optional().describe('New color key from the palette.'),
+        },
+        annotations: { idempotentHint: true },
     }, async ({ key, label, color_key }) => {
         try {
             if (label === undefined && color_key === undefined) {
@@ -194,8 +204,12 @@ export function registerEventCategoryTools(server) {
     // =========================================================================
     // delete_event_category - Delete a custom event category
     // =========================================================================
-    server.tool('delete_event_category', `Delete a custom event category. Only custom categories can be deleted — default categories (meeting, deadline, milestone, reminder, personal, other) cannot be removed. Events using this category will keep their current category value but it will no longer appear in the category list. Consider updating those events to use a different category.`, {
-        key: z.string().describe('The key of the custom category to delete (e.g., "team-standup").'),
+    server.registerTool('delete_event_category', {
+        description: `Delete a custom event category. Only custom categories can be deleted — default categories (meeting, deadline, milestone, reminder, personal, other) cannot be removed. Events using this category will keep their current category value but it will no longer appear in the category list. Consider updating those events to use a different category.`,
+        inputSchema: {
+            key: z.string().describe('The key of the custom category to delete (e.g., "team-standup").'),
+        },
+        annotations: { destructiveHint: true },
     }, async ({ key }) => {
         try {
             // Block deletion of default categories

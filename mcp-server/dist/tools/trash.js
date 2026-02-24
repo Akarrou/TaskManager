@@ -8,9 +8,13 @@ export function registerTrashTools(server) {
     // =========================================================================
     // list_trash - List items in the trash
     // =========================================================================
-    server.tool('list_trash', `List all items currently in the user's trash. Items are kept for 30 days before automatic permanent deletion. Each item shows its type, name, original location, deletion date, and expiration date. Use restore_from_trash to recover items or permanent_delete_from_trash to delete them immediately.`, {
-        item_type: z.enum(['document', 'project', 'event', 'database_row', 'comment', 'spreadsheet']).optional().describe('Filter by item type.'),
-        limit: z.number().min(1).max(100).optional().default(50).describe('Maximum items to return. Default 50.'),
+    server.registerTool('list_trash', {
+        description: `List all items currently in the user's trash. Items are kept for 30 days before automatic permanent deletion. Each item shows its type, name, original location, deletion date, and expiration date. Use restore_from_trash to recover items or permanent_delete_from_trash to delete them immediately.`,
+        inputSchema: {
+            item_type: z.enum(['document', 'project', 'event', 'database_row', 'comment', 'spreadsheet']).optional().describe('Filter by item type.'),
+            limit: z.number().min(1).max(100).optional().default(50).describe('Maximum items to return. Default 50.'),
+        },
+        annotations: { readOnlyHint: true },
     }, async ({ item_type, limit }) => {
         try {
             const userId = getCurrentUserId();
@@ -67,8 +71,11 @@ export function registerTrashTools(server) {
     // =========================================================================
     // restore_from_trash - Restore an item from trash
     // =========================================================================
-    server.tool('restore_from_trash', `Restore a previously deleted item from the trash. This clears the deleted_at timestamp on the original item and removes it from the trash. The item will reappear in its original location. Use list_trash first to find the trash_id.`, {
-        trash_id: z.string().uuid().describe('The trash item ID (from list_trash output).'),
+    server.registerTool('restore_from_trash', {
+        description: `Restore a previously deleted item from the trash. This clears the deleted_at timestamp on the original item and removes it from the trash. The item will reappear in its original location. Use list_trash first to find the trash_id.`,
+        inputSchema: {
+            trash_id: z.string().uuid().describe('The trash item ID (from list_trash output).'),
+        },
     }, async ({ trash_id }) => {
         try {
             const userId = getCurrentUserId();
@@ -124,9 +131,13 @@ export function registerTrashTools(server) {
     // =========================================================================
     // permanent_delete_from_trash - Permanently delete an item from trash
     // =========================================================================
-    server.tool('permanent_delete_from_trash', `DESTRUCTIVE: Permanently delete an item from the trash. This performs a hard delete on the original table and removes the trash record. This action cannot be undone. Use list_trash first to find the trash_id.`, {
-        trash_id: z.string().uuid().describe('The trash item ID (from list_trash output).'),
-        confirm: z.boolean().describe('REQUIRED: Must be explicitly set to true to confirm permanent deletion.'),
+    server.registerTool('permanent_delete_from_trash', {
+        description: `DESTRUCTIVE: Permanently delete an item from the trash. This performs a hard delete on the original table and removes the trash record. This action cannot be undone. Use list_trash first to find the trash_id.`,
+        inputSchema: {
+            trash_id: z.string().uuid().describe('The trash item ID (from list_trash output).'),
+            confirm: z.boolean().describe('REQUIRED: Must be explicitly set to true to confirm permanent deletion.'),
+        },
+        annotations: { destructiveHint: true },
     }, async ({ trash_id, confirm }) => {
         if (!confirm) {
             return {
@@ -181,8 +192,12 @@ export function registerTrashTools(server) {
     // =========================================================================
     // empty_trash - Empty all items from trash
     // =========================================================================
-    server.tool('empty_trash', `DESTRUCTIVE: Permanently delete ALL items from the trash. This hard deletes every item from their original tables and clears the entire trash. This action cannot be undone.`, {
-        confirm: z.boolean().describe('REQUIRED: Must be explicitly set to true to confirm emptying the entire trash.'),
+    server.registerTool('empty_trash', {
+        description: `DESTRUCTIVE: Permanently delete ALL items from the trash. This hard deletes every item from their original tables and clears the entire trash. This action cannot be undone.`,
+        inputSchema: {
+            confirm: z.boolean().describe('REQUIRED: Must be explicitly set to true to confirm emptying the entire trash.'),
+        },
+        annotations: { destructiveHint: true },
     }, async ({ confirm }) => {
         if (!confirm) {
             return {

@@ -82,10 +82,16 @@
       "WebFetch(domain:worldvectorlogo.com)",
       "Bash(docker exec:*)",
       "Bash(python3:*)",
-      "mcp__context7__query-docs"
+      "mcp__context7__query-docs",
+      "mcp__kodo__list_documents",
+      "WebFetch(domain:developers.notion.com)",
+      "WebFetch(domain:www.notion.com)",
+      "WebFetch(domain:lobehub.com)",
+      "WebFetch(domain:www.philschmid.de)",
+      "WebFetch(domain:skywork.ai)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
-    "deny": [
-    ],
+    "deny": [],
     "ask": [
       "Bash(rm -rf *)"
     ]

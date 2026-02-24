@@ -31,12 +31,16 @@ export function registerEventTools(server) {
     // =========================================================================
     // list_events - List events from all event databases
     // =========================================================================
-    server.tool('list_events', `List events aggregated from all event-type databases in the workspace. Events are stored as rows in "event" type databases with standardized columns: Title, Description, Start Date, End Date, All Day, Category, Location, Recurrence, Linked Items, Project ID, Event Number, Color, Google Meet, Attendees, Reminders. This tool scans all event databases and returns a unified view. Results are normalized and sorted by start date. Each event includes: id, database_id, database_name, event_number, title, description, start_date, end_date, all_day, category, location, recurrence, linked_items, project_id, reminders, meet_link, color, attendees, guest_permissions, timestamps. Default category values: meeting, deadline, milestone, reminder, personal, other (custom categories also accepted). Related tools: create_event, update_event, get_event, list_event_categories, list_calendar_docs, get_calendar_doc.`, {
-        category: EventCategoryEnum.optional().describe('Filter to only events with this category. Valid: meeting, deadline, milestone, reminder, personal, other.'),
-        project_id: z.string().uuid().optional().describe('Filter to events associated with this project.'),
-        start_date: z.string().optional().describe('Filter events starting on or after this date (ISO format, e.g., "2024-12-01" or "2024-12-01T09:00:00Z").'),
-        end_date: z.string().optional().describe('Filter events ending on or before this date (ISO format, e.g., "2024-12-31" or "2024-12-31T23:59:59Z").'),
-        limit: z.number().min(1).max(100).optional().default(50).describe('Maximum events to return. Default 50, max 100.'),
+    server.registerTool('list_events', {
+        description: `List events aggregated from all event-type databases in the workspace. Events are stored as rows in "event" type databases with standardized columns: Title, Description, Start Date, End Date, All Day, Category, Location, Recurrence, Linked Items, Project ID, Event Number, Color, Google Meet, Attendees, Reminders. This tool scans all event databases and returns a unified view. Results are normalized and sorted by start date. Each event includes: id, database_id, database_name, event_number, title, description, start_date, end_date, all_day, category, location, recurrence, linked_items, project_id, reminders, meet_link, color, attendees, guest_permissions, timestamps. Default category values: meeting, deadline, milestone, reminder, personal, other (custom categories also accepted). Related tools: create_event, update_event, get_event, list_event_categories, list_calendar_docs, get_calendar_doc.`,
+        inputSchema: {
+            category: EventCategoryEnum.optional().describe('Filter to only events with this category. Valid: meeting, deadline, milestone, reminder, personal, other.'),
+            project_id: z.string().uuid().optional().describe('Filter to events associated with this project.'),
+            start_date: z.string().optional().describe('Filter events starting on or after this date (ISO format, e.g., "2024-12-01" or "2024-12-01T09:00:00Z").'),
+            end_date: z.string().optional().describe('Filter events ending on or before this date (ISO format, e.g., "2024-12-31" or "2024-12-31T23:59:59Z").'),
+            limit: z.number().min(1).max(100).optional().default(50).describe('Maximum events to return. Default 50, max 100.'),
+        },
+        annotations: { readOnlyHint: true },
     }, async ({ category, project_id, start_date, end_date, limit }) => {
         try {
             const userId = getCurrentUserId();
@@ -118,7 +122,8 @@ export function registerEventTools(server) {
     // =========================================================================
     // create_event - Create a new event in a database
     // =========================================================================
-    server.tool('create_event', `Create a new event in an event-type database. A linked document is automatically created (Notion-style).
+    server.registerTool('create_event', {
+        description: `Create a new event in an event-type database. A linked document is automatically created (Notion-style).
 
 MANDATORY WORKFLOW - DO NOT SKIP ANY STEP:
 
@@ -154,29 +159,31 @@ STEP 5: Create the event
 
 For detailed documentation on categories, linked items, recurrence rules, etc., use list_calendar_docs and get_calendar_doc.
 
-Returns: { event, document }. Related tools: list_databases, create_database, list_calendar_docs.`, {
-        database_id: z.string().describe('The event database to add to. Format: db-uuid. Get this from list_databases or the database where you want the event.'),
-        title: z.string().min(1).describe('Event title - the main identifier shown in calendar views.'),
-        description: z.string().optional().describe('Detailed description of the event. Supports plain text.'),
-        start_date: z.string().describe('Start date and time in ISO format (e.g., "2024-12-31T09:00:00Z"). Required.'),
-        end_date: z.string().describe('End date and time in ISO format (e.g., "2024-12-31T10:00:00Z"). Required.'),
-        all_day: z.boolean().optional().default(false).describe('Whether this is an all-day event. Default false.'),
-        category: EventCategoryEnum.optional().default('other').describe('Event category. Default "other". Options: meeting, deadline, milestone, reminder, personal, other.'),
-        location: z.string().optional().describe('Event location. Free text field.'),
-        recurrence: z.string().optional().describe('Recurrence rule in RRULE format (e.g., "FREQ=WEEKLY;BYDAY=MO,WE,FR").'),
-        linked_items: z.array(z.object({
-            type: z.string().describe('Type of linked item: "task", "document", or "database".'),
-            id: z.string().describe('ID of the linked item.'),
-            databaseId: z.string().optional().describe('Database ID of the linked item, if applicable.'),
-            label: z.string().optional().describe('Display label for the linked item.'),
-        })).optional().describe('Array of items linked to this event.'),
-        attendees: z.array(EventAttendeeSchema).optional().describe('Array of event attendees with email, displayName, rsvpStatus, isOrganizer, isOptional.'),
-        guest_permissions: GuestPermissionsSchema.optional().describe('Guest permissions for the event. Only meaningful when attendees are present.'),
-        reminders: z.array(ReminderSchema).optional().describe('Array of reminders. Each has method ("popup" or "email") and minutes before event.'),
-        meet_link: z.string().url().optional().describe('Google Meet link URL for the event.'),
-        color: z.string().optional().describe('Event color as hex string (e.g., "#3b82f6"). Used for Google Calendar color mapping.'),
-        project_id: z.string().uuid().optional().describe('Project ID to associate this event with.'),
-        user_id: z.string().uuid().optional().describe('User ID to assign ownership of the linked document. Required for RLS access. Get this from list_users or get_profile.'),
+Returns: { event, document }. Related tools: list_databases, create_database, list_calendar_docs.`,
+        inputSchema: {
+            database_id: z.string().describe('The event database to add to. Format: db-uuid. Get this from list_databases or the database where you want the event.'),
+            title: z.string().min(1).describe('Event title - the main identifier shown in calendar views.'),
+            description: z.string().optional().describe('Detailed description of the event. Supports plain text.'),
+            start_date: z.string().describe('Start date and time in ISO format (e.g., "2024-12-31T09:00:00Z"). Required.'),
+            end_date: z.string().describe('End date and time in ISO format (e.g., "2024-12-31T10:00:00Z"). Required.'),
+            all_day: z.boolean().optional().default(false).describe('Whether this is an all-day event. Default false.'),
+            category: EventCategoryEnum.optional().default('other').describe('Event category. Default "other". Options: meeting, deadline, milestone, reminder, personal, other.'),
+            location: z.string().optional().describe('Event location. Free text field.'),
+            recurrence: z.string().optional().describe('Recurrence rule in RRULE format (e.g., "FREQ=WEEKLY;BYDAY=MO,WE,FR").'),
+            linked_items: z.array(z.object({
+                type: z.string().describe('Type of linked item: "task", "document", or "database".'),
+                id: z.string().describe('ID of the linked item.'),
+                databaseId: z.string().optional().describe('Database ID of the linked item, if applicable.'),
+                label: z.string().optional().describe('Display label for the linked item.'),
+            })).optional().describe('Array of items linked to this event.'),
+            attendees: z.array(EventAttendeeSchema).optional().describe('Array of event attendees with email, displayName, rsvpStatus, isOrganizer, isOptional.'),
+            guest_permissions: GuestPermissionsSchema.optional().describe('Guest permissions for the event. Only meaningful when attendees are present.'),
+            reminders: z.array(ReminderSchema).optional().describe('Array of reminders. Each has method ("popup" or "email") and minutes before event.'),
+            meet_link: z.string().url().optional().describe('Google Meet link URL for the event.'),
+            color: z.string().optional().describe('Event color as hex string (e.g., "#3b82f6"). Used for Google Calendar color mapping.'),
+            project_id: z.string().uuid().optional().describe('Project ID to associate this event with.'),
+            user_id: z.string().uuid().optional().describe('User ID to assign ownership of the linked document. Required for RLS access. Get this from list_users or get_profile.'),
+        },
     }, async ({ database_id, title, description, start_date, end_date, all_day, category, location, recurrence, linked_items, attendees, guest_permissions, reminders, meet_link, color, project_id, user_id }) => {
         try {
             const currentUserId = getCurrentUserId();
@@ -339,9 +346,13 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
     // =========================================================================
     // get_event - Get a specific event by ID
     // =========================================================================
-    server.tool('get_event', `Get full details of a specific event including all fields. Returns normalized event object with: id, database_id, database_name, event_number, title, description, start_date, end_date, all_day, category, location, recurrence, linked_items, project_id, reminders, meet_link, color, attendees, guest_permissions, created_at, updated_at, row_order. Use this when you need complete event information after getting an ID from list_events. Related tools: update_event (modify), delete_event (remove), list_event_categories.`, {
-        database_id: z.string().describe('The database ID containing the event. Format: db-uuid.'),
-        row_id: z.string().uuid().describe('The specific event/row ID to retrieve.'),
+    server.registerTool('get_event', {
+        description: `Get full details of a specific event including all fields. Returns normalized event object with: id, database_id, database_name, event_number, title, description, start_date, end_date, all_day, category, location, recurrence, linked_items, project_id, reminders, meet_link, color, attendees, guest_permissions, created_at, updated_at, row_order. Use this when you need complete event information after getting an ID from list_events. Related tools: update_event (modify), delete_event (remove), list_event_categories.`,
+        inputSchema: {
+            database_id: z.string().describe('The database ID containing the event. Format: db-uuid.'),
+            row_id: z.string().uuid().describe('The specific event/row ID to retrieve.'),
+        },
+        annotations: { readOnlyHint: true },
     }, async ({ database_id, row_id }) => {
         try {
             const userId = getCurrentUserId();
@@ -393,9 +404,13 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
     // =========================================================================
     // get_event_by_number - Search event by number (e.g., "EVT-0001")
     // =========================================================================
-    server.tool('get_event_by_number', `Search for an event by its event number (e.g., "EVT-0001") and return the event with its linked document. Event numbers are auto-generated when events are created in event-type databases. This tool searches across all accessible event databases. Returns both the event details and the associated Notion-style document.`, {
-        event_number: z.string().describe('The event number to search for (e.g., "EVT-0001", "EVT-0042")'),
-        include_document: z.boolean().optional().default(true).describe('Include the linked document in the response (default: true)'),
+    server.registerTool('get_event_by_number', {
+        description: `Search for an event by its event number (e.g., "EVT-0001") and return the event with its linked document. Event numbers are auto-generated when events are created in event-type databases. This tool searches across all accessible event databases. Returns both the event details and the associated Notion-style document.`,
+        inputSchema: {
+            event_number: z.string().describe('The event number to search for (e.g., "EVT-0001", "EVT-0042")'),
+            include_document: z.boolean().optional().default(true).describe('Include the linked document in the response (default: true)'),
+        },
+        annotations: { readOnlyHint: true },
     }, async ({ event_number, include_document }) => {
         try {
             const userId = getCurrentUserId();
@@ -461,9 +476,13 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
     // =========================================================================
     // get_event_document - Get the document linked to an event
     // =========================================================================
-    server.tool('get_event_document', `Get the document linked to an event. Each event in an event database has an associated document (Notion-style) that can contain rich content, notes, and details. The document is automatically created when the event is created. Use this to retrieve the document for viewing or editing its content. Returns the full document object including id, title, content, and metadata.`, {
-        database_id: z.string().describe('The database ID where the event lives. Format: db-uuid.'),
-        row_id: z.string().uuid().describe('The event/row ID to get the document for.'),
+    server.registerTool('get_event_document', {
+        description: `Get the document linked to an event. Each event in an event database has an associated document (Notion-style) that can contain rich content, notes, and details. The document is automatically created when the event is created. Use this to retrieve the document for viewing or editing its content. Returns the full document object including id, title, content, and metadata.`,
+        inputSchema: {
+            database_id: z.string().describe('The database ID where the event lives. Format: db-uuid.'),
+            row_id: z.string().uuid().describe('The event/row ID to get the document for.'),
+        },
+        annotations: { readOnlyHint: true },
     }, async ({ database_id, row_id }) => {
         try {
             const userId = getCurrentUserId();
@@ -510,28 +529,32 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
     // =========================================================================
     // update_event - Update all fields of an event
     // =========================================================================
-    server.tool('update_event', `Update one or more fields of an existing event. Only provide the fields you want to change - unspecified fields remain unchanged. Returns the complete updated event. At least one field must be provided. All field values use the same format as create_event. Note: linked_items and attendees replace the entire array (not append). For attendees, the Attendees column stores {attendees: [...], permissions: {...}} as a JSON-stringified string. Related tools: get_event, list_calendar_docs, get_calendar_doc.`, {
-        database_id: z.string().describe('The database ID containing the event. Format: db-uuid.'),
-        row_id: z.string().uuid().describe('The event/row ID to update.'),
-        title: z.string().min(1).optional().describe('New title. Leave undefined to keep current.'),
-        description: z.string().optional().describe('New description. Leave undefined to keep current.'),
-        start_date: z.string().optional().describe('New start date in ISO format with time. Leave undefined to keep current.'),
-        end_date: z.string().optional().describe('New end date in ISO format with time. Leave undefined to keep current.'),
-        all_day: z.boolean().optional().describe('Whether this is an all-day event. Leave undefined to keep current.'),
-        category: EventCategoryEnum.optional().describe('New category: meeting, deadline, milestone, reminder, personal, other.'),
-        location: z.string().optional().describe('New location. Leave undefined to keep current.'),
-        recurrence: z.string().optional().describe('New recurrence rule in RRULE format. Leave undefined to keep current.'),
-        linked_items: z.array(z.object({
-            type: z.string().describe('Type of linked item: "task", "document", or "database".'),
-            id: z.string().describe('ID of the linked item.'),
-            databaseId: z.string().optional().describe('Database ID of the linked item.'),
-            label: z.string().optional().describe('Display label for the linked item.'),
-        })).optional().describe('New linked items array. Leave undefined to keep current.'),
-        attendees: z.array(EventAttendeeSchema).optional().describe('New attendees array. Replaces existing. Leave undefined to keep current.'),
-        guest_permissions: GuestPermissionsSchema.optional().describe('New guest permissions. Leave undefined to keep current.'),
-        reminders: z.array(ReminderSchema).optional().describe('New reminders array. Replaces existing. Leave undefined to keep current.'),
-        meet_link: z.string().url().optional().describe('Google Meet link URL. Leave undefined to keep current.'),
-        color: z.string().optional().describe('Event color hex string. Leave undefined to keep current.'),
+    server.registerTool('update_event', {
+        description: `Update one or more fields of an existing event. Only provide the fields you want to change - unspecified fields remain unchanged. Returns the complete updated event. At least one field must be provided. All field values use the same format as create_event. Note: linked_items and attendees replace the entire array (not append). For attendees, the Attendees column stores {attendees: [...], permissions: {...}} as a JSON-stringified string. Related tools: get_event, list_calendar_docs, get_calendar_doc.`,
+        inputSchema: {
+            database_id: z.string().describe('The database ID containing the event. Format: db-uuid.'),
+            row_id: z.string().uuid().describe('The event/row ID to update.'),
+            title: z.string().min(1).optional().describe('New title. Leave undefined to keep current.'),
+            description: z.string().optional().describe('New description. Leave undefined to keep current.'),
+            start_date: z.string().optional().describe('New start date in ISO format with time. Leave undefined to keep current.'),
+            end_date: z.string().optional().describe('New end date in ISO format with time. Leave undefined to keep current.'),
+            all_day: z.boolean().optional().describe('Whether this is an all-day event. Leave undefined to keep current.'),
+            category: EventCategoryEnum.optional().describe('New category: meeting, deadline, milestone, reminder, personal, other.'),
+            location: z.string().optional().describe('New location. Leave undefined to keep current.'),
+            recurrence: z.string().optional().describe('New recurrence rule in RRULE format. Leave undefined to keep current.'),
+            linked_items: z.array(z.object({
+                type: z.string().describe('Type of linked item: "task", "document", or "database".'),
+                id: z.string().describe('ID of the linked item.'),
+                databaseId: z.string().optional().describe('Database ID of the linked item.'),
+                label: z.string().optional().describe('Display label for the linked item.'),
+            })).optional().describe('New linked items array. Leave undefined to keep current.'),
+            attendees: z.array(EventAttendeeSchema).optional().describe('New attendees array. Replaces existing. Leave undefined to keep current.'),
+            guest_permissions: GuestPermissionsSchema.optional().describe('New guest permissions. Leave undefined to keep current.'),
+            reminders: z.array(ReminderSchema).optional().describe('New reminders array. Replaces existing. Leave undefined to keep current.'),
+            meet_link: z.string().url().optional().describe('Google Meet link URL. Leave undefined to keep current.'),
+            color: z.string().optional().describe('Event color hex string. Leave undefined to keep current.'),
+        },
+        annotations: { idempotentHint: true },
     }, async ({ database_id, row_id, title, description, start_date, end_date, all_day, category, location, recurrence, linked_items, attendees, guest_permissions, reminders, meet_link, color }) => {
         try {
             // Check for updates early to avoid unnecessary DB calls and snapshots
@@ -686,9 +709,13 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
     // =========================================================================
     // delete_event - Soft delete an event (move to trash)
     // =========================================================================
-    server.tool('delete_event', `Move an event to the trash (soft delete). The event is marked as deleted but can be restored within 30 days using restore_from_trash. A snapshot is taken before deletion for additional recovery. Note: if Google Calendar sync is active, the corresponding Google event will also be deleted when the event is removed via the Angular app.`, {
-        database_id: z.string().describe('The database ID containing the event to delete. Format: db-uuid.'),
-        row_id: z.string().uuid().describe('The event/row ID to move to trash.'),
+    server.registerTool('delete_event', {
+        description: `Move an event to the trash (soft delete). The event is marked as deleted but can be restored within 30 days using restore_from_trash. A snapshot is taken before deletion for additional recovery. Note: if Google Calendar sync is active, the corresponding Google event will also be deleted when the event is removed via the Angular app.`,
+        inputSchema: {
+            database_id: z.string().describe('The database ID containing the event to delete. Format: db-uuid.'),
+            row_id: z.string().uuid().describe('The event/row ID to move to trash.'),
+        },
+        annotations: { destructiveHint: true },
     }, async ({ database_id, row_id }) => {
         try {
             const userId = getCurrentUserId();

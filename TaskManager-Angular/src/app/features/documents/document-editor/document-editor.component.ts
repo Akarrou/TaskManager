@@ -70,6 +70,7 @@ import { MindmapRendererDirective } from '../directives/mindmap-renderer.directi
 import { SpreadsheetExtension } from '../extensions/spreadsheet.extension';
 import { SpreadsheetRendererDirective } from '../directives/spreadsheet-renderer.directive';
 import { AddToEventDialogComponent, AddToEventDialogData } from '../../calendar/components/add-to-event-dialog/add-to-event-dialog.component';
+import { DocumentExportService } from '../services/document-export.service';
 
 const lowlight = createLowlight(all);
 
@@ -91,6 +92,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   private storageService = inject(StorageService);
   private blockCommentService = inject(BlockCommentService);
   private store = inject(Store<AppState>);
+  private documentExportService = inject(DocumentExportService);
   private pageId = crypto.randomUUID();
 
   // Track document file URLs for cleanup when links are deleted
@@ -422,6 +424,14 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
           hasUnsavedChanges: false
         },
         actions: [
+          {
+            id: 'export-print',
+            icon: 'print',
+            label: 'Imprimer / PDF',
+            tooltip: 'Ouvrir une version imprimable du document',
+            action: () => this.exportForPrint(),
+            color: 'accent'
+          },
           {
             id: 'add-to-event',
             icon: 'event',
@@ -1154,6 +1164,12 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
    */
   toNumber(value: string): number {
     return Number(value);
+  }
+
+  async exportForPrint(): Promise<void> {
+    const title = this.documentState().title || 'Sans titre';
+    const html = this.editor.getHTML();
+    await this.documentExportService.exportForPrint(title, html);
   }
 
   openAddToEventDialog(): void {

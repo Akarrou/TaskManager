@@ -28,6 +28,9 @@
   background-color: v.$background-color-form;
   border-bottom: 1px solid v.$border-color-light;
   flex-wrap: wrap;
+  position: sticky;
+  top: 70px;
+  z-index: 100;
 
   &__left {
     display: flex;

@@ -8,11 +8,14 @@ export function registerProjectPrompts(server: McpServer): void {
   // =========================================================================
   // project_summary - Generate a project summary
   // =========================================================================
-  server.prompt(
+  server.registerPrompt(
     'project_summary',
-    'Generate a comprehensive summary of a project including task statistics, recent activity, and team members.',
     {
-      project_id: z.string().uuid().describe('The UUID of the project to summarize'),
+      title: 'Project Summary',
+      description: 'Generate a comprehensive summary of a project including task statistics, recent activity, and team members.',
+      argsSchema: {
+        project_id: z.string().uuid().describe('The UUID of the project to summarize'),
+      },
     },
     async ({ project_id }) => {
       return {
@@ -49,12 +52,15 @@ Format the summary in a clear, professional manner suitable for a status report.
   // =========================================================================
   // project_status_report - Generate a formal status report
   // =========================================================================
-  server.prompt(
+  server.registerPrompt(
     'project_status_report',
-    'Generate a formal project status report for stakeholders.',
     {
-      project_id: z.string().uuid().describe('The UUID of the project'),
-      report_period: z.enum(['daily', 'weekly', 'monthly']).optional().default('weekly').describe('Reporting period'),
+      title: 'Project Status Report',
+      description: 'Generate a formal project status report for stakeholders.',
+      argsSchema: {
+        project_id: z.string().uuid().describe('The UUID of the project'),
+        report_period: z.enum(['daily', 'weekly', 'monthly']).optional().default('weekly').describe('Reporting period'),
+      },
     },
     async ({ project_id, report_period }) => {
       return {

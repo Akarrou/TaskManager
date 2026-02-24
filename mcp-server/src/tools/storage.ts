@@ -12,11 +12,14 @@ export function registerStorageTools(server: McpServer): void {
   // =========================================================================
   // list_document_files - List files attached to a document
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'list_document_files',
-    `List all files attached to a document in Supabase Storage. Files are stored under documents/{document_id}/files/. Returns array of files with: name, path, size, content_type, created_at, and public URL. Use this to see what attachments exist on a document. Empty folders are hidden. Related tools: get_file_url (access file), delete_file (remove).`,
     {
-      document_id: z.string().uuid().describe('The document UUID to list files for.'),
+      description: `List all files attached to a document in Supabase Storage. Files are stored under documents/{document_id}/files/. Returns array of files with: name, path, size, content_type, created_at, and public URL. Use this to see what attachments exist on a document. Empty folders are hidden. Related tools: get_file_url (access file), delete_file (remove).`,
+      inputSchema: {
+        document_id: z.string().uuid().describe('The document UUID to list files for.'),
+      },
+      annotations: { readOnlyHint: true },
     },
     async ({ document_id }) => {
       try {
@@ -75,12 +78,15 @@ export function registerStorageTools(server: McpServer): void {
   // =========================================================================
   // get_file_url - Get public URL for a file
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'get_file_url',
-    `Get a URL to access a file in storage. Two modes: public URL (permanent, for public files) or signed URL (expires in 1 hour, for private files). Public URLs work if the bucket allows public access. Signed URLs provide temporary authenticated access. Get file paths from list_document_files. Returns the URL and type (public/signed).`,
     {
-      file_path: z.string().describe('Full storage path (e.g., "documents/uuid/files/report.pdf"). Get from list_document_files.'),
-      signed: z.boolean().optional().default(false).describe('Set true for time-limited signed URL. Default false for permanent public URL.'),
+      description: `Get a URL to access a file in storage. Two modes: public URL (permanent, for public files) or signed URL (expires in 1 hour, for private files). Public URLs work if the bucket allows public access. Signed URLs provide temporary authenticated access. Get file paths from list_document_files. Returns the URL and type (public/signed).`,
+      inputSchema: {
+        file_path: z.string().describe('Full storage path (e.g., "documents/uuid/files/report.pdf"). Get from list_document_files.'),
+        signed: z.boolean().optional().default(false).describe('Set true for time-limited signed URL. Default false for permanent public URL.'),
+      },
+      annotations: { readOnlyHint: true },
     },
     async ({ file_path, signed }) => {
       try {
@@ -137,11 +143,14 @@ export function registerStorageTools(server: McpServer): void {
   // =========================================================================
   // delete_file - Delete a file from storage
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'delete_file',
-    `Permanently delete a file from Supabase Storage. A metadata snapshot is saved for audit purposes, but file content CANNOT be restored (storage files are not database rows). Get the file path from list_document_files. Returns confirmation of deletion with snapshot token. WARNING: The file and any links to it will stop working immediately.`,
     {
-      file_path: z.string().describe('Full storage path to delete (e.g., "documents/uuid/files/old-report.pdf").'),
+      description: `Permanently delete a file from Supabase Storage. A metadata snapshot is saved for audit purposes, but file content CANNOT be restored (storage files are not database rows). Get the file path from list_document_files. Returns confirmation of deletion with snapshot token. WARNING: The file and any links to it will stop working immediately.`,
+      inputSchema: {
+        file_path: z.string().describe('Full storage path to delete (e.g., "documents/uuid/files/old-report.pdf").'),
+      },
+      annotations: { destructiveHint: true },
     },
     async ({ file_path }) => {
       try {

@@ -10,10 +10,10 @@ export function registerResources(server: McpServer): void {
   // =========================================================================
   // kodo://projects - List all projects (static resource)
   // =========================================================================
-  server.resource(
+  server.registerResource(
     'projects',
     'kodo://projects',
-    { description: 'List of all projects accessible to the current user' },
+    { title: 'Projects', description: 'List of all projects accessible to the current user', mimeType: 'application/json' },
     async (uri) => {
       try {
         const supabase = getSupabaseClient();
@@ -56,10 +56,10 @@ export function registerResources(server: McpServer): void {
   // =========================================================================
   // kodo://project/{id} - Get a specific project (template resource)
   // =========================================================================
-  server.resource(
+  server.registerResource(
     'project',
     new ResourceTemplate('kodo://project/{id}', { list: undefined }),
-    { description: 'Details of a specific project including members and stats' },
+    { title: 'Project Details', description: 'Details of a specific project including members and stats', mimeType: 'application/json' },
     async (uri, variables) => {
       const id = variables.id as string;
       try {
@@ -125,10 +125,10 @@ export function registerResources(server: McpServer): void {
   // =========================================================================
   // kodo://project/{id}/stats - Get project statistics (template resource)
   // =========================================================================
-  server.resource(
+  server.registerResource(
     'project-stats',
     new ResourceTemplate('kodo://project/{id}/stats', { list: undefined }),
-    { description: 'Detailed statistics for a project including task counts by status' },
+    { title: 'Project Statistics', description: 'Detailed statistics for a project including task counts by status', mimeType: 'application/json' },
     async (uri, variables) => {
       const id = variables.id as string;
       try {
@@ -196,10 +196,10 @@ export function registerResources(server: McpServer): void {
   // =========================================================================
   // kodo://database/{id}/schema - Get database schema (template resource)
   // =========================================================================
-  server.resource(
+  server.registerResource(
     'database-schema',
     new ResourceTemplate('kodo://database/{id}/schema', { list: undefined }),
-    { description: 'Schema definition of a database including columns and their types' },
+    { title: 'Database Schema', description: 'Schema definition of a database including columns and their types', mimeType: 'application/json' },
     async (uri, variables) => {
       const id = variables.id as string;
       try {
@@ -272,23 +272,23 @@ export function registerResources(server: McpServer): void {
   // =========================================================================
   // kodo://server/info - Server information (static resource)
   // =========================================================================
-  server.resource(
+  server.registerResource(
     'server-info',
     'kodo://server/info',
-    { description: 'Information about the Kodo MCP server including version and capabilities' },
+    { title: 'Server Info', description: 'Information about the Kodo MCP server including version and capabilities', mimeType: 'application/json' },
     async (uri) => {
       const info = {
         name: 'kodo-mcp',
-        version: '0.3.0',
+        version: '0.3.1',
         description: 'MCP Server for Kodo - Task and document management',
         capabilities: {
-          tools: 85,
+          tools: 96,
           resources: 5,
           prompts: 9,
         },
         features: [
           'Projects management',
-          'Documents with TipTap content',
+          'Rich-text documents',
           'Notion-like databases',
           'Tasks with Kanban views',
           'Calendar/Event management',

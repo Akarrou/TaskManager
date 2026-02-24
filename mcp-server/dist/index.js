@@ -8,11 +8,18 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createMcpServer } from './server.js';
 import { testConnection } from './services/supabase-client.js';
+import { env } from './config.js';
+import { setCurrentRequestUser } from './services/user-auth.js';
 async function main() {
     // Test Supabase connection
     const isConnected = await testConnection();
     if (!isConnected) {
         console.error('Warning: Could not connect to Supabase. Some tools may not work.');
+    }
+    // Set default user context for stdio mode (no interactive auth)
+    if (env.DEFAULT_USER_ID) {
+        setCurrentRequestUser({ id: env.DEFAULT_USER_ID, email: 'stdio@localhost' });
+        console.error(`Using default user: ${env.DEFAULT_USER_ID}`);
     }
     // Create MCP server
     const server = createMcpServer();

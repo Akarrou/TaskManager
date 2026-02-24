@@ -9,7 +9,6 @@ import { registerCommentTools } from './tools/comments.js';
 import { registerTabTools } from './tools/tabs.js';
 import { registerSpreadsheetTools } from './tools/spreadsheets.js';
 import { registerSnapshotTools } from './tools/snapshots.js';
-import { registerTiptapDocsTools } from './tools/tiptap-docs.js';
 import { registerEventTools } from './tools/events.js';
 import { registerCalendarDocsTools } from './tools/calendar-docs.js';
 import { registerEventCategoryTools } from './tools/event-categories.js';
@@ -21,7 +20,7 @@ import { logger } from './services/logger.js';
 /**
  * MCP Server version
  */
-export const MCP_VERSION = '0.3.0';
+export const MCP_VERSION = '0.3.1';
 
 /**
  * Create and configure the MCP server with all tools, resources, and prompts
@@ -45,7 +44,6 @@ export function createMcpServer(): McpServer {
   registerTabTools(server);
   registerSpreadsheetTools(server);
   registerSnapshotTools(server);
-  registerTiptapDocsTools(server);
   registerEventTools(server);
   registerCalendarDocsTools(server);
   registerEventCategoryTools(server);
@@ -57,7 +55,7 @@ export function createMcpServer(): McpServer {
   // Register prompts
   registerPrompts(server);
 
-  logger.info('MCP server configured with 93 tools, 5 resources, 9 prompts');
+  logger.info('MCP server configured with 96 tools, 5 resources, 9 prompts');
 
   return server;
 }

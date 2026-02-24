@@ -31,12 +31,15 @@ export function registerDatabaseTools(server: McpServer): void {
   // =========================================================================
   // list_databases - List all databases
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'list_databases',
-    `List all Notion-like databases in the workspace. Databases are structured tables with typed columns that can be embedded in documents or exist standalone. They support two types: "task" (with predefined columns for task management, used by task tools) and "generic" (custom columns). Returns simplified view with database_id, name, type, column_count, and document_id. Use get_database_schema for full column details. Related tools: create_database, get_database_rows, add_database_row.`,
     {
-      document_id: z.string().uuid().optional().describe('Filter to databases embedded in a specific document.'),
-      type: z.enum(['task', 'generic', 'event']).optional().describe('Filter by database type: "task" for task management, "event" for calendar events, "generic" for custom tables.'),
+      description: `List all Notion-like databases in the workspace. Databases are structured tables with typed columns that can be embedded in documents or exist standalone. They support two types: "task" (with predefined columns for task management, used by task tools) and "generic" (custom columns). Returns simplified view with database_id, name, type, column_count, and document_id. Use get_database_schema for full column details. Related tools: create_database, get_database_rows, add_database_row.`,
+      inputSchema: {
+        document_id: z.string().uuid().optional().describe('Filter to databases embedded in a specific document.'),
+        type: z.enum(['task', 'generic', 'event']).optional().describe('Filter by database type: "task" for task management, "event" for calendar events, "generic" for custom tables.'),
+      },
+      annotations: { readOnlyHint: true },
     },
     async ({ document_id, type }) => {
       try {
@@ -106,17 +109,20 @@ export function registerDatabaseTools(server: McpServer): void {
   // =========================================================================
   // get_database_schema - Get database column configuration
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'get_database_schema',
-    `Get the complete schema of a database including all column definitions. Returns: database_id, name, type, columns array, views, defaultView, and pinnedColumns.
+    {
+      description: `Get the complete schema of a database including all column definitions. Returns: database_id, name, type, columns array, views, defaultView, and pinnedColumns.
 
 Each column has: id (UUID), name, type, visible, order, and optionally: width, color, readonly, required, options. Column types: text, number, select, multi-select, date, checkbox, url, email, phone, person, formula, relation, rollup, created_time, last_edited_time, created_by, last_edited_by. Note: multi-select uses a hyphen (not underscore).
 
 For select/multi-select columns, options follow the format: { choices: [{ id, label, color }] }. The choice "id" is the value to use when setting cell data (e.g., "in_progress", "high").
 
 Column IDs are standard UUIDs (e.g., "a1b2c3d4-e5f6-..."). Essential for understanding how to query and update database rows. Related tools: add_column, update_column, add_database_row.`,
-    {
-      database_id: z.string().describe('The database ID. Format: db-uuid (e.g., "db-123e4567-e89b-...").'),
+      inputSchema: {
+        database_id: z.string().describe('The database ID. Format: db-uuid (e.g., "db-123e4567-e89b-...").'),
+      },
+      annotations: { readOnlyHint: true },
     },
     async ({ database_id }) => {
       try {
@@ -192,15 +198,18 @@ Column IDs are standard UUIDs (e.g., "a1b2c3d4-e5f6-..."). Essential for underst
   // =========================================================================
   // get_database_rows - Query rows from a database
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'get_database_rows',
-    `Query rows from a database with pagination. Returns denormalized rows with column names as keys (not column IDs), plus metadata fields prefixed with underscore: _id (row UUID), _row_order, _created_at, _updated_at. Also returns total_count for pagination. For task databases, use list_tasks instead which provides normalized task fields. Use get_database_schema first to understand available columns. Related tools: add_database_row, update_database_row, delete_database_rows.`,
     {
-      database_id: z.string().describe('The database ID. Format: db-uuid.'),
-      limit: z.number().min(1).max(100).optional().default(50).describe('Maximum rows per page. Default 50, max 100.'),
-      offset: z.number().min(0).optional().default(0).describe('Number of rows to skip for pagination.'),
-      sort_by: z.string().optional().describe('Column name to sort by. Currently sorts by row_order.'),
-      sort_order: z.enum(['asc', 'desc']).optional().default('asc').describe('Sort direction: asc (ascending) or desc (descending).'),
+      description: `Query rows from a database with pagination. Returns denormalized rows with column names as keys (not column IDs), plus metadata fields prefixed with underscore: _id (row UUID), _row_order, _created_at, _updated_at. Also returns total_count for pagination. For task databases, use list_tasks instead which provides normalized task fields. Use get_database_schema first to understand available columns. Related tools: add_database_row, update_database_row, delete_database_rows.`,
+      inputSchema: {
+        database_id: z.string().describe('The database ID. Format: db-uuid.'),
+        limit: z.number().min(1).max(100).optional().default(50).describe('Maximum rows per page. Default 50, max 100.'),
+        offset: z.number().min(0).optional().default(0).describe('Number of rows to skip for pagination.'),
+        sort_by: z.string().optional().describe('Column name to sort by. Currently sorts by row_order.'),
+        sort_order: z.enum(['asc', 'desc']).optional().default('asc').describe('Sort direction: asc (ascending) or desc (descending).'),
+      },
+      annotations: { readOnlyHint: true },
     },
     async ({ database_id, limit, offset, sort_by, sort_order }) => {
       try {
@@ -299,16 +308,18 @@ Column IDs are standard UUIDs (e.g., "a1b2c3d4-e5f6-..."). Essential for underst
   // =========================================================================
   // add_database_row - Add a new row to a database
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'add_database_row',
-    `Add a new row to a database. Use column names (not IDs) as keys in the cells object - they are automatically mapped to column IDs. For task databases, use create_task instead which provides a typed interface. The new row is added at the end (highest row_order). Returns the created row with its generated UUID.
+    {
+      description: `Add a new row to a database. Use column names (not IDs) as keys in the cells object - they are automatically mapped to column IDs. For task databases, use create_task instead which provides a typed interface. The new row is added at the end (highest row_order). Returns the created row with its generated UUID.
 
 IMPORTANT for select/multi-select columns: use the choice ID as value, not the label. Example: use "in_progress" not "En cours", "high" not "Haute". Get available choice IDs from get_database_schema (options.choices[].id).
 
 Example cells: { "Title": "My Item", "Status": "pending", "Priority": "high", "Count": 42 }. Related tools: get_database_schema (column names and choice IDs), update_database_row.`,
-    {
-      database_id: z.string().describe('The database ID to add a row to. Format: db-uuid.'),
-      cells: z.record(z.unknown()).describe('Cell values as { "ColumnName": value } object. Use get_database_schema to see available columns.'),
+      inputSchema: {
+        database_id: z.string().describe('The database ID to add a row to. Format: db-uuid.'),
+        cells: z.record(z.unknown()).describe('Cell values as { "ColumnName": value } object. Use get_database_schema to see available columns.'),
+      },
     },
     async ({ database_id, cells }) => {
       try {
@@ -397,17 +408,20 @@ Example cells: { "Title": "My Item", "Status": "pending", "Priority": "high", "C
   // =========================================================================
   // update_database_row - Update a row in a database
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'update_database_row',
-    `Update specific cells in an existing database row. Only provide the columns you want to change - existing values are preserved for unspecified columns. Uses column names (not IDs) in the cells object. For task databases, use update_task instead. Returns the updated row.
+    {
+      description: `Update specific cells in an existing database row. Only provide the columns you want to change - existing values are preserved for unspecified columns. Uses column names (not IDs) in the cells object. For task databases, use update_task instead. Returns the updated row.
 
 IMPORTANT for select/multi-select columns: use the choice ID as value (e.g., "completed", "critical"), not the display label. Get available choice IDs from get_database_schema.
 
 Example: { "Status": "completed", "Priority": "high", "Progress": 100 }. Related tools: get_database_rows (find row IDs), add_database_row, delete_database_rows.`,
-    {
-      database_id: z.string().describe('The database ID containing the row. Format: db-uuid.'),
-      row_id: z.string().uuid().describe('The row UUID to update. Get this from get_database_rows (_id field).'),
-      cells: z.record(z.unknown()).describe('Cells to update as { "ColumnName": newValue }. Unspecified columns keep current values.'),
+      inputSchema: {
+        database_id: z.string().describe('The database ID containing the row. Format: db-uuid.'),
+        row_id: z.string().uuid().describe('The row UUID to update. Get this from get_database_rows (_id field).'),
+        cells: z.record(z.unknown()).describe('Cells to update as { "ColumnName": newValue }. Unspecified columns keep current values.'),
+      },
+      annotations: { idempotentHint: true },
     },
     async ({ database_id, row_id, cells }) => {
       try {
@@ -500,12 +514,15 @@ Example: { "Status": "completed", "Priority": "high", "Progress": 100 }. Related
   // =========================================================================
   // delete_database_rows - Soft delete rows from a database (move to trash)
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'delete_database_rows',
-    `Soft delete one or more rows from a database (move to trash). Sets deleted_at and registers in trash_items. Rows can be restored from trash within 30 days. Accepts an array of row UUIDs. For task databases, use delete_task instead. Returns count of soft-deleted rows. Related tools: get_database_rows (find rows), update_database_row, restore_from_trash (undo).`,
     {
-      database_id: z.string().describe('The database ID. Format: db-uuid.'),
-      row_ids: z.array(z.string().uuid()).min(1).describe('Array of row UUIDs to delete. Get these from get_database_rows (_id field).'),
+      description: `Soft delete one or more rows from a database (move to trash). Sets deleted_at and registers in trash_items. Rows can be restored from trash within 30 days. Accepts an array of row UUIDs. For task databases, use delete_task instead. Returns count of soft-deleted rows. Related tools: get_database_rows (find rows), update_database_row, restore_from_trash (undo).`,
+      inputSchema: {
+        database_id: z.string().describe('The database ID. Format: db-uuid.'),
+        row_ids: z.array(z.string().uuid()).min(1).describe('Array of row UUIDs to delete. Get these from get_database_rows (_id field).'),
+      },
+      annotations: { destructiveHint: true },
     },
     async ({ database_id, row_ids }) => {
       try {
@@ -596,9 +613,10 @@ Example: { "Status": "completed", "Priority": "high", "Progress": 100 }. Related
   // =========================================================================
   // create_database - Create a new database
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'create_database',
-    `Create a new Notion-like database with custom columns. Databases are structured tables that can be embedded in documents or exist standalone.
+    {
+      description: `Create a new Notion-like database with custom columns. Databases are structured tables that can be embedded in documents or exist standalone.
 
 Type "task" creates a complete task management database with 15 predefined columns: Title, Description, Status (select: backlog/pending/in_progress/completed/cancelled/blocked/awaiting_info), Priority (select: low/medium/high/critical), Type (select: epic/feature/task), Assigned To, Due Date, Tags (multi-select), Estimated Hours, Actual Hours, Parent Task ID, Epic ID, Feature ID, Project ID, Task Number. It also creates 3 views (table, kanban grouped by Status, calendar), sets defaultView to "table", and pins the Status column. Use with list_tasks/create_task tools.
 
@@ -612,18 +630,19 @@ When document_id is provided, the databaseTable TipTap node is automatically app
 When document_id is NOT provided, ask the user whether to create a new document or embed in an existing one.
 
 Returns the created database with its generated database_id. Related tools: add_column (add more columns later), add_database_row (add data), list_tasks/create_task (for task databases).`,
-    {
-      name: z.string().min(1).max(255).describe('Display name for the database.'),
-      document_id: z.string().uuid().optional().describe('Parent document to embed the database in. Omit for standalone database.'),
-      type: z.enum(['task', 'generic', 'event']).optional().default('generic').describe('"task" creates predefined task columns. "event" creates predefined calendar event columns. "generic" (default) starts empty.'),
-      columns: z.array(z.object({
-        name: z.string().describe('Column display name.'),
-        type: z.enum(['text', 'number', 'select', 'multi_select', 'date', 'checkbox', 'url', 'email', 'phone', 'formula', 'relation', 'rollup', 'created_time', 'last_edited_time', 'created_by', 'last_edited_by', 'person']).describe('Column data type.'),
-        options: z.array(z.object({
-          label: z.string(),
-          color: z.string().optional(),
-        })).optional().describe('Required for select/multi_select types. Array of { label, color? }.'),
-      })).optional().describe('Initial column definitions. For type "task" with no columns, default task columns are created.'),
+      inputSchema: {
+        name: z.string().min(1).max(255).describe('Display name for the database.'),
+        document_id: z.string().uuid().optional().describe('Parent document to embed the database in. Omit for standalone database.'),
+        type: z.enum(['task', 'generic', 'event']).optional().default('generic').describe('"task" creates predefined task columns. "event" creates predefined calendar event columns. "generic" (default) starts empty.'),
+        columns: z.array(z.object({
+          name: z.string().describe('Column display name.'),
+          type: z.enum(['text', 'number', 'select', 'multi_select', 'date', 'checkbox', 'url', 'email', 'phone', 'formula', 'relation', 'rollup', 'created_time', 'last_edited_time', 'created_by', 'last_edited_by', 'person']).describe('Column data type.'),
+          options: z.array(z.object({
+            label: z.string(),
+            color: z.string().optional(),
+          })).optional().describe('Required for select/multi_select types. Array of { label, color? }.'),
+        })).optional().describe('Initial column definitions. For type "task" with no columns, default task columns are created.'),
+      },
     },
     async ({ name, document_id, type, columns }) => {
       try {
@@ -902,12 +921,15 @@ Returns the created database with its generated database_id. Related tools: add_
   // =========================================================================
   // delete_database - Soft-delete a database (move to trash)
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'delete_database',
-    `Move a database to the trash (soft delete). The database and its data are preserved for 30 days before permanent deletion. The confirm parameter must be explicitly set to true as a safety measure. Use list_databases to see database_id.`,
     {
-      database_id: z.string().describe('The database ID to delete. Format: db-uuid.'),
-      confirm: z.boolean().describe('REQUIRED: Must be true to proceed. Safety measure against accidental deletion.'),
+      description: `Move a database to the trash (soft delete). The database and its data are preserved for 30 days before permanent deletion. The confirm parameter must be explicitly set to true as a safety measure. Use list_databases to see database_id.`,
+      inputSchema: {
+        database_id: z.string().describe('The database ID to delete. Format: db-uuid.'),
+        confirm: z.boolean().describe('REQUIRED: Must be true to proceed. Safety measure against accidental deletion.'),
+      },
+      annotations: { destructiveHint: true },
     },
     async ({ database_id, confirm }) => {
       if (!confirm) {
@@ -991,21 +1013,23 @@ Returns the created database with its generated database_id. Related tools: add_
   // =========================================================================
   // add_column - Add a column to a database
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'add_column',
-    `Add a new column to an existing database. The column is added at the end with auto-generated UUID as ID and auto-assigned order. Existing rows will have null values for the new column until updated.
+    {
+      description: `Add a new column to an existing database. The column is added at the end with auto-generated UUID as ID and auto-assigned order. Existing rows will have null values for the new column until updated.
 
 For select/multi_select types, provide options as [{label, color?}] — they are automatically converted to {choices: [{id, label, color}]} format. The type "multi_select" is stored as "multi-select" (with hyphen) for frontend compatibility.
 
 Column names must be unique within the database. Returns the created column with its generated UUID. Related tools: update_column, delete_column, get_database_schema.`,
-    {
-      database_id: z.string().describe('The database ID to add a column to. Format: db-uuid.'),
-      name: z.string().min(1).describe('Column display name. Must be unique within this database.'),
-      type: z.enum(['text', 'number', 'select', 'multi_select', 'date', 'checkbox', 'url', 'email', 'phone', 'formula', 'relation', 'rollup', 'created_time', 'last_edited_time', 'created_by', 'last_edited_by', 'person']).describe('Column data type.'),
-      options: z.array(z.object({
-        label: z.string(),
-        color: z.string().optional(),
-      })).optional().describe('Required for select/multi_select. Array of { label: "value", color?: "colorName" }.'),
+      inputSchema: {
+        database_id: z.string().describe('The database ID to add a column to. Format: db-uuid.'),
+        name: z.string().min(1).describe('Column display name. Must be unique within this database.'),
+        type: z.enum(['text', 'number', 'select', 'multi_select', 'date', 'checkbox', 'url', 'email', 'phone', 'formula', 'relation', 'rollup', 'created_time', 'last_edited_time', 'created_by', 'last_edited_by', 'person']).describe('Column data type.'),
+        options: z.array(z.object({
+          label: z.string(),
+          color: z.string().optional(),
+        })).optional().describe('Required for select/multi_select. Array of { label: "value", color?: "colorName" }.'),
+      },
     },
     async ({ database_id, name, type, options }) => {
       try {
@@ -1114,18 +1138,21 @@ Column names must be unique within the database. Returns the created column with
   // =========================================================================
   // update_column - Update a column in a database
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'update_column',
-    `Update a column's properties (name, visibility, select options). Column type cannot be changed. Only provide the properties you want to change. For select/multi-select, provide options as [{label, color?}] — they are automatically converted to {choices: [{id, label, color}]} format. Hidden columns (visible=false) don't appear in default table views but data is preserved. Get column_id from get_database_schema. Related tools: add_column, delete_column.`,
     {
-      database_id: z.string().describe('The database ID. Format: db-uuid.'),
-      column_id: z.string().describe('The column UUID to update. Format: standard UUID (e.g., "a1b2c3d4-e5f6-..."). Get from get_database_schema.'),
-      name: z.string().min(1).optional().describe('New display name. Leave undefined to keep current.'),
-      visible: z.boolean().optional().describe('Set to false to hide column in views. Data is preserved.'),
-      options: z.array(z.object({
-        label: z.string(),
-        color: z.string().optional(),
-      })).optional().describe('Replace select/multi-select options as [{label, color?}]. Automatically converted to {choices: [...]} format.'),
+      description: `Update a column's properties (name, visibility, select options). Column type cannot be changed. Only provide the properties you want to change. For select/multi-select, provide options as [{label, color?}] — they are automatically converted to {choices: [{id, label, color}]} format. Hidden columns (visible=false) don't appear in default table views but data is preserved. Get column_id from get_database_schema. Related tools: add_column, delete_column.`,
+      inputSchema: {
+        database_id: z.string().describe('The database ID. Format: db-uuid.'),
+        column_id: z.string().describe('The column UUID to update. Format: standard UUID (e.g., "a1b2c3d4-e5f6-..."). Get from get_database_schema.'),
+        name: z.string().min(1).optional().describe('New display name. Leave undefined to keep current.'),
+        visible: z.boolean().optional().describe('Set to false to hide column in views. Data is preserved.'),
+        options: z.array(z.object({
+          label: z.string(),
+          color: z.string().optional(),
+        })).optional().describe('Replace select/multi-select options as [{label, color?}]. Automatically converted to {choices: [...]} format.'),
+      },
+      annotations: { idempotentHint: true },
     },
     async ({ database_id, column_id, name, visible, options }) => {
       try {
@@ -1226,12 +1253,15 @@ Column names must be unique within the database. Returns the created column with
   // =========================================================================
   // delete_column - Delete a column from a database
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'delete_column',
-    `Delete a column from a database. WARNING: All cell data for this column in existing rows is permanently lost. The column is removed from the schema and cannot be recovered. Consider using update_column with visible=false to hide instead of delete. Get column_id from get_database_schema. Returns the name of the deleted column.`,
     {
-      database_id: z.string().describe('The database ID. Format: db-uuid.'),
-      column_id: z.string().describe('The column UUID to delete. Format: standard UUID (e.g., "a1b2c3d4-e5f6-..."). Get from get_database_schema.'),
+      description: `Delete a column from a database. WARNING: All cell data for this column in existing rows is permanently lost. The column is removed from the schema and cannot be recovered. Consider using update_column with visible=false to hide instead of delete. Get column_id from get_database_schema. Returns the name of the deleted column.`,
+      inputSchema: {
+        database_id: z.string().describe('The database ID. Format: db-uuid.'),
+        column_id: z.string().describe('The column UUID to delete. Format: standard UUID (e.g., "a1b2c3d4-e5f6-..."). Get from get_database_schema.'),
+      },
+      annotations: { destructiveHint: true },
     },
     async ({ database_id, column_id }) => {
       try {
@@ -1317,13 +1347,15 @@ Column names must be unique within the database. Returns the created column with
   // =========================================================================
   // import_csv - Import CSV data into a database
   // =========================================================================
-  server.tool(
+  server.registerTool(
     'import_csv',
-    `Bulk import data from CSV format into a database. The first row must be column headers matching database column names. Each subsequent row becomes a database row. Column names are matched case-sensitively. Unknown columns can be skipped or cause an error based on skip_unknown_columns. Values are imported as strings - type conversion is not automatic. Returns count of imported rows. Useful for migrating data or bulk population. Related tools: add_database_row (single row), get_database_schema (column names).`,
     {
-      database_id: z.string().describe('The database ID to import into. Format: db-uuid.'),
-      csv_content: z.string().describe('CSV string with header row. Format: "Column1,Column2\\nvalue1,value2\\nvalue3,value4"'),
-      skip_unknown_columns: z.boolean().optional().default(true).describe('If true (default), ignore columns not in schema. If false, error on unknown columns.'),
+      description: `Bulk import data from CSV format into a database. The first row must be column headers matching database column names. Each subsequent row becomes a database row. Column names are matched case-sensitively. Unknown columns can be skipped or cause an error based on skip_unknown_columns. Values are imported as strings - type conversion is not automatic. Returns count of imported rows. Useful for migrating data or bulk population. Related tools: add_database_row (single row), get_database_schema (column names).`,
+      inputSchema: {
+        database_id: z.string().describe('The database ID to import into. Format: db-uuid.'),
+        csv_content: z.string().describe('CSV string with header row. Format: "Column1,Column2\\nvalue1,value2\\nvalue3,value4"'),
+        skip_unknown_columns: z.boolean().optional().default(true).describe('If true (default), ignore columns not in schema. If false, error on unknown columns.'),
+      },
     },
     async ({ database_id, csv_content, skip_unknown_columns }) => {
       try {
