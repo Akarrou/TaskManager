@@ -28,7 +28,7 @@ import { parseInlineMarkdown } from './markdown-to-tiptap.js';
 // Types
 // =============================================================================
 
-interface TipTapNode {
+export interface TipTapNode {
   type: string;
   content?: TipTapNode[];
   text?: string;

@@ -9,7 +9,9 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatDialog } from '@angular/material/dialog';
-import { Subject, forkJoin, of, takeUntil, debounceTime, switchMap } from 'rxjs';
+import { Subject, forkJoin, of, takeUntil, debounceTime, switchMap, filter } from 'rxjs';
+import { RealtimeService } from '../../../../core/services/realtime.service';
+import { RealtimeCooldown } from '../../../../core/utils/realtime-cooldown';
 import {
   DatabaseConfig,
   DatabaseRow,
@@ -122,9 +124,11 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   private documentService = inject(DocumentService);
   private trashService = inject(TrashService);
   private trashStore = inject(TrashStore);
+  private realtimeService = inject(RealtimeService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private router = inject(Router);
+  private realtimeCooldown = new RealtimeCooldown();
 
   // Inputs
   @Input() databaseId!: string;
@@ -224,6 +228,11 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private changeSubject = new Subject<void>();
 
+  /** Set a cooldown to ignore self-origin Realtime events */
+  private setRealtimeCooldown(): void {
+    this.realtimeCooldown.set();
+  }
+
   ngOnInit() {
     // Set initial page size from input
     this.pageSize.set(this.defaultPageSize);
@@ -243,6 +252,25 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         this.syncToTipTap();
       });
+
+    // Realtime: reload rows when the underlying database_* table changes
+    const tableName = `database_${this.databaseId.replace('db-', '').replace(/-/g, '_')}`;
+    this.realtimeService.onTableChange(tableName).pipe(
+      debounceTime(500),
+      filter(() => !this.realtimeCooldown.isActive() && !this.isLoading()),
+      takeUntil(this.destroy$),
+    ).subscribe(() => {
+      this.loadRowsWithFilters();
+    });
+
+    // Realtime: reload config when document_databases metadata changes (filtered by this database's ID)
+    this.realtimeService.onTableChange('document_databases').pipe(
+      debounceTime(500),
+      filter((event) => event.recordId === this.databaseId && !this.realtimeCooldown.isActive()),
+      takeUntil(this.destroy$),
+    ).subscribe(() => {
+      this.initializeDatabase();
+    });
   }
 
   /**
@@ -445,6 +473,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
    * Creates a linked document if the database has a Name column (Notion-style)
    */
   onAddRow() {
+    this.setRealtimeCooldown();
     const newRowOrder = this.rows().length;
     const emptyCells: Record<string, CellValue> = {};
 
@@ -505,6 +534,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
    * Update a cell value
    */
   onUpdateCell(rowId: string, columnId: string, value: CellValue) {
+    this.setRealtimeCooldown();
     // Optimistic update
     this.rows.update((rows) =>
       rows.map((row) => {
@@ -583,6 +613,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   }
 
   private executeDeleteRows(rowIds: string[]) {
+    this.setRealtimeCooldown();
     const dbConfig = this.databaseConfig();
     const tableName = `database_${this.databaseId.replace('db-', '').replace(/-/g, '_')}`;
     const databaseName = dbConfig.name || 'Base de données';

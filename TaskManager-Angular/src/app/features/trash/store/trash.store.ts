@@ -9,6 +9,7 @@ import { DatabaseService } from '../../documents/services/database.service';
 import { SpreadsheetService } from '../../documents/services/spreadsheet.service';
 import { EventDatabaseService } from '../../../core/services/event-database.service';
 import { GoogleCalendarStore } from '../../google-calendar/store/google-calendar.store';
+import { withRealtimeSync } from '../../../core/stores/features/with-realtime-sync';
 
 interface TrashStoreState {
   items: TrashItem[];
@@ -224,4 +225,12 @@ export const TrashStore = signalStore(
       patchState(store, { filter });
     },
   })),
+
+  withRealtimeSync({
+    tables: ['trash_items'],
+    onTableChange: (store) => {
+      const fn = store['loadTrashCount'];
+      if (typeof fn === 'function') fn();
+    },
+  }),
 );

@@ -20,7 +20,7 @@
  *
  * Text values support inline Markdown: **bold**, *italic*, ~~strike~~, `code`, [link](url)
  */
-interface TipTapNode {
+export interface TipTapNode {
     type: string;
     content?: TipTapNode[];
     text?: string;
@@ -42,5 +42,4 @@ interface TipTapNode {
  * 6. JSON string → parse then re-normalize
  */
 export declare function normalizeContent(content: unknown): TipTapNode;
-export {};
 //# sourceMappingURL=normalize-content.d.ts.map

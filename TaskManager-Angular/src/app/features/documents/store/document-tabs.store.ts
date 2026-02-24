@@ -4,6 +4,7 @@ import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, tap, switchMap, catchError, of } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DocumentTabsService } from '../services/document-tabs.service';
+import { withRealtimeSync } from '../../../core/stores/features/with-realtime-sync';
 import {
   DocumentTab,
   DocumentTabGroup,
@@ -945,5 +946,17 @@ export const DocumentTabsStore = signalStore(
       if (!item) return null;
       return store.tabs().find((t) => t.id === item.tab_id) ?? null;
     },
-  }))
+  })),
+
+  withRealtimeSync({
+    tables: ['document_tabs', 'document_sections', 'document_tab_items', 'document_tab_groups'],
+    onTableChange: (store) => {
+      const currentProjectIdFn = store['currentProjectId'];
+      const loadTabsFn = store['loadTabs'];
+      if (typeof currentProjectIdFn === 'function' && typeof loadTabsFn === 'function') {
+        const projectId = currentProjectIdFn() as string | null;
+        if (projectId) loadTabsFn({ projectId });
+      }
+    },
+  }),
 );

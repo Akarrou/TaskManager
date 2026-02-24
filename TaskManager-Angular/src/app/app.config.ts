@@ -14,6 +14,7 @@ import { provideStoreDevtools } from '@ngrx/store-devtools';
 import { reducers, metaReducers } from './store/reducers';
 import { ProjectEffects } from './features/projects/store/project.effects';
 import { DocumentEffects } from './features/documents/store/document.effects';
+import { RealtimeEffects } from './core/effects/realtime.effects';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -27,7 +28,7 @@ export const appConfig: ApplicationConfig = {
     ),
     provideAnimations(),
     provideStore(reducers, { metaReducers }),
-    provideEffects([ProjectEffects, DocumentEffects]),
+    provideEffects([ProjectEffects, DocumentEffects, RealtimeEffects]),
     provideStoreDevtools({ maxAge: 25, logOnly: !isDevMode() }),
     provideNativeDateAdapter(),
     { provide: MAT_DATE_LOCALE, useValue: 'fr-FR' },

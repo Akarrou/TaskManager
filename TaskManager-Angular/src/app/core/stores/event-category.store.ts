@@ -7,6 +7,7 @@ import {
   CategoryDefinition,
   DEFAULT_CATEGORIES,
 } from '../../shared/models/event-constants';
+import { withRealtimeSync } from './features/with-realtime-sync';
 
 interface EventCategoryStoreState {
   customCategories: CategoryDefinition[];
@@ -124,4 +125,12 @@ export const EventCategoryStore = signalStore(
       ),
     ),
   })),
+
+  withRealtimeSync({
+    tables: ['event_categories'],
+    onTableChange: (store) => {
+      const fn = store['loadCategories'];
+      if (typeof fn === 'function') fn();
+    },
+  }),
 );

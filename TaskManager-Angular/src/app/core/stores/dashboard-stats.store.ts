@@ -4,6 +4,7 @@ import { TaskDatabaseService, TaskStats } from '../services/task-database.servic
 import { DocumentService } from '../../features/documents/services/document.service';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, tap, switchMap, catchError, EMPTY, forkJoin } from 'rxjs';
+import { withRealtimeSync } from './features/with-realtime-sync';
 
 /**
  * Interface pour les statistiques de documents
@@ -224,5 +225,15 @@ export const DashboardStatsStore = signalStore(
       });
     },
 
-  }))
+  })),
+
+  withRealtimeSync({
+    tables: ['documents'],
+    dynamicPrefixes: ['database_'],
+    onTableChange: (store) => {
+      const fn = store['loadAllStats'];
+      if (typeof fn === 'function') fn({});
+    },
+    debounceMs: 1000,
+  }),
 );

@@ -23,7 +23,9 @@ import { SlashMenuComponent, SlashCommand } from '../slash-menu/slash-menu.compo
 import { BubbleMenuComponent } from '../bubble-menu/bubble-menu.component';
 import { DocumentService, Document, DocumentBreadcrumb } from '../services/document.service';
 import { FabStore } from '../../../core/stores/fab.store';
-import { debounceTime, Subject, takeUntil, map, catchError, throwError, take, forkJoin } from 'rxjs';
+import { RealtimeService } from '../../../core/services/realtime.service';
+import { RealtimeCooldown } from '../../../core/utils/realtime-cooldown';
+import { debounceTime, Subject, takeUntil, map, catchError, throwError, take, forkJoin, filter } from 'rxjs';
 import { DocumentState, DocumentSnapshot, createSnapshot, hasChanges } from '../models/document-content.types';
 import { Columns, Column } from '../extensions/columns.extension';
 import { AccordionGroup, AccordionItem, AccordionTitle, AccordionContent } from '../extensions/accordion.extension';
@@ -93,7 +95,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   private blockCommentService = inject(BlockCommentService);
   private store = inject(Store<AppState>);
   private documentExportService = inject(DocumentExportService);
+  private realtimeService = inject(RealtimeService);
   private pageId = crypto.randomUUID();
+  private realtimeCooldown = new RealtimeCooldown();
 
   // Track document file URLs for cleanup when links are deleted
   private previousDocumentFileUrls = new Set<string>();
@@ -722,6 +726,21 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         this.loadDocument(params['id']);
       }
     });
+
+    // Realtime: reload document when another session saves it
+    this.realtimeService.onTableChange('documents').pipe(
+      debounceTime(500),
+      filter((event) => {
+        const currentDocId = this.documentState().id;
+        if (!currentDocId || event.recordId !== currentDocId) return false;
+        if (this.realtimeCooldown.isActive()) return false;
+        if (this.isDirty() || this.documentState().isSaving) return false;
+        return true;
+      }),
+      takeUntil(this.destroy$),
+    ).subscribe(() => {
+      this.reloadDocumentFromRealtime();
+    });
   }
 
   private setupAccordionIconEditListener() {
@@ -888,6 +907,43 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         }
       },
       error: (err) => console.error('Error loading doc', err)
+    });
+  }
+
+  /**
+   * Reload document content from Supabase when a Realtime event is received.
+   * Only updates title, content, and snapshot — does not reload breadcrumbs,
+   * database properties, or other metadata.
+   */
+  private reloadDocumentFromRealtime(): void {
+    const docId = this.documentState().id;
+    if (!docId) return;
+
+    this.documentService.getDocument(docId).pipe(
+      take(1),
+      takeUntil(this.destroy$),
+    ).subscribe({
+      next: (doc) => {
+        if (!doc) return;
+
+        this.documentState.update(s => ({
+          ...s,
+          title: doc.title,
+          content: doc.content,
+          lastSaved: doc.updated_at ? new Date(doc.updated_at) : s.lastSaved,
+        }));
+
+        this.originalSnapshot.set({
+          title: doc.title,
+          content: doc.content,
+        });
+
+        if (this.editor && !this.editor.isDestroyed) {
+          this.isLoadingDocument = true;
+          this.editor.commands.setContent(doc.content);
+          this.isLoadingDocument = false;
+        }
+      },
     });
   }
 
@@ -1196,8 +1252,9 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     // For existing documents, only save if dirty
     if (state.id && !this.isDirty()) return;
 
-    // Update state: saving started
+    // Update state: saving started + set realtime cooldown to ignore self-origin events
     this.documentState.update(s => ({ ...s, isSaving: true }));
+    this.realtimeCooldown.set();
 
     const payload = {
       title: state.title,

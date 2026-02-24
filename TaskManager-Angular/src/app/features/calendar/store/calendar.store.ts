@@ -7,6 +7,7 @@ import { EventEntry, EventDatabaseService } from '../../../core/services/event-d
 import { TrashService } from '../../../core/services/trash.service';
 import { CalendarViewType } from '../models/calendar.model';
 import { GoogleCalendarStore } from '../../google-calendar/store/google-calendar.store';
+import { withRealtimeSync } from '../../../core/stores/features/with-realtime-sync';
 
 interface CalendarStoreState {
   events: EventEntry[];
@@ -243,4 +244,16 @@ export const CalendarStore = signalStore(
       patchState(store, { currentView: view });
     },
   })),
+
+  withRealtimeSync({
+    dynamicPrefixes: ['database_'],
+    onTableChange: (store) => {
+      const dateRangeFn = store['dateRange'];
+      const loadEventsFn = store['loadEvents'];
+      if (typeof dateRangeFn === 'function' && typeof loadEventsFn === 'function') {
+        const range = dateRangeFn() as { start: string; end: string } | null;
+        if (range) loadEventsFn(range);
+      }
+    },
+  }),
 );
