@@ -1,24 +1,13 @@
-import { Component, OnInit, inject, computed } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Store } from '@ngrx/store';
-import { Observable } from 'rxjs';
 import { Project } from '../../models/project.model';
-import { AppState } from '../../../../app.state';
-import {
-  selectActiveProjects,
-  selectProjectsLoading,
-  selectShowArchived,
-  selectArchivedCount,
-  selectAllProjects
-} from '../../store/project.selectors';
-import * as ProjectActions from '../../store/project.actions';
+import { ProjectStore } from '../../store/project.store';
 import { RouterModule } from '@angular/router';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
-import { toSignal } from '@angular/core/rxjs-interop';
 
 interface IStat {
   title: string;
@@ -41,24 +30,18 @@ interface IStat {
     templateUrl: './project-list.component.html',
     styleUrls: ['./project-list.component.scss']
 })
-export class ProjectListComponent implements OnInit {
-    private store = inject(Store<AppState>);
+export class ProjectListComponent {
+    protected readonly projectStore = inject(ProjectStore);
     private dialog = inject(MatDialog);
 
-    projects$!: Observable<Project[]>;
-    isLoading$!: Observable<boolean>;
-    showArchived$!: Observable<boolean>;
-    archivedCount$!: Observable<number>;
-    allProjects$!: Observable<Project[]>;
+    projects = this.projectStore.activeProjects;
+    isLoading = this.projectStore.loading;
+    showArchived = this.projectStore.showArchived;
+    archivedCount = this.projectStore.archivedCount;
 
-    // Convert observables to signals for computed stats
-    private allProjectsSignal = toSignal(this.store.select(selectAllProjects), { initialValue: [] });
-    private archivedCountSignal = toSignal(this.store.select(selectArchivedCount), { initialValue: 0 });
-
-    // Computed stats
     stats = computed<IStat[]>(() => {
-        const allProjects = this.allProjectsSignal();
-        const archivedCount = this.archivedCountSignal();
+        const allProjects = this.projectStore.allProjects();
+        const archivedCount = this.projectStore.archivedCount();
         const activeCount = allProjects.length - archivedCount;
 
         return [
@@ -83,16 +66,8 @@ export class ProjectListComponent implements OnInit {
         ];
     });
 
-    ngOnInit() {
-        this.projects$ = this.store.select(selectActiveProjects);
-        this.isLoading$ = this.store.select(selectProjectsLoading);
-        this.showArchived$ = this.store.select(selectShowArchived);
-        this.archivedCount$ = this.store.select(selectArchivedCount);
-        this.allProjects$ = this.store.select(selectAllProjects);
-    }
-
     toggleShowArchived(): void {
-        this.store.dispatch(ProjectActions.toggleShowArchived());
+        this.projectStore.toggleShowArchived();
     }
 
     onDeleteProject(project: Project): void {
@@ -106,7 +81,7 @@ export class ProjectListComponent implements OnInit {
 
         dialogRef.afterClosed().subscribe((confirmed: boolean) => {
             if (confirmed) {
-                this.store.dispatch(ProjectActions.deleteProject({ projectId: project.id, projectName: project.name }));
+                this.projectStore.deleteProject({ projectId: project.id, projectName: project.name });
             }
         });
     }
@@ -122,12 +97,12 @@ export class ProjectListComponent implements OnInit {
 
         dialogRef.afterClosed().subscribe((confirmed: boolean) => {
             if (confirmed) {
-                this.store.dispatch(ProjectActions.archiveProject({ projectId: project.id }));
+                this.projectStore.archiveProject({ projectId: project.id });
             }
         });
     }
 
     onRestoreProject(project: Project): void {
-        this.store.dispatch(ProjectActions.restoreProject({ projectId: project.id }));
+        this.projectStore.restoreProject({ projectId: project.id });
     }
 }

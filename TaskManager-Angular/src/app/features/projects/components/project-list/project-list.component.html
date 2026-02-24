@@ -26,17 +26,17 @@
   </section>
 
   <!-- Toggle Archived Button -->
-  <div class="c-toolbar" *ngIf="(archivedCount$ | async)! > 0">
+  <div class="c-toolbar" *ngIf="archivedCount() > 0">
     <button
       (click)="toggleShowArchived()"
       class="c-button c-button--secondary">
-      <span class="material-icons-outlined">{{ (showArchived$ | async) ? 'visibility_off' : 'visibility' }}</span>
-      {{ (showArchived$ | async) ? 'Masquer archivés' : 'Voir archivés (' + (archivedCount$ | async) + ')' }}
+      <span class="material-icons-outlined">{{ showArchived() ? 'visibility_off' : 'visibility' }}</span>
+      {{ showArchived() ? 'Masquer archivés' : 'Voir archivés (' + archivedCount() + ')' }}
     </button>
   </div>
 
   <!-- Loading State -->
-  <div *ngIf="isLoading$ | async; else projectList" class="c-loading">
+  <div *ngIf="isLoading(); else projectList" class="c-loading">
     <div class="c-loading__spinner"></div>
     <p class="c-loading__text">Chargement des projets...</p>
   </div>
@@ -44,7 +44,7 @@
   <!-- Projects Grid -->
   <ng-template #projectList>
     <div class="c-projects-grid">
-      <div *ngFor="let project of projects$ | async"
+      <div *ngFor="let project of projects()"
            class="c-project-card"
            [class.c-project-card--archived]="project.archived">
 

@@ -57,9 +57,7 @@ import { DatabaseTableRendererDirective } from '../directives/database-table-ren
 import { DatabaseService } from '../services/database.service';
 import { DEFAULT_DATABASE_CONFIG } from '../models/database.model';
 import { StorageService } from '../../../core/services/storage.service';
-import { Store } from '@ngrx/store';
-import { AppState } from '../../../app.state';
-import * as DocumentActions from '../store/document.actions';
+import { DocumentStore } from '../store/document.store';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { DeleteChildDocumentDialogComponent, DeleteChildDocumentDialogData } from '../components/delete-child-document-dialog/delete-child-document-dialog.component';
 import { BlockIdExtension, extractBlockIdsFromContent, setCommentBadgeClickHandler } from '../extensions/block-id.extension';
@@ -93,7 +91,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   private databaseService = inject(DatabaseService);
   private storageService = inject(StorageService);
   private blockCommentService = inject(BlockCommentService);
-  private store = inject(Store<AppState>);
+  private documentStore = inject(DocumentStore);
   private documentExportService = inject(DocumentExportService);
   private realtimeService = inject(RealtimeService);
   private pageId = crypto.randomUUID();
@@ -672,7 +670,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
       if (confirmed) {
         const documentTitle = docInfo.title || 'Sans titre';
         const projectId = this.documentState().project_id ?? undefined;
-        this.store.dispatch(DocumentActions.deleteDocument({ documentId, documentTitle, projectId }));
+        this.documentStore.deleteDocument({ documentId, documentTitle, projectId });
       }
     });
   }

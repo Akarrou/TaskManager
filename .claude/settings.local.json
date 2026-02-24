@@ -368,7 +368,9 @@
       "mcp__claude_ai_Kodo__list_documents",
       "Bash(echo === $app ===:*)",
       "mcp__claude_ai_Kodo__list_tasks",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(git:*)",
+      "Bash(pnpm:*)"
     ],
     "deny": [],
     "ask": [],

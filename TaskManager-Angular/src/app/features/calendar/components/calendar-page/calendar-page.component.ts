@@ -6,7 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
-import { Store } from '@ngrx/store';
+import { ProjectStore } from '../../../projects/store/project.store';
 import { FullCalendarModule, FullCalendarComponent } from '@fullcalendar/angular';
 import { CalendarOptions, EventInput, DateSelectArg, EventClickArg, EventDropArg } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -22,7 +22,6 @@ import { EventDetailPanelComponent } from '../event-detail-panel/event-detail-pa
 import { SyncStatusIndicatorComponent } from '../../../google-calendar/components/sync-status-indicator/sync-status-indicator.component';
 import { GoogleCalendarSettingsComponent } from '../../../google-calendar/components/google-calendar-settings/google-calendar-settings.component';
 import { GoogleCalendarStore } from '../../../google-calendar/store/google-calendar.store';
-import { selectActiveProjects } from '../../../projects/store/project.selectors';
 import { switchMap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { of } from 'rxjs';
@@ -66,7 +65,7 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
   private calendarStore = inject(CalendarStore);
   private dialog = inject(MatDialog);
   private adapter = inject(FullCalendarAdapterService);
-  private store = inject(Store);
+  private projectStore = inject(ProjectStore);
   private router = inject(Router);
   private databaseService = inject(DatabaseService);
   private documentService = inject(DocumentService);
@@ -133,7 +132,7 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
   selectedEvent = signal<EventEntry | null>(null);
 
   // Project filter
-  projects = signal<Array<{ id: string; name: string }>>([]);
+  projects = computed(() => this.projectStore.activeProjects().map(p => ({ id: p.id, name: p.name })));
   selectedProjectId = signal<string | null>(null);
   isProjectDropdownOpen = signal(false);
   selectedProjectLabel = computed(() => {
@@ -180,7 +179,6 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.initializeGoogleCalendar();
     this.categoryStore.loadCategories();
-    this.loadProjects();
   }
 
   private async initializeGoogleCalendar(): Promise<void> {
@@ -490,11 +488,4 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  private loadProjects(): void {
-    this.store.select(selectActiveProjects).pipe(
-      takeUntilDestroyed(this.destroyRef),
-    ).subscribe(projects => {
-      this.projects.set(projects.map(p => ({ id: p.id, name: p.name })));
-    });
-  }
 }

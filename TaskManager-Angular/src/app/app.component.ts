@@ -6,9 +6,7 @@ import { HeaderNavComponent } from './shared/components/header-nav/header-nav.co
 import { ToastComponent } from './shared/components/toast/toast.component';
 import { NavigationFabComponent } from './shared/components/navigation-fab/navigation-fab.component';
 import { Footer } from './shared/components/footer/footer';
-import { Store } from '@ngrx/store';
-import { AppState } from './app.state';
-import * as ProjectActions from './features/projects/store/project.actions';
+import { ProjectStore } from './features/projects/store/project.store';
 import { FabStore } from './core/stores/fab.store';
 import { GlobalSearchDialogComponent } from './shared/components/global-search-dialog/global-search-dialog.component';
 
@@ -40,7 +38,7 @@ import { GlobalSearchDialogComponent } from './shared/components/global-search-d
 export class AppComponent implements OnInit {
   title = 'Kōdo';
 
-  private store = inject(Store<AppState>);
+  private projectStore = inject(ProjectStore);
   private router = inject(Router);
   private dialog = inject(MatDialog);
 
@@ -64,7 +62,7 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.store.dispatch(ProjectActions.loadProjects());
+    this.projectStore.loadProjects();
   }
 
   async handleSaveRequest(): Promise<void> {

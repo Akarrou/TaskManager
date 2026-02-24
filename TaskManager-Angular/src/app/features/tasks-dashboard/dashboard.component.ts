@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, signal, computed, effect, viewChild, afterNextRender } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed, viewChild, afterNextRender } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -8,7 +8,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { Store } from '@ngrx/store';
+import { ProjectStore } from '../projects/store/project.store';
 import { SupabaseService } from '../../core/services/supabase';
 import { Task } from '../../core/models/task.model';
 import { TaskDatabaseService, TaskEntry } from '../../core/services/task-database.service';
@@ -18,7 +18,6 @@ import { CellValue } from '../documents/models/database.model';
 import { SearchFilters, TaskSearchComponent } from '../../shared/components/task-search/task-search.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { UserService } from '../../core/services/user.service';
-import * as ProjectSelectors from '../projects/store/project.selectors';
 import { ViewToggleComponent, ViewMode } from '../../shared/components/view-toggle/view-toggle.component';
 import { KanbanBoardComponent, KanbanGroupBy } from '../../shared/components/kanban-board/kanban-board.component';
 import { CalendarViewComponent } from '../../shared/components/calendar-view/calendar-view.component';
@@ -33,6 +32,10 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { LinkedItem } from '../documents/models/database.model';
 import { AddToEventDialogComponent, AddToEventDialogData } from '../calendar/components/add-to-event-dialog/add-to-event-dialog.component';
+
+interface TaskTreeNode extends Task {
+  children: TaskTreeNode[];
+}
 
 @Component({
   selector: 'app-tasks-dashboard',
@@ -64,7 +67,7 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private dialog = inject(MatDialog);
   private userService = inject(UserService);
-  private store = inject(Store);
+  private projectStore = inject(ProjectStore);
   private fabStore = inject(FabStore);
   private dashboardStatsStore = inject(DashboardStatsStore);
   private snackBar = inject(MatSnackBar);
@@ -85,12 +88,8 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
   pageIndex = signal<number>(0);
   pageSizeOptions = [5, 10, 25, 50, 100];
 
-  // Project store selectors
-  selectedProjectId$ = this.store.select(ProjectSelectors.selectSelectedProjectId);
-  selectedProject$ = this.store.select(ProjectSelectors.selectSelectedProject);
-
-  // Current selected project ID signal
-  selectedProjectId = signal<string | null>(null);
+  // Project store signal (reactive)
+  selectedProjectId = this.projectStore.selectedProjectId;
 
   // Epics for selected project
   epicsForSelectedProject = computed(() => {
@@ -215,10 +214,6 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
     // Charger les stats des tâches depuis la BDD (via RPC)
     this.dashboardStatsStore.loadTaskStats({ projectId: undefined });
 
-    // Subscribe to selected project ID changes
-    this.selectedProjectId$.subscribe(projectId => {
-      this.selectedProjectId.set(projectId);
-    });
 
     // Lecture des filtres depuis localStorage au démarrage
     const savedFilters = localStorage.getItem('dashboardFilters');
@@ -509,9 +504,9 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  private buildTaskTree(tasks: Task[]): any[] {
-    const nodeMap = new Map<string, any>();
-    const roots: any[] = [];
+  private buildTaskTree(tasks: Task[]): TaskTreeNode[] {
+    const nodeMap = new Map<string, TaskTreeNode>();
+    const roots: TaskTreeNode[] = [];
     for (const task of tasks) {
       nodeMap.set(task.id!, { ...task, children: [] });
     }
@@ -533,7 +528,7 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
     }
     const tree = this.buildTaskTree(tasks);
     let md = '# Roadmap filtrée\n\n';
-    const renderNode = (node: any, level = 1) => {
+    const renderNode = (node: TaskTreeNode, level = 1) => {
       const indent = '  '.repeat(level - 1);
       const typeEmoji = node.type === 'epic' ? '⭐' : node.type === 'feature' ? '🔧' : '✅';
       md += `${indent}${'#'.repeat(level)} ${typeEmoji} ${node.title}  `;

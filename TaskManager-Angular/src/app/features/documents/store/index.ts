@@ -1,4 +1,2 @@
-export * from './document.actions';
-export * from './document.reducer';
-export * from './document.selectors';
-export * from './document.effects';
+export { DocumentStore } from './document.store';
+export { DocumentTabsStore } from './document-tabs.store';

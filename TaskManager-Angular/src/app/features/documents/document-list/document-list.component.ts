@@ -7,11 +7,9 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
-import { Store } from '@ngrx/store';
 import { forkJoin, of } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 import { TrashService } from '../../../core/services/trash.service';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { DocumentService, Document, DocumentStorageFile } from '../services/document.service';
 import { DatabaseService } from '../services/database.service';
@@ -22,10 +20,8 @@ import { DocumentTabBarComponent } from '../components/document-tab-bar/document
 import { DocumentTabContentComponent } from '../components/document-tab-content/document-tab-content.component';
 import { FabStore } from '../../../core/stores/fab.store';
 import { DocumentTabsStore } from '../store/document-tabs.store';
-import { AppState } from '../../../app.state';
-import { selectSelectedProject } from '../../projects/store/project.selectors';
-import { selectAllDocuments, selectDocumentsLoading } from '../store/document.selectors';
-import * as DocumentActions from '../store/document.actions';
+import { ProjectStore } from '../../projects/store/project.store';
+import { DocumentStore } from '../store/document.store';
 import {
   DocumentDropTarget,
   UpdateDocumentTab,
@@ -57,14 +53,15 @@ export class DocumentListComponent implements OnInit, OnDestroy {
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private fabStore = inject(FabStore);
-  private store = inject(Store<AppState>);
+  private projectStore = inject(ProjectStore);
+  private documentStore = inject(DocumentStore);
   private tabsStore = inject(DocumentTabsStore);
   private pageId = crypto.randomUUID();
 
-  // Signals from NgRx Store
-  private selectedProjectSignal = toSignal(this.store.select(selectSelectedProject));
-  private allDocumentsSignal = toSignal(this.store.select(selectAllDocuments), { initialValue: [] });
-  private loadingSignal = toSignal(this.store.select(selectDocumentsLoading), { initialValue: true });
+  // Signals from stores
+  private selectedProjectSignal = this.projectStore.selectedProject;
+  private allDocumentsSignal = this.documentStore.allDocuments;
+  private loadingSignal = this.documentStore.loading;
 
   // Tabs Store signals
   tabs = this.tabsStore.sortedTabs;
@@ -155,7 +152,7 @@ export class DocumentListComponent implements OnInit, OnDestroy {
     effect(() => {
       const project = this.selectedProjectSignal();
       if (project) {
-        this.store.dispatch(DocumentActions.loadDocumentsByProject({ projectId: project.id }));
+        this.documentStore.loadDocumentsByProject({ projectId: project.id });
         this.tabsStore.loadTabs({ projectId: project.id });
       }
     });
@@ -412,13 +409,13 @@ export class DocumentListComponent implements OnInit, OnDestroy {
     }
 
     // Create document with project_id
-    this.store.dispatch(DocumentActions.createDocument({
+    this.documentStore.createDocument({
       document: {
         title: 'Nouveau document',
         content: { type: 'doc', content: [] },
         project_id: currentProject.id
       }
-    }));
+    });
   }
 
   openMarkdownImportDialog(): void {
@@ -440,7 +437,7 @@ export class DocumentListComponent implements OnInit, OnDestroy {
           duration: 3000
         });
         // Reload documents for current project
-        this.store.dispatch(DocumentActions.loadDocumentsByProject({ projectId: currentProject.id }));
+        this.documentStore.loadDocumentsByProject({ projectId: currentProject.id });
       }
     });
   }
@@ -460,7 +457,7 @@ export class DocumentListComponent implements OnInit, OnDestroy {
     }
 
     // 2. Extraire les IDs de bases de données du contenu
-    const databaseIds = this.documentService.extractDatabaseIds(doc.content);
+    const databaseIds = this.documentStore.extractDatabaseIds(doc.content);
 
     // 3. Ouvrir le dialog de confirmation
     const dialogRef = this.dialog.open(DeleteDocumentDialogComponent, {
@@ -506,10 +503,10 @@ export class DocumentListComponent implements OnInit, OnDestroy {
         )
       : of([]);
 
-    // 2. After soft-deleting databases, soft-delete the document via NgRx store
+    // 2. After soft-deleting databases, soft-delete the document via store
     softDeleteDatabases$.subscribe({
       next: () => {
-        this.store.dispatch(DocumentActions.deleteDocument({ documentId, documentTitle, projectId }));
+        this.documentStore.deleteDocument({ documentId, documentTitle, projectId });
       },
       error: (err) => {
         console.error('[deleteDocument] Erreur soft-delete bases:', err);
