@@ -83,7 +83,15 @@ export function registerDocumentTools(server: McpServer): void {
   server.registerTool(
     'get_document',
     {
-      description: `Get a document's full details including its rich-text content. Returns the complete document object with: id, title, content, parent_id, project_id, database_id (if linked to a database row), and timestamps. Content is returned in Markdown by default (most readable and token-efficient). Use "json" format only when you need the raw internal structure (e.g., for custom extensions or debugging). Use list_documents first to find document IDs. Related tools: update_document (modify content), get_document_breadcrumb (path), list_comments (see comments).`,
+      description: `Get a document's full details including its rich-text content. Returns the complete document object with: id, title, content, parent_id, project_id, database_id (if linked to a database row), and timestamps.
+
+Available formats via the "format" parameter:
+- "markdown" (default): human-readable Markdown, most token-efficient for reading and editing.
+- "html": HTML fragment, useful for rendering or embedding.
+- "styled_html": full standalone HTML document with professional CSS styles and print layout — use this when the user needs to export, print, or generate a PDF.
+- "json": raw TipTap internal JSON, only for debugging or custom extensions.
+
+When the user asks for HTML, export, or PDF, use format="styled_html". Use list_documents first to find document IDs. Related tools: update_document (modify content), get_document_breadcrumb (path), list_comments (see comments).`,
       inputSchema: {
         document_id: z.string().uuid().describe('The UUID of the document to retrieve. Get this from list_documents or search_documents.'),
         format: z.enum(['json', 'markdown', 'html', 'styled_html']).optional().default('markdown')
