@@ -18,7 +18,7 @@
 .document-container {
   min-height: 100vh;
   background-color: white;
-  padding: 2rem;
+  padding: 1.5rem 2rem 2rem;
   font-family: 'Inter', system-ui, sans-serif;
 }
 
@@ -29,13 +29,13 @@
 
 @media (min-width: 768px) {
   .document-container {
-    padding: 4rem;
+    padding: 2rem 4rem 4rem;
   }
 }
 
 @media (min-width: 1024px) {
   .document-container {
-    padding: 5rem 8rem;
+    padding: 2rem 8rem 5rem;
   }
 }
 
@@ -50,10 +50,46 @@
   margin-bottom: 0.5rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 70px;
+  z-index: 100;
+  background-color: white;
+  padding-top: 0.5rem;
+
+  // Pseudo-element to extend the background full-width without stretching the border
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -2rem;
+    right: -2rem;
+    background-color: white;
+    z-index: -1;
+  }
+}
+
+@media (min-width: 768px) {
+  .document-header::before {
+    left: -4rem;
+    right: -4rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .document-header::before {
+    left: -8rem;
+    right: -8rem;
+  }
 }
 
 :host-context(.dark) .document-header {
   border-bottom-color: #374151;
+  background-color: #030712;
+
+  &::before {
+    background-color: #030712;
+  }
 }
 
 .breadcrumb-and-status {

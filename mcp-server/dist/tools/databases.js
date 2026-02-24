@@ -496,6 +496,9 @@ For generic databases with select/multi_select columns, provide options as [{lab
 
 Column IDs are standard UUIDs (e.g., "a1b2c3d4-e5f6-..."), NOT prefixed with "col_". The "col_" prefix is only added at the PostgreSQL column level by the ensure_table_exists RPC.
 
+When document_id is provided, the databaseTable TipTap node is automatically appended to the document content — no need to call update_document separately.
+When document_id is NOT provided, ask the user whether to create a new document or embed in an existing one.
+
 Returns the created database with its generated database_id. Related tools: add_column (add more columns later), add_database_row (add data), list_tasks/create_task (for task databases).`, {
         name: z.string().min(1).max(255).describe('Display name for the database.'),
         document_id: z.string().uuid().optional().describe('Parent document to embed the database in. Omit for standalone database.'),
@@ -669,8 +672,62 @@ Returns the created database with its generated database_id. Related tools: add_
                     isError: true,
                 };
             }
+            // Build the TipTap databaseTable node
+            const tiptapNode = {
+                type: 'databaseTable',
+                attrs: {
+                    databaseId,
+                    config,
+                    storageMode: 'supabase',
+                    isLinked: false,
+                },
+            };
+            // Auto-embed in document if document_id is provided
+            if (document_id) {
+                try {
+                    // Fetch current document content
+                    const { data: docData, error: docError } = await supabase
+                        .from('documents')
+                        .select('content')
+                        .eq('id', document_id)
+                        .single();
+                    if (docError || !docData) {
+                        return {
+                            content: [{ type: 'text', text: `Database created successfully but failed to fetch document content: ${docError?.message || 'Document not found'}.\n\nDatabase:\n${JSON.stringify(dbData, null, 2)}\n\nYou can manually embed it using update_document with this TipTap node:\n${JSON.stringify(tiptapNode, null, 2)}` }],
+                        };
+                    }
+                    // Append databaseTable node to existing document content
+                    const currentContent = docData.content || { type: 'doc', content: [] };
+                    const updatedContent = {
+                        ...currentContent,
+                        content: [...(currentContent.content || []), tiptapNode],
+                    };
+                    // Update document with the new content
+                    const { error: updateError } = await supabase
+                        .from('documents')
+                        .update({
+                        content: updatedContent,
+                        updated_at: new Date().toISOString(),
+                    })
+                        .eq('id', document_id);
+                    if (updateError) {
+                        return {
+                            content: [{ type: 'text', text: `Database created successfully but failed to embed in document: ${updateError.message}.\n\nDatabase:\n${JSON.stringify(dbData, null, 2)}\n\nYou can manually embed it using update_document with this TipTap node:\n${JSON.stringify(tiptapNode, null, 2)}` }],
+                        };
+                    }
+                    return {
+                        content: [{ type: 'text', text: `Database created and automatically embedded in document ${document_id}.\n\nDatabase:\n${JSON.stringify(dbData, null, 2)}\n\nThe databaseTable TipTap node has been appended to the document content. No need to call update_document.` }],
+                    };
+                }
+                catch (embedErr) {
+                    return {
+                        content: [{ type: 'text', text: `Database created successfully but auto-embed failed: ${embedErr instanceof Error ? embedErr.message : 'Unknown error'}.\n\nDatabase:\n${JSON.stringify(dbData, null, 2)}\n\nYou can manually embed it using update_document with this TipTap node:\n${JSON.stringify(tiptapNode, null, 2)}` }],
+                    };
+                }
+            }
+            // No document_id provided — return snippet for manual embedding
             return {
-                content: [{ type: 'text', text: `Database created successfully:\n${JSON.stringify(dbData, null, 2)}` }],
+                content: [{ type: 'text', text: `Database created successfully:\n${JSON.stringify(dbData, null, 2)}\n\nIMPORTANT: No document_id was provided. Ask the user whether to create a new document or which existing document to embed this database in. Then use update_document with the tiptap_node below to embed it.\n\ntiptap_node:\n${JSON.stringify(tiptapNode, null, 2)}` }],
             };
         }
         catch (err) {

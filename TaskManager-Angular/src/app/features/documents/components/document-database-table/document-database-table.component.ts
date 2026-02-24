@@ -77,6 +77,11 @@ import { DateRangeFormatPipe } from '../../../../shared/pipes/date-range-format.
 import { LinkedItem } from '../../models/database.model';
 import { AddToEventDialogComponent, AddToEventDialogData } from '../../../calendar/components/add-to-event-dialog/add-to-event-dialog.component';
 
+interface DatabasePaginationSettings {
+  pageSize: number;
+  pageIndex: number;
+}
+
 /**
  * DocumentDatabaseTableComponent
  *
@@ -220,6 +225,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // Set initial page size from input
     this.pageSize.set(this.defaultPageSize);
+    this.restorePaginationSettings();
 
     // Set initial view from input config (but don't trust column config - will be loaded from Supabase)
     if (this.config) {
@@ -394,12 +400,38 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
       });
   }
 
+  private savePaginationSettings(): void {
+    const settings: DatabasePaginationSettings = {
+      pageSize: this.pageSize(),
+      pageIndex: this.pageIndex(),
+    };
+    localStorage.setItem(`db_pagination_${this.databaseId}`, JSON.stringify(settings));
+  }
+
+  private restorePaginationSettings(): void {
+    const saved = localStorage.getItem(`db_pagination_${this.databaseId}`);
+    if (saved) {
+      try {
+        const settings: DatabasePaginationSettings = JSON.parse(saved);
+        if (this.pageSizeOptions.includes(settings.pageSize)) {
+          this.pageSize.set(settings.pageSize);
+        }
+        if (settings.pageIndex >= 0) {
+          this.pageIndex.set(settings.pageIndex);
+        }
+      } catch {
+        // Ignore corrupted localStorage data
+      }
+    }
+  }
+
   /**
    * Handle page change from paginator
    */
   onPageChange(event: PageEvent): void {
     this.pageIndex.set(event.pageIndex);
     this.pageSize.set(event.pageSize);
+    this.savePaginationSettings();
     this.loadRowsWithFilters();
   }
 
@@ -1754,6 +1786,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   onFilterChange(filters: Filter[]): void {
     this.activeFilters.set(filters);
     this.pageIndex.set(0); // Reset to first page when filters change
+    this.savePaginationSettings();
     this.loadRowsWithFilters();
     this.saveCurrentViewConfig();
   }
@@ -1764,6 +1797,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   onClearAllFilters(): void {
     this.activeFilters.set([]);
     this.pageIndex.set(0); // Reset to first page when filters cleared
+    this.savePaginationSettings();
     this.loadRowsWithFilters();
     this.saveCurrentViewConfig();
   }
@@ -1787,6 +1821,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     }
 
     this.pageIndex.set(0); // Reset to first page when sort changes
+    this.savePaginationSettings();
     this.loadRowsWithFilters();
     this.saveCurrentViewConfig();
   }

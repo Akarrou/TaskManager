@@ -169,6 +169,11 @@ export class CalendarPageComponent implements OnInit, OnDestroy {
           this.onEditEvent(event);
         }
       });
+      // Sync dot border-color to wrapper border-left for google dot events
+      const dot = info.el.querySelector('.fc-daygrid-event-dot') as HTMLElement | null;
+      if (dot?.style.borderColor && info.el.classList.contains('google-event')) {
+        info.el.style.borderLeftColor = dot.style.borderColor;
+      }
     },
   });
 

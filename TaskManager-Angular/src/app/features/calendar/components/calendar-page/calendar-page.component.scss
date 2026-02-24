@@ -539,10 +539,6 @@
       color: inherit !important;
     }
 
-    .fc-daygrid-event-dot {
-      border-color: inherit !important;
-    }
-
     &.fc-timegrid-event .fc-event-main {
       color: inherit !important;
     }
@@ -586,6 +582,12 @@
     .fc-event-main {
       padding: v.$space-1 v.$space-2;
     }
+  }
+
+  // Restore absolute positioning for timegrid events (overridden by [data-tooltip] tooltip rule)
+  .fc .fc-timegrid-event-harness > .fc-timegrid-event[data-tooltip] {
+    position: absolute;
+    inset: 0;
   }
 
   // -----------------------------------------------------------------------

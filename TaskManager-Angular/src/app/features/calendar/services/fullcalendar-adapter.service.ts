@@ -28,8 +28,15 @@ export class FullCalendarAdapterService {
       },
     };
 
-    // Color strategy: inline Google color if available, otherwise CSS class by category
-    if (entry.color) {
+    // Color strategy: explicit category takes priority over Google color
+    const hasExplicitCategory = category !== 'other';
+
+    if (hasExplicitCategory) {
+      event.classNames = [`category-${category}`];
+      if (entry.color) {
+        event.classNames.push('google-event');
+      }
+    } else if (entry.color) {
       event.backgroundColor = this.hexToPastel(entry.color);
       event.borderColor = entry.color;
       event.textColor = this.darkenHex(entry.color);
