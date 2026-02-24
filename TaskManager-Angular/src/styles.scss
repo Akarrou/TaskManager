@@ -1088,3 +1088,47 @@ body.dragging .bubble-menu-wrapper {
 .gcal-direction-toggle .mat-button-toggle-button {
   padding: 0 8px;
 }
+
+// ============================================================================
+// SPOTLIGHT / CMD+K SEARCH DIALOG
+// ============================================================================
+
+.spotlight-dialog-panel {
+  // Override ALL levels of MDC dialog nesting for border-radius
+  &.mat-mdc-dialog-panel,
+  .mat-mdc-dialog-container,
+  .mat-mdc-dialog-container .mdc-dialog__container,
+  .mat-mdc-dialog-container .mdc-dialog__surface,
+  .mat-mdc-dialog-surface,
+  .mdc-dialog__surface {
+    border-radius: 16px !important;
+    overflow: hidden !important;
+  }
+
+  .mat-mdc-dialog-container {
+    padding: 0 !important;
+    box-shadow: 0 16px 70px rgba(0, 0, 0, 0.2),
+                0 0 0 1px rgba(0, 0, 0, 0.06) !important;
+  }
+
+  .mdc-dialog__content {
+    padding: 0 !important;
+    max-height: none !important;
+  }
+
+  // Remove focus trap outline that appears on the dialog surface
+  .mdc-dialog__surface:focus,
+  .mdc-dialog__surface:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .spotlight-dialog-panel {
+    .mat-mdc-dialog-container {
+      box-shadow: 0 16px 70px rgba(0, 0, 0, 0.5),
+                  0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+    }
+  }
+}

@@ -51,12 +51,20 @@ export class DatabaseViewComponent implements OnInit, OnDestroy {
   database = signal<DocumentDatabase | null>(null);
   documentId = signal<string | null>(null);
   breadcrumbs = signal<BreadcrumbItem[]>([]);
+  searchQuery = signal<string>('');
 
   // Computed
   databaseName = computed(() => this.database()?.name || 'Base de données');
   databaseConfig = computed(() => this.database()?.config || DEFAULT_DATABASE_CONFIG);
 
   ngOnInit(): void {
+    // Read search query param
+    this.route.queryParamMap
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(params => {
+        this.searchQuery.set(params.get('search') || '');
+      });
+
     this.route.paramMap
       .pipe(
         takeUntil(this.destroy$),

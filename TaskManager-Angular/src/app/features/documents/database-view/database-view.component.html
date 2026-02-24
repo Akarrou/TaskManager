@@ -56,7 +56,8 @@
         [documentId]="documentId() || ''"
         [config]="databaseConfig()"
         [storageMode]="'supabase'"
-        [defaultPageSize]="20">
+        [defaultPageSize]="20"
+        [initialSearchQuery]="searchQuery()">
       </app-document-database-table>
     </div>
   }

@@ -1,0 +1,124 @@
+<div class="spotlight-container">
+  <!-- Search input -->
+  <div class="spotlight-input-wrapper">
+    <mat-icon class="spotlight-search-icon">search</mat-icon>
+    <input
+      #searchInput
+      class="spotlight-input"
+      type="text"
+      role="combobox"
+      aria-label="Recherche globale"
+      aria-autocomplete="list"
+      aria-controls="spotlight-results-list"
+      [attr.aria-expanded]="searchQuery().trim().length >= 2"
+      [value]="searchQuery()"
+      (input)="onSearchInput($event)"
+      placeholder="Rechercher des documents, tâches, événements..."
+      spellcheck="false"
+      autocomplete="off"
+    />
+    @if (store.loading()) {
+      <mat-spinner class="spotlight-spinner" diameter="20"></mat-spinner>
+    }
+    <kbd class="spotlight-kbd">esc</kbd>
+  </div>
+
+  <!-- Results -->
+  @if (searchQuery().trim().length >= 2) {
+    <div class="spotlight-results" id="spotlight-results-list" role="listbox" aria-label="Résultats de recherche">
+      @if (store.error()) {
+        <div class="spotlight-empty">
+          <mat-icon>error_outline</mat-icon>
+          <span>Erreur : {{ store.error() }}</span>
+        </div>
+      } @else if (!store.loading() && store.results() && store.totalCount() === 0) {
+        <div class="spotlight-empty">
+          <mat-icon>search_off</mat-icon>
+          <span>Aucun résultat pour "{{ searchQuery() }}"</span>
+        </div>
+      } @else if (store.results()) {
+        <!-- Documents -->
+        @if (store.results()!.documents.length > 0) {
+          <div class="spotlight-section-label">Documents</div>
+          @for (result of store.results()!.documents; track result.id) {
+            <div
+              class="spotlight-result-item"
+              role="option"
+              [attr.aria-selected]="isSelected(result)"
+              [class.is-selected]="isSelected(result)"
+              (click)="selectResult(result)"
+            >
+              <div class="spotlight-result-icon icon-document">
+                <mat-icon>{{ result.icon }}</mat-icon>
+              </div>
+              <div class="spotlight-result-body">
+                <span class="spotlight-result-title">{{ result.title }}</span>
+                @if (result.subtitle) {
+                  <span class="spotlight-result-subtitle">{{ result.subtitle }}</span>
+                }
+              </div>
+              <mat-icon class="spotlight-result-arrow">arrow_forward</mat-icon>
+            </div>
+          }
+        }
+
+        <!-- Tasks -->
+        @if (store.results()!.tasks.length > 0) {
+          <div class="spotlight-section-label">Tâches</div>
+          @for (result of store.results()!.tasks; track result.id) {
+            <div
+              class="spotlight-result-item"
+              role="option"
+              [attr.aria-selected]="isSelected(result)"
+              [class.is-selected]="isSelected(result)"
+              (click)="selectResult(result)"
+            >
+              <div class="spotlight-result-icon icon-task">
+                <mat-icon>{{ result.icon }}</mat-icon>
+              </div>
+              <div class="spotlight-result-body">
+                <span class="spotlight-result-title">{{ result.title }}</span>
+                @if (result.subtitle) {
+                  <span class="spotlight-result-subtitle spotlight-status">{{ result.subtitle }}</span>
+                }
+              </div>
+              <mat-icon class="spotlight-result-arrow">arrow_forward</mat-icon>
+            </div>
+          }
+        }
+
+        <!-- Events -->
+        @if (store.results()!.events.length > 0) {
+          <div class="spotlight-section-label">Événements</div>
+          @for (result of store.results()!.events; track result.id) {
+            <div
+              class="spotlight-result-item"
+              role="option"
+              [attr.aria-selected]="isSelected(result)"
+              [class.is-selected]="isSelected(result)"
+              (click)="selectResult(result)"
+            >
+              <div class="spotlight-result-icon icon-event">
+                <mat-icon>{{ result.icon }}</mat-icon>
+              </div>
+              <div class="spotlight-result-body">
+                <span class="spotlight-result-title">{{ result.title }}</span>
+                @if (result.subtitle) {
+                  <span class="spotlight-result-subtitle">{{ result.subtitle }}</span>
+                }
+              </div>
+              <mat-icon class="spotlight-result-arrow">arrow_forward</mat-icon>
+            </div>
+          }
+        }
+      }
+
+      <!-- Footer hint -->
+      <div class="spotlight-footer">
+        <span><kbd>↑</kbd><kbd>↓</kbd> naviguer</span>
+        <span><kbd>↵</kbd> ouvrir</span>
+        <span><kbd>esc</kbd> fermer</span>
+      </div>
+    </div>
+  }
+</div>

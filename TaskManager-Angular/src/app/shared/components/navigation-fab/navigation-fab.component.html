@@ -5,9 +5,22 @@
      [class.fab-size-medium]="size === 'medium'"
      [class.fab-size-large]="size === 'large'">
 
-  <!-- Actions secondaires (visibles quand le FAB est ouvert) -->
-  <div class="fab-actions" *ngIf="isOpen() && visibleActions().length > 0">
-    <button *ngFor="let action of visibleActions(); trackBy: trackAction"
+  <!-- Bouton recherche (colonne gauche, plus haut) -->
+  <div class="fab-search-action" *ngIf="isOpen() && searchAction()">
+    <button mat-fab
+            [color]="searchAction()!.color || 'accent'"
+            class="fab-action-button"
+            [matTooltip]="searchAction()!.tooltip"
+            matTooltipPosition="left"
+            (click)="executeAction(searchAction()!)"
+            [attr.aria-label]="searchAction()!.label">
+      <mat-icon>{{ searchAction()!.icon }}</mat-icon>
+    </button>
+  </div>
+
+  <!-- Actions régulières (colonne droite classique) -->
+  <div class="fab-actions" *ngIf="isOpen() && regularActions().length > 0">
+    <button *ngFor="let action of regularActions(); trackBy: trackAction"
             mat-fab
             [color]="action.color || 'accent'"
             class="fab-action-button"

@@ -128,6 +128,8 @@ echo -e "${GREEN}   ✅ Edge Functions container restarted${NC}"
 # Install MCP server dependencies and restart
 echo "   Installing MCP server dependencies..."
 ssh "$VPS_USER@$VPS_HOST" "cd /opt/mcp-server && pnpm install --prod --frozen-lockfile"
+echo "   Setting APP_URL for production..."
+ssh "$VPS_USER@$VPS_HOST" "cd /opt/mcp-server && grep -q '^APP_URL=' .env 2>/dev/null && sed -i 's|^APP_URL=.*|APP_URL=https://kodo.logicfractals.fr|' .env || echo 'APP_URL=https://kodo.logicfractals.fr' >> .env"
 echo "   Restarting MCP server..."
 ssh "$VPS_USER@$VPS_HOST" "sudo systemctl restart mcp-server && sleep 2 && sudo systemctl is-active mcp-server"
 echo -e "${GREEN}   ✅ MCP server restarted${NC}"

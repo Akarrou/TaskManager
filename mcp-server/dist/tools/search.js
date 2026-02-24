@@ -2,6 +2,43 @@ import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
 import { getCurrentUserId } from '../services/user-auth.js';
 import { getUserDatabasesByType } from '../utils/database-access.js';
+import { env } from '../config.js';
+/** Try to parse a date string (DD/MM/YYYY or YYYY-MM-DD) into ISO format YYYY-MM-DD */
+function parseToIsoDate(query) {
+    const trimmed = query.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed))
+        return trimmed;
+    const frMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (frMatch) {
+        return `${frMatch[3]}-${frMatch[2].padStart(2, '0')}-${frMatch[1].padStart(2, '0')}`;
+    }
+    return null;
+}
+/** Escape special PostgREST filter characters in user input */
+function escapePostgrestValue(value) {
+    return value.replace(/[,()\\"]/g, '\\$&');
+}
+/** Build an OR filter across all searchable columns (text + select + date) */
+function buildOrFilter(columns, query) {
+    const safeQuery = escapePostgrestValue(query.trim());
+    const textTypes = new Set(['text', 'select', 'url', 'email']);
+    const textCols = columns.filter(c => textTypes.has(c.type || 'text'));
+    const orParts = textCols.map(c => `col_${c.id.replace(/-/g, '_')}.ilike.%${safeQuery}%`);
+    const isoDate = parseToIsoDate(query);
+    if (isoDate) {
+        const dateCols = columns.filter(c => c.type === 'date' || c.type === 'datetime');
+        for (const c of dateCols) {
+            const colName = `col_${c.id.replace(/-/g, '_')}`;
+            if (c.type === 'datetime') {
+                orParts.push(`and(${colName}.gte.${isoDate}T00:00:00,${colName}.lte.${isoDate}T23:59:59)`);
+            }
+            else {
+                orParts.push(`${colName}.eq.${isoDate}`);
+            }
+        }
+    }
+    return orParts.join(',');
+}
 /**
  * Register unified search tools
  */
@@ -10,9 +47,9 @@ export function registerSearchTools(server) {
     // search - Unified search across all content types
     // =========================================================================
     server.registerTool('search', {
-        description: `Unified search across all content types (documents, tasks, events, databases). Use this as the primary discovery tool when you don't know where the information lives. Searches document titles AND content (full-text with French stemming), task/event titles and descriptions (partial matching), and database rows (partial matching on text columns). Returns results grouped by type. More powerful than individual search tools like search_documents (title-only).`,
+        description: `Unified search across all content types (documents, tasks, events, databases). Use this as the primary discovery tool when you don't know where the information lives. Searches document titles AND content (full-text with French stemming), task/event/database rows across all text, select, and date columns (partial matching). Returns results grouped by type with clickable URLs to open each result in Kodo. Present the URLs as sources so the user can navigate directly. More powerful than individual search tools like search_documents (title-only).`,
         inputSchema: {
-            query: z.string().min(1).describe('Search term. Supports natural language for documents (French stemming) and partial matching for tasks/events/databases.'),
+            query: z.string().min(1).describe('Search term. Supports natural language for documents (French stemming) and partial matching for tasks/events/databases. Date formats DD/MM/YYYY and YYYY-MM-DD are supported.'),
             types: z.array(z.enum(['documents', 'tasks', 'events', 'databases'])).optional().default(['documents', 'tasks', 'events', 'databases']).describe('Content types to search. Default: all types.'),
             project_id: z.string().uuid().optional().describe('Limit search to a specific project.'),
             limit: z.number().min(1).max(20).optional().default(10).describe('Maximum results per type. Default 10, max 20.'),
@@ -36,7 +73,11 @@ export function registerSearchTools(server) {
                         p_offset: 0,
                     });
                     if (!error && data) {
-                        results.documents = data.map(d => ({ ...d, type: 'document' }));
+                        results.documents = data.map(d => ({
+                            ...d,
+                            type: 'document',
+                            url: `${env.APP_URL}/documents/${d.id}`,
+                        }));
                     }
                     else {
                         // Fallback: ILIKE on title (works without migration)
@@ -53,12 +94,16 @@ export function registerSearchTools(server) {
                         }
                         const { data: fallbackData } = await fallbackQuery;
                         if (fallbackData) {
-                            results.documents = fallbackData.map(d => ({ ...d, type: 'document' }));
+                            results.documents = fallbackData.map(d => ({
+                                ...d,
+                                type: 'document',
+                                url: `${env.APP_URL}/documents/${d.id}`,
+                            }));
                         }
                     }
                 })());
             }
-            // Tasks: ILIKE scan across task databases
+            // Tasks: search across all columns of task databases
             if (types.includes('tasks')) {
                 promises.push((async () => {
                     const taskDatabases = await getUserDatabasesByType(supabase, userId, 'task');
@@ -67,16 +112,12 @@ export function registerSearchTools(server) {
                         const config = db.config;
                         const columns = config.columns || [];
                         const titleCol = columns.find(c => c.name === 'Title');
-                        const descCol = columns.find(c => c.name === 'Description');
                         if (!titleCol)
                             return;
                         const tableName = `database_${db.database_id.replace('db-', '').replace(/-/g, '_')}`;
-                        const titleColName = `col_${titleCol.id.replace(/-/g, '_')}`;
-                        let orFilter = `${titleColName}.ilike.%${query}%`;
-                        if (descCol) {
-                            const descColName = `col_${descCol.id.replace(/-/g, '_')}`;
-                            orFilter += `,${descColName}.ilike.%${query}%`;
-                        }
+                        const orFilter = buildOrFilter(columns, query);
+                        if (!orFilter)
+                            return;
                         let dbQuery = supabase
                             .from(tableName)
                             .select('*')
@@ -107,13 +148,14 @@ export function registerSearchTools(server) {
                                 priority: getCell('Priority'),
                                 updated_at: row.updated_at,
                                 type: 'task',
+                                url: `${env.APP_URL}/bdd/${db.database_id}?search=${encodeURIComponent(query)}`,
                             });
                         }
                     }));
                     results.tasks = taskResults.slice(0, limit);
                 })());
             }
-            // Events: ILIKE scan across event databases
+            // Events: search across all columns of event databases
             if (types.includes('events')) {
                 promises.push((async () => {
                     const eventDatabases = await getUserDatabasesByType(supabase, userId, 'event');
@@ -122,16 +164,12 @@ export function registerSearchTools(server) {
                         const config = db.config;
                         const columns = config.columns || [];
                         const titleCol = columns.find(c => c.name === 'Title');
-                        const descCol = columns.find(c => c.name === 'Description');
                         if (!titleCol)
                             return;
                         const tableName = `database_${db.database_id.replace('db-', '').replace(/-/g, '_')}`;
-                        const titleColName = `col_${titleCol.id.replace(/-/g, '_')}`;
-                        let orFilter = `${titleColName}.ilike.%${query}%`;
-                        if (descCol) {
-                            const descColName = `col_${descCol.id.replace(/-/g, '_')}`;
-                            orFilter += `,${descColName}.ilike.%${query}%`;
-                        }
+                        const orFilter = buildOrFilter(columns, query);
+                        if (!orFilter)
+                            return;
                         const { data: rows } = await supabase
                             .from(tableName)
                             .select('*')
@@ -154,13 +192,14 @@ export function registerSearchTools(server) {
                                 category: getCell('Category'),
                                 updated_at: row.updated_at,
                                 type: 'event',
+                                url: `${env.APP_URL}/calendar`,
                             });
                         }
                     }));
                     results.events = eventResults.slice(0, limit);
                 })());
             }
-            // Databases: ILIKE scan across generic databases
+            // Databases: search across all text columns of generic databases
             if (types.includes('databases')) {
                 promises.push((async () => {
                     const genericDatabases = await getUserDatabasesByType(supabase, userId, 'generic');
@@ -168,13 +207,10 @@ export function registerSearchTools(server) {
                     await Promise.all(genericDatabases.map(async (db) => {
                         const config = db.config;
                         const columns = config.columns || [];
-                        const textCols = columns.filter(c => ['text', 'url', 'email'].includes(c.type));
-                        if (textCols.length === 0)
+                        const orFilter = buildOrFilter(columns, query);
+                        if (!orFilter)
                             return;
                         const tableName = `database_${db.database_id.replace('db-', '').replace(/-/g, '_')}`;
-                        const orFilter = textCols
-                            .map(c => `col_${c.id.replace(/-/g, '_')}.ilike.%${query}%`)
-                            .join(',');
                         const { data: rows } = await supabase
                             .from(tableName)
                             .select('*')
@@ -182,8 +218,11 @@ export function registerSearchTools(server) {
                             .or(orFilter)
                             .limit(limit);
                         for (const row of rows || []) {
-                            const firstTextCol = textCols[0];
-                            const firstValue = row[`col_${firstTextCol.id.replace(/-/g, '_')}`];
+                            const textTypes = new Set(['text', 'url', 'email']);
+                            const firstTextCol = columns.find(c => textTypes.has(c.type));
+                            const firstValue = firstTextCol
+                                ? row[`col_${firstTextCol.id.replace(/-/g, '_')}`]
+                                : null;
                             dbResults.push({
                                 id: row.id,
                                 database_id: db.database_id,
@@ -191,6 +230,7 @@ export function registerSearchTools(server) {
                                 title: firstValue || 'Untitled',
                                 updated_at: row.updated_at,
                                 type: 'database_row',
+                                url: `${env.APP_URL}/bdd/${db.database_id}?search=${encodeURIComponent(query)}`,
                             });
                         }
                     }));

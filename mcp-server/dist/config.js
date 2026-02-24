@@ -31,6 +31,8 @@ const envSchema = z.object({
     RETRY_BASE_DELAY_MS: z.coerce.number().default(1000),
     // Snapshot configuration
     SNAPSHOT_RETENTION_DAYS: z.coerce.number().default(5),
+    // Frontend app URL (for generating links in search results)
+    APP_URL: z.string().url().default('http://localhost:4200'),
 });
 function loadEnv() {
     const result = envSchema.safeParse(process.env);

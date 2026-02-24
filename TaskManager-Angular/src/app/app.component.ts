@@ -1,6 +1,7 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, HostListener, inject } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { MatDialog } from '@angular/material/dialog';
 import { HeaderNavComponent } from './shared/components/header-nav/header-nav.component';
 import { ToastComponent } from './shared/components/toast/toast.component';
 import { NavigationFabComponent } from './shared/components/navigation-fab/navigation-fab.component';
@@ -9,6 +10,7 @@ import { Store } from '@ngrx/store';
 import { AppState } from './app.state';
 import * as ProjectActions from './features/projects/store/project.actions';
 import { FabStore } from './core/stores/fab.store';
+import { GlobalSearchDialogComponent } from './shared/components/global-search-dialog/global-search-dialog.component';
 
 @Component({
   selector: 'app-root',
@@ -40,8 +42,26 @@ export class AppComponent implements OnInit {
 
   private store = inject(Store<AppState>);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
 
   protected readonly fabStore = inject(FabStore);
+
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(event: KeyboardEvent) {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+      event.preventDefault();
+      if (!this.dialog.openDialogs.length) {
+        this.dialog.open(GlobalSearchDialogComponent, {
+          width: '640px',
+          maxWidth: '90vw',
+          position: { top: '15vh' },
+          autoFocus: false,
+          hasBackdrop: true,
+          panelClass: 'spotlight-dialog-panel',
+        });
+      }
+    }
+  }
 
   ngOnInit(): void {
     this.store.dispatch(ProjectActions.loadProjects());

@@ -3,8 +3,10 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog } from '@angular/material/dialog';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { GlobalSearchDialogComponent } from '../global-search-dialog/global-search-dialog.component';
 
 export interface NavigationAction {
   id: string;
@@ -39,6 +41,7 @@ export interface NavigationContext {
 })
 export class NavigationFabComponent implements OnInit {
   private router = inject(Router);
+  private dialog = inject(MatDialog);
 
   // Utiliser signal inputs pour la réactivité
   context = input<NavigationContext>({});
@@ -60,6 +63,16 @@ export class NavigationFabComponent implements OnInit {
     const ctx = this.context();
     const route = this.currentRoute();
     const actions: NavigationAction[] = [];
+
+    // 0. TOUJOURS : Action Recherche globale (disponible partout)
+    actions.push({
+      id: 'global-search',
+      icon: 'search',
+      label: 'Rechercher',
+      tooltip: 'Recherche globale',
+      action: () => this.openGlobalSearch(),
+      color: 'primary'
+    });
 
     // 1. TOUJOURS EN PREMIER : Action Dashboard (cohérence globale, même couleur)
     // Afficher "Dashboard principal" sur tasks-dashboard, sinon "Dashboard" partout ailleurs
@@ -148,9 +161,7 @@ export class NavigationFabComponent implements OnInit {
     }
 
     // Action Sauvegarde (si changements non sauvés)
-    console.log('[NavigationFAB] Checking save action - isDirty:', ctx.isDirty, 'hasUnsavedChanges:', ctx.hasUnsavedChanges, 'currentPage:', ctx.currentPage);
     if (ctx.isDirty || ctx.hasUnsavedChanges) {
-      console.log('[NavigationFAB] Adding save action');
       actions.push({
         id: 'save',
         icon: 'save',
@@ -213,6 +224,16 @@ export class NavigationFabComponent implements OnInit {
     return this.allActions().filter(action => action.visible !== false);
   });
 
+  // Action recherche globale (séparée visuellement)
+  searchAction = computed(() => {
+    return this.visibleActions().find(a => a.id === 'global-search') ?? null;
+  });
+
+  // Actions régulières (sans la recherche)
+  regularActions = computed(() => {
+    return this.visibleActions().filter(a => a.id !== 'global-search');
+  });
+
   // Icône principale du FAB
   mainIcon = computed(() => {
     const ctx = this.context();
@@ -266,6 +287,17 @@ export class NavigationFabComponent implements OnInit {
     if (ctx.canNavigateAway !== false) {
       this.router.navigate([route]);
     }
+  }
+
+  private openGlobalSearch() {
+    this.dialog.open(GlobalSearchDialogComponent, {
+      width: '640px',
+      maxWidth: '90vw',
+      position: { top: '15vh' },
+      autoFocus: false,
+      hasBackdrop: true,
+      panelClass: 'spotlight-dialog-panel',
+    });
   }
 
   private navigateWithoutSave() {

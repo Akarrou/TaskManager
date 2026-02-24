@@ -170,6 +170,20 @@
       </div>
     </div>
 
+    <!-- Active Search Banner -->
+    @if (activeSearchQuery()) {
+      <div class="search-banner">
+        <mat-icon class="search-banner-icon">search</mat-icon>
+        <span class="search-banner-text">
+          Résultats pour <strong>"{{ activeSearchQuery() }}"</strong>
+        </span>
+        <span class="search-banner-count">{{ totalCount() }} résultat{{ totalCount() > 1 ? 's' : '' }}</span>
+        <button class="search-banner-clear" (click)="clearSearchQuery()" title="Effacer la recherche">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    }
+
     <!-- Database Filters -->
     <app-database-filters
       [columns]="databaseConfig().columns"

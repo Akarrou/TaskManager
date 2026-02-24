@@ -538,6 +538,34 @@ export class DatabaseService {
           });
         }
 
+        // Apply search query (OR across all searchable columns)
+        if (params.searchQuery) {
+          const textTypes = new Set(['text', 'select', 'url', 'email']);
+          const textCols = metadata.config.columns.filter(c => textTypes.has(c.type));
+          const safeQuery = params.searchQuery.replace(/[,()\\"]/g, '\\$&');
+          const orParts = textCols.map(c =>
+            `col_${c.id.replace(/-/g, '_')}.ilike.%${safeQuery}%`
+          );
+
+          // If query looks like a date, add date column filters
+          const isoDate = this.parseToIsoDate(params.searchQuery);
+          if (isoDate) {
+            const dateCols = metadata.config.columns.filter(c => c.type === 'date' || c.type === 'datetime');
+            for (const c of dateCols) {
+              const colName = `col_${c.id.replace(/-/g, '_')}`;
+              if (c.type === 'datetime') {
+                orParts.push(`and(${colName}.gte.${isoDate}T00:00:00,${colName}.lte.${isoDate}T23:59:59)`);
+              } else {
+                orParts.push(`${colName}.eq.${isoDate}`);
+              }
+            }
+          }
+
+          if (orParts.length > 0) {
+            query = query.or(orParts.join(','));
+          }
+        }
+
         // Apply pagination
         const limit = params.limit || 100;
         const offset = params.offset || 0;
@@ -1182,6 +1210,17 @@ export class DatabaseService {
       default:
         return query;
     }
+  }
+
+  /** Try to parse a date string (DD/MM/YYYY or YYYY-MM-DD) into ISO format YYYY-MM-DD */
+  private parseToIsoDate(query: string): string | null {
+    const trimmed = query.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    const frMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (frMatch) {
+      return `${frMatch[3]}-${frMatch[2].padStart(2, '0')}-${frMatch[1].padStart(2, '0')}`;
+    }
+    return null;
   }
 
   // =====================================================================

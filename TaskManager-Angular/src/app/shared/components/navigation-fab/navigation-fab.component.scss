@@ -149,6 +149,33 @@
   }
 }
 
+.fab-search-action {
+  position: absolute;
+  bottom: 30px;
+  right: 70px;
+
+  .fab-action-button {
+    opacity: 0;
+    transform: translateX(20px) scale(0.8);
+    animation: fabSearchSlideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) 0.1s forwards;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    background-color: #009688 !important;
+    color: white !important;
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+      transform: translateY(-1px) scale(1.05);
+      background-color: #00796b !important;
+    }
+  }
+
+  .fab-position-bottom-left & {
+    right: auto;
+    left: 70px;
+  }
+}
+
 .fab-actions {
   position: absolute;
   bottom: 80px;
@@ -198,9 +225,9 @@
     }
   }
   
-  // Animation en cascade pour chaque bouton
+  // Animation en cascade du bas vers le haut
   @for $i from 1 through 6 {
-    &:nth-child(#{$i}) {
+    &:nth-last-child(#{$i}) {
       animation-delay: #{($i - 1) * 0.05s};
     }
   }
@@ -245,6 +272,17 @@
   }
 }
 
+@keyframes fabSearchSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
 // Responsive
 @media (max-width: 768px) {
   .navigation-fab-container {
@@ -281,12 +319,17 @@
   .fab-action-button {
     width: 44px !important;
     height: 44px !important;
-    
+
     mat-icon {
       font-size: 18px;
     }
   }
-  
+
+  .fab-search-action {
+    bottom: 25px;
+    right: 56px;
+  }
+
   .fab-changes-indicator {
     width: 10px;
     height: 10px;

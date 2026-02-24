@@ -133,6 +133,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   @Input() storageMode: 'supabase' = 'supabase';
   @Input() defaultPageSize: number = 5;
   @Input() onDataChange?: (attrs: DatabaseNodeAttributes) => void;
+  @Input() initialSearchQuery?: string;
   @Input() set linkedDatabase(value: boolean) {
     this.isLinked.set(value);
   }
@@ -152,6 +153,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   // Filtering and sorting state
   activeFilters = signal<Filter[]>([]);
   activeSort = signal<{ columnId: string; order: SortOrder } | null>(null);
+  activeSearchQuery = signal<string>('');
 
   // Pagination state
   pageSize = signal<number>(5);
@@ -370,9 +372,11 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   loadRowsWithFilters() {
     this.isLoading.set(true);
 
+    const searchQuery = this.activeSearchQuery();
     const params: QueryRowsParams = {
       databaseId: this.databaseId,
       filters: this.activeFilters(),
+      ...(searchQuery ? { searchQuery } : {}),
       limit: this.pageSize(),
       offset: this.pageIndex() * this.pageSize(),
     };
@@ -1714,8 +1718,13 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
    * Load filters and sort from current view config
    */
   private loadViewConfig(): void {
+    // If initialSearchQuery is set, use it for OR search across all text columns
+    if (this.initialSearchQuery) {
+      this.activeSearchQuery.set(this.initialSearchQuery);
+    }
+
     const currentView = this.getCurrentView();
-    if (currentView?.config?.filters) {
+    if (!this.initialSearchQuery && currentView?.config?.filters) {
       this.activeFilters.set(currentView.config.filters);
     }
     if (currentView?.config?.sortBy && this.currentView() !== 'timeline') {
@@ -1796,10 +1805,16 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
    */
   onClearAllFilters(): void {
     this.activeFilters.set([]);
-    this.pageIndex.set(0); // Reset to first page when filters cleared
+    this.pageIndex.set(0);
     this.savePaginationSettings();
     this.loadRowsWithFilters();
     this.saveCurrentViewConfig();
+  }
+
+  clearSearchQuery(): void {
+    this.activeSearchQuery.set('');
+    this.pageIndex.set(0);
+    this.loadRowsWithFilters();
   }
 
   /**

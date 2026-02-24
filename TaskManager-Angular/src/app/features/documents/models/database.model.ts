@@ -351,6 +351,7 @@ export interface DeleteColumnRequest {
 export interface QueryRowsParams {
   databaseId: string;
   filters?: Filter[];
+  searchQuery?: string;
   sortBy?: string;
   sortOrder?: SortOrder;
   limit?: number;

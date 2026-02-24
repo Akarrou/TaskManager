@@ -41,6 +41,9 @@ const envSchema = z.object({
 
   // Snapshot configuration
   SNAPSHOT_RETENTION_DAYS: z.coerce.number().default(5),
+
+  // Frontend app URL (for generating links in search results)
+  APP_URL: z.string().url().default('http://localhost:4200'),
 });
 
 function loadEnv() {
