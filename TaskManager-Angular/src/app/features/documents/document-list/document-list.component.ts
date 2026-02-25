@@ -1,4 +1,5 @@
-import { Component, OnInit, OnDestroy, inject, signal, computed, effect } from '@angular/core';
+import { Component, OnInit, OnDestroy, DestroyRef, inject, signal, computed } from '@angular/core';
+import { toObservable, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,8 +8,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { combineLatest, forkJoin, of } from 'rxjs';
+import { catchError, debounceTime, filter, switchMap } from 'rxjs/operators';
 import { TrashService } from '../../../core/services/trash.service';
 import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { DocumentService, Document, DocumentStorageFile } from '../services/document.service';
@@ -55,6 +56,7 @@ export class DocumentListComponent implements OnInit, OnDestroy {
   private fabStore = inject(FabStore);
   private projectStore = inject(ProjectStore);
   private documentStore = inject(DocumentStore);
+  private destroyRef = inject(DestroyRef);
   private tabsStore = inject(DocumentTabsStore);
   private pageId = crypto.randomUUID();
 
@@ -124,8 +126,9 @@ export class DocumentListComponent implements OnInit, OnDestroy {
     }
 
     // Include ALL documents from this project (root and children)
+    // Also include database row documents (project_id may be null)
     allDocs
-      .filter(doc => doc.project_id === project.id)
+      .filter(doc => doc.project_id === project.id || doc.database_row_id)
       .forEach(doc => map.set(doc.id, doc));
 
     return map;
@@ -166,67 +169,97 @@ export class DocumentListComponent implements OnInit, OnDestroy {
   // Map to store databases for each document
   documentDatabases = signal<Map<string, DocumentDatabase[]>>(new Map());
 
+  // Track which document IDs have already been loaded or attempted
+  private loadedStorageFileDocIds = new Set<string>();
+  private loadedDatabaseDocIds = new Set<string>();
+  private attemptedDocumentLoadIds = new Set<string>();
+
   constructor() {
-    // Effect: load documents and tabs when selected project changes
-    effect(() => {
-      const project = this.selectedProjectSignal();
-      if (project) {
-        this.documentStore.loadDocumentsByProject({ projectId: project.id });
-        this.tabsStore.loadTabs({ projectId: project.id });
-      }
+    // Load documents and tabs when selected project changes
+    toObservable(this.selectedProjectSignal).pipe(
+      filter(Boolean),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(project => {
+      this.documentStore.loadDocumentsByProject({ projectId: project.id });
+      this.tabsStore.loadTabs({ projectId: project.id });
+      // Reset tracking on project change
+      this.loadedStorageFileDocIds.clear();
+      this.loadedDatabaseDocIds.clear();
+      this.attemptedDocumentLoadIds.clear();
     });
 
-    // Effect: load storage files and databases when documents change (for all documents including children)
-    effect(() => {
-      const docMap = this.documentMap();
+    // When data is loaded: fetch missing documents + load storage files and databases
+    combineLatest([
+      toObservable(this.documentMap),
+      toObservable(this.selectedTabDocumentIds),
+    ]).pipe(
+      debounceTime(100),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(([docMap, tabDocIds]) => {
+      // Load missing documents silently (e.g. database row docs with no project_id)
+      // Uses service directly to avoid setting global loading flag which causes page jumps
+      for (const id of tabDocIds) {
+        if (!docMap.has(id) && !this.attemptedDocumentLoadIds.has(id)) {
+          this.attemptedDocumentLoadIds.add(id);
+          this.loadMissingDocument(id);
+        }
+      }
+
+      // Load storage files and databases incrementally (only new documents)
       if (docMap.size > 0) {
-        this.loadStorageFilesForDocuments(Array.from(docMap.values()));
-        this.loadDatabasesForDocuments(Array.from(docMap.values()));
+        const docs = Array.from(docMap.values());
+        this.loadStorageFilesIncremental(docs);
+        this.loadDatabasesIncremental(docs);
       }
     });
   }
 
-  /**
-   * Load storage files for all documents
-   */
-  private async loadStorageFilesForDocuments(docs: Document[]): Promise<void> {
-    const filesMap = new Map<string, DocumentStorageFile[]>();
+  private loadMissingDocument(documentId: string): void {
+    this.documentService.getDocument(documentId).pipe(
+      catchError(() => of(null)),
+    ).subscribe(doc => {
+      if (doc) {
+        this.documentStore.upsertDocumentEntity(doc);
+      }
+    });
+  }
 
-    for (const doc of docs) {
+  private async loadStorageFilesIncremental(docs: Document[]): Promise<void> {
+    const newDocs = docs.filter(doc => !this.loadedStorageFileDocIds.has(doc.id));
+    if (newDocs.length === 0) return;
+
+    const currentMap = new Map(this.documentStorageFiles());
+
+    for (const doc of newDocs) {
       const files = await this.documentService.getDocumentStorageFiles(doc.id);
       if (files.length > 0) {
-        filesMap.set(doc.id, files);
+        currentMap.set(doc.id, files);
       }
+      this.loadedStorageFileDocIds.add(doc.id);
     }
 
-    this.documentStorageFiles.set(filesMap);
+    this.documentStorageFiles.set(currentMap);
   }
 
-  /**
-   * Load databases for all documents
-   */
-  private loadDatabasesForDocuments(docs: Document[]): void {
-    const databasesMap = new Map<string, DocumentDatabase[]>();
+  private loadDatabasesIncremental(docs: Document[]): void {
+    const newDocs = docs.filter(doc => !this.loadedDatabaseDocIds.has(doc.id));
+    if (newDocs.length === 0) return;
 
-    // Use forkJoin to load all databases in parallel
-    const requests = docs.map(doc =>
+    const requests = newDocs.map(doc =>
       this.databaseStore.getDatabasesByDocumentId(doc.id).pipe(
         catchError(() => of([]))
       )
     );
 
-    if (requests.length === 0) {
-      this.documentDatabases.set(databasesMap);
-      return;
-    }
-
     forkJoin(requests).subscribe(results => {
+      const currentMap = new Map(this.documentDatabases());
       results.forEach((databases, index) => {
         if (databases.length > 0) {
-          databasesMap.set(docs[index].id, databases);
+          currentMap.set(newDocs[index].id, databases);
         }
+        this.loadedDatabaseDocIds.add(newDocs[index].id);
       });
-      this.documentDatabases.set(databasesMap);
+      this.documentDatabases.set(currentMap);
     });
   }
 
@@ -420,6 +453,7 @@ export class DocumentListComponent implements OnInit, OnDestroy {
       documentId: data.documentId,
       tabId,
       sectionId: data.sectionId,
+      isPinned: true,
     });
   }
 
@@ -474,6 +508,11 @@ export class DocumentListComponent implements OnInit, OnDestroy {
 
   onDeleteDocument(data: { event: Event; documentId: string }): void {
     this.deleteDocument(data.event, data.documentId);
+  }
+
+  onUnpinDocument(data: { event: Event; documentId: string }): void {
+    data.event.stopPropagation();
+    this.tabsStore.removeDocumentFromTab({ documentId: data.documentId });
   }
 
   async deleteDocument(event: Event, id: string): Promise<void> {
@@ -533,7 +572,8 @@ export class DocumentListComponent implements OnInit, OnDestroy {
         )
       : of([]);
 
-    // 2. After soft-deleting databases, soft-delete the document via store
+    // 2. After soft-deleting databases, soft-delete the document
+    // Tab references are automatically cleaned up by the DocumentStore
     softDeleteDatabases$.subscribe({
       next: () => {
         this.documentStore.deleteDocument({ documentId, documentTitle, projectId });

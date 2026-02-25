@@ -31,13 +31,23 @@
       <p class="document-card__date">Modifié le {{ document.updated_at | date:'dd/MM/yyyy HH:mm' }}</p>
     </div>
 
-    <button
-      mat-icon-button
-      (click)="onDelete($event)"
-      title="Supprimer"
-      class="document-card__delete">
-      <mat-icon>delete</mat-icon>
-    </button>
+    @if (isPinned) {
+      <button
+        mat-icon-button
+        (click)="onUnpin($event)"
+        matTooltip="Désépingler"
+        class="document-card__unpin">
+        <mat-icon>link_off</mat-icon>
+      </button>
+    } @else {
+      <button
+        mat-icon-button
+        (click)="onDelete($event)"
+        title="Supprimer"
+        class="document-card__delete">
+        <mat-icon>delete</mat-icon>
+      </button>
+    }
   </div>
 
   <!-- Attachments Section -->

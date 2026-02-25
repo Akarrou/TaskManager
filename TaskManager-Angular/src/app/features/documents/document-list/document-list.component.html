@@ -72,6 +72,7 @@
             [tabDocumentIds]="selectedTabDocumentIds()"
             (documentClick)="openDocument($event)"
             (documentDelete)="onDeleteDocument($event)"
+            (documentUnpin)="onUnpinDocument($event)"
             (databaseClick)="openDatabase($event)"
             (sectionCreate)="onCreateSection($event)"
             (sectionUpdate)="onUpdateSection($event)"

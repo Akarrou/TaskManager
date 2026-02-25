@@ -772,6 +772,19 @@ export class DatabaseService {
             .in('id', request.rowIds)
         );
       }),
+      switchMap(response => {
+        if (response.error) throw response.error;
+
+        // Also soft-delete the associated documents (triggers cleanup of document_tab_items)
+        return from(
+          this.client
+            .from('documents')
+            .update({ deleted_at: now })
+            .eq('database_id', request.databaseId)
+            .in('database_row_id', request.rowIds)
+            .is('deleted_at', null)
+        );
+      }),
       map(response => {
         if (response.error) throw response.error;
         return true;
@@ -801,7 +814,20 @@ export class DatabaseService {
       switchMap(response => {
         if (response.error) throw response.error;
 
-        // Also clean up trash_items entries
+        // Also restore the associated documents (triggers restore of document_tab_items)
+        return from(
+          this.client
+            .from('documents')
+            .update({ deleted_at: null })
+            .eq('database_id', databaseId)
+            .in('database_row_id', rowIds)
+            .not('deleted_at', 'is', null)
+        );
+      }),
+      switchMap(response => {
+        if (response.error) throw response.error;
+
+        // Clean up trash_items entries
         return from(
           this.client
             .from('trash_items')
@@ -816,6 +842,30 @@ export class DatabaseService {
       catchError(error => {
         console.error('Failed to restore rows:', error);
         return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Restore the document linked to a single database row (clear deleted_at).
+   * Triggers the DB trigger that also restores document_tab_items references.
+   */
+  restoreRowDocument(databaseId: string, rowId: string): Observable<boolean> {
+    return from(
+      this.client
+        .from('documents')
+        .update({ deleted_at: null })
+        .eq('database_id', databaseId)
+        .eq('database_row_id', rowId)
+        .not('deleted_at', 'is', null)
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return true;
+      }),
+      catchError(error => {
+        console.error('Failed to restore row document:', error);
+        return of(true); // Non-blocking: row itself is already restored
       })
     );
   }

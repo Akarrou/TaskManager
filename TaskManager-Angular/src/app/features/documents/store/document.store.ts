@@ -3,12 +3,13 @@ import { signalStore, withState, withMethods, withComputed, patchState } from '@
 import { withEntities, setAllEntities, addEntity, upsertEntity, removeEntity } from '@ngrx/signals/entities';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { tapResponse } from '@ngrx/operators';
-import { pipe, concatMap, switchMap, tap } from 'rxjs';
+import { pipe, concatMap, switchMap, tap, catchError, of } from 'rxjs';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DocumentService, Document } from '../services/document.service';
 import { TrashService } from '../../../core/services/trash.service';
 import { TrashStore } from '../../trash/store/trash.store';
+import { DocumentTabsStore } from './document-tabs.store';
 import { withRealtimeSync } from '../../../core/stores/features/with-realtime-sync';
 import { JSONContent } from '@tiptap/core';
 
@@ -41,6 +42,7 @@ export const DocumentStore = signalStore(
   withMethods((
     store,
     documentService = inject(DocumentService),
+    tabsStore = inject(DocumentTabsStore),
     trashService = inject(TrashService),
     trashStore = inject(TrashStore),
     router = inject(Router),
@@ -54,9 +56,18 @@ export const DocumentStore = signalStore(
       return documentService.extractDatabaseIds(content);
     },
 
+    upsertDocumentEntity(document: Document): void {
+      patchState(store, upsertEntity(document));
+    },
+
     loadDocuments: rxMethod<void>(
       pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
+        tap(() => {
+          // Only show loading on initial load to avoid page jumps on realtime refreshes
+          if (store.entities().length === 0) {
+            patchState(store, { loading: true, error: null });
+          }
+        }),
         switchMap(() =>
           documentService.getDocuments().pipe(
             tapResponse({
@@ -76,7 +87,11 @@ export const DocumentStore = signalStore(
 
     loadDocumentsByProject: rxMethod<{ projectId: string }>(
       pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
+        tap(() => {
+          if (store.entities().length === 0) {
+            patchState(store, { loading: true, error: null });
+          }
+        }),
         switchMap(({ projectId }) =>
           documentService.getDocumentsByProject(projectId).pipe(
             tapResponse({
@@ -168,6 +183,10 @@ export const DocumentStore = signalStore(
         concatMap(({ documentId, documentTitle, projectId }) => {
           const displayName = documentTitle || 'Document sans titre';
           const parentInfo = projectId ? { projectId } : undefined;
+          // Soft-delete all tab references (immediate state update + async DB soft-delete)
+          // References are auto-restored when document is restored from trash
+          tabsStore.softDeleteAllDocumentReferences(documentId);
+          // Soft-delete the document
           return trashService.softDelete(
             'document',
             documentId,

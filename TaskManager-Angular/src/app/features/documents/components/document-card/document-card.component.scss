@@ -12,7 +12,8 @@
     border-color: var(--section-color, #6366f1);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 
-    .document-card__delete {
+    .document-card__delete,
+    .document-card__unpin {
       opacity: 1;
     }
 
@@ -92,6 +93,26 @@
       font-size: 18px;
       width: 18px;
       height: 18px;
+    }
+  }
+
+  &__unpin {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+    width: 28px !important;
+    height: 28px !important;
+    padding: 0 !important;
+    min-width: 28px !important;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      color: var(--mat-sys-error, #dc2626);
     }
   }
 

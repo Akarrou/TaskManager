@@ -55,6 +55,7 @@ export interface DocumentTabItem {
   tab_id: string;
   section_id: string | null;
   position: number;
+  is_pinned: boolean;
   created_at?: string;
   updated_at?: string;
 }

@@ -99,12 +99,14 @@
                 <app-document-card
                   [document]="doc"
                   [item]="item"
+                  [isPinned]="item.is_pinned"
                   [childDocuments]="getChildDocuments(doc.id)"
                   [storageFiles]="getStorageFilesForDocument(doc.id)"
                   [databases]="getDatabasesForDocument(doc.id)"
                   [sectionColor]="section.color || '#6366f1'"
                   (documentClick)="onDocumentClick($event)"
                   (documentDelete)="documentDelete.emit($event)"
+                  (documentUnpin)="documentUnpin.emit($event)"
                   (databaseClick)="onDatabaseClick($event)">
                 </app-document-card>
               </div>

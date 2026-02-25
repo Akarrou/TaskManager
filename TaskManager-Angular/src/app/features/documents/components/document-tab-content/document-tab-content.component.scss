@@ -314,7 +314,8 @@
       opacity: 1;
     }
 
-    .unsectioned-doc-card__delete {
+    .unsectioned-doc-card__delete,
+    .unsectioned-doc-card__unpin {
       opacity: 1;
     }
   }
@@ -379,6 +380,32 @@
   }
 
   &__delete {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    padding: 0 !important;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    flex-shrink: 0;
+
+    .mat-mdc-button-touch-target {
+      width: 24px !important;
+      height: 24px !important;
+    }
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+      color: #9ca3af;
+    }
+
+    &:hover mat-icon {
+      color: #ef4444;
+    }
+  }
+
+  &__unpin {
     width: 24px !important;
     height: 24px !important;
     min-width: 24px !important;

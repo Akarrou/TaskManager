@@ -55,6 +55,7 @@ export class DocumentSectionCardComponent {
   @Output() delete = new EventEmitter<void>();
   @Output() documentClick = new EventEmitter<string>();
   @Output() documentDelete = new EventEmitter<{ event: Event; documentId: string }>();
+  @Output() documentUnpin = new EventEmitter<{ event: Event; documentId: string }>();
   @Output() databaseClick = new EventEmitter<string>();
   @Output() drop = new EventEmitter<CdkDragDrop<DocumentTabItem[]>>();
   @Output() documentAdd = new EventEmitter<string>();
@@ -87,11 +88,6 @@ export class DocumentSectionCardComponent {
 
   onDocumentClick(documentId: string): void {
     this.documentClick.emit(documentId);
-  }
-
-  onDocumentDelete(event: Event, documentId: string): void {
-    event.stopPropagation();
-    this.documentDelete.emit({ event, documentId });
   }
 
   onOpenStorageFile(event: Event, url: string): void {

@@ -83,11 +83,11 @@ export class DocumentService {
         .select('*')
         .eq('id', id)
         .is('deleted_at', null)
-        .single()
+        .maybeSingle()
     ).pipe(
       map(response => {
         if (response.error) throw response.error;
-        return response.data as Document;
+        return response.data as Document | null;
       })
     );
   }

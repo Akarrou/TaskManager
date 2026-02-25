@@ -62,13 +62,23 @@
                       <span class="unsectioned-doc-card__date">{{ doc.updated_at | date:'dd/MM' }}</span>
                     </div>
                   </div>
-                  <button
-                    mat-icon-button
-                    class="unsectioned-doc-card__delete"
-                    (click)="onDocumentDelete({ event: $event, documentId: doc.id })"
-                    title="Supprimer">
-                    <mat-icon>close</mat-icon>
-                  </button>
+                  @if (item.is_pinned) {
+                    <button
+                      mat-icon-button
+                      class="unsectioned-doc-card__unpin"
+                      (click)="onDocumentUnpin({ event: $event, documentId: doc.id })"
+                      matTooltip="Désépingler">
+                      <mat-icon>link_off</mat-icon>
+                    </button>
+                  } @else {
+                    <button
+                      mat-icon-button
+                      class="unsectioned-doc-card__delete"
+                      (click)="onDocumentDelete({ event: $event, documentId: doc.id })"
+                      title="Supprimer">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  }
                 </div>
               }
             }
@@ -124,6 +134,7 @@
             (delete)="onSectionDelete(section.id, section.title)"
             (documentClick)="onDocumentClick($event)"
             (documentDelete)="onDocumentDelete($event)"
+            (documentUnpin)="onDocumentUnpin($event)"
             (databaseClick)="databaseClick.emit($event)"
             (drop)="onDrop($event, section.id)"
             (documentAdd)="onDocumentAddToSection(section.id, $event)">

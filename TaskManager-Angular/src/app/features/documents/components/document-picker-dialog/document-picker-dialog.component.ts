@@ -1,4 +1,5 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
@@ -6,8 +7,14 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { debounceTime, Subject } from 'rxjs';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { debounceTime, Subject, switchMap, finalize, of } from 'rxjs';
+
 import { Document } from '../../services/document.service';
+import { GlobalSearchService } from '../../../../core/services/global-search.service';
+import { DatabaseService } from '../../services/database.service';
+import { DocumentStore } from '../../store/document.store';
+import { SearchResult, SearchResponse } from '../../../../shared/models/search.model';
 
 export interface DocumentPickerDialogData {
   documents: Document[];
@@ -25,64 +32,131 @@ export interface DocumentPickerDialogData {
     MatInputModule,
     MatIconModule,
     MatButtonModule,
+    MatProgressSpinnerModule,
   ],
   templateUrl: './document-picker-dialog.component.html',
   styleUrl: './document-picker-dialog.component.scss',
 })
-export class DocumentPickerDialogComponent implements OnInit {
+export class DocumentPickerDialogComponent {
   private dialogRef = inject(MatDialogRef<DocumentPickerDialogComponent>);
   private data: DocumentPickerDialogData = inject(MAT_DIALOG_DATA);
+  private globalSearchService = inject(GlobalSearchService);
+  private databaseService = inject(DatabaseService);
+  private documentStore = inject(DocumentStore);
+  private destroyRef = inject(DestroyRef);
 
   searchQuery = signal('');
   filteredDocuments = signal<Document[]>([]);
+  searchResults = signal<SearchResponse | null>(null);
+  loading = signal(false);
+  resolving = signal(false);
+  resolveError = signal<string | null>(null);
   selectedDocument = signal<Document | null>(null);
+  selectedResult = signal<SearchResult | null>(null);
 
-  private availableDocuments: Document[] = [];
+  hasSelection = computed(() => this.selectedDocument() !== null || this.selectedResult() !== null);
+  isSearchMode = computed(() => this.searchQuery().trim().length >= 2 && this.searchResults() !== null);
+
+  private availableDocuments: Document[];
   private searchSubject = new Subject<string>();
 
-  ngOnInit(): void {
+  constructor() {
     this.availableDocuments = this.data.documents.filter(
       (doc) => !this.data.excludeDocumentIds.has(doc.id)
     );
-
-    // Show all available documents initially
     this.filteredDocuments.set(this.availableDocuments);
 
-    this.searchSubject.pipe(debounceTime(300)).subscribe((query) => {
-      this.performFilter(query);
+    this.searchSubject.pipe(
+      debounceTime(300),
+      switchMap((query) => {
+        this.loading.set(true);
+        return this.globalSearchService.search(query);
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (response) => {
+        const filteredDocs = response.documents.filter(
+          (doc) => !this.data.excludeDocumentIds.has(doc.id)
+        );
+        this.searchResults.set({
+          ...response,
+          documents: filteredDocs,
+          total: filteredDocs.length + response.tasks.length + response.events.length,
+        });
+        this.loading.set(false);
+      },
+      error: () => {
+        this.searchResults.set({ documents: [], tasks: [], events: [], total: 0 });
+        this.loading.set(false);
+      },
     });
   }
 
   onSearchInput(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    const query = target.value;
+    const query = (event.target as HTMLInputElement).value;
     this.searchQuery.set(query);
+    this.selectedDocument.set(null);
+    this.selectedResult.set(null);
+    this.resolveError.set(null);
 
     if (query.trim().length >= 2) {
       this.searchSubject.next(query);
     } else {
+      this.searchResults.set(null);
+      this.loading.set(false);
       this.filteredDocuments.set(this.availableDocuments);
     }
   }
 
-  private performFilter(query: string): void {
-    const lowerQuery = query.toLowerCase().trim();
-    this.filteredDocuments.set(
-      this.availableDocuments.filter((doc) =>
-        (doc.title || 'Sans titre').toLowerCase().includes(lowerQuery)
-      )
-    );
+  selectResult(result: SearchResult): void {
+    this.selectedResult.set(result);
+    this.selectedDocument.set(null);
+    this.resolveError.set(null);
   }
 
   selectDocument(doc: Document): void {
     this.selectedDocument.set(doc);
+    this.selectedResult.set(null);
+    this.resolveError.set(null);
   }
 
   confirmSelection(): void {
+    const result = this.selectedResult();
     const doc = this.selectedDocument();
+
     if (doc) {
       this.dialogRef.close(doc.id);
+      return;
     }
+
+    if (!result) return;
+
+    if (result.type === 'document') {
+      this.dialogRef.close(result.id);
+      return;
+    }
+
+    if (!result.databaseId) return;
+
+    this.resolving.set(true);
+    this.resolveError.set(null);
+
+    this.databaseService
+      .getRowDocument(result.databaseId, result.id)
+      .pipe(finalize(() => this.resolving.set(false)))
+      .subscribe({
+        next: (resolvedDoc) => {
+          if (!resolvedDoc) {
+            this.resolveError.set('Aucun document associé trouvé');
+            return;
+          }
+          this.documentStore.upsertDocumentEntity(resolvedDoc);
+          this.dialogRef.close(resolvedDoc.id);
+        },
+        error: () => {
+          this.resolveError.set('Erreur lors de la résolution du document');
+        },
+      });
   }
 
   cancel(): void {

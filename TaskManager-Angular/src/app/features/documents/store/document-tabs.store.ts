@@ -289,11 +289,21 @@ export const DocumentTabsStore = signalStore(
      */
     loadTabs: rxMethod<{ projectId: string }>(
       pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
+        tap(() => {
+          // Only show loading spinner on initial load (no tabs yet)
+          // Realtime refreshes should be silent to avoid page jumps
+          if (store.tabs().length === 0) {
+            patchState(store, { loading: true, error: null });
+          }
+        }),
         switchMap(({ projectId }) =>
           tabsService.getTabsWithItemsByProject(projectId).pipe(
             tap(({ tabs, groups, sections, items }) => {
-              const selectedTabId = tabs.find((t) => t.is_default)?.id ?? tabs[0]?.id ?? null;
+              // Preserve selected tab if it still exists, otherwise pick default
+              const currentSelectedTabId = store.selectedTabId();
+              const selectedTabId = (currentSelectedTabId && tabs.some(t => t.id === currentSelectedTabId))
+                ? currentSelectedTabId
+                : tabs.find((t) => t.is_default)?.id ?? tabs[0]?.id ?? null;
               patchState(store, {
                 tabs,
                 groups,
@@ -783,13 +793,22 @@ export const DocumentTabsStore = signalStore(
       tabId: string;
       sectionId?: string | null;
       position?: number;
+      isPinned?: boolean;
     }>(
       pipe(
-        switchMap(({ documentId, tabId, sectionId, position }) =>
-          tabsService.addDocumentToTab(documentId, tabId, sectionId, position).pipe(
+        switchMap(({ documentId, tabId, sectionId, position, isPinned }) =>
+          tabsService.addDocumentToTab(documentId, tabId, sectionId, position, isPinned).pipe(
             tap((newItem) => {
+              const items = store.items();
+              const exists = items.some(
+                (i) => i.document_id === newItem.document_id && i.tab_id === newItem.tab_id
+              );
               patchState(store, {
-                items: [...store.items(), newItem],
+                items: exists
+                  ? items.map((i) =>
+                      i.document_id === newItem.document_id && i.tab_id === newItem.tab_id ? newItem : i
+                    )
+                  : [...items, newItem],
               });
             }),
             catchError((error: Error) => {
@@ -868,6 +887,20 @@ export const DocumentTabsStore = signalStore(
         })
       )
     ),
+
+    /**
+     * Soft-delete all references of a document across all tabs (used on document trash).
+     * Immediately updates state, then fires DB soft-delete in background.
+     * References are automatically restored when the document is restored from trash.
+     */
+    softDeleteAllDocumentReferences(documentId: string): void {
+      // Immediate state update — no waiting for server response
+      patchState(store, {
+        items: store.items().filter((i) => i.document_id !== documentId),
+      });
+      // Fire-and-forget DB soft-delete (DB trigger also handles this as a safety net)
+      tabsService.softDeleteAllDocumentReferences(documentId).subscribe();
+    },
 
     /**
      * Reorder documents within a section

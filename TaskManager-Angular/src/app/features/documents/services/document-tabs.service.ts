@@ -499,6 +499,7 @@ export class DocumentTabsService {
         .from('document_tab_items')
         .select('*')
         .in('tab_id', tabIds)
+        .is('deleted_at', null)
         .order('position', { ascending: true })
     ).pipe(
       map((response) => {
@@ -517,6 +518,7 @@ export class DocumentTabsService {
         .from('document_tab_items')
         .select('*')
         .eq('tab_id', tabId)
+        .is('deleted_at', null)
         .order('position', { ascending: true })
     ).pipe(
       map((response) => {
@@ -533,7 +535,8 @@ export class DocumentTabsService {
     documentId: string,
     tabId: string,
     sectionId?: string | null,
-    position?: number
+    position?: number,
+    isPinned = false
   ): Observable<DocumentTabItem> {
     return from(
       this.client.rpc('get_next_item_position', {
@@ -547,12 +550,17 @@ export class DocumentTabsService {
         return from(
           this.client
             .from('document_tab_items')
-            .insert({
-              document_id: documentId,
-              tab_id: tabId,
-              section_id: sectionId ?? null,
-              position: finalPosition,
-            })
+            .upsert(
+              {
+                document_id: documentId,
+                tab_id: tabId,
+                section_id: sectionId ?? null,
+                position: finalPosition,
+                is_pinned: isPinned,
+                deleted_at: null,
+              },
+              { onConflict: 'document_id,tab_id' }
+            )
             .select()
             .single()
         );
@@ -611,6 +619,25 @@ export class DocumentTabsService {
         .delete()
         .eq('document_id', documentId)
         .eq('tab_id', tabId)
+    ).pipe(
+      map((response) => {
+        if (response.error) throw response.error;
+        return true;
+      })
+    );
+  }
+
+  /**
+   * Soft-delete all references of a document across all tabs (used when document is trashed).
+   * References can be restored when the document is restored from trash.
+   */
+  softDeleteAllDocumentReferences(documentId: string): Observable<boolean> {
+    return from(
+      this.client
+        .from('document_tab_items')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('document_id', documentId)
+        .is('deleted_at', null)
     ).pipe(
       map((response) => {
         if (response.error) throw response.error;

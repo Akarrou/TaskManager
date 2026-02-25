@@ -5,46 +5,164 @@
 
 <mat-dialog-content class="dialog-content">
     <mat-form-field appearance="outline" class="search-field">
-      <mat-label>Rechercher un document</mat-label>
+      <mat-label>Rechercher documents, tâches, événements</mat-label>
       <input
         matInput
         [value]="searchQuery()"
         (input)="onSearchInput($event)"
-        autofocus
+        cdkFocusInitial
         placeholder="Tapez au moins 2 caractères..."
       />
       <mat-icon matPrefix>search</mat-icon>
+      @if (loading()) {
+        <mat-spinner matSuffix diameter="20"></mat-spinner>
+      }
     </mat-form-field>
 
+    @if (resolveError()) {
+      <div class="resolve-error">
+        <mat-icon>error_outline</mat-icon>
+        {{ resolveError() }}
+      </div>
+    }
+
     <div class="search-results">
-      @if (filteredDocuments().length === 0 && searchQuery().trim().length >= 2) {
-        <div class="empty-state">
-          <mat-icon>search_off</mat-icon>
-          <p>Aucun document trouvé</p>
-        </div>
-      } @else if (filteredDocuments().length === 0) {
-        <div class="empty-state">
-          <mat-icon>info_outline</mat-icon>
-          <p>Tous les documents sont déjà dans cet onglet</p>
-        </div>
-      } @else {
-        <div class="results-list">
-          @for (doc of filteredDocuments(); track doc.id) {
-            <div
-              class="document-result-item"
-              [class.selected]="selectedDocument()?.id === doc.id"
-              (click)="selectDocument(doc)"
-            >
-              <div class="document-info">
-                <mat-icon class="document-icon">description</mat-icon>
-                <div class="document-title">{{ doc.title || 'Sans titre' }}</div>
+      @if (isSearchMode()) {
+        <!-- Server search results grouped by type -->
+        @if (loading()) {
+          <div class="empty-state">
+            <mat-spinner diameter="32"></mat-spinner>
+            <p>Recherche en cours...</p>
+          </div>
+        } @else if (searchResults()!.total === 0) {
+          <div class="empty-state">
+            <mat-icon>search_off</mat-icon>
+            <p>Aucun résultat trouvé</p>
+          </div>
+        } @else {
+          <div class="results-list">
+            <!-- Documents -->
+            @if (searchResults()!.documents.length > 0) {
+              <div class="section-label">
+                <mat-icon class="section-icon icon-document">description</mat-icon>
+                Documents
               </div>
-              @if (selectedDocument()?.id === doc.id) {
-                <mat-icon class="selected-icon">check_circle</mat-icon>
+              @for (result of searchResults()!.documents; track result.id) {
+                <div
+                  class="document-result-item"
+                  [class.selected]="selectedResult()?.id === result.id && selectedResult()?.type === 'document'"
+                  (click)="selectResult(result)"
+                >
+                  <div class="document-info">
+                    <div class="result-type-icon icon-document">
+                      <mat-icon>{{ result.icon }}</mat-icon>
+                    </div>
+                    <div class="result-body">
+                      <div class="document-title">{{ result.title }}</div>
+                      @if (result.subtitle) {
+                        <div class="result-subtitle">{{ result.subtitle }}</div>
+                      }
+                    </div>
+                  </div>
+                  @if (selectedResult()?.id === result.id && selectedResult()?.type === 'document') {
+                    <mat-icon class="selected-icon">check_circle</mat-icon>
+                  }
+                </div>
               }
-            </div>
-          }
-        </div>
+            }
+
+            <!-- Tasks -->
+            @if (searchResults()!.tasks.length > 0) {
+              <div class="section-label">
+                <mat-icon class="section-icon icon-task">task_alt</mat-icon>
+                Tâches
+              </div>
+              @for (result of searchResults()!.tasks; track result.id) {
+                <div
+                  class="document-result-item"
+                  [class.selected]="selectedResult()?.id === result.id && selectedResult()?.type === 'task'"
+                  (click)="selectResult(result)"
+                >
+                  <div class="document-info">
+                    <div class="result-type-icon icon-task">
+                      <mat-icon>{{ result.icon }}</mat-icon>
+                    </div>
+                    <div class="result-body">
+                      <div class="document-title">{{ result.title }}</div>
+                      @if (result.subtitle) {
+                        <div class="result-subtitle result-status">{{ result.subtitle }}</div>
+                      }
+                    </div>
+                  </div>
+                  @if (selectedResult()?.id === result.id && selectedResult()?.type === 'task') {
+                    <mat-icon class="selected-icon">check_circle</mat-icon>
+                  }
+                </div>
+              }
+            }
+
+            <!-- Events -->
+            @if (searchResults()!.events.length > 0) {
+              <div class="section-label">
+                <mat-icon class="section-icon icon-event">event</mat-icon>
+                Événements
+              </div>
+              @for (result of searchResults()!.events; track result.id) {
+                <div
+                  class="document-result-item"
+                  [class.selected]="selectedResult()?.id === result.id && selectedResult()?.type === 'event'"
+                  (click)="selectResult(result)"
+                >
+                  <div class="document-info">
+                    <div class="result-type-icon icon-event">
+                      <mat-icon>{{ result.icon }}</mat-icon>
+                    </div>
+                    <div class="result-body">
+                      <div class="document-title">{{ result.title }}</div>
+                      @if (result.subtitle) {
+                        <div class="result-subtitle">{{ result.subtitle }}</div>
+                      }
+                    </div>
+                  </div>
+                  @if (selectedResult()?.id === result.id && selectedResult()?.type === 'event') {
+                    <mat-icon class="selected-icon">check_circle</mat-icon>
+                  }
+                </div>
+              }
+            }
+          </div>
+        }
+      } @else {
+        <!-- Initial display: local documents list -->
+        @if (filteredDocuments().length === 0 && searchQuery().trim().length >= 2) {
+          <div class="empty-state">
+            <mat-icon>search_off</mat-icon>
+            <p>Aucun document trouvé</p>
+          </div>
+        } @else if (filteredDocuments().length === 0) {
+          <div class="empty-state">
+            <mat-icon>info_outline</mat-icon>
+            <p>Tous les documents sont déjà dans cet onglet</p>
+          </div>
+        } @else {
+          <div class="results-list">
+            @for (doc of filteredDocuments(); track doc.id) {
+              <div
+                class="document-result-item"
+                [class.selected]="selectedDocument()?.id === doc.id"
+                (click)="selectDocument(doc)"
+              >
+                <div class="document-info">
+                  <mat-icon class="document-icon">description</mat-icon>
+                  <div class="document-title">{{ doc.title || 'Sans titre' }}</div>
+                </div>
+                @if (selectedDocument()?.id === doc.id) {
+                  <mat-icon class="selected-icon">check_circle</mat-icon>
+                }
+              </div>
+            }
+          </div>
+        }
       }
     </div>
 </mat-dialog-content>
@@ -58,10 +176,13 @@
   <button
     mat-raised-button
     class="dialog-btn-primary"
-    [disabled]="!selectedDocument()"
-    (click)="confirmSelection()"
-    cdkFocusInitial>
-    <mat-icon>add</mat-icon>
+    [disabled]="!hasSelection() || resolving()"
+    (click)="confirmSelection()">
+    @if (resolving()) {
+      <mat-spinner diameter="18"></mat-spinner>
+    } @else {
+      <mat-icon>add</mat-icon>
+    }
     Ajouter
   </button>
 </mat-dialog-actions>

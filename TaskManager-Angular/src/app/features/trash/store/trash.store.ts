@@ -122,6 +122,15 @@ export const TrashStore = signalStore(
               }
               return of(true);
             }),
+            // For database rows and events, also restore the associated document (and its tab item references)
+            switchMap(() => {
+              if (trashItem.item_type !== 'database_row' && trashItem.item_type !== 'event') return of(true);
+
+              const databaseId = trashItem.parent_info?.['databaseId'];
+              if (!databaseId) return of(true);
+
+              return databaseService.restoreRowDocument(databaseId, trashItem.item_id);
+            }),
             // For events, re-sync to Google Calendar
             switchMap(() => {
               if (trashItem.item_type !== 'event') return of(true);

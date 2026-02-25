@@ -71,7 +71,7 @@
     }
 
     <!-- Pinned Properties (left side, only for task documents) -->
-    @if (isDatabaseRowDocument() && getPinnedColumns().length > 0) {
+    @if (isDatabaseRowDocument() && databaseRow() && getPinnedColumns().length > 0) {
       <div class="pinned-properties">
         @for (column of getPinnedColumns(); track column.id) {
           <div

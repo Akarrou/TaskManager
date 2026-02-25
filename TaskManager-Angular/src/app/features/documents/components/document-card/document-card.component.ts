@@ -42,8 +42,11 @@ export class DocumentCardComponent {
   @Input() showDragHandle = true;
   @Input() sectionColor = '#6366f1';
 
+  @Input() isPinned = false;
+
   @Output() documentClick = new EventEmitter<string>();
   @Output() documentDelete = new EventEmitter<{ event: Event; documentId: string }>();
+  @Output() documentUnpin = new EventEmitter<{ event: Event; documentId: string }>();
   @Output() databaseClick = new EventEmitter<string>();
 
   /**
@@ -124,6 +127,11 @@ export class DocumentCardComponent {
   onDelete(event: Event): void {
     event.stopPropagation();
     this.documentDelete.emit({ event, documentId: this.document.id });
+  }
+
+  onUnpin(event: Event): void {
+    event.stopPropagation();
+    this.documentUnpin.emit({ event, documentId: this.document.id });
   }
 
   onChildDocumentClick(event: Event, childId: string): void {

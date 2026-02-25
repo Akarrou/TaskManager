@@ -58,6 +58,7 @@ export class DocumentTabContentComponent {
 
   @Output() documentClick = new EventEmitter<string>();
   @Output() documentDelete = new EventEmitter<{ event: Event; documentId: string }>();
+  @Output() documentUnpin = new EventEmitter<{ event: Event; documentId: string }>();
   @Output() databaseClick = new EventEmitter<string>();
   @Output() sectionCreate = new EventEmitter<string>(); // tabId
   @Output() sectionUpdate = new EventEmitter<{ sectionId: string; updates: UpdateDocumentSection }>();
@@ -208,6 +209,11 @@ export class DocumentTabContentComponent {
   onDocumentDelete(data: { event: Event; documentId: string }): void {
     data.event.stopPropagation();
     this.documentDelete.emit(data);
+  }
+
+  onDocumentUnpin(data: { event: Event; documentId: string }): void {
+    data.event.stopPropagation();
+    this.documentUnpin.emit(data);
   }
 
   onOpenStorageFile(event: Event, url: string): void {
