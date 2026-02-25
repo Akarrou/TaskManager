@@ -32,6 +32,7 @@ services:
 
   app:
     container_name: taskmanager-app
+    image: taskmanager-app
     profiles: ["local", "production"]
     build:
       context: ..

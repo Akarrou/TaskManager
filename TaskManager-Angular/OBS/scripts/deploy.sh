@@ -66,6 +66,10 @@ Restore Instructions:
 MANIFEST_EOF"
 
 echo -e "${GREEN}✅ Pre-deploy backup saved: $BACKUP_NAME${NC}"
+
+# Rotate old pre-deploy backups (keep last 5)
+echo "   Rotating old pre-deploy backups..."
+ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH/OBS/backups && ls -1dt predeploy_* 2>/dev/null | tail -n +6 | xargs -r rm -rf"
 echo ""
 
 # Step 1: Build Angular application
@@ -117,6 +121,12 @@ rsync -avz \
 rsync -avz \
     "$LOCAL_PROJECT_DIR/OBS/Dockerfile" \
     "$VPS_USER@$VPS_HOST:$VPS_PATH/OBS/Dockerfile"
+rsync -avz \
+    "$LOCAL_PROJECT_DIR/OBS/Dockerfile.production" \
+    "$VPS_USER@$VPS_HOST:$VPS_PATH/OBS/Dockerfile.production"
+rsync -avz \
+    "$LOCAL_PROJECT_DIR/OBS/nginx.conf" \
+    "$VPS_USER@$VPS_HOST:$VPS_PATH/OBS/nginx.conf"
 rsync -avz --delete \
     "$LOCAL_PROJECT_DIR/OBS/scripts/" \
     "$VPS_USER@$VPS_HOST:$VPS_PATH/OBS/scripts/"
@@ -170,14 +180,14 @@ echo ""
 # Step 5: Rebuild and restart services
 echo -e "${YELLOW}🐳 Step 5/7: Rebuilding and restarting services...${NC}"
 
-# Rebuild Angular app container
-echo "   Rebuilding Angular app container..."
-ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH/OBS && docker compose build app --no-cache"
+# Rebuild Angular app image (using production Dockerfile with pre-built dist)
+echo "   Rebuilding Angular app image..."
+ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH && docker build --no-cache -f OBS/Dockerfile.production -t taskmanager-app ."
 echo -e "${GREEN}   ✅ Angular app image rebuilt${NC}"
 
 # Bring up all production services (creates missing containers like backup)
 echo "   Starting all production services..."
-ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH/OBS && docker compose --profile production up -d"
+ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH/OBS && docker compose --profile production up -d --no-build"
 echo -e "${GREEN}   ✅ All services started${NC}"
 
 # Restart Realtime container if migrations were applied (picks up publication changes)
@@ -215,7 +225,7 @@ while IFS= read -r line; do
     [ -z "$line" ] && continue
     TOTAL=$((TOTAL + 1))
     NAME=$(echo "$line" | awk '{print $1}')
-    if echo "$line" | grep -qEi "up|healthy"; then
+    if echo "$line" | grep -qEi "\bUp\b|\bhealthy\b"; then
         echo -e "   ${GREEN}✅ $NAME${NC}"
         HEALTHY=$((HEALTHY + 1))
     else
