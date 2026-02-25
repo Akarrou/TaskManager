@@ -1,0 +1,180 @@
+<!-- Trigger zone: visible only when sidebar is collapsed (not pinned) -->
+@if (!pinned() && hasProject()) {
+  <div
+    class="sidebar-trigger"
+    tabindex="0"
+    role="button"
+    aria-label="Ouvrir le panneau de documents"
+    (mouseenter)="onTriggerEnter()"
+    (mouseleave)="onTriggerLeave()"
+    (focus)="onTriggerEnter()"
+    (blur)="onTriggerLeave()"
+    (keydown.enter)="onTriggerEnter()">
+    <div class="trigger-tab">
+      <mat-icon class="trigger-icon">menu_book</mat-icon>
+    </div>
+  </div>
+}
+
+<!-- Overlay backdrop: visible only in overlay (hover) mode -->
+@if (isOverlay()) {
+  <div class="sidebar-backdrop" (click)="onBackdropClick()"></div>
+}
+
+<!-- Sidebar panel -->
+<aside
+  role="complementary"
+  aria-label="Navigation documents"
+  class="sidebar-panel"
+  [class.visible]="isVisible()"
+  [class.pinned]="pinned()"
+  [class.overlay]="isOverlay()"
+  (mouseenter)="onPanelEnter()"
+  (mouseleave)="onPanelLeave()">
+
+  <!-- Header -->
+  <div class="sidebar-header">
+    <div class="sidebar-header-title">
+      <mat-icon class="header-icon">menu_book</mat-icon>
+      <span>Documents</span>
+    </div>
+    <div class="sidebar-header-actions">
+      @if (allTabs().length > 0) {
+        <button
+          mat-icon-button
+          class="header-action-btn"
+          (click)="toggleExpandAll()"
+          [matTooltip]="allExpanded() ? 'Tout replier' : 'Tout déplier'">
+          <mat-icon>{{ allExpanded() ? 'unfold_less' : 'unfold_more' }}</mat-icon>
+        </button>
+      }
+      @if (pinned()) {
+        <button
+          mat-icon-button
+          class="header-action-btn"
+          (click)="togglePin()"
+          matTooltip="Réduire la sidebar">
+          <mat-icon>keyboard_double_arrow_left</mat-icon>
+        </button>
+      } @else {
+        <button
+          mat-icon-button
+          class="header-action-btn"
+          (click)="togglePin()"
+          matTooltip="Épingler la sidebar">
+          <mat-icon>push_pin</mat-icon>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Loading -->
+  @if (isLoading()) {
+    <div class="sidebar-loading">
+      <div class="loading-spinner"></div>
+      <span>Chargement...</span>
+    </div>
+  }
+
+  <!-- Content -->
+  <div class="sidebar-content">
+    <!-- Section Épinglés -->
+    @if (pinnedDocuments().length > 0) {
+      <div class="sidebar-section pinned-section">
+        <div class="sidebar-section-title">
+          <mat-icon class="section-icon pinned-icon">push_pin</mat-icon>
+          <span>Épinglés</span>
+        </div>
+        @for (doc of pinnedDocuments(); track doc.id) {
+          <div class="sidebar-doc-item pinned" (click)="onDocumentClick(doc.id)">
+            <mat-icon class="doc-icon">description</mat-icon>
+            <span class="doc-title">{{ doc.title || 'Sans titre' }}</span>
+            <button
+              type="button"
+              class="pin-btn active"
+              aria-label="Désépingler"
+              (click)="onTogglePin($event, doc.id)"
+              matTooltip="Désépingler">
+              <mat-icon>push_pin</mat-icon>
+            </button>
+          </div>
+        }
+      </div>
+      <div class="sidebar-divider"></div>
+    }
+
+    <!-- Hiérarchie Onglets > Sections > Documents -->
+    @for (tab of allTabs(); track tab.id) {
+      <div class="sidebar-tab">
+        <!-- Tab header -->
+        <div class="sidebar-tab-header" (click)="toggleExpand(tab.id)">
+          <mat-icon class="expand-icon">{{ isExpanded(tab.id) ? 'expand_more' : 'chevron_right' }}</mat-icon>
+          <mat-icon class="tab-icon" [style.color]="tab.color">{{ tab.icon || 'folder' }}</mat-icon>
+          <span class="tab-name">{{ tab.name }}</span>
+        </div>
+
+        @if (isExpanded(tab.id)) {
+          <div class="tab-content">
+            <!-- Unsectioned documents -->
+            @for (item of tab.unsectionedItems; track item.id) {
+              <div class="sidebar-doc-item indent-1" (click)="onDocumentClick(item.document_id)">
+                <mat-icon class="doc-icon">description</mat-icon>
+                <span class="doc-title">{{ documentTitles()[item.document_id] || 'Sans titre' }}</span>
+                <button
+                  type="button"
+                  class="pin-btn"
+                  [class.active]="pinnedSet().has(item.document_id)"
+                  [attr.aria-label]="pinnedSet().has(item.document_id) ? 'Désépingler' : 'Épingler'"
+                  (click)="onTogglePin($event, item.document_id)"
+                  [matTooltip]="pinnedSet().has(item.document_id) ? 'Désépingler' : 'Épingler'">
+                  <mat-icon>push_pin</mat-icon>
+                </button>
+              </div>
+            }
+
+            <!-- Sections -->
+            @for (section of tab.sections; track section.id) {
+              <div class="sidebar-section-header indent-1" (click)="toggleExpand(section.id)">
+                <mat-icon class="expand-icon small">{{ isExpanded(section.id) ? 'expand_more' : 'chevron_right' }}</mat-icon>
+                <mat-icon class="section-header-icon" [style.color]="section.color">{{ section.icon || 'folder_open' }}</mat-icon>
+                <span class="section-name">{{ section.title }}</span>
+                <span class="item-count">{{ section.items.length }}</span>
+              </div>
+
+              @if (isExpanded(section.id)) {
+                @for (item of section.items; track item.id) {
+                  <div class="sidebar-doc-item indent-2" (click)="onDocumentClick(item.document_id)">
+                    <mat-icon class="doc-icon">description</mat-icon>
+                    <span class="doc-title">{{ documentTitles()[item.document_id] || 'Sans titre' }}</span>
+                    <button
+                      class="pin-btn"
+                      [class.active]="pinnedSet().has(item.document_id)"
+                      (click)="onTogglePin($event, item.document_id)"
+                      [matTooltip]="pinnedSet().has(item.document_id) ? 'Désépingler' : 'Épingler'">
+                      <mat-icon>push_pin</mat-icon>
+                    </button>
+                  </div>
+                }
+
+                @if (section.items.length === 0) {
+                  <div class="sidebar-empty indent-2">Aucun document</div>
+                }
+              }
+            }
+
+            @if (tab.unsectionedItems.length === 0 && tab.sections.length === 0) {
+              <div class="sidebar-empty indent-1">Onglet vide</div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    @if (allTabs().length === 0 && !isLoading()) {
+      <div class="sidebar-empty-state">
+        <mat-icon>folder_off</mat-icon>
+        <span>Aucun document organisé</span>
+      </div>
+    }
+  </div>
+</aside>

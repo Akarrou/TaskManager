@@ -159,6 +159,35 @@ export const DocumentTabsStore = signalStore(
     }),
 
     /**
+     * Get all tabs with their sections and items organized (for sidebar navigation)
+     */
+    allTabsWithItems: computed((): TabWithItems[] => {
+      const allTabs = [...store.tabs()].sort((a, b) => a.position - b.position);
+      const allSections = store.sections();
+      const allItems = store.items();
+
+      return allTabs.map((tab) => {
+        const tabSections = allSections
+          .filter((s) => s.tab_id === tab.id)
+          .sort((a, b) => a.position - b.position);
+        const tabItems = allItems.filter((i) => i.tab_id === tab.id);
+
+        const sections: SectionWithItems[] = tabSections.map((section) => ({
+          ...section,
+          items: tabItems
+            .filter((i) => i.section_id === section.id)
+            .sort((a, b) => a.position - b.position),
+        }));
+
+        const unsectionedItems = tabItems
+          .filter((i) => !i.section_id)
+          .sort((a, b) => a.position - b.position);
+
+        return { ...tab, sections, unsectionedItems };
+      });
+    }),
+
+    /**
      * Get all document IDs that are organized in tabs
      */
     organizedDocumentIds: computed(() =>
