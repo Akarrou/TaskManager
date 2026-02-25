@@ -68,6 +68,8 @@
             [storageFiles]="documentStorageFiles()"
             [databases]="documentDatabases()"
             [allDropListIds]="allDropListIds()"
+            [availableDocuments]="documents()"
+            [tabDocumentIds]="selectedTabDocumentIds()"
             (documentClick)="openDocument($event)"
             (documentDelete)="onDeleteDocument($event)"
             (databaseClick)="openDatabase($event)"
@@ -78,7 +80,8 @@
             (sectionsReorder)="onReorderSections($event)"
             (documentMove)="onDocumentMove($event)"
             (documentsReorder)="onDocumentsReorder($event)"
-            (documentAdd)="onDocumentAdd($event)">
+            (documentAdd)="onDocumentAdd($event)"
+            (documentAddToSection)="onDocumentAddToSection($event)">
           </app-document-tab-content>
         }
 

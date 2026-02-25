@@ -1,0 +1,67 @@
+<h2 mat-dialog-title class="dialog-title-default">
+  <mat-icon>add_circle</mat-icon>
+  Ajouter un document
+</h2>
+
+<mat-dialog-content class="dialog-content">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Rechercher un document</mat-label>
+      <input
+        matInput
+        [value]="searchQuery()"
+        (input)="onSearchInput($event)"
+        autofocus
+        placeholder="Tapez au moins 2 caractères..."
+      />
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+
+    <div class="search-results">
+      @if (filteredDocuments().length === 0 && searchQuery().trim().length >= 2) {
+        <div class="empty-state">
+          <mat-icon>search_off</mat-icon>
+          <p>Aucun document trouvé</p>
+        </div>
+      } @else if (filteredDocuments().length === 0) {
+        <div class="empty-state">
+          <mat-icon>info_outline</mat-icon>
+          <p>Tous les documents sont déjà dans cet onglet</p>
+        </div>
+      } @else {
+        <div class="results-list">
+          @for (doc of filteredDocuments(); track doc.id) {
+            <div
+              class="document-result-item"
+              [class.selected]="selectedDocument()?.id === doc.id"
+              (click)="selectDocument(doc)"
+            >
+              <div class="document-info">
+                <mat-icon class="document-icon">description</mat-icon>
+                <div class="document-title">{{ doc.title || 'Sans titre' }}</div>
+              </div>
+              @if (selectedDocument()?.id === doc.id) {
+                <mat-icon class="selected-icon">check_circle</mat-icon>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
+  <button mat-button class="dialog-btn-secondary" (click)="cancel()">
+    <mat-icon>cancel</mat-icon>
+    Annuler
+  </button>
+
+  <button
+    mat-raised-button
+    class="dialog-btn-primary"
+    [disabled]="!selectedDocument()"
+    (click)="confirmSelection()"
+    cdkFocusInitial>
+    <mat-icon>add</mat-icon>
+    Ajouter
+  </button>
+</mat-dialog-actions>

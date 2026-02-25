@@ -53,6 +53,8 @@ export class DocumentTabContentComponent {
   @Input() storageFiles: Map<string, DocumentStorageFile[]> = new Map();
   @Input() databases: Map<string, DocumentDatabase[]> = new Map();
   @Input() allDropListIds: string[] = [];
+  @Input() availableDocuments: Document[] = [];
+  @Input() tabDocumentIds: Set<string> = new Set();
 
   @Output() documentClick = new EventEmitter<string>();
   @Output() documentDelete = new EventEmitter<{ event: Event; documentId: string }>();
@@ -73,6 +75,10 @@ export class DocumentTabContentComponent {
     tabId: string;
     sectionId: string | null;
     position: number;
+  }>();
+  @Output() documentAddToSection = new EventEmitter<{
+    documentId: string;
+    sectionId: string;
   }>();
 
   getDropListId(sectionId: string | null): string {
@@ -207,6 +213,10 @@ export class DocumentTabContentComponent {
   onOpenStorageFile(event: Event, url: string): void {
     event.stopPropagation();
     window.open(url, '_blank');
+  }
+
+  onDocumentAddToSection(sectionId: string, documentId: string): void {
+    this.documentAddToSection.emit({ documentId, sectionId });
   }
 
   trackSection(index: number, section: SectionWithItems): string {

@@ -138,6 +138,25 @@ export class DocumentListComponent implements OnInit, OnDestroy {
     return docs.filter(doc => !organizedIds.has(doc.id));
   });
 
+  // Computed: IDs of documents already in the selected tab (for picker exclusion)
+  selectedTabDocumentIds = computed(() => {
+    const tab = this.selectedTabWithItems();
+    if (!tab) return new Set<string>();
+
+    const ids = new Set<string>();
+    // Unsectioned items
+    for (const item of tab.unsectionedItems) {
+      ids.add(item.document_id);
+    }
+    // Sectioned items
+    for (const section of tab.sections) {
+      for (const item of section.items) {
+        ids.add(item.document_id);
+      }
+    }
+    return ids;
+  });
+
   loading = this.loadingSignal;
   currentProject = this.selectedProjectSignal;
 
@@ -390,6 +409,17 @@ export class DocumentListComponent implements OnInit, OnDestroy {
       tabId: data.tabId,
       sectionId: data.sectionId,
       position: data.position,
+    });
+  }
+
+  onDocumentAddToSection(data: { documentId: string; sectionId: string }): void {
+    const tabId = this.selectedTabId();
+    if (!tabId) return;
+
+    this.tabsStore.addDocumentToTab({
+      documentId: data.documentId,
+      tabId,
+      sectionId: data.sectionId,
     });
   }
 

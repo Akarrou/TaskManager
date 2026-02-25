@@ -57,7 +57,12 @@ export function createMcpServer(): McpServer {
   // Register prompts
   registerPrompts(server);
 
-  logger.info('MCP server configured with 95 tools, 5 resources, 14 prompts');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const internal = server as any;
+  const toolCount = Object.keys(internal._registeredTools ?? {}).length;
+  const resourceCount = Object.keys(internal._registeredResources ?? {}).length;
+  const promptCount = Object.keys(internal._registeredPrompts ?? {}).length;
+  logger.info(`MCP server configured with ${toolCount} tools, ${resourceCount} resources, ${promptCount} prompts`);
 
   return server;
 }

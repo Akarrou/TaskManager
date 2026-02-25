@@ -116,6 +116,8 @@
             [databases]="databases"
             [dropListId]="getDropListId(section.id)"
             [connectedDropListIds]="allDropListIds"
+            [availableDocuments]="availableDocuments"
+            [tabDocumentIds]="tabDocumentIds"
             (titleChange)="onSectionTitleChange(section.id, $event)"
             (sectionUpdate)="onSectionFullUpdate(section.id, $event)"
             (toggleCollapse)="onSectionToggleCollapse(section.id)"
@@ -123,7 +125,8 @@
             (documentClick)="onDocumentClick($event)"
             (documentDelete)="onDocumentDelete($event)"
             (databaseClick)="databaseClick.emit($event)"
-            (drop)="onDrop($event, section.id)">
+            (drop)="onDrop($event, section.id)"
+            (documentAdd)="onDocumentAddToSection(section.id, $event)">
           </app-document-section-card>
         </div>
         }

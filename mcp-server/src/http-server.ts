@@ -41,6 +41,20 @@ const httpTransports = new Map<string, StreamableHTTPServerTransport>();
 // Store session to user mapping for request context
 const sessionUserMap = new Map<string, AuthenticatedUser>();
 
+// Capability counts resolved at startup
+let capabilityCounts = { tools: 0, resources: 0, prompts: 0 };
+
+function resolveCapabilityCounts(): void {
+  const server = createMcpServer();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const internal = server as any;
+  capabilityCounts = {
+    tools: Object.keys((internal._registeredTools as object) ?? {}).length,
+    resources: Object.keys((internal._registeredResources as object) ?? {}).length,
+    prompts: Object.keys((internal._registeredPrompts as object) ?? {}).length,
+  };
+}
+
 /**
  * Parsed set of trusted proxy IPs (from TRUSTED_PROXIES env)
  */
@@ -300,11 +314,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
           register: '/register',
         },
       },
-      capabilities: {
-        tools: 71,
-        resources: 5,
-        prompts: 9,
-      },
+      capabilities: capabilityCounts,
     }));
     return;
   }
@@ -516,6 +526,9 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
  */
 async function main() {
   logger.info({ version: MCP_VERSION }, 'Starting Kodo MCP HTTP Server');
+
+  // Resolve capability counts once at startup
+  resolveCapabilityCounts();
 
   // Test Supabase connection
   const isConnected = await testConnection();

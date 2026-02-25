@@ -147,6 +147,7 @@
   transition: opacity 0.2s ease;
 }
 
+.add-btn,
 .edit-btn,
 .delete-btn {
   width: 28px !important;
@@ -168,6 +169,14 @@
     height: 18px;
     margin: 0 !important;
     padding: 0 !important;
+  }
+}
+
+.add-btn {
+  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+
+  &:hover {
+    color: var(--section-color, #6366f1);
   }
 }
 

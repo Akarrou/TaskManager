@@ -41,6 +41,13 @@
     <div class="section-actions">
       <button
         mat-icon-button
+        class="add-btn"
+        (click)="onAddDocument()"
+        matTooltip="Ajouter un document">
+        <mat-icon>add</mat-icon>
+      </button>
+      <button
+        mat-icon-button
         class="edit-btn"
         (click)="onEdit()"
         matTooltip="Modifier la section">

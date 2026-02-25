@@ -19,6 +19,7 @@ import { Document, DocumentStorageFile } from '../../services/document.service';
 import { DocumentDatabase } from '../../models/database.model';
 import { SectionEditDialogComponent, SectionEditDialogResult } from '../section-edit-dialog/section-edit-dialog.component';
 import { DocumentCardComponent } from '../document-card/document-card.component';
+import { DocumentPickerDialogComponent, DocumentPickerDialogData } from '../document-picker-dialog/document-picker-dialog.component';
 
 @Component({
   selector: 'app-document-section-card',
@@ -45,6 +46,8 @@ export class DocumentSectionCardComponent {
   @Input() databases: Map<string, DocumentDatabase[]> = new Map();
   @Input() dropListId = '';
   @Input() connectedDropListIds: string[] = [];
+  @Input() availableDocuments: Document[] = [];
+  @Input() tabDocumentIds: Set<string> = new Set();
 
   @Output() titleChange = new EventEmitter<string>();
   @Output() sectionUpdate = new EventEmitter<UpdateDocumentSection>();
@@ -54,6 +57,7 @@ export class DocumentSectionCardComponent {
   @Output() documentDelete = new EventEmitter<{ event: Event; documentId: string }>();
   @Output() databaseClick = new EventEmitter<string>();
   @Output() drop = new EventEmitter<CdkDragDrop<DocumentTabItem[]>>();
+  @Output() documentAdd = new EventEmitter<string>();
 
   get itemCount(): number {
     return this.items.length;
@@ -178,6 +182,22 @@ export class DocumentSectionCardComponent {
         if (Object.keys(updates).length > 0) {
           this.sectionUpdate.emit(updates);
         }
+      }
+    });
+  }
+
+  onAddDocument(): void {
+    const dialogRef = this.dialog.open(DocumentPickerDialogComponent, {
+      width: '500px',
+      data: {
+        documents: this.availableDocuments,
+        excludeDocumentIds: this.tabDocumentIds,
+      } satisfies DocumentPickerDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((documentId: string | null) => {
+      if (documentId) {
+        this.documentAdd.emit(documentId);
       }
     });
   }
