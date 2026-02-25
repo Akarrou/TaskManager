@@ -3,7 +3,7 @@ import { signalStore, withState, withMethods, withComputed, patchState } from '@
 import { withEntities, setAllEntities, addEntity, upsertEntity, removeEntity } from '@ngrx/signals/entities';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { tapResponse } from '@ngrx/operators';
-import { pipe, concatMap, switchMap, tap, catchError, of } from 'rxjs';
+import { pipe, concatMap, switchMap, tap } from 'rxjs';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DocumentService, Document } from '../services/document.service';

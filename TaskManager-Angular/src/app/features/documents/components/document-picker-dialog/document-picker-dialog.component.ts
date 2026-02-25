@@ -1,12 +1,10 @@
 import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { debounceTime, Subject, switchMap, finalize, of } from 'rxjs';
+import { debounceTime, Subject, switchMap, finalize } from 'rxjs';
 
 import { Document } from '../../services/document.service';
 import { GlobalSearchService } from '../../../../core/services/global-search.service';
@@ -23,8 +21,6 @@ export interface DocumentPickerDialogData {
   selector: 'app-document-picker-dialog',
   standalone: true,
   imports: [
-    CommonModule,
-    FormsModule,
     MatDialogModule,
     MatIconModule,
     MatButtonModule,
@@ -53,8 +49,9 @@ export class DocumentPickerDialogComponent {
   hasSelection = computed(() => this.selectedDocument() !== null || this.selectedResult() !== null);
   isSearchMode = computed(() => this.searchQuery().trim().length >= 2 && this.searchResults() !== null);
 
-  private availableDocuments: Document[];
-  private searchSubject = new Subject<string>();
+  private readonly availableDocuments: Document[];
+  private readonly searchSubject = new Subject<string>();
+  private readonly emptyResponse: SearchResponse = { documents: [], tasks: [], events: [], total: 0 };
 
   constructor() {
     this.availableDocuments = this.data.documents.filter(
@@ -82,10 +79,15 @@ export class DocumentPickerDialogComponent {
         this.loading.set(false);
       },
       error: () => {
-        this.searchResults.set({ documents: [], tasks: [], events: [], total: 0 });
+        this.searchResults.set(this.emptyResponse);
         this.loading.set(false);
       },
     });
+  }
+
+  isResultSelected(result: SearchResult): boolean {
+    const selected = this.selectedResult();
+    return selected?.id === result.id && selected?.type === result.type;
   }
 
   onSearchInput(event: Event): void {

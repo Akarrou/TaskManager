@@ -49,7 +49,7 @@
           @for (result of searchResults()!.documents; track result.id) {
             <div
               class="picker-result-item"
-              [class.is-selected]="selectedResult()?.id === result.id && selectedResult()?.type === 'document'"
+              [class.is-selected]="isResultSelected(result)"
               (click)="selectResult(result)"
             >
               <div class="picker-result-icon icon-document">
@@ -61,7 +61,7 @@
                   <span class="picker-result-subtitle">{{ result.subtitle }}</span>
                 }
               </div>
-              @if (selectedResult()?.id === result.id && selectedResult()?.type === 'document') {
+              @if (isResultSelected(result)) {
                 <mat-icon class="picker-check-icon">check_circle</mat-icon>
               }
             </div>
@@ -74,7 +74,7 @@
           @for (result of searchResults()!.tasks; track result.id) {
             <div
               class="picker-result-item"
-              [class.is-selected]="selectedResult()?.id === result.id && selectedResult()?.type === 'task'"
+              [class.is-selected]="isResultSelected(result)"
               (click)="selectResult(result)"
             >
               <div class="picker-result-icon icon-task">
@@ -86,7 +86,7 @@
                   <span class="picker-result-subtitle picker-status">{{ result.subtitle }}</span>
                 }
               </div>
-              @if (selectedResult()?.id === result.id && selectedResult()?.type === 'task') {
+              @if (isResultSelected(result)) {
                 <mat-icon class="picker-check-icon">check_circle</mat-icon>
               }
             </div>
@@ -99,7 +99,7 @@
           @for (result of searchResults()!.events; track result.id) {
             <div
               class="picker-result-item"
-              [class.is-selected]="selectedResult()?.id === result.id && selectedResult()?.type === 'event'"
+              [class.is-selected]="isResultSelected(result)"
               (click)="selectResult(result)"
             >
               <div class="picker-result-icon icon-event">
@@ -111,7 +111,7 @@
                   <span class="picker-result-subtitle">{{ result.subtitle }}</span>
                 }
               </div>
-              @if (selectedResult()?.id === result.id && selectedResult()?.type === 'event') {
+              @if (isResultSelected(result)) {
                 <mat-icon class="picker-check-icon">check_circle</mat-icon>
               }
             </div>
