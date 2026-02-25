@@ -73,12 +73,13 @@ export class RealtimeService {
 
     if (this.channel) return;
 
-    this.channel = this.supabaseService.client
+    const channel = this.supabaseService.client
       .channel('app-realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public' },
         (payload) => {
+          if (this.channel !== channel) return;
           if (!payload.table) return;
           const newRecord = payload.new as Record<string, unknown> | undefined;
           const oldRecord = payload.old as Record<string, unknown> | undefined;
@@ -89,15 +90,20 @@ export class RealtimeService {
             recordId,
           });
         },
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          this.reconnectAttempts = 0;
-        }
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          this.handleError();
-        }
-      });
+      );
+
+    this.channel = channel;
+
+    channel.subscribe((status) => {
+      if (this.channel !== channel) return;
+
+      if (status === 'SUBSCRIBED') {
+        this.reconnectAttempts = 0;
+      }
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        this.handleError();
+      }
+    });
   }
 
   private disconnect(): void {
@@ -107,15 +113,16 @@ export class RealtimeService {
     }
 
     this.reconnectAttempts = 0;
-
-    if (this.channel) {
-      this.supabaseService.client.removeChannel(this.channel);
-      this.channel = null;
-    }
+    this.removeCurrentChannel();
   }
 
   private handleError(): void {
-    this.disconnect();
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+
+    this.removeCurrentChannel();
 
     if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) return;
 
@@ -130,5 +137,12 @@ export class RealtimeService {
         this.connect();
       }
     }, delay);
+  }
+
+  private removeCurrentChannel(): void {
+    if (!this.channel) return;
+    const ch = this.channel;
+    this.channel = null;
+    this.supabaseService.client.removeChannel(ch);
   }
 }

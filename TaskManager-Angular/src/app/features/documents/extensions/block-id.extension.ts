@@ -2,7 +2,7 @@ import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 
-// Type for ProseMirror Node
+// Lightweight type for ProseMirror Node (avoids importing from @tiptap/pm/model)
 interface PMNode {
   type: { name: string };
   attrs: Record<string, unknown>;
@@ -11,14 +11,10 @@ interface PMNode {
 }
 
 /**
- * Generate a unique block ID (UUID v4)
+ * Generate a unique block ID using crypto.randomUUID()
  */
 function generateBlockId(): string {
-  return 'block-' + 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
+  return 'block-' + crypto.randomUUID();
 }
 
 /**
@@ -49,7 +45,8 @@ declare module '@tiptap/core' {
 }
 
 /**
- * List of block-level node types that should have blockId attribute
+ * All block-level node types that should have a blockId attribute.
+ * This must cover every block type registered in the editor.
  */
 const BLOCK_TYPES = [
   'paragraph',
@@ -75,6 +72,9 @@ const BLOCK_TYPES = [
   'accordionItem',
   'accordionTitle',
   'accordionContent',
+  'spreadsheet',
+  'mindmap',
+  'taskMention',
 ];
 
 export interface BlockIdOptions {
@@ -84,7 +84,8 @@ export interface BlockIdOptions {
   types: string[];
 }
 
-// Plugin key for comment decorations
+// Plugin keys
+const blockIdAssignmentKey = new PluginKey('blockIdAssignment');
 const commentDecorationsKey = new PluginKey('commentDecorations');
 
 // Store for comment data (accessible from outside)
@@ -99,7 +100,8 @@ let currentBlockCommentCounts: Map<string, number> = new Map();
  * even when document structure changes.
  *
  * Features:
- * - Lazy ID assignment: IDs are only generated when needed (e.g., adding a comment)
+ * - Mandatory at creation: IDs are automatically assigned to every new block
+ * - appendTransaction plugin ensures no block is ever missing an ID (also handles paste dedup)
  * - Stable persistence: IDs are stored in document JSON and never change
  * - Global attributes: Works with all block-level node types
  * - Comment decorations: Adds visual indicators for blocks with comments
@@ -140,7 +142,7 @@ export const BlockIdExtension = Extension.create<BlockIdOptions>({
     return {
       /**
        * Ensure the block at current selection has a blockId
-       * If no blockId exists, generates and assigns one
+       * With auto-assignment, blocks should always have an ID — this is a safety fallback
        */
       ensureBlockId:
         () =>
@@ -254,8 +256,54 @@ export const BlockIdExtension = Extension.create<BlockIdOptions>({
 
   addProseMirrorPlugins() {
     const blockTypes = this.options.types;
+    const blockTypeSet = new Set(blockTypes);
 
     return [
+      // 1. blockIdAssignment — appendTransaction to auto-assign IDs and deduplicate on paste
+      new Plugin({
+        key: blockIdAssignmentKey,
+        appendTransaction(transactions, _oldState, newState) {
+          const docChanged = transactions.some(tr => tr.docChanged);
+          if (!docChanged) return null;
+
+          const tr = newState.tr;
+          let modified = false;
+
+          // Track seen IDs to detect duplicates (from paste)
+          const seenIds = new Set<string>();
+          const positions: Array<{ pos: number; node: PMNode }> = [];
+
+          newState.doc.descendants((node: PMNode, pos: number) => {
+            if (blockTypeSet.has(node.type.name)) {
+              const blockId = node.attrs['blockId'] as string | null;
+              if (!blockId || seenIds.has(blockId)) {
+                // Missing ID or duplicate (from paste) → needs a new ID
+                positions.push({ pos, node });
+              } else {
+                seenIds.add(blockId);
+              }
+            }
+            return true;
+          });
+
+          // Apply in reverse order to avoid position shifts
+          for (let i = positions.length - 1; i >= 0; i--) {
+            const { pos, node } = positions[i];
+            tr.setNodeMarkup(pos, undefined, {
+              ...node.attrs,
+              blockId: generateBlockId(),
+            });
+            modified = true;
+          }
+
+          if (!modified) return null;
+
+          tr.setMeta('addToHistory', false);
+          return tr;
+        },
+      }),
+
+      // 2. commentDecorations — plugin for comment badges
       new Plugin({
         key: commentDecorationsKey,
         state: {
@@ -398,12 +446,12 @@ export function getBlockIdAtPosition(
 }
 
 /**
- * Helper function to ensure a block at position has an ID and return it
+ * Helper function to get the blockId of a block at a given position.
+ * With auto-assignment, blocks should always have an ID — this simply reads it.
  */
 export function ensureBlockIdAtPosition(
   editor: {
-    state: { doc: { resolve: (pos: number) => { depth: number; node: (depth: number) => { type: { name: string }; attrs: Record<string, unknown> }; before: (depth: number) => number } } };
-    view: { dispatch: (tr: unknown) => void };
+    state: { doc: { resolve: (pos: number) => { depth: number; node: (depth: number) => { type: { name: string }; attrs: Record<string, unknown> } } } };
   },
   pos: number,
   blockTypes: string[] = BLOCK_TYPES
@@ -414,24 +462,7 @@ export function ensureBlockIdAtPosition(
   while (depth > 0) {
     const node = $pos.node(depth);
     if (blockTypes.includes(node.type.name)) {
-      const existingId = node.attrs['blockId'] as string;
-      if (existingId) {
-        return existingId;
-      }
-
-      // Generate new ID
-      const newBlockId = generateBlockId();
-      const nodePos = $pos.before(depth);
-
-      // Create transaction to set the blockId
-      const tr = (editor as unknown as { state: { tr: { setNodeMarkup: (pos: number, type: undefined, attrs: Record<string, unknown>) => unknown } } }).state.tr;
-      tr.setNodeMarkup(nodePos, undefined, {
-        ...node.attrs,
-        blockId: newBlockId,
-      });
-      editor.view.dispatch(tr as unknown);
-
-      return newBlockId;
+      return (node.attrs['blockId'] as string) || null;
     }
     depth--;
   }

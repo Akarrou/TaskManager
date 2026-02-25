@@ -37,6 +37,30 @@ export interface TipTapNode {
     }>;
     attrs?: Record<string, unknown>;
 }
+/** Kodo Content JSON block types */
+interface KodoBlock {
+    type: string;
+    text?: string;
+    level?: number;
+    items?: string[] | Array<{
+        text: string;
+        checked?: boolean;
+    }> | AccordionItemDef[];
+    language?: string;
+    headers?: string[];
+    rows?: string[][];
+    url?: string;
+    alt?: string;
+    columns?: Array<string | KodoBlock[]>;
+}
+/** Accordion item definition for Kodo Content JSON */
+export interface AccordionItemDef {
+    title: string;
+    content: string | KodoBlock[];
+    icon?: string;
+    iconColor?: string;
+    titleColor?: string;
+}
 /**
  * Normalize any content value into a valid TipTap doc node.
  *
@@ -49,4 +73,19 @@ export interface TipTapNode {
  * 6. JSON string → parse then re-normalize
  */
 export declare function normalizeContent(content: unknown): TipTapNode;
+/**
+ * Build a single accordionItem TipTap node from a simplified definition.
+ * Exported for use by the edit_accordion tool.
+ */
+export declare function buildAccordionItem(item: AccordionItemDef): TipTapNode;
+/**
+ * Generate a block ID with a real UUID.
+ */
+export declare function generateBlockId(): string;
+/**
+ * Recursively assign `blockId` to every eligible node that doesn't already have one.
+ * Idempotent: existing IDs are never replaced.
+ */
+export declare function assignBlockIds(node: TipTapNode): TipTapNode;
+export {};
 //# sourceMappingURL=normalize-content.d.ts.map

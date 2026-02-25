@@ -41,6 +41,23 @@ export function getComplexBlockTypes(content) {
     return [...types];
 }
 // =============================================================================
+// Block ID lookup
+// =============================================================================
+/**
+ * Find the top-level block index by its blockId attribute.
+ * Returns null if no block with that ID is found.
+ */
+export function findBlockIndexByBlockId(doc, blockId) {
+    if (!doc.content)
+        return null;
+    for (let i = 0; i < doc.content.length; i++) {
+        if (doc.content[i].attrs?.blockId === blockId) {
+            return i;
+        }
+    }
+    return null;
+}
+// =============================================================================
 // Heading search
 // =============================================================================
 /**
@@ -107,6 +124,27 @@ export function applyEditOperations(doc, operations) {
     const warnings = [];
     let workingDoc = { ...doc, content: [...(doc.content || [])] };
     let operationsApplied = 0;
+    // Pre-resolve block_id → target and end_block_id → end_target
+    for (const op of operations) {
+        if (op.block_id && op.target === undefined) {
+            const idx = findBlockIndexByBlockId(workingDoc, op.block_id);
+            if (idx !== null) {
+                op.target = idx;
+            }
+            else {
+                warnings.push(`block_id "${op.block_id}" not found in document`);
+            }
+        }
+        if (op.end_block_id && op.end_target === undefined) {
+            const idx = findBlockIndexByBlockId(workingDoc, op.end_block_id);
+            if (idx !== null) {
+                op.end_target = idx;
+            }
+            else {
+                warnings.push(`end_block_id "${op.end_block_id}" not found in document`);
+            }
+        }
+    }
     // Separate append operations (always last, no index needed)
     const appendOps = [];
     const indexedOps = [];
@@ -225,6 +263,11 @@ export function getDocumentStructure(content) {
             type: mapTiptapTypeToReadable(node.type),
             preview: extractPreview(node),
         };
+        // Include block_id for precise targeting
+        const blockId = node.attrs?.blockId;
+        if (blockId) {
+            info.block_id = blockId;
+        }
         if (node.attrs) {
             const relevantAttrs = {};
             if (node.attrs.level !== undefined)

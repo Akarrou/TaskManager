@@ -71,10 +71,10 @@ export function registerCommentTools(server) {
     // add_comment - Add a comment to a document block
     // =========================================================================
     server.registerTool('add_comment', {
-        description: `Add a comment to a specific block in a document. Comments enable inline discussions on document content. The block_id must be a valid block ID from the document's content (use get_document with format "json" to find block IDs). Returns the created comment with its generated ID. Comments are timestamped and attributed to the specified user. Related tools: list_comments, delete_comment, get_blocks_with_comments.`,
+        description: `Add a comment to a specific block in a document. Comments enable inline discussions on document content. The block_id must be a valid block ID from the document's content (use get_document with format "structure" to find block_ids). Returns the created comment with its generated ID. Comments are timestamped and attributed to the specified user. Related tools: list_comments, delete_comment, get_blocks_with_comments.`,
         inputSchema: {
             document_id: z.string().uuid().describe('The document UUID where the comment should be added.'),
-            block_id: z.string().describe('The block ID to attach the comment to. Get block IDs from get_blocks_with_comments or get_document with format "json".'),
+            block_id: z.string().describe('The block ID to attach the comment to. Get block IDs from get_blocks_with_comments or get_document with format "structure".'),
             content: z.string().min(1).describe('The comment text content.'),
             user_id: z.string().uuid().describe('The UUID of the user posting the comment.'),
             user_email: z.string().email().optional().describe('User email for display. Optional, shown alongside comment.'),

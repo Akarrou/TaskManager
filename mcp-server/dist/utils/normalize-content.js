@@ -27,6 +27,7 @@
  * - Markdown strings (converted via markdown-to-tiptap)
  * - Plain text strings (wrapped in paragraphs)
  */
+import { randomUUID } from 'crypto';
 import { convertMarkdownToTiptap } from './markdown-to-tiptap.js';
 import { parseInlineMarkdown } from './markdown-to-tiptap.js';
 // Valid TipTap block types (for passthrough detection)
@@ -58,24 +59,30 @@ const KODO_BLOCK_TYPES = new Set([
  * 6. JSON string → parse then re-normalize
  */
 export function normalizeContent(content) {
+    let result;
     // 1. Null/undefined → empty doc
     if (content === null || content === undefined) {
-        return emptyDoc();
+        result = emptyDoc();
     }
-    // 2. String → could be markdown, plain text, or JSON string
-    if (typeof content === 'string') {
-        return normalizeStringContent(content);
+    else if (typeof content === 'string') {
+        // 2. String → could be markdown, plain text, or JSON string
+        result = normalizeStringContent(content);
     }
-    // 3. Array → Kodo Content JSON or TipTap nodes
-    if (Array.isArray(content)) {
-        return normalizeArray(content);
+    else if (Array.isArray(content)) {
+        // 3. Array → Kodo Content JSON or TipTap nodes
+        result = normalizeArray(content);
     }
-    // 4. Object
-    if (typeof content === 'object') {
-        return normalizeObject(content);
+    else if (typeof content === 'object') {
+        // 4. Object
+        result = normalizeObject(content);
     }
-    // 5. Fallback: convert to string
-    return wrapTextInDoc(String(content));
+    else {
+        // 5. Fallback: convert to string
+        result = wrapTextInDoc(String(content));
+    }
+    // Assign blockIds to all eligible nodes
+    assignBlockIds(result);
+    return result;
 }
 // =============================================================================
 // Array handler — detect Kodo JSON vs TipTap nodes
@@ -347,6 +354,47 @@ function convertAccordion(items) {
         content: accordionItems,
     };
 }
+/**
+ * Build a single accordionItem TipTap node from a simplified definition.
+ * Exported for use by the edit_accordion tool.
+ */
+export function buildAccordionItem(item) {
+    const titleNode = {
+        type: 'accordionTitle',
+        attrs: {
+            icon: item.icon || 'description',
+            iconColor: item.iconColor || '#3b82f6',
+            titleColor: item.titleColor || '#1f2937',
+            collapsed: false,
+        },
+        content: parseInline(item.title || 'Section'),
+    };
+    let contentBlocks;
+    if (typeof item.content === 'string') {
+        contentBlocks = item.content.trim()
+            ? [{ type: 'paragraph', content: parseInline(item.content) }]
+            : [{ type: 'paragraph' }];
+    }
+    else if (Array.isArray(item.content) && item.content.length > 0) {
+        contentBlocks = item.content
+            .map((block) => convertKodoBlock(block))
+            .filter((n) => n !== null);
+        if (contentBlocks.length === 0) {
+            contentBlocks = [{ type: 'paragraph' }];
+        }
+    }
+    else {
+        contentBlocks = [{ type: 'paragraph' }];
+    }
+    const contentNode = {
+        type: 'accordionContent',
+        content: contentBlocks,
+    };
+    return {
+        type: 'accordionItem',
+        content: [titleNode, contentNode],
+    };
+}
 // =============================================================================
 // Table converter
 // =============================================================================
@@ -400,6 +448,48 @@ function validateTiptapNodes(nodes) {
         result.push(node);
     }
     return result.length > 0 ? result : [{ type: 'paragraph' }];
+}
+// =============================================================================
+// Helpers
+// =============================================================================
+// =============================================================================
+// Block ID assignment
+// =============================================================================
+/** Types of blocks eligible for automatic blockId assignment */
+const BLOCKID_ELIGIBLE_TYPES = new Set([
+    'paragraph', 'heading', 'blockquote', 'codeBlock',
+    'bulletList', 'orderedList', 'taskList', 'listItem', 'taskItem',
+    'table', 'tableRow', 'tableCell', 'tableHeader',
+    'horizontalRule', 'image', 'columns', 'column',
+    'databaseTable', 'taskSection',
+    'accordionGroup', 'accordionItem', 'accordionTitle', 'accordionContent',
+    'spreadsheet', 'mindmap', 'taskMention',
+]);
+/**
+ * Generate a block ID with a real UUID.
+ */
+export function generateBlockId() {
+    return `block-${randomUUID()}`;
+}
+/**
+ * Recursively assign `blockId` to every eligible node that doesn't already have one.
+ * Idempotent: existing IDs are never replaced.
+ */
+export function assignBlockIds(node) {
+    if (BLOCKID_ELIGIBLE_TYPES.has(node.type)) {
+        if (!node.attrs) {
+            node.attrs = {};
+        }
+        if (!node.attrs.blockId) {
+            node.attrs.blockId = generateBlockId();
+        }
+    }
+    if (node.content) {
+        for (const child of node.content) {
+            assignBlockIds(child);
+        }
+    }
+    return node;
 }
 // =============================================================================
 // Helpers

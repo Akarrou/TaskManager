@@ -2150,33 +2150,13 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     const { selection } = this.editor.state;
     const { $from } = selection;
 
-    const blockTypes = [
-      'paragraph', 'heading', 'blockquote', 'codeBlock',
-      'bulletList', 'orderedList', 'taskList', 'listItem', 'taskItem',
-      'table', 'horizontalRule', 'image', 'columns', 'column',
-      'databaseTable', 'taskSection'
-    ];
-
+    // With auto-assignment (appendTransaction plugin), blocks should always have an ID.
+    // Simply read the existing blockId by walking up the node tree.
     let depth = $from.depth;
     while (depth > 0) {
       const node = $from.node(depth);
-
-      if (blockTypes.includes(node.type.name)) {
-        let blockId = node.attrs['blockId'];
-
-        if (!blockId) {
-          // Generate and assign new blockId
-          blockId = 'block-' + crypto.randomUUID();
-          const pos = $from.before(depth);
-
-          this.editor.view.dispatch(
-            this.editor.state.tr.setNodeMarkup(pos, undefined, {
-              ...node.attrs,
-              blockId: blockId,
-            })
-          );
-        }
-
+      const blockId = node.attrs['blockId'];
+      if (blockId) {
         return blockId;
       }
       depth--;

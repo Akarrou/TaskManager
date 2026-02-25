@@ -5,12 +5,14 @@ import { getCurrentUserId } from '../services/user-auth.js';
 import { saveSnapshot } from '../services/snapshot.js';
 import { convertToHtml, convertToStyledHtml } from '../utils/tiptap-to-html.js';
 import { convertToMarkdown } from '../utils/tiptap-to-markdown.js';
-import { normalizeContent, type TipTapNode } from '../utils/normalize-content.js';
+import { normalizeContent, buildAccordionItem, assignBlockIds, type TipTapNode } from '../utils/normalize-content.js';
+import { parseInlineMarkdown } from '../utils/markdown-to-tiptap.js';
 import {
   getDocumentStructure,
   hasComplexBlocks,
   getComplexBlockTypes,
   applyEditOperations,
+  findBlockIndexByBlockId,
   type EditOperation,
 } from '../utils/document-operations.js';
 
@@ -93,14 +95,14 @@ export function registerDocumentTools(server: McpServer): void {
       description: `Get a document's full details including its rich-text content. Returns the complete document object with: id, title, content, parent_id, project_id, database_id (if linked to a database row), and timestamps.
 
 Available formats via the "format" parameter:
-- "markdown" (default): human-readable Markdown + block structure map (indices, types, previews). Includes everything needed to read AND edit a document in a single call.
-- "structure": block structure map only (no content) — lightweight alternative when you only need block indices.
+- "markdown" (default): human-readable Markdown + block structure map (indices, types, previews, block_ids). Includes everything needed to read AND edit a document in a single call.
+- "structure": block structure map only (no content) — lightweight alternative when you only need block indices and block_ids.
 - "html": HTML fragment, useful for rendering or embedding.
 - "styled_html": full standalone HTML document with professional CSS styles and print layout — use this when the user needs to export, print, or generate a PDF.
 
 When the user asks for HTML, export, or PDF, use format="styled_html". Use list_documents first to find document IDs.
 
-EDITING DOCUMENTS: To modify an existing document, call get_document (markdown format gives you both content and structure), then use \`edit_document\` to apply targeted operations (insert, replace, remove, append). Target blocks by heading text (e.g. "Introduction") or by numeric index from the structure map. Only use \`update_document\` to rename a document (title only) or to rewrite simple documents from scratch.
+EDITING DOCUMENTS: To modify an existing document, call get_document (markdown format gives you both content and structure), then use \`edit_document\` to apply targeted operations (insert, replace, remove, append). Target blocks by block_id (most precise, stable UUID), heading text (e.g. "Introduction"), or numeric index from the structure map. Only use \`update_document\` to rename a document (title only) or to rewrite simple documents from scratch.
 
 Related tools: edit_document (modify content), get_document_breadcrumb (path), list_comments (see comments).`,
       inputSchema: {
@@ -646,7 +648,7 @@ The "content" field accepts Kodo Content JSON (JSON array of blocks, see create_
     {
       description: `The PREFERRED tool for modifying existing documents. Combines structure inspection + targeted edits in a single call, preserving complex blocks (accordions, columns, databases, spreadsheets, mindmaps).
 
-Performs one or more operations on a document's blocks. Each operation targets blocks by numeric index OR by heading text (case-insensitive search).
+Performs one or more operations on a document's blocks. Each operation targets blocks by block_id (most precise), numeric index, or heading text (case-insensitive search).
 
 Operations:
 - "insert_after": Insert new blocks after the target block
@@ -656,14 +658,15 @@ Operations:
 - "append": Add blocks at the end of the document (no target needed)
 
 Target can be:
+- A block_id string (e.g. "block-550e8400-...") — most precise, stable across edits
 - A number: block index (use get_document with format="structure" to find indices)
 - A string: heading text (case-insensitive search, e.g. "Introduction")
 
-Ranges: target and end_target are both INCLUSIVE. Example: target=3, end_target=5 → blocks 3, 4, 5.
+Ranges: target and end_target are both INCLUSIVE. Example: target=3, end_target=5 → blocks 3, 4, 5. You can also use block_id/end_block_id for range boundaries.
 
 Examples:
-1. Insert after a heading:
-   { "action": "insert_after", "target": "Introduction", "content": [{ "type": "paragraph", "text": "New paragraph" }] }
+1. Insert after a block by block_id:
+   { "action": "insert_after", "block_id": "block-550e8400-e29b-41d4-a716-446655440000", "content": [{ "type": "paragraph", "text": "New paragraph" }] }
 
 2. Replace blocks 3-5 by index:
    { "action": "replace", "target": 3, "end_target": 5, "content": [{ "type": "heading", "level": 2, "text": "Updated" }] }
@@ -685,8 +688,10 @@ WHEN TO USE WHICH TOOL:
         title: z.string().min(1).max(500).optional().describe('Optional new title. Leave undefined to keep current title.'),
         operations: z.array(z.object({
           action: z.enum(['insert_after', 'insert_before', 'replace', 'remove', 'append']).describe('The edit action to perform.'),
-          target: z.union([z.number().int(), z.string()]).optional().describe('Block index (number) or heading text (string) to target. Not needed for "append".'),
+          target: z.union([z.number().int(), z.string()]).optional().describe('Block index (number) or heading text (string) to target. Not needed for "append". Prefer block_id for precision.'),
           end_target: z.union([z.number().int(), z.string()]).optional().describe('End of range (inclusive). For multi-block replace/remove. Can be index or heading text.'),
+          block_id: z.string().optional().describe('Target block by its stable UUID (e.g. "block-550e8400-..."). Most precise targeting method. Takes priority over target if both are provided.'),
+          end_block_id: z.string().optional().describe('End of range by block_id. Takes priority over end_target if both are provided.'),
           content: z.any().optional().describe('New content blocks (Kodo Content JSON array or markdown string). Required for insert_after, insert_before, replace, append.'),
         })).min(1).describe('List of edit operations to apply in order.'),
       },
@@ -720,11 +725,13 @@ WHEN TO USE WHICH TOOL:
         const structureBefore = getDocumentStructure(doc);
 
         // Normalize content in each operation
-        const normalizedOps: EditOperation[] = operations.map((op: { action: string; target?: number | string; end_target?: number | string; content?: unknown }) => {
+        const normalizedOps: EditOperation[] = operations.map((op: { action: string; target?: number | string; end_target?: number | string; block_id?: string; end_block_id?: string; content?: unknown }) => {
           const editOp: EditOperation = {
             action: op.action as EditOperation['action'],
             target: op.target,
             end_target: op.end_target,
+            block_id: op.block_id,
+            end_block_id: op.end_block_id,
           };
 
           if (op.content !== undefined && op.content !== null) {
@@ -737,6 +744,9 @@ WHEN TO USE WHICH TOOL:
 
         // Apply operations
         const result = applyEditOperations(doc, normalizedOps);
+
+        // Assign blockIds to any newly inserted blocks
+        assignBlockIds(result.doc);
 
         if (result.operationsApplied === 0) {
           return {
@@ -793,6 +803,307 @@ WHEN TO USE WHICH TOOL:
 
         if (result.warnings.length > 0) {
           response.warnings = result.warnings;
+        }
+
+        return {
+          content: [{ type: 'text', text: JSON.stringify(response, null, 2) }],
+        };
+      } catch (err) {
+        return {
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // =========================================================================
+  // edit_accordion - Add, update, or remove items in an existing accordion
+  // =========================================================================
+  server.registerTool(
+    'edit_accordion',
+    {
+      description: `Add, update, or remove items in an existing accordion (accordionGroup) inside a document.
+
+Targets an accordion by its block_id (preferred) or block index in the document structure (use get_document with format="structure" to find it — accordions appear as type "accordion" with their block_id).
+
+Operations (applied in order):
+
+1. **"add"** — Insert new items into the accordion.
+   - "position": insertion index (0 = first, default: append at end)
+   - "items": array of { title, content, icon?, iconColor?, titleColor? }
+
+2. **"update"** — Modify an existing item (title, content, style, or any combination).
+   - "item_index": which item to update (0-based)
+   - Only provided fields are changed; omitted fields keep their current value.
+   - "title", "content", "icon", "iconColor", "titleColor": new values
+
+3. **"remove"** — Delete one or more items from the accordion.
+   - "item_index": first item to remove (0-based)
+   - "count": how many consecutive items to remove (default: 1)
+   - If all items would be removed, the entire accordion block is replaced by a paragraph.
+
+IMPORTANT: Operations are applied sequentially. Each operation sees the accordion state left by the previous one. If you remove item 0, the former item 1 becomes item 0 for subsequent operations. Plan your item_index values accordingly.
+
+Content format is the same as create_document: a plain text string or a JSON array of Kodo Content blocks. Text supports inline markdown (**bold**, *italic*, etc.).
+
+A snapshot is created before any modification.
+
+Examples:
+1. Add two items at the end:
+   { "operations": [{ "action": "add", "items": [{ "title": "New", "content": "Text" }, { "title": "Other", "content": "More text" }] }] }
+
+2. Update item 1's title and icon:
+   { "operations": [{ "action": "update", "item_index": 1, "title": "Updated title", "icon": "star", "iconColor": "#f59e0b" }] }
+
+3. Remove item 0:
+   { "operations": [{ "action": "remove", "item_index": 0 }] }
+
+4. Combined — update item 0 then add a new one:
+   { "operations": [
+     { "action": "update", "item_index": 0, "content": "Rewritten content" },
+     { "action": "add", "items": [{ "title": "Extra", "content": "Added" }] }
+   ]}
+
+Related tools: edit_document (general block editing), get_document (inspect structure), create_document (accordion block format).`,
+      inputSchema: {
+        document_id: z.string().uuid().describe('The UUID of the document containing the accordion.'),
+        block_id: z.string().optional().describe('The block_id of the accordion (e.g. "block-550e8400-..."). Preferred over block_index. Use get_document with format="structure" to find it.'),
+        block_index: z.number().int().min(0).optional().describe('The top-level block index of the accordionGroup. Use get_document with format="structure" to find it. Required if block_id is not provided.'),
+        operations: z.array(z.object({
+          action: z.enum(['add', 'update', 'remove']).describe('The operation to perform.'),
+          // --- add fields ---
+          position: z.number().int().min(0).optional().describe('For "add": insertion index within the accordion (0 = first). Default: append at end.'),
+          items: z.array(z.object({
+            title: z.string().describe('Accordion item title.'),
+            content: z.any().optional().describe('Content: plain text string or JSON array of Kodo Content blocks.'),
+            icon: z.string().optional().describe('Material Icons name (default: "description").'),
+            iconColor: z.string().optional().describe('CSS color for the icon (default: "#3b82f6").'),
+            titleColor: z.string().optional().describe('CSS color for the title (default: "#1f2937").'),
+          })).optional().describe('For "add": items to insert.'),
+          // --- update fields ---
+          item_index: z.number().int().min(0).optional().describe('For "update"/"remove": the 0-based item index within the accordion.'),
+          title: z.string().optional().describe('For "update": new title (omit to keep current).'),
+          content: z.any().optional().describe('For "update": new content (omit to keep current).'),
+          icon: z.string().optional().describe('For "update": new icon name (omit to keep current).'),
+          iconColor: z.string().optional().describe('For "update": new icon color (omit to keep current).'),
+          titleColor: z.string().optional().describe('For "update": new title color (omit to keep current).'),
+          // --- remove fields ---
+          count: z.number().int().min(1).optional().describe('For "remove": number of consecutive items to remove (default: 1).'),
+        })).min(1).describe('List of operations to apply in order.'),
+      },
+      annotations: { idempotentHint: false },
+    },
+    async ({ document_id, block_id, block_index, operations }) => {
+      try {
+        const userId = getCurrentUserId();
+        const supabase = getSupabaseClient();
+
+        // Fetch current document
+        const { data: currentDoc, error: fetchError } = await supabase
+          .from('documents')
+          .select('*')
+          .eq('id', document_id)
+          .eq('user_id', userId)
+          .is('deleted_at', null)
+          .single();
+
+        if (fetchError || !currentDoc) {
+          return {
+            content: [{ type: 'text', text: 'Error: Document not found or access denied.' }],
+            isError: true,
+          };
+        }
+
+        // Parse content
+        const currentContent = (currentDoc.content || { type: 'doc', content: [] }) as TipTapNode;
+        const doc = currentContent.type === 'doc' ? currentContent : { type: 'doc' as const, content: [currentContent] };
+        const blocks = doc.content || [];
+
+        // Resolve block_id → block_index if provided
+        let resolvedBlockIndex = block_index;
+        if (block_id) {
+          const idx = findBlockIndexByBlockId(doc, block_id);
+          if (idx === null) {
+            return {
+              content: [{ type: 'text', text: `Error: block_id "${block_id}" not found in document. Use get_document with format="structure" to find valid block_ids.` }],
+              isError: true,
+            };
+          }
+          resolvedBlockIndex = idx;
+        }
+
+        if (resolvedBlockIndex === undefined) {
+          return {
+            content: [{ type: 'text', text: 'Error: Either block_id or block_index must be provided.' }],
+            isError: true,
+          };
+        }
+
+        // Validate block_index
+        if (resolvedBlockIndex >= blocks.length) {
+          return {
+            content: [{ type: 'text', text: `Error: block_index ${resolvedBlockIndex} is out of range (document has ${blocks.length} blocks). Use get_document with format="structure" to find the correct index.` }],
+            isError: true,
+          };
+        }
+
+        const targetBlock = blocks[resolvedBlockIndex];
+        if (targetBlock.type !== 'accordionGroup') {
+          const structure = getDocumentStructure(doc);
+          return {
+            content: [{ type: 'text', text: `Error: Block at index ${resolvedBlockIndex} is "${targetBlock.type}", not an accordion.\n\nDocument structure:\n${JSON.stringify(structure, null, 2)}` }],
+            isError: true,
+          };
+        }
+
+        const accordionItems = targetBlock.content || [];
+        const warnings: string[] = [];
+        let opsApplied = 0;
+        const summary: string[] = [];
+
+        // Apply operations in order
+        for (let i = 0; i < operations.length; i++) {
+          const op = operations[i];
+          const opLabel = `Op[${i}] ${op.action}`;
+
+          switch (op.action) {
+            case 'add': {
+              if (!op.items || op.items.length === 0) {
+                warnings.push(`${opLabel}: no items provided, skipped`);
+                break;
+              }
+              const newNodes: TipTapNode[] = op.items.map((item) => buildAccordionItem({
+                title: item.title,
+                content: item.content ?? '',
+                icon: item.icon,
+                iconColor: item.iconColor,
+                titleColor: item.titleColor,
+              }));
+              const insertPos = op.position !== undefined ? Math.min(op.position, accordionItems.length) : accordionItems.length;
+              accordionItems.splice(insertPos, 0, ...newNodes);
+              summary.push(`added ${newNodes.length} item(s) at position ${insertPos}`);
+              opsApplied++;
+              break;
+            }
+
+            case 'update': {
+              if (op.item_index === undefined) {
+                warnings.push(`${opLabel}: item_index is required, skipped`);
+                break;
+              }
+              if (op.item_index >= accordionItems.length) {
+                warnings.push(`${opLabel}: item_index ${op.item_index} out of range (accordion has ${accordionItems.length} items), skipped`);
+                break;
+              }
+              if (op.title === undefined && op.content === undefined && op.icon === undefined && op.iconColor === undefined && op.titleColor === undefined) {
+                warnings.push(`${opLabel}: no fields to update provided, skipped`);
+                break;
+              }
+              const existingItem = accordionItems[op.item_index];
+              const titleNode = existingItem.content?.find((n) => n.type === 'accordionTitle');
+              const contentNode = existingItem.content?.find((n) => n.type === 'accordionContent');
+
+              // Update title text
+              if (op.title !== undefined && titleNode) {
+                titleNode.content = parseInlineMarkdown(op.title);
+              }
+
+              // Update title attrs (icon, iconColor, titleColor)
+              if (titleNode) {
+                if (!titleNode.attrs) titleNode.attrs = {};
+                if (op.icon !== undefined) titleNode.attrs.icon = op.icon;
+                if (op.iconColor !== undefined) titleNode.attrs.iconColor = op.iconColor;
+                if (op.titleColor !== undefined) titleNode.attrs.titleColor = op.titleColor;
+              }
+
+              // Update content
+              if (op.content !== undefined && contentNode) {
+                const normalized = normalizeContent(op.content);
+                contentNode.content = normalized.content || [{ type: 'paragraph' }];
+              }
+
+              summary.push(`updated item ${op.item_index}`);
+              opsApplied++;
+              break;
+            }
+
+            case 'remove': {
+              if (op.item_index === undefined) {
+                warnings.push(`${opLabel}: item_index is required, skipped`);
+                break;
+              }
+              if (op.item_index >= accordionItems.length) {
+                warnings.push(`${opLabel}: item_index ${op.item_index} out of range (accordion has ${accordionItems.length} items), skipped`);
+                break;
+              }
+              const removeCount = Math.min(op.count || 1, accordionItems.length - op.item_index);
+              accordionItems.splice(op.item_index, removeCount);
+              summary.push(`removed ${removeCount} item(s) from position ${op.item_index}`);
+              opsApplied++;
+              break;
+            }
+          }
+        }
+
+        if (opsApplied === 0) {
+          return {
+            content: [{ type: 'text', text: `Error: No operations could be applied.\n\nWarnings:\n${warnings.map((w) => `- ${w}`).join('\n')}` }],
+            isError: true,
+          };
+        }
+
+        // If all items removed, replace accordion with empty paragraph
+        if (accordionItems.length === 0) {
+          blocks.splice(resolvedBlockIndex, 1, { type: 'paragraph' });
+          summary.push('accordion was empty after removals — replaced with paragraph');
+        } else {
+          targetBlock.content = accordionItems;
+        }
+
+        // Assign blockIds to newly created nodes
+        assignBlockIds(doc);
+
+        // Snapshot before saving
+        const snapshot = await saveSnapshot({
+          entityType: 'document',
+          entityId: document_id,
+          tableName: 'documents',
+          toolName: 'edit_accordion',
+          operation: 'update',
+          data: currentDoc,
+          userId,
+        });
+
+        // Save
+        const { data: updated, error: updateError } = await supabase
+          .from('documents')
+          .update({
+            content: doc,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', document_id)
+          .eq('user_id', userId)
+          .select('id, title, updated_at')
+          .single();
+
+        if (updateError) {
+          return {
+            content: [{ type: 'text', text: 'Error saving document. Please try again.' }],
+            isError: true,
+          };
+        }
+
+        const response: Record<string, unknown> = {
+          snapshot_token: snapshot.token,
+          operations_applied: opsApplied,
+          summary,
+          total_accordion_items: accordionItems.length,
+          document: updated,
+        };
+
+        if (warnings.length > 0) {
+          response.warnings = warnings;
         }
 
         return {

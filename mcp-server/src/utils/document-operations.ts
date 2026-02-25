@@ -16,6 +16,7 @@ interface BlockInfo {
   index: number;
   type: string;
   preview: string;
+  block_id?: string;
   attrs?: Record<string, unknown>;
 }
 
@@ -30,6 +31,8 @@ export interface EditOperation {
   action: 'insert_after' | 'insert_before' | 'replace' | 'remove' | 'append';
   target?: number | string;
   end_target?: number | string;
+  block_id?: string;
+  end_block_id?: string;
   content?: TipTapNode[];
 }
 
@@ -80,6 +83,24 @@ export function getComplexBlockTypes(content: unknown): string[] {
     }
   }
   return [...types];
+}
+
+// =============================================================================
+// Block ID lookup
+// =============================================================================
+
+/**
+ * Find the top-level block index by its blockId attribute.
+ * Returns null if no block with that ID is found.
+ */
+export function findBlockIndexByBlockId(doc: TipTapNode, blockId: string): number | null {
+  if (!doc.content) return null;
+  for (let i = 0; i < doc.content.length; i++) {
+    if (doc.content[i].attrs?.blockId === blockId) {
+      return i;
+    }
+  }
+  return null;
 }
 
 // =============================================================================
@@ -163,6 +184,26 @@ export function applyEditOperations(
   const warnings: string[] = [];
   let workingDoc = { ...doc, content: [...(doc.content || [])] };
   let operationsApplied = 0;
+
+  // Pre-resolve block_id → target and end_block_id → end_target
+  for (const op of operations) {
+    if (op.block_id && op.target === undefined) {
+      const idx = findBlockIndexByBlockId(workingDoc, op.block_id);
+      if (idx !== null) {
+        op.target = idx;
+      } else {
+        warnings.push(`block_id "${op.block_id}" not found in document`);
+      }
+    }
+    if (op.end_block_id && op.end_target === undefined) {
+      const idx = findBlockIndexByBlockId(workingDoc, op.end_block_id);
+      if (idx !== null) {
+        op.end_target = idx;
+      } else {
+        warnings.push(`end_block_id "${op.end_block_id}" not found in document`);
+      }
+    }
+  }
 
   // Separate append operations (always last, no index needed)
   const appendOps: EditOperation[] = [];
@@ -302,6 +343,12 @@ export function getDocumentStructure(content: unknown): DocumentStructure {
       type: mapTiptapTypeToReadable(node.type),
       preview: extractPreview(node),
     };
+
+    // Include block_id for precise targeting
+    const blockId = node.attrs?.blockId as string | undefined;
+    if (blockId) {
+      info.block_id = blockId;
+    }
 
     if (node.attrs) {
       const relevantAttrs: Record<string, unknown> = {};

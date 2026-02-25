@@ -10,6 +10,7 @@ interface BlockInfo {
     index: number;
     type: string;
     preview: string;
+    block_id?: string;
     attrs?: Record<string, unknown>;
 }
 interface DocumentStructure {
@@ -20,6 +21,8 @@ export interface EditOperation {
     action: 'insert_after' | 'insert_before' | 'replace' | 'remove' | 'append';
     target?: number | string;
     end_target?: number | string;
+    block_id?: string;
+    end_block_id?: string;
     content?: TipTapNode[];
 }
 export interface HeadingMatch {
@@ -41,6 +44,11 @@ export declare function hasComplexBlocks(content: unknown): boolean;
  * Returns the list of complex block types found in a document.
  */
 export declare function getComplexBlockTypes(content: unknown): string[];
+/**
+ * Find the top-level block index by its blockId attribute.
+ * Returns null if no block with that ID is found.
+ */
+export declare function findBlockIndexByBlockId(doc: TipTapNode, blockId: string): number | null;
 /**
  * Find headings in a document by text (case-insensitive substring match).
  */

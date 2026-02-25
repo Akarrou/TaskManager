@@ -161,28 +161,28 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
       element.setAttribute('data-is-linked', String(attrs.isLinked));
     }
 
-    // Update TipTap node via transaction
+    // Update TipTap node via transaction (preserve blockId and other global attrs)
     if (this.editor) {
       const pos = this.findNodePosition(element);
       if (pos !== null) {
-        // Apply the transaction synchronously
-        const success = this.editor.commands.command(({ tr }) => {
-          tr.setNodeMarkup(pos, undefined, attrs);
-          return true;
-        });
+        const node = this.editor.state.doc.nodeAt(pos);
+        if (!node) return;
 
-        if (!success) {
+        // Merge: keep existing attrs (like blockId) and override with new database attrs
+        const mergedAttrs = { ...node.attrs, ...attrs };
+
+        // Skip if nothing actually changed (deep compare)
+        if (JSON.stringify(node.attrs) === JSON.stringify(mergedAttrs)) {
           return;
         }
-      } else {
-        console.error('❌ Could not find node position for element');
+
+        this.editor.commands.command(({ tr }) => {
+          tr.setNodeMarkup(pos, undefined, mergedAttrs);
+          return true;
+        });
       }
-    } else {
-      console.warn('⚠️ Editor not provided - using fallback method');
-      // Fallback: use callback if provided
-      if (this.onDataChange) {
-        this.onDataChange(element, attrs);
-      }
+    } else if (this.onDataChange) {
+      this.onDataChange(element, attrs);
     }
   }
 
@@ -259,11 +259,11 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
    * Find the position of a TipTap node from a DOM element
    */
   private findNodePosition(element: HTMLElement): number | null {
-    if (!this.editor) return null;
-
-    const { view, state } = this.editor;
+    if (!this.editor || this.editor.isDestroyed) return null;
 
     try {
+      const { view, state } = this.editor;
+
       // Get position at the start of the DOM element
       let pos = view.posAtDOM(element, 0);
 
@@ -292,7 +292,6 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
       console.warn('Could not find databaseTable node at position', pos);
       return pos; // Return the position anyway, let the delete command handle it
     } catch (error) {
-      console.error('Failed to find node position:', error);
       return null;
     }
   }
@@ -320,8 +319,7 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
       });
 
       if (shouldRender) {
-        // Small delay to ensure DOM is stable
-        setTimeout(() => this.renderDatabaseTables(), 0);
+        this.renderDatabaseTables();
       }
     });
 

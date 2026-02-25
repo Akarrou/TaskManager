@@ -28,6 +28,7 @@
  * - Plain text strings (wrapped in paragraphs)
  */
 
+import { randomUUID } from 'crypto';
 import { convertMarkdownToTiptap } from './markdown-to-tiptap.js';
 import { parseInlineMarkdown } from './markdown-to-tiptap.js';
 
@@ -58,7 +59,7 @@ interface KodoBlock {
 }
 
 /** Accordion item definition for Kodo Content JSON */
-interface AccordionItemDef {
+export interface AccordionItemDef {
   title: string;
   content: string | KodoBlock[];
   icon?: string;
@@ -98,28 +99,29 @@ const KODO_BLOCK_TYPES = new Set([
  * 6. JSON string → parse then re-normalize
  */
 export function normalizeContent(content: unknown): TipTapNode {
+  let result: TipTapNode;
+
   // 1. Null/undefined → empty doc
   if (content === null || content === undefined) {
-    return emptyDoc();
+    result = emptyDoc();
+  } else if (typeof content === 'string') {
+    // 2. String → could be markdown, plain text, or JSON string
+    result = normalizeStringContent(content);
+  } else if (Array.isArray(content)) {
+    // 3. Array → Kodo Content JSON or TipTap nodes
+    result = normalizeArray(content);
+  } else if (typeof content === 'object') {
+    // 4. Object
+    result = normalizeObject(content as Record<string, unknown>);
+  } else {
+    // 5. Fallback: convert to string
+    result = wrapTextInDoc(String(content));
   }
 
-  // 2. String → could be markdown, plain text, or JSON string
-  if (typeof content === 'string') {
-    return normalizeStringContent(content);
-  }
+  // Assign blockIds to all eligible nodes
+  assignBlockIds(result);
 
-  // 3. Array → Kodo Content JSON or TipTap nodes
-  if (Array.isArray(content)) {
-    return normalizeArray(content);
-  }
-
-  // 4. Object
-  if (typeof content === 'object') {
-    return normalizeObject(content as Record<string, unknown>);
-  }
-
-  // 5. Fallback: convert to string
-  return wrapTextInDoc(String(content));
+  return result;
 }
 
 // =============================================================================
@@ -444,6 +446,49 @@ function convertAccordion(items: AccordionItemDef[]): TipTapNode {
   };
 }
 
+/**
+ * Build a single accordionItem TipTap node from a simplified definition.
+ * Exported for use by the edit_accordion tool.
+ */
+export function buildAccordionItem(item: AccordionItemDef): TipTapNode {
+  const titleNode: TipTapNode = {
+    type: 'accordionTitle',
+    attrs: {
+      icon: item.icon || 'description',
+      iconColor: item.iconColor || '#3b82f6',
+      titleColor: item.titleColor || '#1f2937',
+      collapsed: false,
+    },
+    content: parseInline(item.title || 'Section'),
+  };
+
+  let contentBlocks: TipTapNode[];
+  if (typeof item.content === 'string') {
+    contentBlocks = item.content.trim()
+      ? [{ type: 'paragraph', content: parseInline(item.content) }]
+      : [{ type: 'paragraph' }];
+  } else if (Array.isArray(item.content) && item.content.length > 0) {
+    contentBlocks = item.content
+      .map((block) => convertKodoBlock(block))
+      .filter((n): n is TipTapNode => n !== null);
+    if (contentBlocks.length === 0) {
+      contentBlocks = [{ type: 'paragraph' }];
+    }
+  } else {
+    contentBlocks = [{ type: 'paragraph' }];
+  }
+
+  const contentNode: TipTapNode = {
+    type: 'accordionContent',
+    content: contentBlocks,
+  };
+
+  return {
+    type: 'accordionItem',
+    content: [titleNode, contentNode],
+  };
+}
+
 // =============================================================================
 // Table converter
 // =============================================================================
@@ -507,6 +552,55 @@ function validateTiptapNodes(nodes: TipTapNode[]): TipTapNode[] {
   }
 
   return result.length > 0 ? result : [{ type: 'paragraph' }];
+}
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+// =============================================================================
+// Block ID assignment
+// =============================================================================
+
+/** Types of blocks eligible for automatic blockId assignment */
+const BLOCKID_ELIGIBLE_TYPES = new Set([
+  'paragraph', 'heading', 'blockquote', 'codeBlock',
+  'bulletList', 'orderedList', 'taskList', 'listItem', 'taskItem',
+  'table', 'tableRow', 'tableCell', 'tableHeader',
+  'horizontalRule', 'image', 'columns', 'column',
+  'databaseTable', 'taskSection',
+  'accordionGroup', 'accordionItem', 'accordionTitle', 'accordionContent',
+  'spreadsheet', 'mindmap', 'taskMention',
+]);
+
+/**
+ * Generate a block ID with a real UUID.
+ */
+export function generateBlockId(): string {
+  return `block-${randomUUID()}`;
+}
+
+/**
+ * Recursively assign `blockId` to every eligible node that doesn't already have one.
+ * Idempotent: existing IDs are never replaced.
+ */
+export function assignBlockIds(node: TipTapNode): TipTapNode {
+  if (BLOCKID_ELIGIBLE_TYPES.has(node.type)) {
+    if (!node.attrs) {
+      node.attrs = {};
+    }
+    if (!node.attrs.blockId) {
+      node.attrs.blockId = generateBlockId();
+    }
+  }
+
+  if (node.content) {
+    for (const child of node.content) {
+      assignBlockIds(child);
+    }
+  }
+
+  return node;
 }
 
 // =============================================================================
