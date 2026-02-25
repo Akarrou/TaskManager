@@ -20,7 +20,7 @@
 
     <!-- Content -->
     <div class="panel-content">
-      @if (isLoading()) {
+      @if (commentStore.loading()) {
         <div class="loading-state">
           <mat-spinner diameter="24"></mat-spinner>
           <span>Chargement...</span>
@@ -56,7 +56,7 @@
           placeholder="Ajouter un commentaire..."
           rows="2"
           (keydown)="onKeyDown($event)"
-          [disabled]="isSubmitting()"
+          [disabled]="commentStore.submitting()"
         ></textarea>
         <div class="input-actions">
           <span class="hint">Ctrl+Entree pour envoyer</span>
@@ -64,10 +64,10 @@
             mat-flat-button
             color="primary"
             class="send-btn"
-            [disabled]="!newCommentContent().trim() || isSubmitting()"
+            [disabled]="!newCommentContent().trim() || commentStore.submitting()"
             (click)="submitComment()"
           >
-            @if (isSubmitting()) {
+            @if (commentStore.submitting()) {
               <mat-spinner diameter="16"></mat-spinner>
             } @else {
               <ng-container>

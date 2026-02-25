@@ -1,0 +1,94 @@
+<mat-card class="invitations-card">
+    <mat-card-header>
+        <mat-card-title>Invitations en attente</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+        <!-- Formulaire d'invitation -->
+        <div class="invite-section">
+            <h3>Inviter un nouveau membre</h3>
+            <form class="invite-form" (ngSubmit)="sendInvitation()">
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Email</mat-label>
+                    <input
+                        matInput
+                        type="email"
+                        [formControl]="emailControl"
+                        placeholder="utilisateur@example.com">
+                    @if (emailControl.hasError('required')) {
+                        <mat-error>L'email est requis</mat-error>
+                    }
+                    @if (emailControl.hasError('email')) {
+                        <mat-error>Email invalide</mat-error>
+                    }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Rôle</mat-label>
+                    <mat-select [formControl]="roleControl">
+                        <mat-option value="admin">Admin</mat-option>
+                        <mat-option value="member">Membre</mat-option>
+                        <mat-option value="viewer">Lecteur</mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <button
+                    mat-raised-button
+                    color="primary"
+                    type="submit"
+                    [disabled]="invitationStore.processing() || !emailControl.valid">
+                    <mat-icon>send</mat-icon>
+                    Envoyer l'invitation
+                </button>
+            </form>
+        </div>
+
+        <!-- Liste des invitations -->
+        <div class="invitations-list">
+            <h3>Invitations envoyées</h3>
+            @if (invitationStore.invitations().length > 0) {
+                @for (invitation of invitationStore.invitations(); track invitation.id) {
+                    <div class="invitation-item">
+                        <div class="invitation-info">
+                            <div class="invitation-email">
+                                <mat-icon>email</mat-icon>
+                                <span>{{ invitation.email }}</span>
+                            </div>
+                            <mat-chip [class]="'role-chip role-' + invitation.role">
+                                {{ invitation.role }}
+                            </mat-chip>
+                            <mat-chip [class]="'status-chip status-' + invitation.status">
+                                {{ getStatusLabel(invitation.status) }}
+                            </mat-chip>
+                            <span class="invitation-date">
+                                Envoyée {{ getRelativeTime(invitation.invited_at) }}
+                            </span>
+                        </div>
+
+                        @if (invitation.status === 'pending') {
+                            <div class="invitation-actions">
+                                <button
+                                    mat-icon-button
+                                    matTooltip="Copier le lien d'invitation"
+                                    (click)="copyInvitationLink(invitation.token)"
+                                    [disabled]="invitationStore.processing()">
+                                    <mat-icon>link</mat-icon>
+                                </button>
+                                <button
+                                    mat-icon-button
+                                    color="warn"
+                                    matTooltip="Annuler l'invitation"
+                                    (click)="cancelInvitation(invitation.id)"
+                                    [disabled]="invitationStore.processing()">
+                                    <mat-icon>cancel</mat-icon>
+                                </button>
+                            </div>
+                        }
+                    </div>
+                }
+            } @else {
+                <p class="no-invitations">Aucune invitation envoyée</p>
+            }
+        </div>
+    </mat-card-content>
+</mat-card>

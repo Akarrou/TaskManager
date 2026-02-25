@@ -1,6 +1,6 @@
 <div class="c-token-list">
   <!-- Loading -->
-  @if (loading()) {
+  @if (profileStore.tokenLoading()) {
     <div class="c-token-list__loading">
       <span class="c-spinner c-spinner--small"></span>
       <span>Chargement des tokens...</span>
@@ -8,15 +8,15 @@
   }
 
   <!-- Error -->
-  @if (error()) {
+  @if (profileStore.error()) {
     <div class="c-error-message">
       <span class="material-icons-outlined">error_outline</span>
-      <span>{{ error() }}</span>
+      <span>{{ profileStore.error() }}</span>
     </div>
   }
 
   <!-- Active Tokens -->
-  @if (!loading() && getActiveTokens().length > 0) {
+  @if (!profileStore.tokenLoading() && getActiveTokens().length > 0) {
     <div class="c-token-section">
       <h4 class="c-token-section__title">Tokens actifs ({{ getActiveTokens().length }})</h4>
       @for (token of getActiveTokens(); track token.id) {
@@ -46,9 +46,9 @@
           <button
             class="c-btn c-btn--danger c-btn--small"
             (click)="revokeToken(token)"
-            [disabled]="revokingId() === token.id"
+            [disabled]="profileStore.tokenLoading()"
           >
-            @if (revokingId() === token.id) {
+            @if (profileStore.tokenLoading()) {
               <span class="c-spinner c-spinner--tiny"></span>
             } @else {
               <span class="material-icons-outlined">delete</span>
@@ -61,7 +61,7 @@
   }
 
   <!-- Empty State -->
-  @if (!loading() && getActiveTokens().length === 0) {
+  @if (!profileStore.tokenLoading() && getActiveTokens().length === 0) {
     <div class="c-token-empty">
       <span class="material-icons-outlined">vpn_key_off</span>
       <span>Aucun token actif</span>

@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   MAT_DIALOG_DATA,
@@ -9,9 +9,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatListModule } from '@angular/material/list';
-import { Subject, takeUntil } from 'rxjs';
 
-import { DatabaseService } from '../../services/database.service';
+import { DatabaseStore } from '../../store/database.store';
 import { DocumentDatabase, DatabaseConfig } from '../../models/database.model';
 
 export interface ConnectDatabaseDialogData {
@@ -37,49 +36,25 @@ export interface ConnectDatabaseDialogResult {
   templateUrl: './connect-database-dialog.component.html',
   styleUrl: './connect-database-dialog.component.scss',
 })
-export class ConnectDatabaseDialogComponent implements OnInit, OnDestroy {
+export class ConnectDatabaseDialogComponent implements OnInit {
   private dialogRef = inject(MatDialogRef<ConnectDatabaseDialogComponent>);
   private data = inject<ConnectDatabaseDialogData>(MAT_DIALOG_DATA);
-  private databaseService = inject(DatabaseService);
-  private destroy$ = new Subject<void>();
+  private databaseStore = inject(DatabaseStore);
 
   // State
-  isLoading = signal(true);
-  databases = signal<DocumentDatabase[]>([]);
+  isLoading = this.databaseStore.loading;
   selectedDatabase = signal<DocumentDatabase | null>(null);
-  error = signal<string | null>(null);
+  error = this.databaseStore.error;
+
+  // Filter out the current database from the store's list
+  databases = computed(() =>
+    this.databaseStore.databases().filter(
+      db => db.database_id !== this.data.currentDatabaseId
+    )
+  );
 
   ngOnInit(): void {
-    this.loadDatabases();
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
-
-  private loadDatabases(): void {
-    this.isLoading.set(true);
-    this.error.set(null);
-
-    this.databaseService
-      .getAllDatabases()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: allDatabases => {
-          // Filter out the current database
-          const filtered = allDatabases.filter(
-            db => db.database_id !== this.data.currentDatabaseId
-          );
-          this.databases.set(filtered);
-          this.isLoading.set(false);
-        },
-        error: err => {
-          console.error('Failed to load databases:', err);
-          this.error.set('Erreur lors du chargement des bases de données');
-          this.isLoading.set(false);
-        },
-      });
+    this.databaseStore.loadAllDatabases();
   }
 
   onSelectDatabase(db: DocumentDatabase): void {

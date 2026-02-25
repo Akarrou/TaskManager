@@ -61,8 +61,9 @@ import { DocumentStore } from '../store/document.store';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { DeleteChildDocumentDialogComponent, DeleteChildDocumentDialogData } from '../components/delete-child-document-dialog/delete-child-document-dialog.component';
 import { BlockIdExtension, extractBlockIdsFromContent, setCommentBadgeClickHandler } from '../extensions/block-id.extension';
-import { BlockCommentService } from '../services/block-comment.service';
 import { BlockComment, BlockCommentsMap } from '../models/block-comment.model';
+import { BlockCommentStore } from '../store/block-comment.store';
+import { AuthService } from '../../../core/services/auth';
 import { CommentThreadPanelComponent } from '../components/comment-thread-panel/comment-thread-panel.component';
 import { CommentIndicatorDirective } from '../directives/comment-indicator.directive';
 import { MindmapExtension } from '../extensions/mindmap.extension';
@@ -90,7 +91,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   private dialog = inject(MatDialog);
   private databaseService = inject(DatabaseService);
   private storageService = inject(StorageService);
-  private blockCommentService = inject(BlockCommentService);
+  private blockCommentStore = inject(BlockCommentStore);
+  private authService = inject(AuthService);
   private documentStore = inject(DocumentStore);
   private documentExportService = inject(DocumentExportService);
   private realtimeService = inject(RealtimeService);
@@ -827,10 +829,10 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
   /**
    * Load current user ID for comment ownership checks
    */
-  private async loadCurrentUser() {
-    const { data } = await this.blockCommentService.supabase.client.auth.getUser();
-    if (data.user) {
-      this.currentUserId.set(data.user.id);
+  private loadCurrentUser(): void {
+    const userId = this.authService.getCurrentUserId();
+    if (userId) {
+      this.currentUserId.set(userId);
     }
   }
 
@@ -949,19 +951,19 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
    * Load all block comments for the document
    */
   private loadBlockComments(documentId: string) {
-    this.blockCommentService.getCommentsForDocument(documentId).subscribe({
-      next: (comments) => {
-        const grouped = this.blockCommentService.groupCommentsByBlock(comments);
-        this.blockComments.set(grouped);
+    this.blockCommentStore.loadCommentsForDocument({ documentId });
 
-        const blockIds = new Set(Object.keys(grouped));
-        this.blocksWithComments.set(blockIds);
+    // Sync local signals from store after load completes
+    setTimeout(() => {
+      const grouped = this.blockCommentStore.commentsByBlock();
+      this.blockComments.set(grouped);
 
-        // Update editor decorations
-        this.updateCommentDecorations();
-      },
-      error: (err) => console.error('Error loading block comments:', err)
-    });
+      const blockIds = new Set(Object.keys(grouped));
+      this.blocksWithComments.set(blockIds);
+
+      // Update editor decorations
+      this.updateCommentDecorations();
+    }, 200);
   }
 
   /**
@@ -1516,9 +1518,14 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         this.editor.chain().focus().setImage({
           src: result.src,
           alt: result.alt,
-          alignment: result.alignment,
-          caption: result.caption || '',
-        } as any).run();
+        } as { src: string; alt?: string; title?: string }).run();
+        // Update enhanced attributes separately after insertion
+        if (result.alignment || result.caption) {
+          this.editor.commands.updateAttributes('image', {
+            alignment: result.alignment,
+            caption: result.caption || '',
+          });
+        }
       }
     });
   }

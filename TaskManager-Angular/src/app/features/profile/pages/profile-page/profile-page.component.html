@@ -10,13 +10,13 @@
     </div>
 
     <!-- Loading state -->
-    <div class="c-loading" *ngIf="loading()">
+    <div class="c-loading" *ngIf="profileStore.loading()">
       <span class="c-spinner c-spinner--large"></span>
       <span>Chargement...</span>
     </div>
 
     <!-- Content -->
-    <div class="c-profile-content" *ngIf="!loading()">
+    <div class="c-profile-content" *ngIf="!profileStore.loading()">
       <!-- Card Informations du profil -->
       <div class="c-profile-card">
         <div class="c-profile-card__header">
@@ -33,7 +33,7 @@
                 class="c-input c-input--readonly"
                 id="email"
                 type="email"
-                [value]="profile()?.email"
+                [value]="profileStore.profile()?.email"
                 readonly
                 disabled
               />
@@ -64,9 +64,9 @@
             <span>{{ success() }}</span>
           </div>
 
-          <div class="c-error-message" *ngIf="error()">
+          <div class="c-error-message" *ngIf="profileStore.error()">
             <span class="material-icons-outlined">error_outline</span>
-            <span>{{ error() }}</span>
+            <span>{{ profileStore.error() }}</span>
           </div>
 
           <!-- Action -->
@@ -187,11 +187,11 @@
           <div class="c-info-grid">
             <div class="c-info-item">
               <span class="c-info-label">Compte créé le</span>
-              <span class="c-info-value">{{ profile()?.created_at | date:'dd/MM/yyyy à HH:mm' }}</span>
+              <span class="c-info-value">{{ profileStore.profile()?.created_at | date:'dd/MM/yyyy à HH:mm' }}</span>
             </div>
             <div class="c-info-item">
               <span class="c-info-label">Dernière mise à jour</span>
-              <span class="c-info-value">{{ profile()?.updated_at | date:'dd/MM/yyyy à HH:mm' }}</span>
+              <span class="c-info-value">{{ profileStore.profile()?.updated_at | date:'dd/MM/yyyy à HH:mm' }}</span>
             </div>
           </div>
         </div>
@@ -216,7 +216,7 @@
               <input
                 class="c-input c-input--readonly"
                 type="text"
-                [value]="profile()?.email"
+                [value]="profileStore.profile()?.email"
                 readonly
               />
             </div>

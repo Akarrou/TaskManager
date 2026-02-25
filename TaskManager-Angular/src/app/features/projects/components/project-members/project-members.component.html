@@ -1,0 +1,71 @@
+<mat-card class="members-card">
+    <mat-card-header>
+        <mat-card-title>Membres du projet</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+        <!-- Liste des membres -->
+        <div class="members-list">
+            @for (member of memberStore.members(); track member.id) {
+                <div class="member-item">
+                    <div class="member-info">
+                        <span class="member-id">{{ member.user_id }}</span>
+                        <mat-chip [class]="'role-chip role-' + member.role">
+                            {{ member.role }}
+                        </mat-chip>
+                    </div>
+                    @if (memberStore.isOwner() && member.role !== 'owner') {
+                        <div class="member-actions">
+                            <button
+                                mat-icon-button
+                                color="warn"
+                                (click)="removeMember(member.id)"
+                                [disabled]="memberStore.loading()">
+                                <mat-icon>delete</mat-icon>
+                            </button>
+                        </div>
+                    }
+                </div>
+            } @empty {
+                <p class="no-members">Aucun membre pour le moment</p>
+            }
+        </div>
+
+        <!-- Formulaire d'invitation (visible uniquement pour le owner) -->
+        @if (memberStore.isOwner()) {
+            <div class="invite-section">
+                <h3>Inviter un membre</h3>
+                <form class="invite-form" (ngSubmit)="inviteMember()">
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>ID Utilisateur</mat-label>
+                        <input
+                            matInput
+                            [formControl]="userIdControl"
+                            placeholder="UUID de l'utilisateur">
+                        @if (userIdControl.hasError('required')) {
+                            <mat-error>L'ID utilisateur est requis</mat-error>
+                        }
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Rôle</mat-label>
+                        <mat-select [formControl]="roleControl">
+                            <mat-option value="admin">Admin</mat-option>
+                            <mat-option value="member">Membre</mat-option>
+                            <mat-option value="viewer">Lecteur</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <button
+                        mat-raised-button
+                        color="primary"
+                        type="submit"
+                        [disabled]="memberStore.loading() || !userIdControl.valid">
+                        <mat-icon>person_add</mat-icon>
+                        Inviter
+                    </button>
+                </form>
+            </div>
+        }
+    </mat-card-content>
+</mat-card>

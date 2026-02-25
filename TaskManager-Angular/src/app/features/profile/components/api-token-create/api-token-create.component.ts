@@ -1,7 +1,7 @@
 import { Component, inject, signal, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiTokenService } from '../../services/api-token.service';
+import { ProfileStore } from '../../store/profile.store';
 import {
   CreateTokenResponse,
   AVAILABLE_SCOPES,
@@ -16,7 +16,7 @@ import {
   styleUrls: ['./api-token-create.component.scss']
 })
 export class ApiTokenCreateComponent {
-  private tokenService = inject(ApiTokenService);
+  readonly profileStore = inject(ProfileStore);
 
   // Form state
   tokenName = signal('');
@@ -75,7 +75,7 @@ export class ApiTokenCreateComponent {
       ? new Date(Date.now() + this.expirationDays()! * 24 * 60 * 60 * 1000).toISOString()
       : null;
 
-    const result = await this.tokenService.createToken({
+    const result = await this.profileStore.createToken({
       name: this.tokenName().trim(),
       scopes: this.selectedScopes(),
       expires_at: expiresAt,

@@ -1,10 +1,9 @@
-import { Component, OnInit, inject, signal, ViewChild } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ProfileService } from '../../services/profile.service';
 import { AuthService } from '../../../../core/services/auth';
-import { Profile } from '../../models/profile.model';
+import { ProfileStore } from '../../store/profile.store';
 import { ApiTokenListComponent } from '../../components/api-token-list/api-token-list.component';
 import { ApiTokenCreateComponent } from '../../components/api-token-create/api-token-create.component';
 import { GoogleCalendarConnectComponent } from '../../../google-calendar/components/google-calendar-connect/google-calendar-connect.component';
@@ -19,21 +18,17 @@ import { GoogleCalendarStore } from '../../../google-calendar/store/google-calen
   styleUrls: ['./profile-page.component.scss']
 })
 export class ProfilePageComponent implements OnInit {
-  private profileService = inject(ProfileService);
+  readonly profileStore = inject(ProfileStore);
   private authService = inject(AuthService);
   private router = inject(Router);
   readonly gcalStore = inject(GoogleCalendarStore);
 
-  @ViewChild(ApiTokenListComponent) tokenListComponent!: ApiTokenListComponent;
-
-  profile = signal<Profile | null>(null);
-  loading = signal(false);
-  error = signal<string | null>(null);
-  success = signal<string | null>(null);
-
   // Profile form
   fullName = signal('');
   profileLoading = signal(false);
+
+  // Success/error for profile update
+  success = signal<string | null>(null);
 
   // Password form
   newPassword = signal('');
@@ -48,50 +43,33 @@ export class ProfilePageComponent implements OnInit {
   showMcpPassword = signal(false);
 
   ngOnInit(): void {
-    this.loadProfile();
+    // ProfileStore auto-loads via onInit hook
     this.gcalStore.loadConnection();
-  }
-
-  async loadProfile(): Promise<void> {
-    this.loading.set(true);
-    this.error.set(null);
-
-    try {
-      const { profile, error } = await this.profileService.getProfile();
-      if (error) {
-        this.error.set(error.message);
-      } else if (profile) {
-        this.profile.set(profile);
-        this.fullName.set(profile.full_name || '');
-      }
-    } catch (err) {
-      this.error.set('Erreur lors du chargement du profil');
-    } finally {
-      this.loading.set(false);
+    // Set initial fullName from store when profile loads
+    const profile = this.profileStore.profile();
+    if (profile) {
+      this.fullName.set(profile.full_name || '');
     }
   }
 
   async updateProfile(): Promise<void> {
     this.profileLoading.set(true);
-    this.error.set(null);
     this.success.set(null);
 
-    try {
-      const { error } = await this.profileService.updateProfile({
-        full_name: this.fullName()
-      });
+    const { success, error } = await this.profileStore.updateProfile({
+      full_name: this.fullName()
+    });
 
-      if (error) {
-        this.error.set(error.message);
-      } else {
-        this.success.set('Profil mis à jour avec succès');
-        await this.loadProfile();
+    if (error) {
+      // error is available via profileStore.error()
+    } else {
+      this.success.set('Profil mis à jour avec succès');
+      const profile = this.profileStore.profile();
+      if (profile) {
+        this.fullName.set(profile.full_name || '');
       }
-    } catch (err) {
-      this.error.set('Erreur lors de la mise à jour du profil');
-    } finally {
-      this.profileLoading.set(false);
     }
+    this.profileLoading.set(false);
   }
 
   async changePassword(): Promise<void> {
@@ -115,21 +93,16 @@ export class ProfilePageComponent implements OnInit {
 
     this.passwordLoading.set(true);
 
-    try {
-      const { error } = await this.profileService.changePassword(this.newPassword());
+    const { success, error } = await this.profileStore.changePassword(this.newPassword());
 
-      if (error) {
-        this.passwordError.set(error.message);
-      } else {
-        this.passwordSuccess.set('Mot de passe modifié avec succès');
-        this.newPassword.set('');
-        this.confirmPassword.set('');
-      }
-    } catch (err) {
-      this.passwordError.set('Erreur lors du changement de mot de passe');
-    } finally {
-      this.passwordLoading.set(false);
+    if (error) {
+      this.passwordError.set(error);
+    } else {
+      this.passwordSuccess.set('Mot de passe modifié avec succès');
+      this.newPassword.set('');
+      this.confirmPassword.set('');
     }
+    this.passwordLoading.set(false);
   }
 
   goBack(): void {
@@ -138,7 +111,7 @@ export class ProfilePageComponent implements OnInit {
 
   // MCP Server configuration methods
   getMcpBasicAuthToken(): string {
-    const email = this.profile()?.email || '';
+    const email = this.profileStore.profile()?.email || '';
     const password = this.mcpPassword();
     if (!email || !password) return '';
     return btoa(`${email}:${password}`);
@@ -176,11 +149,9 @@ export class ProfilePageComponent implements OnInit {
     }
   }
 
-  // API Token methods
+  // API Token methods - now handled by store, just trigger reload
   onTokenCreated(): void {
-    // Refresh the token list when a new token is created
-    if (this.tokenListComponent) {
-      this.tokenListComponent.loadTokens();
-    }
+    // Store auto-reloads tokens when createToken is called
+    // This is kept for backwards compatibility with the event binding
   }
 }

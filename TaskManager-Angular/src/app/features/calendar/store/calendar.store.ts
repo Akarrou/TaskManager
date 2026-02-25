@@ -5,12 +5,14 @@ import { pipe, tap, switchMap, concatMap, catchError, EMPTY, from, of } from 'rx
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { EventEntry, EventDatabaseService } from '../../../core/services/event-database.service';
 import { TrashService } from '../../../core/services/trash.service';
+import { DocumentDatabase } from '../../documents/models/database.model';
 import { CalendarViewType } from '../models/calendar.model';
 import { GoogleCalendarStore } from '../../google-calendar/store/google-calendar.store';
 import { withRealtimeSync } from '../../../core/stores/features/with-realtime-sync';
 
 interface CalendarStoreState {
   events: EventEntry[];
+  eventDatabases: DocumentDatabase[];
   selectedEventId: string | null;
   currentView: CalendarViewType;
   dateRange: { start: string; end: string } | null;
@@ -23,6 +25,7 @@ export const CalendarStore = signalStore(
 
   withState<CalendarStoreState>({
     events: [],
+    eventDatabases: [],
     selectedEventId: null,
     currentView: 'dayGridMonth',
     dateRange: null,
@@ -45,6 +48,23 @@ export const CalendarStore = signalStore(
     snackBar = inject(MatSnackBar),
     gcalStore = inject(GoogleCalendarStore),
   ) => ({
+    loadEventDatabases: rxMethod<void>(
+      pipe(
+        tap(() => patchState(store, { loading: true, error: null })),
+        switchMap(() =>
+          eventDbService.getAllEventDatabases().pipe(
+            tap((databases) => {
+              patchState(store, { eventDatabases: databases, loading: false });
+            }),
+            catchError((error: Error) => {
+              patchState(store, { loading: false, error: error.message });
+              return EMPTY;
+            }),
+          ),
+        ),
+      ),
+    ),
+
     loadEvents: rxMethod<{ start: string; end: string; projectId?: string }>(
       pipe(
         tap(({ start, end }) => patchState(store, {

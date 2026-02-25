@@ -1,6 +1,6 @@
-import { Component, OnInit, inject, signal, output } from '@angular/core';
+import { Component, inject, output } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { ApiTokenService } from '../../services/api-token.service';
+import { ProfileStore } from '../../store/profile.store';
 import { ApiToken } from '../../models/api-token.model';
 
 @Component({
@@ -10,52 +10,21 @@ import { ApiToken } from '../../models/api-token.model';
   templateUrl: './api-token-list.component.html',
   styleUrls: ['./api-token-list.component.scss']
 })
-export class ApiTokenListComponent implements OnInit {
-  private tokenService = inject(ApiTokenService);
-
-  tokens = signal<ApiToken[]>([]);
-  loading = signal(false);
-  error = signal<string | null>(null);
-  revokingId = signal<string | null>(null);
+export class ApiTokenListComponent {
+  readonly profileStore = inject(ProfileStore);
 
   tokenRevoked = output<string>();
-
-  ngOnInit(): void {
-    this.loadTokens();
-  }
-
-  async loadTokens(): Promise<void> {
-    this.loading.set(true);
-    this.error.set(null);
-
-    const { tokens, error } = await this.tokenService.listTokens();
-
-    if (error) {
-      this.error.set(error.message);
-    } else {
-      this.tokens.set(tokens);
-    }
-
-    this.loading.set(false);
-  }
 
   async revokeToken(token: ApiToken): Promise<void> {
     if (!confirm(`Etes-vous sur de vouloir revoquer le token "${token.name}" ?`)) {
       return;
     }
 
-    this.revokingId.set(token.id);
-
-    const result = await this.tokenService.revokeToken(token.id);
+    const result = await this.profileStore.revokeToken(token.id);
 
     if (result.success) {
       this.tokenRevoked.emit(token.id);
-      await this.loadTokens();
-    } else {
-      this.error.set(result.error || 'Erreur lors de la revocation');
     }
-
-    this.revokingId.set(null);
   }
 
   isExpired(token: ApiToken): boolean {
@@ -64,10 +33,10 @@ export class ApiTokenListComponent implements OnInit {
   }
 
   getActiveTokens(): ApiToken[] {
-    return this.tokens().filter(t => t.is_active && !this.isExpired(t));
+    return this.profileStore.tokens().filter(t => t.is_active && !this.isExpired(t));
   }
 
   getRevokedTokens(): ApiToken[] {
-    return this.tokens().filter(t => !t.is_active || this.isExpired(t));
+    return this.profileStore.tokens().filter(t => !t.is_active || this.isExpired(t));
   }
 }

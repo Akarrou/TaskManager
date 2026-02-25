@@ -12,8 +12,8 @@ import { catchError, switchMap } from 'rxjs/operators';
 import { TrashService } from '../../../core/services/trash.service';
 import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { DocumentService, Document, DocumentStorageFile } from '../services/document.service';
-import { DatabaseService } from '../services/database.service';
 import { DocumentDatabase } from '../models/database.model';
+import { DatabaseStore } from '../store/database.store';
 import { DeleteDocumentDialogComponent } from '../components/delete-document-dialog/delete-document-dialog.component';
 import { MarkdownImportDialogComponent } from '../components/markdown-import-dialog/markdown-import-dialog.component';
 import { DocumentTabBarComponent } from '../components/document-tab-bar/document-tab-bar.component';
@@ -47,7 +47,7 @@ import {
 })
 export class DocumentListComponent implements OnInit, OnDestroy {
   private documentService = inject(DocumentService);
-  private databaseService = inject(DatabaseService);
+  private databaseStore = inject(DatabaseStore);
   private trashService = inject(TrashService);
   private router = inject(Router);
   private dialog = inject(MatDialog);
@@ -191,7 +191,7 @@ export class DocumentListComponent implements OnInit, OnDestroy {
 
     // Use forkJoin to load all databases in parallel
     const requests = docs.map(doc =>
-      this.databaseService.getDatabasesByDocumentId(doc.id).pipe(
+      this.databaseStore.getDatabasesByDocumentId(doc.id).pipe(
         catchError(() => of([]))
       )
     );
@@ -484,7 +484,7 @@ export class DocumentListComponent implements OnInit, OnDestroy {
     const softDeleteDatabases$ = databaseIds.length > 0
       ? forkJoin(
           databaseIds.map(dbId =>
-            this.databaseService.softDeleteDatabase(dbId).pipe(
+            this.databaseStore.softDeleteDatabase(dbId).pipe(
               switchMap((metadata) =>
                 this.trashService.softDeleteTrashOnly(
                   'database',

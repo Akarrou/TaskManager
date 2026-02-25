@@ -7,7 +7,8 @@ import {
   computed,
   DestroyRef,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import {
   ReactiveFormsModule,
@@ -33,10 +34,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TextFieldModule } from '@angular/cdk/text-field';
-import {
-  EventEntry,
-  EventDatabaseService,
-} from '../../../../core/services/event-database.service';
+import { EventEntry } from '../../../../core/services/event-database.service';
 import {
   EventCategory,
   CategoryDefinition,
@@ -44,16 +42,14 @@ import {
   getCategoryColors,
   slugify,
 } from '../../../../shared/models/event-constants';
-import {
-  DocumentDatabase,
-  LinkedItem,
-} from '../../../../features/documents/models/database.model';
+import { LinkedItem } from '../../../../features/documents/models/database.model';
 import { GoogleCalendarReminder } from '../../../google-calendar/models/google-calendar.model';
 import { EventAttendee, EventGuestPermissions, DEFAULT_GUEST_PERMISSIONS } from '../../models/attendee.model';
 import { RecurrencePickerComponent } from '../recurrence-picker/recurrence-picker.component';
 import { LinkedItemsPickerComponent } from '../linked-items-picker/linked-items-picker.component';
 import { EventAttendeesPickerComponent } from '../event-attendees-picker/event-attendees-picker.component';
 import { EventGuestPermissionsComponent } from '../event-guest-permissions/event-guest-permissions.component';
+import { CalendarStore } from '../../store/calendar.store';
 import { EventCategoryStore } from '../../../../core/stores/event-category.store';
 
 // =====================================================================
@@ -140,13 +136,12 @@ export class EventFormDialogComponent implements OnInit {
   private readonly dialogRef = inject(MatDialogRef<EventFormDialogComponent>);
   protected readonly data: EventFormDialogData = inject(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
-  private readonly eventDatabaseService = inject(EventDatabaseService);
+  protected readonly calendarStore = inject(CalendarStore);
   protected readonly categoryStore = inject(EventCategoryStore);
   private readonly destroyRef = inject(DestroyRef);
 
   // State signals
   readonly isLoading = signal(false);
-  readonly eventDatabases = signal<DocumentDatabase[]>([]);
   readonly showDatabaseSelector = signal(false);
 
   // Panel state
@@ -241,7 +236,8 @@ export class EventFormDialogComponent implements OnInit {
   // =====================================================================
 
   ngOnInit(): void {
-    this.loadEventDatabases();
+    this.calendarStore.loadEventDatabases();
+    this.setupDatabaseWatcher();
     this.populateFormFromData();
 
     // Track whether attendees exist for showing permissions
@@ -332,20 +328,18 @@ export class EventFormDialogComponent implements OnInit {
   // Data Loading
   // =====================================================================
 
-  private loadEventDatabases(): void {
-    this.eventDatabaseService.getAllEventDatabases().subscribe({
-      next: (databases) => {
-        this.eventDatabases.set(databases);
-        // Only set default database for new events — don't overwrite in edit mode
-        if (databases.length > 0 && !this.isEditMode) {
+  private setupDatabaseWatcher(): void {
+    toObservable(this.calendarStore.eventDatabases)
+      .pipe(
+        filter(databases => databases.length > 0),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(databases => {
+        if (!this.isEditMode) {
           this.form.controls.databaseId.setValue(databases[0].database_id);
         }
         this.showDatabaseSelector.set(databases.length > 1);
-      },
-      error: (err) => {
-        console.error('[EventFormDialog] Failed to load event databases:', err);
-      },
-    });
+      });
   }
 
   private populateFormFromData(): void {
