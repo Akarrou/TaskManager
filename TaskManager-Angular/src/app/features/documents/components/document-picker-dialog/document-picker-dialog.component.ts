@@ -3,8 +3,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -28,8 +26,6 @@ export interface DocumentPickerDialogData {
     CommonModule,
     FormsModule,
     MatDialogModule,
-    MatFormFieldModule,
-    MatInputModule,
     MatIconModule,
     MatButtonModule,
     MatProgressSpinnerModule,
