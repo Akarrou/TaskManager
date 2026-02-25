@@ -39,7 +39,7 @@ COPY --from=builder /app/dist/TaskManager-Angular/browser /usr/share/nginx/html
 COPY OBS/nginx.conf /etc/nginx/nginx.conf
 
 # Copier le script d'entrypoint pour injection runtime des variables
-COPY OBS/entrypoint.sh /docker-entrypoint.d/40-inject-env.sh
+COPY OBS/scripts/entrypoint.sh /docker-entrypoint.d/40-inject-env.sh
 RUN chmod +x /docker-entrypoint.d/40-inject-env.sh
 
 EXPOSE 4010
