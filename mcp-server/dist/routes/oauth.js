@@ -32,10 +32,13 @@ function getBaseUrl(req) {
     const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost';
     return `${proto}://${host}`;
 }
-function setCorsHeaders(res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization');
+/**
+ * Note: CORS headers are already set by the main HTTP server handler.
+ * This function is kept for OAuth route-specific headers if needed.
+ */
+function setCorsHeaders(_res) {
+    // CORS headers already handled in http-server.ts setCorsHeaders()
+    // No-op to avoid duplicate/conflicting headers
 }
 // ============================================================================
 // HTML Helpers

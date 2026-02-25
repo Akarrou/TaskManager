@@ -16,6 +16,9 @@ declare const envSchema: z.ZodObject<{
     RETRY_BASE_DELAY_MS: z.ZodDefault<z.ZodNumber>;
     SNAPSHOT_RETENTION_DAYS: z.ZodDefault<z.ZodNumber>;
     APP_URL: z.ZodDefault<z.ZodString>;
+    ALLOWED_ORIGINS: z.ZodOptional<z.ZodString>;
+    TRUSTED_PROXIES: z.ZodOptional<z.ZodString>;
+    MAX_BODY_SIZE: z.ZodDefault<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
     SUPABASE_URL: string;
     SUPABASE_SERVICE_ROLE_KEY: string;
@@ -32,7 +35,10 @@ declare const envSchema: z.ZodObject<{
     RETRY_BASE_DELAY_MS: number;
     SNAPSHOT_RETENTION_DAYS: number;
     APP_URL: string;
+    MAX_BODY_SIZE: number;
     DEFAULT_USER_ID?: string | undefined;
+    ALLOWED_ORIGINS?: string | undefined;
+    TRUSTED_PROXIES?: string | undefined;
 }, {
     SUPABASE_SERVICE_ROLE_KEY: string;
     SUPABASE_URL?: string | undefined;
@@ -50,6 +56,9 @@ declare const envSchema: z.ZodObject<{
     RETRY_BASE_DELAY_MS?: number | undefined;
     SNAPSHOT_RETENTION_DAYS?: number | undefined;
     APP_URL?: string | undefined;
+    ALLOWED_ORIGINS?: string | undefined;
+    TRUSTED_PROXIES?: string | undefined;
+    MAX_BODY_SIZE?: number | undefined;
 }>;
 export declare const env: {
     SUPABASE_URL: string;
@@ -67,7 +76,10 @@ export declare const env: {
     RETRY_BASE_DELAY_MS: number;
     SNAPSHOT_RETENTION_DAYS: number;
     APP_URL: string;
+    MAX_BODY_SIZE: number;
     DEFAULT_USER_ID?: string | undefined;
+    ALLOWED_ORIGINS?: string | undefined;
+    TRUSTED_PROXIES?: string | undefined;
 };
 export type Env = z.infer<typeof envSchema>;
 export {};

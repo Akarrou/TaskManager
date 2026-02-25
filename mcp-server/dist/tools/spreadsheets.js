@@ -29,7 +29,7 @@ export function registerSpreadsheetTools(server) {
             const { data, error } = await query;
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error listing spreadsheets: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error listing spreadsheets. Please try again.' }],
                     isError: true,
                 };
             }
@@ -39,7 +39,7 @@ export function registerSpreadsheetTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -64,7 +64,7 @@ export function registerSpreadsheetTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error getting spreadsheet: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error getting spreadsheet. Please try again.' }],
                     isError: true,
                 };
             }
@@ -74,7 +74,7 @@ export function registerSpreadsheetTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -122,7 +122,7 @@ export function registerSpreadsheetTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error creating spreadsheet: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error creating spreadsheet. Please try again.' }],
                     isError: true,
                 };
             }
@@ -134,7 +134,7 @@ export function registerSpreadsheetTools(server) {
                 // Rollback metadata
                 await supabase.from('document_spreadsheets').delete().eq('spreadsheet_id', spreadsheetId);
                 return {
-                    content: [{ type: 'text', text: `Error creating cells table: ${tableError.message}` }],
+                    content: [{ type: 'text', text: 'Error creating cells table. Please try again.' }],
                     isError: true,
                 };
             }
@@ -144,7 +144,7 @@ export function registerSpreadsheetTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -200,7 +200,7 @@ export function registerSpreadsheetTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error updating spreadsheet: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error updating spreadsheet. Please try again.' }],
                     isError: true,
                 };
             }
@@ -210,7 +210,7 @@ export function registerSpreadsheetTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -266,7 +266,7 @@ export function registerSpreadsheetTools(server) {
                     .eq('spreadsheet_id', spreadsheet_id);
                 if (error) {
                     return {
-                        content: [{ type: 'text', text: `Error deleting spreadsheet: ${error.message}` }],
+                        content: [{ type: 'text', text: 'Error deleting spreadsheet. Please try again.' }],
                         isError: true,
                     };
                 }
@@ -277,7 +277,7 @@ export function registerSpreadsheetTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -322,7 +322,7 @@ export function registerSpreadsheetTools(server) {
             });
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error getting cells: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error getting cells. Please try again.' }],
                     isError: true,
                 };
             }
@@ -332,7 +332,7 @@ export function registerSpreadsheetTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -404,7 +404,7 @@ export function registerSpreadsheetTools(server) {
             });
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error updating cell: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error updating cell. Please try again.' }],
                     isError: true,
                 };
             }
@@ -414,7 +414,7 @@ export function registerSpreadsheetTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -483,7 +483,7 @@ export function registerSpreadsheetTools(server) {
             });
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error updating cells: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error updating cells. Please try again.' }],
                     isError: true,
                 };
             }
@@ -493,7 +493,7 @@ export function registerSpreadsheetTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -545,7 +545,7 @@ export function registerSpreadsheetTools(server) {
                 .eq('spreadsheet_id', spreadsheet_id);
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error adding sheet: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error adding sheet. Please try again.' }],
                     isError: true,
                 };
             }
@@ -555,7 +555,7 @@ export function registerSpreadsheetTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -617,7 +617,7 @@ export function registerSpreadsheetTools(server) {
                 .eq('spreadsheet_id', spreadsheet_id);
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error renaming sheet: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error renaming sheet. Please try again.' }],
                     isError: true,
                 };
             }
@@ -627,7 +627,7 @@ export function registerSpreadsheetTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -705,7 +705,7 @@ export function registerSpreadsheetTools(server) {
                 .eq('spreadsheet_id', spreadsheet_id);
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error deleting sheet: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error deleting sheet. Please try again.' }],
                     isError: true,
                 };
             }
@@ -715,7 +715,7 @@ export function registerSpreadsheetTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -779,7 +779,7 @@ export function registerSpreadsheetTools(server) {
             });
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error clearing range: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error clearing range. Please try again.' }],
                     isError: true,
                 };
             }
@@ -790,7 +790,7 @@ export function registerSpreadsheetTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }

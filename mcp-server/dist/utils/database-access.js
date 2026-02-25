@@ -11,9 +11,12 @@ export async function userHasDatabaseAccess(supabase, databaseId, userId) {
         .single();
     if (!data)
         return false;
-    // If no document linked, allow access (standalone database)
-    if (!data.document_id)
-        return true;
+    // If no document linked, check if the database was created by this user
+    if (!data.document_id) {
+        const record = data;
+        // Standalone databases must have a created_by or user_id matching the requesting user
+        return record.created_by === userId || record.user_id === userId;
+    }
     const doc = data.documents;
     return doc?.user_id === userId;
 }

@@ -40,7 +40,7 @@ export function registerTrashTools(server: McpServer): void {
 
         if (error) {
           return {
-            content: [{ type: 'text' as const, text: `Error listing trash: ${error.message}` }],
+            content: [{ type: 'text' as const, text: 'Error listing trash. Please try again.' }],
             isError: true,
           };
         }
@@ -75,7 +75,7 @@ export function registerTrashTools(server: McpServer): void {
         };
       } catch (err) {
         return {
-          content: [{ type: 'text' as const, text: `Unexpected error: ${(err as Error).message}` }],
+          content: [{ type: 'text' as const, text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -121,7 +121,7 @@ export function registerTrashTools(server: McpServer): void {
 
         if (updateError) {
           return {
-            content: [{ type: 'text' as const, text: `Failed to restore item: ${updateError.message}` }],
+            content: [{ type: 'text' as const, text: 'Failed to restore item. Please try again.' }],
             isError: true,
           };
         }
@@ -134,7 +134,7 @@ export function registerTrashTools(server: McpServer): void {
 
         if (deleteError) {
           return {
-            content: [{ type: 'text' as const, text: `Item restored but failed to clean up trash record: ${deleteError.message}` }],
+            content: [{ type: 'text' as const, text: 'Item restored but failed to clean up trash record.' }],
           };
         }
 
@@ -146,7 +146,7 @@ export function registerTrashTools(server: McpServer): void {
         };
       } catch (err) {
         return {
-          content: [{ type: 'text' as const, text: `Unexpected error: ${(err as Error).message}` }],
+          content: [{ type: 'text' as const, text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -201,7 +201,7 @@ export function registerTrashTools(server: McpServer): void {
 
         if (deleteError) {
           // Item might already be gone, still clean up trash
-          console.warn(`Failed to delete from original table: ${deleteError.message}`);
+          // Item might already be gone, still clean up trash
         }
 
         // Remove from trash
@@ -218,7 +218,7 @@ export function registerTrashTools(server: McpServer): void {
         };
       } catch (err) {
         return {
-          content: [{ type: 'text' as const, text: `Unexpected error: ${(err as Error).message}` }],
+          content: [{ type: 'text' as const, text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -257,7 +257,7 @@ export function registerTrashTools(server: McpServer): void {
 
         if (fetchError) {
           return {
-            content: [{ type: 'text' as const, text: `Error fetching trash items: ${fetchError.message}` }],
+            content: [{ type: 'text' as const, text: 'Error fetching trash items. Please try again.' }],
             isError: true,
           };
         }
@@ -280,7 +280,7 @@ export function registerTrashTools(server: McpServer): void {
               .eq('id', item.item_id);
             deletedCount++;
           } catch (err) {
-            errors.push(`Failed to delete ${item.display_name}: ${(err as Error).message}`);
+            errors.push(`Failed to delete ${item.display_name}`);
           }
         }
 
@@ -302,7 +302,7 @@ export function registerTrashTools(server: McpServer): void {
         };
       } catch (err) {
         return {
-          content: [{ type: 'text' as const, text: `Unexpected error: ${(err as Error).message}` }],
+          content: [{ type: 'text' as const, text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }

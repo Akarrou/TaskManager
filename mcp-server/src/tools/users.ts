@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
+import { logger } from '../services/logger.js';
 
 /**
  * Register all user-related tools
@@ -22,7 +23,7 @@ export function registerUserTools(server: McpServer): void {
 
         if (error) {
           return {
-            content: [{ type: 'text', text: `Error listing users: ${error.message}` }],
+            content: [{ type: 'text', text: 'Error listing users. Please try again.' }],
             isError: true,
           };
         }
@@ -32,7 +33,7 @@ export function registerUserTools(server: McpServer): void {
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -60,7 +61,7 @@ export function registerUserTools(server: McpServer): void {
 
         if (error) {
           return {
-            content: [{ type: 'text', text: `Error getting user: ${error.message}` }],
+            content: [{ type: 'text', text: 'Error getting user. Please try again.' }],
             isError: true,
           };
         }
@@ -80,7 +81,7 @@ export function registerUserTools(server: McpServer): void {
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -115,7 +116,7 @@ export function registerUserTools(server: McpServer): void {
 
             if (userError) {
               return {
-                content: [{ type: 'text', text: `No profile found and error getting user: ${userError.message}` }],
+                content: [{ type: 'text', text: 'No profile found and user not accessible.' }],
                 isError: true,
               };
             }
@@ -132,7 +133,7 @@ export function registerUserTools(server: McpServer): void {
           }
 
           return {
-            content: [{ type: 'text', text: `Error getting profile: ${error.message}` }],
+            content: [{ type: 'text', text: 'Error getting profile. Please try again.' }],
             isError: true,
           };
         }
@@ -142,7 +143,7 @@ export function registerUserTools(server: McpServer): void {
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -192,7 +193,7 @@ export function registerUserTools(server: McpServer): void {
 
         if (error) {
           return {
-            content: [{ type: 'text', text: `Error updating profile: ${error.message}` }],
+            content: [{ type: 'text', text: 'Error updating profile. Please try again.' }],
             isError: true,
           };
         }
@@ -213,7 +214,7 @@ export function registerUserTools(server: McpServer): void {
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }

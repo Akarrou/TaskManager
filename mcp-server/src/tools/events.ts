@@ -147,7 +147,7 @@ export function registerEventTools(server: McpServer): void {
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -356,7 +356,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
 
         if (error) {
           return {
-            content: [{ type: 'text', text: `Error creating event: ${error.message}` }],
+            content: [{ type: 'text', text: `Error creating event. Please try again.` }],
             isError: true,
           };
         }
@@ -390,7 +390,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -460,7 +460,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -545,7 +545,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -591,7 +591,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
 
         if (error) {
           return {
-            content: [{ type: 'text', text: `Error getting event document: ${error.message}` }],
+            content: [{ type: 'text', text: `Error getting event document. Please try again.` }],
             isError: true,
           };
         }
@@ -607,7 +607,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -782,7 +782,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
 
         if (error) {
           return {
-            content: [{ type: 'text', text: `Error updating event: ${error.message}` }],
+            content: [{ type: 'text', text: `Error updating event. Please try again.` }],
             isError: true,
           };
         }
@@ -794,7 +794,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -876,7 +876,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
 
         if (updateError) {
           return {
-            content: [{ type: 'text', text: `Error soft-deleting event: ${updateError.message}` }],
+            content: [{ type: 'text', text: `Error soft-deleting event. Please try again.` }],
             isError: true,
           };
         }
@@ -899,7 +899,7 @@ Returns: { event, document }. Related tools: list_databases, create_database, li
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }

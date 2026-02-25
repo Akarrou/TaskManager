@@ -73,15 +73,21 @@ export async function saveSnapshot(params) {
  * - For 'delete' operations: re-inserts the entity
  * - For composite-key entities (spreadsheet cells): uses upsert with conflict columns
  * - For array-data entities (batch/range): restores each item individually
+ *
+ * @param userId - If provided, only allows restoring snapshots owned by this user
  */
-export async function restoreSnapshot(token) {
+export async function restoreSnapshot(token, userId) {
     const supabase = getSupabaseClient();
     // Fetch the snapshot
-    const { data: snapshot, error: fetchError } = await supabase
+    let query = supabase
         .from('mcp_snapshots')
         .select('*')
-        .eq('token', token)
-        .single();
+        .eq('token', token);
+    // Filter by user_id if provided (access control)
+    if (userId) {
+        query = query.eq('user_id', userId);
+    }
+    const { data: snapshot, error: fetchError } = await query.single();
     if (fetchError || !snapshot) {
         throw new Error(`Snapshot not found: ${token}`);
     }
@@ -150,14 +156,20 @@ export async function restoreSnapshot(token) {
 }
 /**
  * List snapshots for an entity, ordered by most recent first.
+ *
+ * @param userId - If provided, only returns snapshots owned by this user
  */
-export async function listSnapshots(entityType, entityId, limit = 10) {
+export async function listSnapshots(entityType, entityId, limit = 10, userId) {
     const supabase = getSupabaseClient();
     let query = supabase
         .from('mcp_snapshots')
         .select('token, entity_type, entity_id, table_name, tool_name, operation, created_at')
         .order('created_at', { ascending: false })
         .limit(limit);
+    // Filter by user_id if provided (access control)
+    if (userId) {
+        query = query.eq('user_id', userId);
+    }
     if (entityType) {
         query = query.eq('entity_type', entityType);
     }

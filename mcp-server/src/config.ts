@@ -44,6 +44,15 @@ const envSchema = z.object({
 
   // Frontend app URL (for generating links in search results)
   APP_URL: z.string().url().default('http://localhost:4200'),
+
+  // CORS allowed origins (comma-separated). Defaults to APP_URL only.
+  ALLOWED_ORIGINS: z.string().optional(),
+
+  // Trusted proxy IPs for X-Forwarded-For parsing (comma-separated). If empty, X-Forwarded-For is ignored.
+  TRUSTED_PROXIES: z.string().optional(),
+
+  // Max request body size in bytes (default 1MB)
+  MAX_BODY_SIZE: z.coerce.number().default(1048576),
 });
 
 function loadEnv() {

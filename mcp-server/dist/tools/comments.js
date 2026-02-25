@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
 import { getCurrentUserId } from '../services/user-auth.js';
 import { saveSnapshot } from '../services/snapshot.js';
+import { userOwnsDocument } from '../utils/document-ownership.js';
 /**
  * Register all comment-related tools (block comments for documents)
  */
@@ -20,7 +21,15 @@ export function registerCommentTools(server) {
         annotations: { readOnlyHint: true },
     }, async ({ document_id, block_id, limit, offset }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify document ownership before listing comments
+            if (!await userOwnsDocument(supabase, document_id, userId)) {
+                return {
+                    content: [{ type: 'text', text: 'Access denied: you do not own this document.' }],
+                    isError: true,
+                };
+            }
             let query = supabase
                 .from('block_comments')
                 .select('*', { count: 'exact' })
@@ -34,7 +43,7 @@ export function registerCommentTools(server) {
             const { data, error, count } = await query;
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error listing comments: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error listing comments. Please try again.' }],
                     isError: true,
                 };
             }
@@ -53,7 +62,7 @@ export function registerCommentTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -72,7 +81,15 @@ export function registerCommentTools(server) {
         },
     }, async ({ document_id, block_id, content, user_id, user_email }) => {
         try {
+            const currentUserId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify document ownership before adding comment
+            if (!await userOwnsDocument(supabase, document_id, currentUserId)) {
+                return {
+                    content: [{ type: 'text', text: 'Access denied: you do not own this document.' }],
+                    isError: true,
+                };
+            }
             const commentData = {
                 document_id,
                 block_id,
@@ -89,7 +106,7 @@ export function registerCommentTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error adding comment: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error adding comment. Please try again.' }],
                     isError: true,
                 };
             }
@@ -99,7 +116,7 @@ export function registerCommentTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -142,7 +159,7 @@ export function registerCommentTools(server) {
                 .eq('id', comment_id);
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error deleting comment: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error deleting comment. Please try again.' }],
                     isError: true,
                 };
             }
@@ -152,7 +169,7 @@ export function registerCommentTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -169,7 +186,14 @@ export function registerCommentTools(server) {
         annotations: { readOnlyHint: true },
     }, async ({ document_id, block_id }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            if (!await userOwnsDocument(supabase, document_id, userId)) {
+                return {
+                    content: [{ type: 'text', text: 'Access denied: you do not own this document.' }],
+                    isError: true,
+                };
+            }
             let query = supabase
                 .from('block_comments')
                 .select('id', { count: 'exact', head: true })
@@ -181,7 +205,7 @@ export function registerCommentTools(server) {
             const { count, error } = await query;
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error counting comments: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error counting comments. Please try again.' }],
                     isError: true,
                 };
             }
@@ -191,7 +215,7 @@ export function registerCommentTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -207,7 +231,14 @@ export function registerCommentTools(server) {
         annotations: { readOnlyHint: true },
     }, async ({ document_id }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            if (!await userOwnsDocument(supabase, document_id, userId)) {
+                return {
+                    content: [{ type: 'text', text: 'Access denied: you do not own this document.' }],
+                    isError: true,
+                };
+            }
             const { data, error } = await supabase
                 .from('block_comments')
                 .select('block_id')
@@ -215,7 +246,7 @@ export function registerCommentTools(server) {
                 .is('deleted_at', null);
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error getting blocks with comments: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error getting blocks with comments. Please try again.' }],
                     isError: true,
                 };
             }
@@ -234,7 +265,7 @@ export function registerCommentTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }

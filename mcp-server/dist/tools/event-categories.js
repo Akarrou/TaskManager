@@ -50,7 +50,7 @@ export function registerEventCategoryTools(server) {
                 .order('sort_order', { ascending: true });
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error fetching categories: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error fetching categories. Please try again.' }],
                     isError: true,
                 };
             }
@@ -68,7 +68,7 @@ export function registerEventCategoryTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -129,7 +129,7 @@ export function registerEventCategoryTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error creating category: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error creating category. Please try again.' }],
                     isError: true,
                 };
             }
@@ -139,7 +139,7 @@ export function registerEventCategoryTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -186,7 +186,7 @@ export function registerEventCategoryTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error updating category: ${error.message}. Make sure the category key "${key}" exists.` }],
+                    content: [{ type: 'text', text: `Error updating category. Make sure the key "${key}" exists.` }],
                     isError: true,
                 };
             }
@@ -196,7 +196,7 @@ export function registerEventCategoryTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -228,7 +228,7 @@ export function registerEventCategoryTools(server) {
                 .eq('key', key);
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error deleting category: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error deleting category. Please try again.' }],
                     isError: true,
                 };
             }
@@ -238,7 +238,7 @@ export function registerEventCategoryTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }

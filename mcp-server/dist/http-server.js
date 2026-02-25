@@ -15,7 +15,7 @@ import { createMcpServer, MCP_VERSION } from './server.js';
 import { testConnection } from './services/supabase-client.js';
 import { env } from './config.js';
 import { logger, createSessionLogger } from './services/logger.js';
-import { checkRateLimit, getRateLimitInfo, getRateLimitStats } from './middleware/rate-limiter.js';
+import { checkRateLimit, getRateLimitInfo } from './middleware/rate-limiter.js';
 import { authenticateUser, authenticateByToken, setSessionUser, clearSessionUser, setCurrentRequestUser, } from './services/user-auth.js';
 import { handleOAuthMetadata, handleAuthorize, handleToken, handleRegister, } from './routes/oauth.js';
 import { validateAccessToken } from './services/oauth.js';
@@ -25,14 +25,29 @@ const httpTransports = new Map();
 // Store session to user mapping for request context
 const sessionUserMap = new Map();
 /**
- * Get client IP from request
+ * Parsed set of trusted proxy IPs (from TRUSTED_PROXIES env)
+ */
+const trustedProxies = new Set((env.TRUSTED_PROXIES || '').split(',').map(s => s.trim()).filter(Boolean));
+/**
+ * Parsed set of allowed CORS origins (from ALLOWED_ORIGINS env or APP_URL fallback)
+ */
+const allowedOrigins = new Set((env.ALLOWED_ORIGINS || env.APP_URL).split(',').map(s => s.trim()).filter(Boolean));
+/**
+ * Get client IP from request.
+ * Only trusts X-Forwarded-For when the direct connection comes from a trusted proxy.
  */
 function getClientIp(req) {
-    const forwarded = req.headers['x-forwarded-for'];
-    if (typeof forwarded === 'string') {
-        return forwarded.split(',')[0].trim();
+    const directIp = req.socket.remoteAddress || 'unknown';
+    // Only parse X-Forwarded-For if the request comes from a trusted proxy
+    if (trustedProxies.size > 0 && trustedProxies.has(directIp)) {
+        const forwarded = req.headers['x-forwarded-for'];
+        if (typeof forwarded === 'string') {
+            const clientIp = forwarded.split(',')[0].trim();
+            if (clientIp)
+                return clientIp;
+        }
     }
-    return req.socket.remoteAddress || 'unknown';
+    return directIp;
 }
 /**
  * Parse Basic Auth credentials from request
@@ -128,12 +143,17 @@ function sendRateLimited(res, ip) {
     }));
 }
 /**
- * Set CORS headers
+ * Set CORS headers with origin validation
  */
-function setCorsHeaders(res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, X-Session-Id, Authorization');
+function setCorsHeaders(res, req) {
+    const origin = req?.headers.origin;
+    if (origin && allowedOrigins.has(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Vary', 'Origin');
+    }
+    // If origin is not in allowedOrigins, no Access-Control-Allow-Origin is set (browser blocks the request)
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, X-Session-Id, Mcp-Session-Id, Authorization');
 }
 /**
  * Parse URL from request
@@ -142,11 +162,17 @@ function parseUrl(req) {
     return new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
 }
 /**
- * Read request body
+ * Read request body with size limit to prevent DoS
  */
 async function readBody(req) {
     const chunks = [];
+    let totalSize = 0;
+    const maxSize = env.MAX_BODY_SIZE;
     for await (const chunk of req) {
+        totalSize += chunk.length;
+        if (totalSize > maxSize) {
+            throw new Error('BODY_TOO_LARGE');
+        }
         chunks.push(chunk);
     }
     return Buffer.concat(chunks).toString('utf-8');
@@ -159,7 +185,7 @@ async function handleRequest(req, res) {
     const url = parseUrl(req);
     const method = req.method || 'GET';
     const ip = getClientIp(req);
-    setCorsHeaders(res);
+    setCorsHeaders(res, req);
     // Log request
     logger.debug({ method, path: url.pathname, ip }, 'Incoming request');
     // Handle CORS preflight (no rate limit)
@@ -173,26 +199,16 @@ async function handleRequest(req, res) {
         await handleOAuthMetadata(req, res);
         return;
     }
-    // Health check (no rate limit, no auth)
+    // Health check (minimal info, no auth)
     if (url.pathname === '/health' && method === 'GET') {
         const isConnected = await testConnection();
-        const rateLimitStats = getRateLimitStats();
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
             status: isConnected ? 'healthy' : 'degraded',
-            version: MCP_VERSION,
-            supabase: isConnected ? 'connected' : 'disconnected',
-            activeSessions: {
-                http: httpTransports.size,
-                sse: sseTransports.size,
-                total: httpTransports.size + sseTransports.size,
-            },
-            rateLimit: rateLimitStats,
-            timestamp: new Date().toISOString(),
         }));
         return;
     }
-    // Rate limiting for all other endpoints
+    // Rate limiting for ALL endpoints (including OAuth)
     if (!checkRateLimit(ip)) {
         sendRateLimited(res, ip);
         return;

@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { restoreSnapshot, listSnapshots, cleanupOldSnapshots } from '../services/snapshot.js';
+import { getCurrentUserId } from '../services/user-auth.js';
 
 /**
  * Register snapshot management tools
@@ -19,7 +20,8 @@ export function registerSnapshotTools(server: McpServer): void {
     },
     async ({ token }) => {
       try {
-        const result = await restoreSnapshot(token);
+        const userId = getCurrentUserId();
+        const result = await restoreSnapshot(token, userId);
 
         return {
           content: [{
@@ -33,7 +35,7 @@ export function registerSnapshotTools(server: McpServer): void {
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Error restoring snapshot: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'Error restoring snapshot. Token may be invalid or expired.' }],
           isError: true,
         };
       }
@@ -56,7 +58,8 @@ export function registerSnapshotTools(server: McpServer): void {
     },
     async ({ entity_type, entity_id, limit }) => {
       try {
-        const snapshots = await listSnapshots(entity_type, entity_id, limit);
+        const userId = getCurrentUserId();
+        const snapshots = await listSnapshots(entity_type, entity_id, limit, userId);
 
         return {
           content: [{
@@ -66,7 +69,7 @@ export function registerSnapshotTools(server: McpServer): void {
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Error listing snapshots: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'Error listing snapshots. Please try again.' }],
           isError: true,
         };
       }
@@ -94,7 +97,7 @@ export function registerSnapshotTools(server: McpServer): void {
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Error cleaning up snapshots: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'Error cleaning up snapshots. Please try again.' }],
           isError: true,
         };
       }

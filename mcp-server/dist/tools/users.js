@@ -16,7 +16,7 @@ export function registerUserTools(server) {
             const { data, error } = await supabase.rpc('get_all_users');
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error listing users: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error listing users. Please try again.' }],
                     isError: true,
                 };
             }
@@ -26,7 +26,7 @@ export function registerUserTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -47,7 +47,7 @@ export function registerUserTools(server) {
             const { data, error } = await supabase.auth.admin.getUserById(user_id);
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error getting user: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error getting user. Please try again.' }],
                     isError: true,
                 };
             }
@@ -66,7 +66,7 @@ export function registerUserTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -94,7 +94,7 @@ export function registerUserTools(server) {
                     const { data: userData, error: userError } = await supabase.auth.admin.getUserById(user_id);
                     if (userError) {
                         return {
-                            content: [{ type: 'text', text: `No profile found and error getting user: ${userError.message}` }],
+                            content: [{ type: 'text', text: 'No profile found and user not accessible.' }],
                             isError: true,
                         };
                     }
@@ -109,7 +109,7 @@ export function registerUserTools(server) {
                     };
                 }
                 return {
-                    content: [{ type: 'text', text: `Error getting profile: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error getting profile. Please try again.' }],
                     isError: true,
                 };
             }
@@ -119,7 +119,7 @@ export function registerUserTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -162,7 +162,7 @@ export function registerUserTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error updating profile: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error updating profile. Please try again.' }],
                     isError: true,
                 };
             }
@@ -183,7 +183,7 @@ export function registerUserTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }

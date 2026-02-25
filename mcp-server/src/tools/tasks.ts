@@ -101,7 +101,7 @@ export function registerTaskTools(server: McpServer): void {
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -180,7 +180,7 @@ export function registerTaskTools(server: McpServer): void {
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -272,7 +272,7 @@ export function registerTaskTools(server: McpServer): void {
 
         if (error) {
           return {
-            content: [{ type: 'text', text: `Error updating task status: ${error.message}` }],
+            content: [{ type: 'text', text: `Error updating task status. Please try again.` }],
             isError: true,
           };
         }
@@ -282,7 +282,7 @@ export function registerTaskTools(server: McpServer): void {
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -373,7 +373,7 @@ export function registerTaskTools(server: McpServer): void {
 
         if (error) {
           return {
-            content: [{ type: 'text', text: `Error updating task priority: ${error.message}` }],
+            content: [{ type: 'text', text: `Error updating task priority. Please try again.` }],
             isError: true,
           };
         }
@@ -383,7 +383,7 @@ export function registerTaskTools(server: McpServer): void {
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -531,7 +531,7 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
 
         if (error) {
           return {
-            content: [{ type: 'text', text: `Error creating task: ${error.message}` }],
+            content: [{ type: 'text', text: `Error creating task. Please try again.` }],
             isError: true,
           };
         }
@@ -562,7 +562,7 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -632,7 +632,7 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -717,7 +717,7 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -763,7 +763,7 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
 
         if (error) {
           return {
-            content: [{ type: 'text', text: `Error getting task document: ${error.message}` }],
+            content: [{ type: 'text', text: `Error getting task document. Please try again.` }],
             isError: true,
           };
         }
@@ -779,7 +779,7 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -904,7 +904,7 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
 
         if (error) {
           return {
-            content: [{ type: 'text', text: `Error updating task: ${error.message}` }],
+            content: [{ type: 'text', text: `Error updating task. Please try again.` }],
             isError: true,
           };
         }
@@ -916,7 +916,7 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -997,7 +997,7 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
 
         if (error) {
           return {
-            content: [{ type: 'text', text: `Error soft-deleting task: ${error.message}` }],
+            content: [{ type: 'text', text: `Error soft-deleting task. Please try again.` }],
             isError: true,
           };
         }
@@ -1021,7 +1021,7 @@ Returns: { task, document }. Related tools: list_databases, create_database.`,
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }

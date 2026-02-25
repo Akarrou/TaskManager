@@ -42,7 +42,7 @@ export function registerDocumentTools(server) {
             const { data, error, count } = await query;
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error listing documents: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error listing documents. Please try again.` }],
                     isError: true,
                 };
             }
@@ -61,7 +61,7 @@ export function registerDocumentTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -102,7 +102,7 @@ Related tools: edit_document (modify content), get_document_breadcrumb (path), l
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error getting document: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error getting document. Please try again.` }],
                     isError: true,
                 };
             }
@@ -154,7 +154,7 @@ Related tools: edit_document (modify content), get_document_breadcrumb (path), l
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -243,7 +243,7 @@ Related tools: edit_document (modify content), create_database (embed a table).`
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error creating document: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error creating document. Please try again.` }],
                     isError: true,
                 };
             }
@@ -253,7 +253,7 @@ Related tools: edit_document (modify content), create_database (embed a table).`
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -333,7 +333,7 @@ The "content" field accepts Kodo Content JSON (JSON array of blocks, see create_
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error updating document: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error updating document. Please try again.` }],
                     isError: true,
                 };
             }
@@ -343,7 +343,7 @@ The "content" field accepts Kodo Content JSON (JSON array of blocks, see create_
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -395,7 +395,7 @@ The "content" field accepts Kodo Content JSON (JSON array of blocks, see create_
                 .eq('user_id', userId);
             if (updateError) {
                 return {
-                    content: [{ type: 'text', text: `Error soft-deleting document: ${updateError.message}` }],
+                    content: [{ type: 'text', text: `Error soft-deleting document. Please try again.` }],
                     isError: true,
                 };
             }
@@ -420,7 +420,7 @@ The "content" field accepts Kodo Content JSON (JSON array of blocks, see create_
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -454,7 +454,7 @@ The "content" field accepts Kodo Content JSON (JSON array of blocks, see create_
             const { data, error } = await dbQuery;
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error searching documents: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error searching documents. Please try again.` }],
                     isError: true,
                 };
             }
@@ -464,7 +464,7 @@ The "content" field accepts Kodo Content JSON (JSON array of blocks, see create_
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -503,7 +503,7 @@ The "content" field accepts Kodo Content JSON (JSON array of blocks, see create_
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -540,7 +540,7 @@ The "content" field accepts Kodo Content JSON (JSON array of blocks, see create_
                     };
                 }
                 return {
-                    content: [{ type: 'text', text: `Error searching documents: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error searching documents. Please try again.` }],
                     isError: true,
                 };
             }
@@ -550,7 +550,7 @@ The "content" field accepts Kodo Content JSON (JSON array of blocks, see create_
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -677,7 +677,7 @@ WHEN TO USE WHICH TOOL:
                 .single();
             if (updateError) {
                 return {
-                    content: [{ type: 'text', text: `Error saving document: ${updateError.message}` }],
+                    content: [{ type: 'text', text: `Error saving document. Please try again.` }],
                     isError: true,
                 };
             }
@@ -698,7 +698,7 @@ WHEN TO USE WHICH TOOL:
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -762,7 +762,7 @@ WHEN TO USE WHICH TOOL:
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }

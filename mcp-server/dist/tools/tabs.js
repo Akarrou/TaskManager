@@ -68,7 +68,7 @@ export function registerTabTools(server) {
                 .order('position', { ascending: true });
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error listing tabs: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error listing tabs. Please try again.` }],
                     isError: true,
                 };
             }
@@ -78,7 +78,7 @@ export function registerTabTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -131,7 +131,7 @@ export function registerTabTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error creating tab: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error creating tab. Please try again.` }],
                     isError: true,
                 };
             }
@@ -141,7 +141,7 @@ export function registerTabTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -211,7 +211,7 @@ export function registerTabTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error updating tab: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error updating tab. Please try again.` }],
                     isError: true,
                 };
             }
@@ -221,7 +221,7 @@ export function registerTabTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -287,7 +287,7 @@ export function registerTabTools(server) {
                 .eq('id', tab_id);
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error deleting tab: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error deleting tab. Please try again.` }],
                     isError: true,
                 };
             }
@@ -297,7 +297,7 @@ export function registerTabTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -374,7 +374,7 @@ export function registerTabTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error setting default tab: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error setting default tab. Please try again.` }],
                     isError: true,
                 };
             }
@@ -384,7 +384,7 @@ export function registerTabTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -437,7 +437,7 @@ export function registerTabTools(server) {
                     .eq('id', tab_ids[i]);
                 if (error) {
                     return {
-                        content: [{ type: 'text', text: `Error reordering tab ${tab_ids[i]}: ${error.message}` }],
+                        content: [{ type: 'text', text: `Error reordering tab. Please try again.` }],
                         isError: true,
                     };
                 }
@@ -448,7 +448,7 @@ export function registerTabTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -481,7 +481,7 @@ export function registerTabTools(server) {
                 .order('position', { ascending: true });
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error listing tab groups: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error listing tab groups. Please try again.` }],
                     isError: true,
                 };
             }
@@ -491,7 +491,7 @@ export function registerTabTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -538,7 +538,7 @@ export function registerTabTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error creating tab group: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error creating tab group. Please try again.` }],
                     isError: true,
                 };
             }
@@ -548,7 +548,7 @@ export function registerTabTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -626,7 +626,7 @@ export function registerTabTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error updating tab group: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error updating tab group. Please try again.` }],
                     isError: true,
                 };
             }
@@ -636,7 +636,7 @@ export function registerTabTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -719,7 +719,7 @@ export function registerTabTools(server) {
                 .eq('id', group_id);
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error deleting tab group: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error deleting tab group. Please try again.` }],
                     isError: true,
                 };
             }
@@ -729,7 +729,7 @@ export function registerTabTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -762,7 +762,7 @@ export function registerTabTools(server) {
                 .order('position', { ascending: true });
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error listing sections: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error listing sections. Please try again.` }],
                     isError: true,
                 };
             }
@@ -772,7 +772,7 @@ export function registerTabTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -822,7 +822,7 @@ export function registerTabTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error creating section: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error creating section. Please try again.` }],
                     isError: true,
                 };
             }
@@ -832,7 +832,7 @@ export function registerTabTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -913,7 +913,7 @@ export function registerTabTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error updating section: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error updating section. Please try again.` }],
                     isError: true,
                 };
             }
@@ -923,7 +923,7 @@ export function registerTabTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -981,7 +981,7 @@ export function registerTabTools(server) {
                 .eq('id', section_id);
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error deleting section: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error deleting section. Please try again.` }],
                     isError: true,
                 };
             }
@@ -991,7 +991,7 @@ export function registerTabTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }

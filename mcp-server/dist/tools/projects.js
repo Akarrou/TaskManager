@@ -32,7 +32,7 @@ export function registerProjectTools(server) {
             const { data: ownerProjects, error: ownerError } = await ownerQuery;
             if (ownerError) {
                 return {
-                    content: [{ type: 'text', text: `Error listing projects: ${ownerError.message}` }],
+                    content: [{ type: 'text', text: `Error listing projects. Please try again.` }],
                     isError: true,
                 };
             }
@@ -62,7 +62,7 @@ export function registerProjectTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -87,7 +87,7 @@ export function registerProjectTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error getting project: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error getting project. Please try again.` }],
                     isError: true,
                 };
             }
@@ -97,7 +97,7 @@ export function registerProjectTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -128,7 +128,7 @@ export function registerProjectTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error creating project: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error creating project. Please try again.` }],
                     isError: true,
                 };
             }
@@ -138,7 +138,7 @@ export function registerProjectTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -196,7 +196,7 @@ export function registerProjectTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error updating project: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error updating project. Please try again.` }],
                     isError: true,
                 };
             }
@@ -206,7 +206,7 @@ export function registerProjectTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -251,7 +251,7 @@ export function registerProjectTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error archiving project: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error archiving project. Please try again.` }],
                     isError: true,
                 };
             }
@@ -261,7 +261,7 @@ export function registerProjectTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -285,7 +285,7 @@ export function registerProjectTools(server) {
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error restoring project: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error restoring project. Please try again.` }],
                     isError: true,
                 };
             }
@@ -295,7 +295,7 @@ export function registerProjectTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -319,7 +319,7 @@ export function registerProjectTools(server) {
                 .order('invited_at', { ascending: true });
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error listing project members: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error listing project members. Please try again.` }],
                     isError: true,
                 };
             }
@@ -329,7 +329,7 @@ export function registerProjectTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -379,7 +379,7 @@ export function registerProjectTools(server) {
                 .eq('id', project_id);
             if (updateError) {
                 return {
-                    content: [{ type: 'text', text: `Error soft-deleting project: ${updateError.message}` }],
+                    content: [{ type: 'text', text: `Error soft-deleting project. Please try again.` }],
                     isError: true,
                 };
             }
@@ -401,7 +401,7 @@ export function registerProjectTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }

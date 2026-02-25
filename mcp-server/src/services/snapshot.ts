@@ -98,16 +98,24 @@ export async function saveSnapshot(params: SnapshotParams): Promise<SnapshotResu
  * - For 'delete' operations: re-inserts the entity
  * - For composite-key entities (spreadsheet cells): uses upsert with conflict columns
  * - For array-data entities (batch/range): restores each item individually
+ *
+ * @param userId - If provided, only allows restoring snapshots owned by this user
  */
-export async function restoreSnapshot(token: string): Promise<{ entityType: string; entityId: string; data: unknown }> {
+export async function restoreSnapshot(token: string, userId?: string): Promise<{ entityType: string; entityId: string; data: unknown }> {
   const supabase = getSupabaseClient();
 
   // Fetch the snapshot
-  const { data: snapshot, error: fetchError } = await supabase
+  let query = supabase
     .from('mcp_snapshots')
     .select('*')
-    .eq('token', token)
-    .single();
+    .eq('token', token);
+
+  // Filter by user_id if provided (access control)
+  if (userId) {
+    query = query.eq('user_id', userId);
+  }
+
+  const { data: snapshot, error: fetchError } = await query.single();
 
   if (fetchError || !snapshot) {
     throw new Error(`Snapshot not found: ${token}`);
@@ -192,11 +200,14 @@ export async function restoreSnapshot(token: string): Promise<{ entityType: stri
 
 /**
  * List snapshots for an entity, ordered by most recent first.
+ *
+ * @param userId - If provided, only returns snapshots owned by this user
  */
 export async function listSnapshots(
   entityType?: string,
   entityId?: string,
   limit: number = 10,
+  userId?: string,
 ): Promise<Record<string, unknown>[]> {
   const supabase = getSupabaseClient();
 
@@ -205,6 +216,11 @@ export async function listSnapshots(
     .select('token, entity_type, entity_id, table_name, tool_name, operation, created_at')
     .order('created_at', { ascending: false })
     .limit(limit);
+
+  // Filter by user_id if provided (access control)
+  if (userId) {
+    query = query.eq('user_id', userId);
+  }
 
   if (entityType) {
     query = query.eq('entity_type', entityType);

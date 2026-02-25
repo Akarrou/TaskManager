@@ -33,7 +33,7 @@ export function registerDatabaseTools(server) {
             const { data, error } = await query;
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error listing databases: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error listing databases. Please try again.` }],
                     isError: true,
                 };
             }
@@ -69,7 +69,7 @@ export function registerDatabaseTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -109,7 +109,7 @@ Column IDs are standard UUIDs (e.g., "a1b2c3d4-e5f6-..."). Essential for underst
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error getting database schema: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error getting database schema. Please try again.` }],
                     isError: true,
                 };
             }
@@ -131,7 +131,7 @@ Column IDs are standard UUIDs (e.g., "a1b2c3d4-e5f6-..."). Essential for underst
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -218,7 +218,7 @@ Column IDs are standard UUIDs (e.g., "a1b2c3d4-e5f6-..."). Essential for underst
             const { data, error, count } = await query;
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error querying rows: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error querying rows. Please try again.` }],
                     isError: true,
                 };
             }
@@ -249,7 +249,7 @@ Column IDs are standard UUIDs (e.g., "a1b2c3d4-e5f6-..."). Essential for underst
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -323,7 +323,7 @@ Example cells: { "Title": "My Item", "Status": "pending", "Priority": "high", "C
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error adding row: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error adding row. Please try again.` }],
                     isError: true,
                 };
             }
@@ -333,7 +333,7 @@ Example cells: { "Title": "My Item", "Status": "pending", "Priority": "high", "C
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -414,7 +414,7 @@ Example: { "Status": "completed", "Priority": "high", "Progress": 100 }. Related
                 .single();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error updating row: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error updating row. Please try again.` }],
                     isError: true,
                 };
             }
@@ -424,7 +424,7 @@ Example: { "Status": "completed", "Priority": "high", "Progress": 100 }. Related
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -484,7 +484,7 @@ Example: { "Status": "completed", "Priority": "high", "Progress": 100 }. Related
                 .in('id', row_ids);
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error soft-deleting rows: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error soft-deleting rows. Please try again.` }],
                     isError: true,
                 };
             }
@@ -509,7 +509,7 @@ Example: { "Status": "completed", "Priority": "high", "Progress": 100 }. Related
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -690,7 +690,7 @@ Returns the created database with its generated database_id. Related tools: add_
                 .single();
             if (dbError) {
                 return {
-                    content: [{ type: 'text', text: `Error creating database: ${dbError.message}` }],
+                    content: [{ type: 'text', text: `Error creating database. Please try again.` }],
                     isError: true,
                 };
             }
@@ -702,7 +702,7 @@ Returns the created database with its generated database_id. Related tools: add_
                 // Rollback metadata
                 await supabase.from('document_databases').delete().eq('database_id', databaseId);
                 return {
-                    content: [{ type: 'text', text: `Error creating table: ${tableError.message}` }],
+                    content: [{ type: 'text', text: `Error creating table. Please try again.` }],
                     isError: true,
                 };
             }
@@ -729,7 +729,7 @@ Returns the created database with its generated database_id. Related tools: add_
                         .single();
                     if (docError || !docData) {
                         return {
-                            content: [{ type: 'text', text: `Database created successfully but failed to fetch document content: ${docError?.message || 'Document not found'}.\n\nDatabase:\n${JSON.stringify(dbData, null, 2)}\n\nTo manually embed it, use edit_document with an append operation containing this node:\n${JSON.stringify(embedNode, null, 2)}` }],
+                            content: [{ type: 'text', text: `Database created successfully but failed to fetch document content.\n\nDatabase:\n${JSON.stringify(dbData, null, 2)}\n\nTo manually embed it, use edit_document with an append operation containing this node:\n${JSON.stringify(embedNode, null, 2)}` }],
                         };
                     }
                     // Append databaseTable node to existing document content
@@ -748,7 +748,7 @@ Returns the created database with its generated database_id. Related tools: add_
                         .eq('id', document_id);
                     if (updateError) {
                         return {
-                            content: [{ type: 'text', text: `Database created successfully but failed to embed in document: ${updateError.message}.\n\nDatabase:\n${JSON.stringify(dbData, null, 2)}\n\nTo manually embed it, use edit_document with an append operation containing this node:\n${JSON.stringify(embedNode, null, 2)}` }],
+                            content: [{ type: 'text', text: `Database created successfully but failed to embed in document.\n\nDatabase:\n${JSON.stringify(dbData, null, 2)}\n\nTo manually embed it, use edit_document with an append operation containing this node:\n${JSON.stringify(embedNode, null, 2)}` }],
                         };
                     }
                     return {
@@ -768,7 +768,7 @@ Returns the created database with its generated database_id. Related tools: add_
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -828,7 +828,7 @@ Returns the created database with its generated database_id. Related tools: add_
                 .eq('database_id', database_id);
             if (updateError) {
                 return {
-                    content: [{ type: 'text', text: `Error soft-deleting database: ${updateError.message}` }],
+                    content: [{ type: 'text', text: `Error soft-deleting database. Please try again.` }],
                     isError: true,
                 };
             }
@@ -850,7 +850,7 @@ Returns the created database with its generated database_id. Related tools: add_
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -950,7 +950,7 @@ Column names must be unique within the database. Returns the created column with
                 .eq('database_id', database_id);
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error adding column: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error adding column. Please try again.` }],
                     isError: true,
                 };
             }
@@ -961,7 +961,7 @@ Column names must be unique within the database. Returns the created column with
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -1055,7 +1055,7 @@ Column names must be unique within the database. Returns the created column with
                 .eq('database_id', database_id);
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error updating column: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error updating column. Please try again.` }],
                     isError: true,
                 };
             }
@@ -1066,7 +1066,7 @@ Column names must be unique within the database. Returns the created column with
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -1136,7 +1136,7 @@ Column names must be unique within the database. Returns the created column with
                 .eq('database_id', database_id);
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error deleting column: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error deleting column. Please try again.` }],
                     isError: true,
                 };
             }
@@ -1147,7 +1147,7 @@ Column names must be unique within the database. Returns the created column with
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -1244,7 +1244,7 @@ Column names must be unique within the database. Returns the created column with
                 .select();
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error importing CSV: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error importing CSV. Please try again.` }],
                     isError: true,
                 };
             }
@@ -1254,7 +1254,7 @@ Column names must be unique within the database. Returns the created column with
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }

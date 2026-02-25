@@ -77,39 +77,19 @@ export function registerClient(params) {
     return client;
 }
 /**
- * Get a registered client by ID
+ * Get a registered client by ID.
+ * Only returns registered clients — unregistered client_ids are rejected.
+ * Clients must register via /register first (Dynamic Client Registration).
  */
 export function getClient(client_id) {
-    // For Claude Desktop, allow any client_id (public client)
-    // In production, you might want stricter validation
-    const client = registeredClients.get(client_id);
-    if (client)
-        return client;
-    // Allow unregistered public clients (like Claude Desktop)
-    // They can use any redirect_uri that matches Claude's callback
-    return {
-        client_id,
-        redirect_uris: ['*'], // Allow any redirect for public clients
-        created_at: new Date(),
-    };
+    return registeredClients.get(client_id) || null;
 }
 /**
- * Validate redirect URI for a client
+ * Validate redirect URI for a client.
+ * Only exact matches are allowed — no wildcards.
  */
 export function validateRedirectUri(client, redirect_uri) {
-    // Allow any redirect for wildcard clients
-    if (client.redirect_uris.includes('*'))
-        return true;
-    // Check if redirect_uri matches registered URIs
-    return client.redirect_uris.some((uri) => {
-        if (uri === redirect_uri)
-            return true;
-        // Allow pattern matching for registered URIs
-        if (uri.endsWith('*')) {
-            return redirect_uri.startsWith(uri.slice(0, -1));
-        }
-        return false;
-    });
+    return client.redirect_uris.includes(redirect_uri);
 }
 // ============================================================================
 // Authorization Code

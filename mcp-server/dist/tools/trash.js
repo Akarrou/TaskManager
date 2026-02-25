@@ -31,7 +31,7 @@ export function registerTrashTools(server) {
             const { data, error } = await query;
             if (error) {
                 return {
-                    content: [{ type: 'text', text: `Error listing trash: ${error.message}` }],
+                    content: [{ type: 'text', text: 'Error listing trash. Please try again.' }],
                     isError: true,
                 };
             }
@@ -63,7 +63,7 @@ export function registerTrashTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err.message}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -100,7 +100,7 @@ export function registerTrashTools(server) {
                 .eq('id', trashItem.item_id);
             if (updateError) {
                 return {
-                    content: [{ type: 'text', text: `Failed to restore item: ${updateError.message}` }],
+                    content: [{ type: 'text', text: 'Failed to restore item. Please try again.' }],
                     isError: true,
                 };
             }
@@ -111,7 +111,7 @@ export function registerTrashTools(server) {
                 .eq('id', trash_id);
             if (deleteError) {
                 return {
-                    content: [{ type: 'text', text: `Item restored but failed to clean up trash record: ${deleteError.message}` }],
+                    content: [{ type: 'text', text: 'Item restored but failed to clean up trash record.' }],
                 };
             }
             return {
@@ -123,7 +123,7 @@ export function registerTrashTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err.message}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -168,7 +168,7 @@ export function registerTrashTools(server) {
                 .eq('id', trashItem.item_id);
             if (deleteError) {
                 // Item might already be gone, still clean up trash
-                console.warn(`Failed to delete from original table: ${deleteError.message}`);
+                // Item might already be gone, still clean up trash
             }
             // Remove from trash
             await supabase
@@ -184,7 +184,7 @@ export function registerTrashTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err.message}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }
@@ -215,7 +215,7 @@ export function registerTrashTools(server) {
                 .eq('user_id', userId);
             if (fetchError) {
                 return {
-                    content: [{ type: 'text', text: `Error fetching trash items: ${fetchError.message}` }],
+                    content: [{ type: 'text', text: 'Error fetching trash items. Please try again.' }],
                     isError: true,
                 };
             }
@@ -236,7 +236,7 @@ export function registerTrashTools(server) {
                     deletedCount++;
                 }
                 catch (err) {
-                    errors.push(`Failed to delete ${item.display_name}: ${err.message}`);
+                    errors.push(`Failed to delete ${item.display_name}`);
                 }
             }
             // Clear all trash records
@@ -256,7 +256,7 @@ export function registerTrashTools(server) {
         }
         catch (err) {
             return {
-                content: [{ type: 'text', text: `Unexpected error: ${err.message}` }],
+                content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
                 isError: true,
             };
         }

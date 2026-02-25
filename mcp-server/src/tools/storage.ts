@@ -4,6 +4,8 @@ import { getSupabaseClient } from '../services/supabase-client.js';
 import { getCurrentUserId } from '../services/user-auth.js';
 import { env } from '../config.js';
 import { saveSnapshot } from '../services/snapshot.js';
+import { userOwnsDocument } from '../utils/document-ownership.js';
+import { logger } from '../services/logger.js';
 
 /**
  * Register all storage-related tools
@@ -23,7 +25,17 @@ export function registerStorageTools(server: McpServer): void {
     },
     async ({ document_id }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
+
+        // Verify document ownership
+        if (!await userOwnsDocument(supabase, document_id, userId)) {
+          return {
+            content: [{ type: 'text', text: 'Access denied: you do not own this document.' }],
+            isError: true,
+          };
+        }
+
         const folderPath = `documents/${document_id}/files`;
 
         const { data, error } = await supabase.storage
@@ -31,8 +43,9 @@ export function registerStorageTools(server: McpServer): void {
           .list(folderPath);
 
         if (error) {
+          logger.error({ error: error.message, document_id }, 'Error listing files');
           return {
-            content: [{ type: 'text', text: `Error listing files: ${error.message}` }],
+            content: [{ type: 'text', text: 'Error listing files. Please try again.' }],
             isError: true,
           };
         }
@@ -68,7 +81,7 @@ export function registerStorageTools(server: McpServer): void {
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -90,7 +103,20 @@ export function registerStorageTools(server: McpServer): void {
     },
     async ({ file_path, signed }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
+
+        // Extract document_id from file_path (format: documents/{uuid}/files/...)
+        const pathMatch = file_path.match(/^documents\/([0-9a-f-]{36})\/files\//);
+        if (pathMatch) {
+          const docId = pathMatch[1];
+          if (!await userOwnsDocument(supabase, docId, userId)) {
+            return {
+              content: [{ type: 'text', text: 'Access denied: you do not own this document.' }],
+              isError: true,
+            };
+          }
+        }
 
         if (signed) {
           const { data, error } = await supabase.storage
@@ -99,7 +125,7 @@ export function registerStorageTools(server: McpServer): void {
 
           if (error) {
             return {
-              content: [{ type: 'text', text: `Error creating signed URL: ${error.message}` }],
+              content: [{ type: 'text', text: 'Error creating signed URL. Please try again.' }],
               isError: true,
             };
           }
@@ -133,7 +159,7 @@ export function registerStorageTools(server: McpServer): void {
         }
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }
@@ -157,6 +183,18 @@ export function registerStorageTools(server: McpServer): void {
         const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
 
+        // Verify document ownership from file path
+        const deletePathMatch = file_path.match(/^documents\/([0-9a-f-]{36})\/files\//);
+        if (deletePathMatch) {
+          const docId = deletePathMatch[1];
+          if (!await userOwnsDocument(supabase, docId, userId)) {
+            return {
+              content: [{ type: 'text', text: 'Access denied: you do not own this document.' }],
+              isError: true,
+            };
+          }
+        }
+
         // Snapshot file metadata before deletion (audit only — file content cannot be restored)
         const snapshot = await saveSnapshot({
           entityType: 'file_metadata',
@@ -173,7 +211,7 @@ export function registerStorageTools(server: McpServer): void {
 
         if (error) {
           return {
-            content: [{ type: 'text', text: `Error deleting file: ${error.message}` }],
+            content: [{ type: 'text', text: 'Error deleting file. Please try again.' }],
             isError: true,
           };
         }
@@ -183,7 +221,7 @@ export function registerStorageTools(server: McpServer): void {
         };
       } catch (err) {
         return {
-          content: [{ type: 'text', text: `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}` }],
+          content: [{ type: 'text', text: 'An unexpected error occurred. Please try again.' }],
           isError: true,
         };
       }

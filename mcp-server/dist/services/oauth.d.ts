@@ -54,11 +54,14 @@ export declare function registerClient(params: {
     client_name?: string;
 }): OAuthClient;
 /**
- * Get a registered client by ID
+ * Get a registered client by ID.
+ * Only returns registered clients — unregistered client_ids are rejected.
+ * Clients must register via /register first (Dynamic Client Registration).
  */
 export declare function getClient(client_id: string): OAuthClient | null;
 /**
- * Validate redirect URI for a client
+ * Validate redirect URI for a client.
+ * Only exact matches are allowed — no wildcards.
  */
 export declare function validateRedirectUri(client: OAuthClient, redirect_uri: string): boolean;
 /**
