@@ -4,7 +4,7 @@ import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/materia
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { debounceTime, Subject, switchMap, finalize } from 'rxjs';
+import { catchError, debounceTime, of, Subject, switchMap, finalize } from 'rxjs';
 
 import { Document } from '../../services/document.service';
 import { GlobalSearchService } from '../../../../core/services/global-search.service';
@@ -63,25 +63,21 @@ export class DocumentPickerDialogComponent {
       debounceTime(300),
       switchMap((query) => {
         this.loading.set(true);
-        return this.globalSearchService.search(query);
+        return this.globalSearchService.search(query).pipe(
+          catchError(() => of(this.emptyResponse)),
+        );
       }),
       takeUntilDestroyed(this.destroyRef),
-    ).subscribe({
-      next: (response) => {
-        const filteredDocs = response.documents.filter(
-          (doc) => !this.data.excludeDocumentIds.has(doc.id)
-        );
-        this.searchResults.set({
-          ...response,
-          documents: filteredDocs,
-          total: filteredDocs.length + response.tasks.length + response.events.length,
-        });
-        this.loading.set(false);
-      },
-      error: () => {
-        this.searchResults.set(this.emptyResponse);
-        this.loading.set(false);
-      },
+    ).subscribe((response) => {
+      const filteredDocs = response.documents.filter(
+        (doc) => !this.data.excludeDocumentIds.has(doc.id)
+      );
+      this.searchResults.set({
+        ...response,
+        documents: filteredDocs,
+        total: filteredDocs.length + response.tasks.length + response.events.length,
+      });
+      this.loading.set(false);
     });
   }
 
