@@ -11,7 +11,6 @@
       <label class="c-label" for="documentTitle">Titre de la page</label>
       <div class="c-input-wrapper">
         <span class="material-icons-outlined c-input-icon">title</span>
-        <!-- eslint-disable @angular-eslint/template/no-autofocus -->
         <input
           class="c-input"
           [class.c-input--error]="documentForm.get('title')?.hasError('required') && documentForm.get('title')?.touched || documentForm.get('title')?.hasError('minlength') && documentForm.get('title')?.touched"
@@ -19,9 +18,8 @@
           type="text"
           formControlName="title"
           placeholder="Entrez le titre de la page..."
-          autofocus
+          cdkFocusInitial
         />
-        <!-- eslint-enable @angular-eslint/template/no-autofocus -->
       </div>
       @if (documentForm.get('title')?.hasError('required') && documentForm.get('title')?.touched) {
         <span class="c-error-text">Le titre est requis</span>

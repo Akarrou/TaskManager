@@ -6,15 +6,13 @@
 <mat-dialog-content class="dialog-content">
     <mat-form-field appearance="outline" class="search-field">
       <mat-label>Rechercher une tâche</mat-label>
-      <!-- eslint-disable @angular-eslint/template/no-autofocus -->
       <input
         matInput
         [value]="searchQuery()"
         (input)="onSearchInput($event)"
-        autofocus
+        cdkFocusInitial
         placeholder="Tapez au moins 2 caractères..."
       />
-      <!-- eslint-enable @angular-eslint/template/no-autofocus -->
       <mat-icon matPrefix>search</mat-icon>
     </mat-form-field>
 

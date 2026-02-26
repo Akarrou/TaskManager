@@ -14,10 +14,10 @@
     <div class="recurrence-options">
       <!-- Frequency selector -->
       <div class="recurrence-row">
-        <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-        <label class="recurrence-label">Fréquence</label>
+        <label class="recurrence-label" for="recurrenceFrequency">Fréquence</label>
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="recurrence-select">
           <mat-select
+            id="recurrenceFrequency"
             [value]="frequency()"
             (selectionChange)="onFrequencyChange($event.value)"
             [disabled]="isDisabled()"
@@ -63,10 +63,10 @@
 
       <!-- End condition -->
       <div class="recurrence-end">
-        <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-        <label class="recurrence-label">Fin de la récurrence</label>
+        <label class="recurrence-label" for="recurrenceEndType">Fin de la récurrence</label>
 
         <mat-radio-group
+          id="recurrenceEndType"
           [value]="endType()"
           (change)="onEndTypeChange($event.value)"
           [disabled]="isDisabled()"

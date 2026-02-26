@@ -11,12 +11,12 @@
   <div class="dialog-content">
     <!-- Search -->
     <div class="search-section">
-      <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-      <label class="section-label">Rechercher une fonction :</label>
+      <label class="section-label" for="formulaSearch">Rechercher une fonction :</label>
       <mat-form-field appearance="outline" class="search-field">
         <mat-icon matPrefix>search</mat-icon>
         <input
           matInput
+          id="formulaSearch"
           placeholder="Tapez un nom ou une description..."
           [value]="searchQuery()"
           (input)="onSearchChange($any($event.target).value)"
@@ -31,10 +31,10 @@
 
     <!-- Category Filter -->
     <div class="category-section">
-      <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-      <label class="section-label">Catégorie :</label>
+      <label class="section-label" for="formulaCategory">Catégorie :</label>
       <mat-form-field appearance="outline" class="category-field">
         <mat-select
+          id="formulaCategory"
           [value]="selectedCategory()"
           (selectionChange)="onCategoryChange($event.value)"
         >
@@ -47,8 +47,7 @@
 
     <!-- Function List -->
     <div class="function-list-section">
-      <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-      <label class="section-label">Sélectionner une fonction :</label>
+      <span class="section-label">Sélectionner une fonction :</span>
       <div class="function-list">
         @for (fn of filteredFunctions(); track fn.name) {
           <div

@@ -23,12 +23,12 @@
 
     <!-- Search field -->
     <div class="form-group">
-      <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-      <label class="form-label">Rechercher un événement</label>
+      <label class="form-label" for="eventSearchInput">Rechercher un événement</label>
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-icon matPrefix class="search-icon">search</mat-icon>
         <input
           matInput
+          id="eventSearchInput"
           type="text"
           placeholder="Filtrer par titre..."
           (input)="onSearchInput($any($event.target).value)"

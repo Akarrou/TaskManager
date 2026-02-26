@@ -56,18 +56,18 @@
   @if (includeTime) {
     <div class="time-section">
       <div class="time-input">
-        <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-        <label>Début</label>
+        <label for="startTime">Début</label>
         <input
+          id="startTime"
           type="time"
           [ngModel]="startTime()"
           (ngModelChange)="startTime.set($event)"
         />
       </div>
       <div class="time-input">
-        <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-        <label>Fin</label>
+        <label for="endTime">Fin</label>
         <input
+          id="endTime"
           type="time"
           [ngModel]="endTime()"
           (ngModelChange)="endTime.set($event)"

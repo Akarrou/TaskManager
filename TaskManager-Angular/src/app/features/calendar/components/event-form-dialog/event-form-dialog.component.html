@@ -11,10 +11,9 @@
 
       <!-- Title -->
       <div class="form-group">
-        <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-        <label class="form-label">Titre <span class="required">*</span></label>
+        <label class="form-label" for="eventTitle">Titre <span class="required">*</span></label>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <input matInput formControlName="title" placeholder="Titre de l'événement" />
+          <input matInput id="eventTitle" formControlName="title" placeholder="Titre de l'événement" />
           @if (form.controls.title.hasError('required') && form.controls.title.touched) {
             <mat-error>Le titre est obligatoire</mat-error>
           }
@@ -24,10 +23,9 @@
       <!-- Database selector (only shown if multiple event databases exist) -->
       @if (showDatabaseSelector()) {
         <div class="form-group">
-          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-          <label class="form-label">Calendrier</label>
+          <label class="form-label" for="eventDatabaseId">Calendrier</label>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-select formControlName="databaseId">
+            <mat-select id="eventDatabaseId" formControlName="databaseId">
               @for (db of calendarStore.eventDatabases(); track db.database_id) {
                 <mat-option [value]="db.database_id">{{ db.name }}</mat-option>
               }
@@ -76,11 +74,10 @@
 
       <!-- Date/Time Row: Start -->
       <div class="form-group">
-        <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-        <label class="form-label">Date de début <span class="required">*</span></label>
+        <label class="form-label" for="eventStartDate">Date de début <span class="required">*</span></label>
         <div class="form-row">
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="date-field">
-            <input matInput [matDatepicker]="startPicker" formControlName="startDate" placeholder="Choisir une date" />
+            <input matInput id="eventStartDate" [matDatepicker]="startPicker" formControlName="startDate" placeholder="Choisir une date" />
             <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
             <mat-datepicker #startPicker></mat-datepicker>
           </mat-form-field>
@@ -94,11 +91,10 @@
 
       <!-- Date/Time Row: End -->
       <div class="form-group">
-        <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-        <label class="form-label">Date de fin <span class="required">*</span></label>
+        <label class="form-label" for="eventEndDate">Date de fin <span class="required">*</span></label>
         <div class="form-row">
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="date-field">
-            <input matInput [matDatepicker]="endPicker" formControlName="endDate" placeholder="Choisir une date" />
+            <input matInput id="eventEndDate" [matDatepicker]="endPicker" formControlName="endDate" placeholder="Choisir une date" />
             <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
             <mat-datepicker #endPicker></mat-datepicker>
           </mat-form-field>
@@ -116,8 +112,7 @@
       <!-- Category + Location -->
       <div class="form-row">
         <div class="form-group flex-1">
-          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-          <label class="form-label form-label--with-action">
+          <label class="form-label form-label--with-action" for="eventCategory">
             Catégorie
             <button
               type="button"
@@ -129,7 +124,7 @@
             </button>
           </label>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-select formControlName="category">
+            <mat-select id="eventCategory" formControlName="category">
               @for (option of categoryOptions(); track option.value) {
                 <mat-option [value]="option.value">
                   <span class="flex items-center gap-2">
@@ -142,22 +137,21 @@
           </mat-form-field>
         </div>
         <div class="form-group flex-1">
-          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-          <label class="form-label">Lieu</label>
+          <label class="form-label" for="eventLocation">Lieu</label>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-icon matPrefix class="location-icon">location_on</mat-icon>
-            <input matInput formControlName="location" placeholder="Ajouter un lieu" />
+            <input matInput id="eventLocation" formControlName="location" placeholder="Ajouter un lieu" />
           </mat-form-field>
         </div>
       </div>
 
       <!-- Description -->
       <div class="form-group">
-        <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-        <label class="form-label">Description</label>
+        <label class="form-label" for="eventDescription">Description</label>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <textarea
             matInput
+            id="eventDescription"
             formControlName="description"
             placeholder="Ajouter une description..."
             rows="3"
@@ -170,15 +164,13 @@
 
       <!-- Recurrence -->
       <div class="form-group">
-        <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-        <label class="form-label">Récurrence</label>
+        <span class="form-label">Récurrence</span>
         <app-recurrence-picker formControlName="recurrence"></app-recurrence-picker>
       </div>
 
       <!-- Reminders -->
       <div class="form-group">
-        <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-        <label class="form-label">Rappels</label>
+        <span class="form-label">Rappels</span>
         <div class="reminders-list">
           @for (reminder of form.controls.reminders.value; track $index) {
             <div class="reminder-row">

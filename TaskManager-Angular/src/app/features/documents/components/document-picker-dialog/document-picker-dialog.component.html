@@ -5,11 +5,11 @@
 
 <mat-dialog-content class="picker-content">
   <div class="picker-search-group">
-    <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-    <label class="picker-search-label">Rechercher</label>
+    <label class="picker-search-label" for="pickerSearch">Rechercher</label>
     <div class="picker-search-wrapper">
       <mat-icon class="picker-search-icon">search</mat-icon>
       <input
+        id="pickerSearch"
         type="text"
         class="picker-search-input"
         [value]="searchQuery()"

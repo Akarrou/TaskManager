@@ -1,9 +1,8 @@
-<!-- eslint-disable @angular-eslint/template/label-has-associated-control -->
 <div class="format-toolbar">
   <!-- Font Family -->
   <div class="toolbar-group">
-    <label class="toolbar-label">Police</label>
-    <select (change)="setFontFamily($event)" class="toolbar-select">
+    <label class="toolbar-label" for="fontFamily">Police</label>
+    <select id="fontFamily" (change)="setFontFamily($event)" class="toolbar-select">
       <option *ngFor="let font of fontFamilies" [value]="font.value">
         {{ font.label }}
       </option>
@@ -12,8 +11,8 @@
 
   <!-- Font Size -->
   <div class="toolbar-group">
-    <label class="toolbar-label">Taille</label>
-    <select (change)="setFontSize($event)" class="toolbar-select">
+    <label class="toolbar-label" for="fontSize">Taille</label>
+    <select id="fontSize" (change)="setFontSize($event)" class="toolbar-select">
       <option *ngFor="let size of fontSizes" [value]="size.value">
         {{ size.label }}
       </option>

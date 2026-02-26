@@ -34,9 +34,8 @@ export interface SearchFilters {
       <div class="filters-quick" style="display: flex; align-items: flex-end; gap: 1rem; width: 100%;">
         <!-- Filtre par type -->
         <div class="filter-group">
-          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-          <label class="filter-label">Type</label>
-          <select class="filter-select" [(ngModel)]="typeFilter" (change)="onFilterChange()" aria-label="Filtrer par type">
+          <label class="filter-label" for="filterType">Type</label>
+          <select id="filterType" class="filter-select" [(ngModel)]="typeFilter" (change)="onFilterChange()" aria-label="Filtrer par type">
             <option value="">Tous</option>
             <option value="epic">Epic</option>
             <option value="feature">Feature</option>
@@ -45,9 +44,9 @@ export interface SearchFilters {
         </div>
         <!-- Filtre par statut -->
         <div class="filter-group">
-          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-          <label class="filter-label">Statut</label>
+          <label class="filter-label" for="filterStatus">Statut</label>
           <select
+            id="filterStatus"
             class="filter-select"
             [(ngModel)]="statusFilter"
             (change)="onFilterChange()"
@@ -64,9 +63,9 @@ export interface SearchFilters {
         </div>
         <!-- Filtre par priorité -->
         <div class="filter-group">
-          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-          <label class="filter-label">Priorité</label>
+          <label class="filter-label" for="filterPriority">Priorité</label>
           <select
+            id="filterPriority"
             class="filter-select priority-select"
             [(ngModel)]="priorityFilter"
             (change)="onFilterChange()"
@@ -80,9 +79,8 @@ export interface SearchFilters {
         </div>
         <!-- Filtre par tag -->
         <div class="filter-group">
-          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-          <label class="filter-label">Tag</label>
-          <input class="filter-select" type="text" [(ngModel)]="tagFilter" (input)="onFilterChange()" placeholder="ex: urgent">
+          <label class="filter-label" for="filterTag">Tag</label>
+          <input id="filterTag" class="filter-select" type="text" [(ngModel)]="tagFilter" (input)="onFilterChange()" placeholder="ex: urgent">
         </div>
         <div style="flex:1;"></div>
         <!-- Bouton reset aligné à droite -->

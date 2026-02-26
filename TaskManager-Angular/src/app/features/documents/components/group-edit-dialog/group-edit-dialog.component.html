@@ -14,8 +14,7 @@
 
     <!-- Color Selection -->
     <div class="selection-section">
-      <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-      <label class="section-label">Couleur</label>
+      <span class="section-label">Couleur</span>
       <div class="color-grid">
         @for (color of colors; track color) {
           <button
@@ -34,8 +33,7 @@
 
     <!-- Preview -->
     <div class="preview-section">
-      <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-      <label class="section-label">Aperçu</label>
+      <span class="section-label">Aperçu</span>
       <div class="preview-group" [style.border-color]="selectedColor">
         <div class="preview-header">
           <mat-icon class="expand-icon" [style.color]="selectedColor">expand_more</mat-icon>

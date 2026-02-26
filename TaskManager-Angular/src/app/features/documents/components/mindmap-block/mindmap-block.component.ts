@@ -13,6 +13,8 @@ import {
   AfterViewInit,
   HostListener,
   NgZone,
+  Injector,
+  afterNextRender,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -87,6 +89,7 @@ export class MindmapBlockComponent
 {
   private ngZone = inject(NgZone);
   private dialog = inject(MatDialog);
+  private injector = inject(Injector);
 
   // Inputs
   @Input() mindmapId!: string;
@@ -100,6 +103,9 @@ export class MindmapBlockComponent
 
   @ViewChild('navigatorContainer', { static: false })
   navigatorContainer!: ElementRef<HTMLDivElement>;
+
+  @ViewChild('editInput', { static: false })
+  editInput?: ElementRef<HTMLInputElement>;
 
   // State signals
   mindmapData = signal<MindmapData>(createDefaultMindmapData());
@@ -1179,6 +1185,9 @@ export class MindmapBlockComponent
   startEditing(nodeId: string, currentLabel: string) {
     this.editingNodeId.set(nodeId);
     this.editingLabel = currentLabel;
+    afterNextRender(() => {
+      this.editInput?.nativeElement?.focus();
+    }, { injector: this.injector });
   }
 
   saveLabel() {

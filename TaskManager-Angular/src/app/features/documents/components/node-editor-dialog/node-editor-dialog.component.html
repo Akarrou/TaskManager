@@ -23,7 +23,6 @@
             Titre
             <span class="c-form-label__required">*</span>
           </label>
-          <!-- eslint-disable @angular-eslint/template/no-autofocus -->
           <input
             id="node-title"
             type="text"
@@ -31,9 +30,8 @@
             [ngModel]="title()"
             (ngModelChange)="title.set($event)"
             placeholder="Titre du nœud"
-            autofocus
+            cdkFocusInitial
           />
-          <!-- eslint-enable @angular-eslint/template/no-autofocus -->
         </div>
 
         <!-- Description -->
@@ -54,8 +52,7 @@
 
         <!-- Formatted Content -->
         <div class="c-form-group">
-          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-          <label class="c-form-label">Notes additionnelles</label>
+          <label class="c-form-label" for="nodeNotes">Notes additionnelles</label>
 
           <div class="formatting-toolbar">
             <button
@@ -85,6 +82,7 @@
           </div>
 
           <textarea
+            id="nodeNotes"
             class="c-form-input c-form-textarea c-form-textarea--notes"
             [ngModel]="formattedContent()"
             (ngModelChange)="formattedContent.set($event)"
@@ -108,8 +106,7 @@
       <div class="tab-content">
         <!-- Shape selector -->
         <div class="c-form-group">
-          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-          <label class="c-form-label">Forme du nœud</label>
+          <span class="c-form-label">Forme du nœud</span>
           <app-shape-selector
             [selectedShape]="shape()"
             (shapeChange)="onShapeChange($event)"
@@ -118,8 +115,7 @@
 
         <!-- Background color -->
         <div class="c-form-group">
-          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-          <label class="c-form-label">Couleur de fond</label>
+          <span class="c-form-label">Couleur de fond</span>
           <app-color-picker
             [selectedColor]="backgroundColor()"
             [showTrigger]="false"
@@ -129,8 +125,7 @@
 
         <!-- Text color -->
         <div class="c-form-group">
-          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-          <label class="c-form-label">Couleur du texte</label>
+          <span class="c-form-label">Couleur du texte</span>
           <div class="text-color-options">
             <button
               type="button"
@@ -155,8 +150,7 @@
 
         <!-- Preview -->
         <div class="c-form-group">
-          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-          <label class="c-form-label">Aperçu</label>
+          <span class="c-form-label">Aperçu</span>
           <div
             class="node-preview"
             [style.backgroundColor]="backgroundColor()"

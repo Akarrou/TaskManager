@@ -210,12 +210,12 @@
 
           <!-- Email (readonly) -->
           <div class="c-form-group">
-            <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-            <label class="c-label">Email (identifiant)</label>
+            <label class="c-label" for="mcpEmail">Email (identifiant)</label>
             <div class="c-input-wrapper">
               <span class="material-icons-outlined c-input-icon">email</span>
               <input
                 class="c-input c-input--readonly"
+                id="mcpEmail"
                 type="text"
                 [value]="profileStore.profile()?.email"
                 readonly
@@ -255,12 +255,12 @@
           <!-- Generated Basic Auth Token -->
           @if (getMcpBasicAuthToken()) {
             <div class="c-form-group">
-              <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-              <label class="c-label">Token d'authentification</label>
+              <label class="c-label" for="mcpAuthToken">Token d'authentification</label>
               <div class="c-input-wrapper c-input-wrapper--copyable">
                 <span class="material-icons-outlined c-input-icon">key</span>
                 <input
                   class="c-input c-input--readonly c-input--mono"
+                  id="mcpAuthToken"
                   type="text"
                   [value]="'Basic ' + getMcpBasicAuthToken()"
                   readonly
@@ -281,8 +281,7 @@
 
           <!-- Configuration mcp.json -->
           <div class="c-form-group">
-            <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-            <label class="c-label">Configuration MCP</label>
+            <span class="c-label">Configuration MCP</span>
             <div class="c-code-block">
               <div class="c-code-block__header">
                 <span class="c-code-block__filename">.mcp.json</span>
