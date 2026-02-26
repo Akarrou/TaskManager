@@ -120,9 +120,21 @@ jobs:
       - name: Add VPS to known hosts
         run: ssh-keyscan -H ${{ env.VPS_HOST }} >> ~/.ssh/known_hosts
 
+      - name: Prepare VPS (first deploy)
+        run: |
+          ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            # Install rsync if missing
+            if ! command -v rsync &>/dev/null; then
+              echo 'Installing rsync...'
+              sudo apt-get update -qq && sudo apt-get install -y -qq rsync
+            fi
+
+            # Create directory structure
+            mkdir -p ${{ env.VPS_PATH }}/{dist/TaskManager-Angular/browser,OBS/{scripts,backups,supabase-self-hosted/volumes/functions},supabase/migrations,mcp-server}
+          "
+
       - name: Write .env.production to VPS
         run: |
-          ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "mkdir -p ${{ env.VPS_PATH }}/OBS"
           scp /tmp/.env.production ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.VPS_PATH }}/OBS/.env.production
 
       - name: Generate Caddyfile on VPS
