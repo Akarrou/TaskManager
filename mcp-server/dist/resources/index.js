@@ -1,6 +1,28 @@
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getSupabaseClient } from '../services/supabase-client.js';
+import { getCurrentUserId } from '../services/user-auth.js';
 import { logger } from '../services/logger.js';
+/**
+ * Check if user has access to a project (owner or member)
+ */
+async function userHasProjectAccess(supabase, projectId, userId) {
+    // Check if user is owner
+    const { data: project } = await supabase
+        .from('projects')
+        .select('owner_id')
+        .eq('id', projectId)
+        .single();
+    if (project?.owner_id === userId)
+        return true;
+    // Check if user is member
+    const { data: membership } = await supabase
+        .from('project_members')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('user_id', userId)
+        .maybeSingle();
+    return !!membership;
+}
 /**
  * Register MCP Resources
  * Resources expose read-only data that can be accessed by the model
@@ -11,10 +33,21 @@ export function registerResources(server) {
     // =========================================================================
     server.registerResource('projects', 'kodo://projects', { title: 'Projects', description: 'List of all projects accessible to the current user', mimeType: 'application/json' }, async (uri) => {
         try {
+            const userId = getCurrentUserId();
+            if (!userId) {
+                return {
+                    contents: [{
+                            uri: uri.href,
+                            mimeType: 'application/json',
+                            text: JSON.stringify({ error: 'No authenticated user. Please authenticate first.' }),
+                        }],
+                };
+            }
             const supabase = getSupabaseClient();
             const { data, error } = await supabase
                 .from('projects')
                 .select('id, name, description, created_at, updated_at')
+                .eq('owner_id', userId)
                 .order('updated_at', { ascending: false });
             if (error) {
                 logger.error({ uri: uri.href, error: error.message }, 'Resource fetch failed');
@@ -51,7 +84,28 @@ export function registerResources(server) {
     server.registerResource('project', new ResourceTemplate('kodo://project/{id}', { list: undefined }), { title: 'Project Details', description: 'Details of a specific project including members and stats', mimeType: 'application/json' }, async (uri, variables) => {
         const id = variables.id;
         try {
+            const userId = getCurrentUserId();
+            if (!userId) {
+                return {
+                    contents: [{
+                            uri: uri.href,
+                            mimeType: 'application/json',
+                            text: JSON.stringify({ error: 'No authenticated user. Please authenticate first.' }),
+                        }],
+                };
+            }
             const supabase = getSupabaseClient();
+            // Verify user has access to this project
+            const hasAccess = await userHasProjectAccess(supabase, id, userId);
+            if (!hasAccess) {
+                return {
+                    contents: [{
+                            uri: uri.href,
+                            mimeType: 'application/json',
+                            text: JSON.stringify({ error: 'Access denied: you are not the owner or a member of this project' }),
+                        }],
+                };
+            }
             // Get project details
             const { data: project, error: projectError } = await supabase
                 .from('projects')
@@ -109,7 +163,28 @@ export function registerResources(server) {
     server.registerResource('project-stats', new ResourceTemplate('kodo://project/{id}/stats', { list: undefined }), { title: 'Project Statistics', description: 'Detailed statistics for a project including task counts by status', mimeType: 'application/json' }, async (uri, variables) => {
         const id = variables.id;
         try {
+            const userId = getCurrentUserId();
+            if (!userId) {
+                return {
+                    contents: [{
+                            uri: uri.href,
+                            mimeType: 'application/json',
+                            text: JSON.stringify({ error: 'No authenticated user. Please authenticate first.' }),
+                        }],
+                };
+            }
             const supabase = getSupabaseClient();
+            // Verify user has access to this project
+            const hasAccess = await userHasProjectAccess(supabase, id, userId);
+            if (!hasAccess) {
+                return {
+                    contents: [{
+                            uri: uri.href,
+                            mimeType: 'application/json',
+                            text: JSON.stringify({ error: 'Access denied: you are not the owner or a member of this project' }),
+                        }],
+                };
+            }
             // Get document count
             const { count: documentCount } = await supabase
                 .from('documents')
@@ -168,6 +243,16 @@ export function registerResources(server) {
     server.registerResource('database-schema', new ResourceTemplate('kodo://database/{id}/schema', { list: undefined }), { title: 'Database Schema', description: 'Schema definition of a database including columns and their types', mimeType: 'application/json' }, async (uri, variables) => {
         const id = variables.id;
         try {
+            const userId = getCurrentUserId();
+            if (!userId) {
+                return {
+                    contents: [{
+                            uri: uri.href,
+                            mimeType: 'application/json',
+                            text: JSON.stringify({ error: 'No authenticated user. Please authenticate first.' }),
+                        }],
+                };
+            }
             const supabase = getSupabaseClient();
             const { data: dbMeta, error } = await supabase
                 .from('document_databases')
@@ -180,6 +265,31 @@ export function registerResources(server) {
                             uri: uri.href,
                             mimeType: 'application/json',
                             text: JSON.stringify({ error: 'Database not found' }),
+                        }],
+                };
+            }
+            // Verify user owns the document associated with this database
+            const { data: document } = await supabase
+                .from('documents')
+                .select('project_id')
+                .eq('id', dbMeta.document_id)
+                .single();
+            if (!document) {
+                return {
+                    contents: [{
+                            uri: uri.href,
+                            mimeType: 'application/json',
+                            text: JSON.stringify({ error: 'Associated document not found' }),
+                        }],
+                };
+            }
+            const hasAccess = await userHasProjectAccess(supabase, document.project_id, userId);
+            if (!hasAccess) {
+                return {
+                    contents: [{
+                            uri: uri.href,
+                            mimeType: 'application/json',
+                            text: JSON.stringify({ error: 'Access denied: you do not have access to the project containing this database' }),
                         }],
                 };
             }

@@ -321,6 +321,8 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         }),
         Link.configure({
           openOnClick: true,
+          protocols: ['http', 'https', 'mailto'],
+          validate: (url: string) => /^(https?:\/\/|mailto:)/i.test(url),
           HTMLAttributes: {
             class: 'document-link',
           },

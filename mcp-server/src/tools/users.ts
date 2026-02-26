@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getSupabaseClient } from '../services/supabase-client.js';
+import { getCurrentUserId } from '../services/user-auth.js';
 import { logger } from '../services/logger.js';
 
 /**
@@ -18,18 +19,26 @@ export function registerUserTools(server: McpServer): void {
     },
     async () => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
-        const { data, error } = await supabase.rpc('get_all_users');
 
-        if (error) {
+        // Authenticated users can only see their own data
+        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
+
+        if (userError || !userData.user) {
           return {
             content: [{ type: 'text', text: 'Error listing users. Please try again.' }],
             isError: true,
           };
         }
 
+        const result = [{
+          id: userData.user.id,
+          email: userData.user.email,
+        }];
+
         return {
-          content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
       } catch (err) {
         return {
@@ -54,7 +63,16 @@ export function registerUserTools(server: McpServer): void {
     },
     async ({ user_id }) => {
       try {
+        const currentUserId = getCurrentUserId();
         const supabase = getSupabaseClient();
+
+        // Only allow getting the current user's own data
+        if (user_id !== currentUserId) {
+          return {
+            content: [{ type: 'text' as const, text: 'Error: you can only access your own user data.' }],
+            isError: true,
+          };
+        }
 
         // Use auth.admin to get user details (requires service role)
         const { data, error } = await supabase.auth.admin.getUserById(user_id);
@@ -167,7 +185,16 @@ export function registerUserTools(server: McpServer): void {
     },
     async ({ user_id, display_name, avatar_url, metadata }) => {
       try {
+        const currentUserId = getCurrentUserId();
         const supabase = getSupabaseClient();
+
+        // Only allow updating own profile
+        if (user_id !== currentUserId) {
+          return {
+            content: [{ type: 'text' as const, text: 'Error: you can only update your own profile.' }],
+            isError: true,
+          };
+        }
 
         const updates: Record<string, unknown> = {
           updated_at: new Date().toISOString(),

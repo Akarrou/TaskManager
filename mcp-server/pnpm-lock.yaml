@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@hono/node-server':
-        specifier: ^1.13.0
-        version: 1.19.7(hono@4.11.0)
+        specifier: ^1.19.9
+        version: 1.19.9(hono@4.12.2)
       '@modelcontextprotocol/sdk':
-        specifier: ^1.27.0
-        version: 1.27.0(zod@3.25.76)
+        specifier: ^1.27.1
+        version: 1.27.1(zod@3.25.76)
       '@supabase/supabase-js':
         specifier: ^2.49.10
         version: 2.87.1
@@ -75,8 +75,8 @@ importers:
         specifier: ^16.4.0
         version: 16.6.1
       hono:
-        specifier: ^4.6.14
-        version: 4.11.0
+        specifier: ^4.12.2
+        version: 4.12.2
       pino:
         specifier: ^10.1.0
         version: 10.1.0
@@ -258,20 +258,14 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@hono/node-server@1.19.7':
-    resolution: {integrity: sha512-vUcD0uauS7EU2caukW8z5lJKtoGMokxNbJtBiwHgpqxEXokaHCBkQUmCHhjFB1VUTWdqj25QoMkMKzgjq+uhrw==}
-    engines: {node: '>=18.14.1'}
-    peerDependencies:
-      hono: ^4
-
   '@hono/node-server@1.19.9':
     resolution: {integrity: sha512-vHL6w3ecZsky+8P5MD+eFfaGTyCeOHUIFYMGpQGbrBTSmNNoxv0if69rEZ5giu36weC5saFuznL411gRX7bJDw==}
     engines: {node: '>=18.14.1'}
     peerDependencies:
       hono: ^4
 
-  '@modelcontextprotocol/sdk@1.27.0':
-    resolution: {integrity: sha512-qOdO524oPMkUsOJTrsH9vz/HN3B5pKyW+9zIW51A9kDMVe7ON70drz1ouoyoyOcfzc+oxhkQ6jWmbyKnlWmYqA==}
+  '@modelcontextprotocol/sdk@1.27.1':
+    resolution: {integrity: sha512-sr6GbP+4edBwFndLbM60gf07z0FQ79gaExpnsjMGePXqFcSSb7t6iscpjk9DhFhwd+mTEQrzNafGP8/iGGFYaA==}
     engines: {node: '>=18'}
     peerDependencies:
       '@cfworker/json-schema': ^4.1.1
@@ -525,6 +519,9 @@ packages:
   '@types/mdurl@2.0.0':
     resolution: {integrity: sha512-RGdgjQUZba5p6QEFAVx2OGb8rQDL/cPRG7GiedRzMcJ1tYnUANBncjbSB1NRGwbvjcPeikRABz2nshyPk1bhWg==}
 
+  '@types/node@22.19.12':
+    resolution: {integrity: sha512-0QEp0aPJYSyf6RrTjDB7HlKgNMTY+V2C7ESTaVt6G9gQ0rPLzTGz7OF2NXTLR5vcy7HJEtIUsyWLsfX0kTqJBA==}
+
   '@types/node@22.19.3':
     resolution: {integrity: sha512-1N9SBnWYOJTrNZCdh/yJE+t910Y128BoyY+zBLWhL3r0TYzlTmFdXrPwHL9DyFZmlEXNQQolTZh3KHV31QDhyA==}
 
@@ -772,10 +769,6 @@ packages:
   highlight.js@11.11.1:
     resolution: {integrity: sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w==}
     engines: {node: '>=12.0.0'}
-
-  hono@4.11.0:
-    resolution: {integrity: sha512-Jg8uZzN2ul8/qlyid5FO8O624F3AK0wKtkgoeEON1qBum1rM1itYBxoMKu/1SPJC7F1+xlIZsJMmc4HHhJ1AWg==}
-    engines: {node: '>=16.9.0'}
 
   hono@4.12.2:
     resolution: {integrity: sha512-gJnaDHXKDayjt8ue0n8Gs0A007yKXj4Xzb8+cNjZeYsSzzwKc0Lr+OZgYwVfB0pHfUs17EPoLvrOsEaJ9mj+Tg==}
@@ -1153,6 +1146,18 @@ packages:
       utf-8-validate:
         optional: true
 
+  ws@8.19.0:
+    resolution: {integrity: sha512-blAT2mjOEIi0ZzruJfIhb3nps74PRWTCz1IjglWEEpQl5XS/UNama6u2/rjFkDDouqr4L67ry+1aGIALViWjDg==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   zod-to-json-schema@3.25.1:
     resolution: {integrity: sha512-pM/SU9d3YAggzi6MtR4h7ruuQlqKtad8e9S0fmxcMi+ueAK5Korys/aWcV9LIIHTVbj01NdzxcnXSN+O74ZIVA==}
     peerDependencies:
@@ -1241,15 +1246,11 @@ snapshots:
   '@esbuild/win32-x64@0.27.1':
     optional: true
 
-  '@hono/node-server@1.19.7(hono@4.11.0)':
-    dependencies:
-      hono: 4.11.0
-
   '@hono/node-server@1.19.9(hono@4.12.2)':
     dependencies:
       hono: 4.12.2
 
-  '@modelcontextprotocol/sdk@1.27.0(zod@3.25.76)':
+  '@modelcontextprotocol/sdk@1.27.1(zod@3.25.76)':
     dependencies:
       '@hono/node-server': 1.19.9(hono@4.12.2)
       ajv: 8.17.1
@@ -1535,6 +1536,10 @@ snapshots:
 
   '@types/mdurl@2.0.0': {}
 
+  '@types/node@22.19.12':
+    dependencies:
+      undici-types: 6.21.0
+
   '@types/node@22.19.3':
     dependencies:
       undici-types: 6.21.0
@@ -1797,12 +1802,12 @@ snapshots:
 
   happy-dom@20.7.0:
     dependencies:
-      '@types/node': 22.19.3
+      '@types/node': 22.19.12
       '@types/whatwg-mimetype': 3.0.2
       '@types/ws': 8.18.1
       entities: 7.0.1
       whatwg-mimetype: 3.0.0
-      ws: 8.18.3
+      ws: 8.19.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -1816,8 +1821,6 @@ snapshots:
   help-me@5.0.0: {}
 
   highlight.js@11.11.1: {}
-
-  hono@4.11.0: {}
 
   hono@4.12.2: {}
 
@@ -2227,6 +2230,8 @@ snapshots:
   wrappy@1.0.2: {}
 
   ws@8.18.3: {}
+
+  ws@8.19.0: {}
 
   zod-to-json-schema@3.25.1(zod@3.25.76):
     dependencies:

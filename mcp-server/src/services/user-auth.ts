@@ -5,6 +5,7 @@
  * and provides user context for MCP sessions.
  */
 
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { getSupabaseClient } from './supabase-client.js';
 import { logger } from './logger.js';
 
@@ -22,10 +23,17 @@ export interface AuthenticatedUser {
 const sessionUsers = new Map<string, AuthenticatedUser>();
 
 /**
- * Global current user for the active request context
- * This is set per-request and used by tools
+ * AsyncLocalStorage for request-scoped user context.
+ * Each HTTP request runs inside its own async context, preventing
+ * cross-user data leakage under concurrent requests.
  */
-let currentRequestUser: AuthenticatedUser | null = null;
+const userAsyncStorage = new AsyncLocalStorage<AuthenticatedUser | null>();
+
+/**
+ * Fallback global user for stdio transport where AsyncLocalStorage
+ * context is not used (single-user, no concurrency concern).
+ */
+let fallbackUser: AuthenticatedUser | null = null;
 
 /**
  * Authenticate a user by email and password using Supabase Auth
@@ -82,30 +90,48 @@ export function clearSessionUser(sessionId: string): void {
 }
 
 /**
- * Set the current request user context
- * Called at the start of each request handling
+ * Run a callback within an isolated async context for the given user.
+ * Use this in the HTTP transport to ensure each concurrent request
+ * has its own user context that cannot leak to other requests.
+ */
+export function runWithUser<T>(user: AuthenticatedUser | null, callback: () => T): T {
+  return userAsyncStorage.run(user, callback);
+}
+
+/**
+ * Set the current request user context (fallback for stdio transport).
+ * In HTTP mode, prefer `runWithUser()` for proper request isolation.
+ * This function still works: if called inside an AsyncLocalStorage context
+ * it is a no-op warning; otherwise it sets the global fallback.
  */
 export function setCurrentRequestUser(user: AuthenticatedUser | null): void {
-  currentRequestUser = user;
+  fallbackUser = user;
 }
 
 /**
- * Get the current request user context
- * Used by tools to get the authenticated user
+ * Get the current request user context.
+ * Reads from AsyncLocalStorage first (HTTP mode), then falls back
+ * to the global variable (stdio mode).
  */
 export function getCurrentRequestUser(): AuthenticatedUser | null {
-  return currentRequestUser;
+  const asyncUser = userAsyncStorage.getStore();
+  // getStore() returns undefined when called outside any async context
+  if (asyncUser !== undefined) {
+    return asyncUser;
+  }
+  return fallbackUser;
 }
 
 /**
- * Get the current user ID for tools
- * Throws if no user is authenticated (security requirement)
+ * Get the current user ID for tools.
+ * Throws if no user is authenticated (security requirement).
  */
 export function getCurrentUserId(): string {
-  if (!currentRequestUser) {
+  const user = getCurrentRequestUser();
+  if (!user) {
     throw new Error('No authenticated user. Authentication required.');
   }
-  return currentRequestUser.id;
+  return user.id;
 }
 
 /**

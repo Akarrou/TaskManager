@@ -17,10 +17,11 @@ export function registerSpreadsheetTools(server) {
         annotations: { readOnlyHint: true },
     }, async ({ document_id }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
             let query = supabase
                 .from('document_spreadsheets')
-                .select('*')
+                .select('*, documents!left(user_id)')
                 .is('deleted_at', null)
                 .order('created_at', { ascending: false });
             if (document_id) {
@@ -33,8 +34,17 @@ export function registerSpreadsheetTools(server) {
                     isError: true,
                 };
             }
+            // Filter to only spreadsheets in documents owned by the current user
+            const filtered = (data || []).filter((s) => {
+                if (!s.document_id)
+                    return true;
+                const doc = s.documents;
+                return doc?.user_id === userId;
+            });
+            // Remove the joined documents field from the response
+            const cleaned = filtered.map(({ documents, ...rest }) => rest);
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: JSON.stringify(cleaned, null, 2) }],
             };
         }
         catch (err) {
@@ -55,6 +65,7 @@ export function registerSpreadsheetTools(server) {
         annotations: { readOnlyHint: true },
     }, async ({ spreadsheet_id }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
             const { data, error } = await supabase
                 .from('document_spreadsheets')
@@ -65,6 +76,18 @@ export function registerSpreadsheetTools(server) {
             if (error) {
                 return {
                     content: [{ type: 'text', text: 'Error getting spreadsheet. Please try again.' }],
+                    isError: true,
+                };
+            }
+            // Verify document ownership
+            const { data: doc } = await supabase
+                .from('documents')
+                .select('user_id')
+                .eq('id', data.document_id)
+                .maybeSingle();
+            if (doc && doc.user_id !== userId) {
+                return {
+                    content: [{ type: 'text', text: 'Access denied: you do not own this spreadsheet.' }],
                     isError: true,
                 };
             }
@@ -92,7 +115,20 @@ export function registerSpreadsheetTools(server) {
         },
     }, async ({ document_id, name, rows, columns }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
+            // Verify document ownership
+            const { data: doc } = await supabase
+                .from('documents')
+                .select('user_id')
+                .eq('id', document_id)
+                .maybeSingle();
+            if (!doc || doc.user_id !== userId) {
+                return {
+                    content: [{ type: 'text', text: 'Access denied: you do not own this document.' }],
+                    isError: true,
+                };
+            }
             const spreadsheetId = crypto.randomUUID();
             const tableName = `spreadsheet_${spreadsheetId.replace(/-/g, '_')}_cells`;
             const config = {
@@ -298,16 +334,29 @@ export function registerSpreadsheetTools(server) {
         annotations: { readOnlyHint: true },
     }, async ({ spreadsheet_id, sheet_id, start_row, start_col, end_row, end_col }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
             // Get spreadsheet to find table name
             const { data: spreadsheet, error: ssError } = await supabase
                 .from('document_spreadsheets')
-                .select('table_name')
+                .select('table_name, document_id')
                 .eq('spreadsheet_id', spreadsheet_id)
                 .single();
             if (ssError || !spreadsheet) {
                 return {
                     content: [{ type: 'text', text: `Spreadsheet not found: ${spreadsheet_id}` }],
+                    isError: true,
+                };
+            }
+            // Verify document ownership
+            const { data: doc } = await supabase
+                .from('documents')
+                .select('user_id')
+                .eq('id', spreadsheet.document_id)
+                .maybeSingle();
+            if (doc && doc.user_id !== userId) {
+                return {
+                    content: [{ type: 'text', text: 'Access denied: you do not own this spreadsheet.' }],
                     isError: true,
                 };
             }
@@ -511,16 +560,29 @@ export function registerSpreadsheetTools(server) {
         },
     }, async ({ spreadsheet_id, name, rows, columns }) => {
         try {
+            const userId = getCurrentUserId();
             const supabase = getSupabaseClient();
             // Get current config
             const { data: spreadsheet, error: ssError } = await supabase
                 .from('document_spreadsheets')
-                .select('config')
+                .select('config, document_id')
                 .eq('spreadsheet_id', spreadsheet_id)
                 .single();
             if (ssError || !spreadsheet) {
                 return {
                     content: [{ type: 'text', text: `Spreadsheet not found: ${spreadsheet_id}` }],
+                    isError: true,
+                };
+            }
+            // Verify document ownership
+            const { data: doc } = await supabase
+                .from('documents')
+                .select('user_id')
+                .eq('id', spreadsheet.document_id)
+                .maybeSingle();
+            if (doc && doc.user_id !== userId) {
+                return {
+                    content: [{ type: 'text', text: 'Access denied: you do not own this spreadsheet.' }],
                     isError: true,
                 };
             }

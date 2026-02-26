@@ -202,7 +202,9 @@ export class RichTextEditorComponent implements ControlValueAccessor, OnInit {
     // Escape HTML
     html = html.replace(/&/g, '&amp;')
                .replace(/</g, '&lt;')
-               .replace(/>/g, '&gt;');
+               .replace(/>/g, '&gt;')
+               .replace(/"/g, '&quot;')
+               .replace(/'/g, '&#39;');
 
     // Code blocks (must be first to prevent other formatting inside)
     html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="language-$1">$2</code></pre>');
@@ -224,11 +226,23 @@ export class RichTextEditorComponent implements ControlValueAccessor, OnInit {
     // Strikethrough
     html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
 
-    // Links
-    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    // Images (before links to avoid conflicts with ![...] syntax)
+    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match: string, alt: string, src: string) => {
+      const decodedSrc = src.replace(/&amp;/g, '&');
+      if (/^https?:\/\//i.test(decodedSrc) || /^data:image\/(png|jpe?g|gif|webp|bmp|svg\+xml);/i.test(decodedSrc)) {
+        return `<img src="${src}" alt="${alt}" />`;
+      }
+      return `<img src="" alt="${alt}" />`;
+    });
 
-    // Images
-    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />');
+    // Links
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match: string, text: string, href: string) => {
+      const decodedHref = href.replace(/&amp;/g, '&');
+      if (/^https?:\/\//i.test(decodedHref) || /^mailto:/i.test(decodedHref)) {
+        return `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
+      }
+      return `<a href="" target="_blank" rel="noopener">${text}</a>`;
+    });
 
     // Blockquotes
     html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');

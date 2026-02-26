@@ -16,7 +16,7 @@ import { testConnection } from './services/supabase-client.js';
 import { env } from './config.js';
 import { logger, createSessionLogger } from './services/logger.js';
 import { checkRateLimit, getRateLimitInfo } from './middleware/rate-limiter.js';
-import { authenticateUser, authenticateByToken, setSessionUser, clearSessionUser, setCurrentRequestUser, } from './services/user-auth.js';
+import { authenticateUser, authenticateByToken, setSessionUser, clearSessionUser, runWithUser, } from './services/user-auth.js';
 import { handleOAuthMetadata, handleAuthorize, handleToken, handleRegister, } from './routes/oauth.js';
 import { validateAccessToken } from './services/oauth.js';
 // Store active transports for session management
@@ -279,13 +279,9 @@ async function handleRequest(req, res) {
                 res.end(JSON.stringify({ error: 'Invalid or missing session ID' }));
                 return;
             }
-            // Set user context for this request
-            const sessionUser = sessionUserMap.get(sessionId);
-            if (sessionUser) {
-                setCurrentRequestUser(sessionUser);
-            }
+            const sessionUser = sessionUserMap.get(sessionId) ?? null;
             const transport = httpTransports.get(sessionId);
-            await transport.handleRequest(req, res);
+            await runWithUser(sessionUser, () => transport.handleRequest(req, res));
             return;
         }
         // Handle DELETE request for session termination
@@ -316,13 +312,15 @@ async function handleRequest(req, res) {
             }
             // Reuse existing session if valid
             if (sessionId && httpTransports.has(sessionId)) {
-                // Set user context for this request from session
-                const sessionUser = sessionUserMap.get(sessionId);
-                if (sessionUser) {
-                    setCurrentRequestUser(sessionUser);
+                const sessionUser = sessionUserMap.get(sessionId) ?? null;
+                // Verify the authenticated user matches the session owner
+                if (sessionUser && user && sessionUser.id !== user.id) {
+                    res.writeHead(403, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Session belongs to a different user' }));
+                    return;
                 }
                 const transport = httpTransports.get(sessionId);
-                await transport.handleRequest(req, res, parsedBody);
+                await runWithUser(sessionUser, () => transport.handleRequest(req, res, parsedBody));
                 return;
             }
             // New session initialization
@@ -333,7 +331,6 @@ async function handleRequest(req, res) {
                 // Store user for this session
                 sessionUserMap.set(newSessionId, user);
                 setSessionUser(newSessionId, user);
-                setCurrentRequestUser(user);
                 const transport = new StreamableHTTPServerTransport({
                     sessionIdGenerator: () => newSessionId,
                     onsessioninitialized: (id) => {
@@ -351,7 +348,7 @@ async function handleRequest(req, res) {
                 };
                 const server = createMcpServer();
                 await server.connect(transport);
-                await transport.handleRequest(req, res, parsedBody);
+                await runWithUser(user, () => transport.handleRequest(req, res, parsedBody));
                 return;
             }
             // Invalid request
@@ -382,12 +379,11 @@ async function handleRequest(req, res) {
         // Store user for this session
         sessionUserMap.set(sessionId, user);
         setSessionUser(sessionId, user);
-        setCurrentRequestUser(user);
         const server = createMcpServer();
         const transport = new SSEServerTransport('/messages', res);
         sseTransports.set(sessionId, transport);
         res.setHeader('X-Session-Id', sessionId);
-        await server.connect(transport);
+        await runWithUser(user, () => server.connect(transport));
         // Clean up on close
         req.on('close', () => {
             const duration = Date.now() - startTime;
@@ -413,15 +409,11 @@ async function handleRequest(req, res) {
             res.end(JSON.stringify({ error: 'Invalid or missing session ID' }));
             return;
         }
-        // Set user context for this request from session
-        const sessionUser = sessionUserMap.get(sessionId);
-        if (sessionUser) {
-            setCurrentRequestUser(sessionUser);
-        }
+        const sessionUser = sessionUserMap.get(sessionId) ?? null;
         const transport = sseTransports.get(sessionId);
         const body = await readBody(req);
         logger.debug({ sessionId, bodyLength: body.length }, 'Processing SSE message');
-        await transport.handlePostMessage(req, res, body);
+        await runWithUser(sessionUser, () => transport.handlePostMessage(req, res, body));
         return;
     }
     // 404 for unknown routes

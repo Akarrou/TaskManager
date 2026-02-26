@@ -7,16 +7,41 @@
 
 # Application Frontend
 kodo.logicfractals.fr {
+    header {
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.logicfractals.fr wss://api.logicfractals.fr https://accounts.google.com https://oauth2.googleapis.com; frame-src 'self' https://accounts.google.com"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        X-XSS-Protection "0"
+    }
     reverse_proxy app:4010
 }
 
 # Supabase API (pour les requêtes depuis l'app)
 api.logicfractals.fr {
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        X-XSS-Protection "0"
+    }
     reverse_proxy kong:8000
 }
 
 # Supabase Studio (Admin Dashboard) - Protégé par Basic Auth
 supabase.logicfractals.fr {
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        X-XSS-Protection "0"
+    }
     basicauth {
         admin $2a$14$scqGDjAzIA8kXPszxFKfUulBa9hZG73QqJ/QvlN6pFK0EHZZIM9G6
     }
@@ -25,6 +50,14 @@ supabase.logicfractals.fr {
 
 # MCP Server - API pour Claude Code
 mcp.logicfractals.fr {
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        X-XSS-Protection "0"
+    }
     reverse_proxy 172.17.0.1:3100 {
         flush_interval -1
     }

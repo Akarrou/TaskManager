@@ -109,11 +109,14 @@ export function registerCommentTools(server: McpServer): void {
           };
         }
 
+        // Use the authenticated user as the comment author, ignoring the input user_id
+        const authorId = currentUserId;
+
         const commentData: Record<string, unknown> = {
           document_id,
           block_id,
           content,
-          user_id,
+          user_id: authorId,
         };
 
         if (user_email) {
@@ -162,26 +165,41 @@ export function registerCommentTools(server: McpServer): void {
         const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
 
-        // Snapshot before deletion
+        // Fetch comment before deletion
         const { data: currentComment } = await supabase
           .from('block_comments')
           .select('*')
           .eq('id', comment_id)
           .single();
 
-        let snapshotToken = '';
-        if (currentComment) {
-          const snapshot = await saveSnapshot({
-            entityType: 'comment',
-            entityId: comment_id,
-            tableName: 'block_comments',
-            toolName: 'delete_comment',
-            operation: 'delete',
-            data: currentComment,
-            userId,
-          });
-          snapshotToken = snapshot.token;
+        if (!currentComment) {
+          return {
+            content: [{ type: 'text', text: `Comment not found: ${comment_id}` }],
+            isError: true,
+          };
         }
+
+        // Verify the current user is the comment author or the document owner
+        const isAuthor = currentComment.user_id === userId;
+        const isDocOwner = await userOwnsDocument(supabase, currentComment.document_id, userId);
+        if (!isAuthor && !isDocOwner) {
+          return {
+            content: [{ type: 'text' as const, text: 'Error: only the comment author or the document owner can delete this comment.' }],
+            isError: true,
+          };
+        }
+
+        let snapshotToken = '';
+        const snapshot = await saveSnapshot({
+          entityType: 'comment',
+          entityId: comment_id,
+          tableName: 'block_comments',
+          toolName: 'delete_comment',
+          operation: 'delete',
+          data: currentComment,
+          userId,
+        });
+        snapshotToken = snapshot.token;
 
         const { error } = await supabase
           .from('block_comments')

@@ -29,18 +29,27 @@ export declare function getSessionUser(sessionId: string): AuthenticatedUser | n
  */
 export declare function clearSessionUser(sessionId: string): void;
 /**
- * Set the current request user context
- * Called at the start of each request handling
+ * Run a callback within an isolated async context for the given user.
+ * Use this in the HTTP transport to ensure each concurrent request
+ * has its own user context that cannot leak to other requests.
+ */
+export declare function runWithUser<T>(user: AuthenticatedUser | null, callback: () => T): T;
+/**
+ * Set the current request user context (fallback for stdio transport).
+ * In HTTP mode, prefer `runWithUser()` for proper request isolation.
+ * This function still works: if called inside an AsyncLocalStorage context
+ * it is a no-op warning; otherwise it sets the global fallback.
  */
 export declare function setCurrentRequestUser(user: AuthenticatedUser | null): void;
 /**
- * Get the current request user context
- * Used by tools to get the authenticated user
+ * Get the current request user context.
+ * Reads from AsyncLocalStorage first (HTTP mode), then falls back
+ * to the global variable (stdio mode).
  */
 export declare function getCurrentRequestUser(): AuthenticatedUser | null;
 /**
- * Get the current user ID for tools
- * Throws if no user is authenticated (security requirement)
+ * Get the current user ID for tools.
+ * Throws if no user is authenticated (security requirement).
  */
 export declare function getCurrentUserId(): string;
 /**

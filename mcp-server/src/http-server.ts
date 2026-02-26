@@ -21,9 +21,8 @@ import {
   authenticateUser,
   authenticateByToken,
   setSessionUser,
-  getSessionUser,
   clearSessionUser,
-  setCurrentRequestUser,
+  runWithUser,
   type AuthenticatedUser,
 } from './services/user-auth.js';
 import {
@@ -338,14 +337,9 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
         return;
       }
 
-      // Set user context for this request
-      const sessionUser = sessionUserMap.get(sessionId);
-      if (sessionUser) {
-        setCurrentRequestUser(sessionUser);
-      }
-
+      const sessionUser = sessionUserMap.get(sessionId) ?? null;
       const transport = httpTransports.get(sessionId)!;
-      await transport.handleRequest(req, res);
+      await runWithUser(sessionUser, () => transport.handleRequest(req, res));
       return;
     }
 
@@ -380,14 +374,15 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
 
       // Reuse existing session if valid
       if (sessionId && httpTransports.has(sessionId)) {
-        // Set user context for this request from session
-        const sessionUser = sessionUserMap.get(sessionId);
-        if (sessionUser) {
-          setCurrentRequestUser(sessionUser);
+        const sessionUser = sessionUserMap.get(sessionId) ?? null;
+        // Verify the authenticated user matches the session owner
+        if (sessionUser && user && sessionUser.id !== user.id) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Session belongs to a different user' }));
+          return;
         }
-
         const transport = httpTransports.get(sessionId)!;
-        await transport.handleRequest(req, res, parsedBody);
+        await runWithUser(sessionUser, () => transport.handleRequest(req, res, parsedBody));
         return;
       }
 
@@ -401,7 +396,6 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
         // Store user for this session
         sessionUserMap.set(newSessionId, user);
         setSessionUser(newSessionId, user);
-        setCurrentRequestUser(user);
 
         const transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => newSessionId,
@@ -422,7 +416,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
 
         const server = createMcpServer();
         await server.connect(transport);
-        await transport.handleRequest(req, res, parsedBody);
+        await runWithUser(user, () => transport.handleRequest(req, res, parsedBody));
         return;
       }
 
@@ -459,7 +453,6 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
     // Store user for this session
     sessionUserMap.set(sessionId, user);
     setSessionUser(sessionId, user);
-    setCurrentRequestUser(user);
 
     const server = createMcpServer();
     const transport = new SSEServerTransport('/messages', res);
@@ -468,7 +461,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
 
     res.setHeader('X-Session-Id', sessionId);
 
-    await server.connect(transport);
+    await runWithUser(user, () => server.connect(transport));
 
     // Clean up on close
     req.on('close', () => {
@@ -500,18 +493,13 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
       return;
     }
 
-    // Set user context for this request from session
-    const sessionUser = sessionUserMap.get(sessionId);
-    if (sessionUser) {
-      setCurrentRequestUser(sessionUser);
-    }
-
+    const sessionUser = sessionUserMap.get(sessionId) ?? null;
     const transport = sseTransports.get(sessionId)!;
     const body = await readBody(req);
 
     logger.debug({ sessionId, bodyLength: body.length }, 'Processing SSE message');
 
-    await transport.handlePostMessage(req, res, body);
+    await runWithUser(sessionUser, () => transport.handlePostMessage(req, res, body));
     return;
   }
 

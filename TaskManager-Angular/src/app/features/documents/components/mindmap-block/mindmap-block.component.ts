@@ -715,7 +715,12 @@ export class MindmapBlockComponent
     }
 
     // Convert markdown-like formatting to HTML for display
-    let content = node.content.formattedContent;
+    let content = node.content.formattedContent
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
 
     // Convert **bold** to <strong>
     content = content.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');

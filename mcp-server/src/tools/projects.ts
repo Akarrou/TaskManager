@@ -96,6 +96,7 @@ export function registerProjectTools(server: McpServer): void {
     },
     async ({ project_id }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
         const { data, error } = await supabase
           .from('projects')
@@ -109,6 +110,23 @@ export function registerProjectTools(server: McpServer): void {
             content: [{ type: 'text', text: `Error getting project. Please try again.` }],
             isError: true,
           };
+        }
+
+        // Ownership/membership check
+        if (data.owner_id !== userId) {
+          const { data: membership } = await supabase
+            .from('project_members')
+            .select('id')
+            .eq('project_id', project_id)
+            .eq('user_id', userId)
+            .maybeSingle();
+
+          if (!membership) {
+            return {
+              content: [{ type: 'text' as const, text: 'Error: unauthorized access to this project.' }],
+              isError: true,
+            };
+          }
         }
 
         return {
@@ -137,11 +155,13 @@ export function registerProjectTools(server: McpServer): void {
     },
     async ({ name, description }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
 
         const projectData: Record<string, unknown> = {
           name,
           archived: false,
+          owner_id: userId,
         };
 
         if (description) {
@@ -210,19 +230,31 @@ export function registerProjectTools(server: McpServer): void {
           .eq('id', project_id)
           .single();
 
-        let snapshotToken = '';
-        if (currentProject) {
-          const snapshot = await saveSnapshot({
-            entityType: 'project',
-            entityId: project_id,
-            tableName: 'projects',
-            toolName: 'update_project',
-            operation: 'update',
-            data: currentProject,
-            userId,
-          });
-          snapshotToken = snapshot.token;
+        if (!currentProject) {
+          return {
+            content: [{ type: 'text', text: `Project not found: ${project_id}` }],
+            isError: true,
+          };
         }
+
+        // Owner-only check
+        if (currentProject.owner_id !== userId) {
+          return {
+            content: [{ type: 'text' as const, text: 'Error: only the project owner can update this project.' }],
+            isError: true,
+          };
+        }
+
+        const snapshot = await saveSnapshot({
+          entityType: 'project',
+          entityId: project_id,
+          tableName: 'projects',
+          toolName: 'update_project',
+          operation: 'update',
+          data: currentProject,
+          userId,
+        });
+        const snapshotToken = snapshot.token;
 
         const { data, error } = await supabase
           .from('projects')
@@ -274,19 +306,31 @@ export function registerProjectTools(server: McpServer): void {
           .eq('id', project_id)
           .single();
 
-        let snapshotToken = '';
-        if (currentProject) {
-          const snapshot = await saveSnapshot({
-            entityType: 'project',
-            entityId: project_id,
-            tableName: 'projects',
-            toolName: 'archive_project',
-            operation: 'update',
-            data: currentProject,
-            userId,
-          });
-          snapshotToken = snapshot.token;
+        if (!currentProject) {
+          return {
+            content: [{ type: 'text', text: `Project not found: ${project_id}` }],
+            isError: true,
+          };
         }
+
+        // Owner-only check
+        if (currentProject.owner_id !== userId) {
+          return {
+            content: [{ type: 'text' as const, text: 'Error: only the project owner can archive this project.' }],
+            isError: true,
+          };
+        }
+
+        const snapshot = await saveSnapshot({
+          entityType: 'project',
+          entityId: project_id,
+          tableName: 'projects',
+          toolName: 'archive_project',
+          operation: 'update',
+          data: currentProject,
+          userId,
+        });
+        const snapshotToken = snapshot.token;
 
         const { data, error } = await supabase
           .from('projects')
@@ -327,7 +371,23 @@ export function registerProjectTools(server: McpServer): void {
     },
     async ({ project_id }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
+
+        // Owner-only check
+        const { data: currentProject } = await supabase
+          .from('projects')
+          .select('owner_id')
+          .eq('id', project_id)
+          .single();
+
+        if (currentProject && currentProject.owner_id !== userId) {
+          return {
+            content: [{ type: 'text' as const, text: 'Error: only the project owner can restore this project.' }],
+            isError: true,
+          };
+        }
+
         const { data, error } = await supabase
           .from('projects')
           .update({ archived: false })
@@ -368,7 +428,32 @@ export function registerProjectTools(server: McpServer): void {
     },
     async ({ project_id }) => {
       try {
+        const userId = getCurrentUserId();
         const supabase = getSupabaseClient();
+
+        // Check if user is owner or member
+        const { data: project } = await supabase
+          .from('projects')
+          .select('owner_id')
+          .eq('id', project_id)
+          .single();
+
+        if (project && project.owner_id !== userId) {
+          const { data: membership } = await supabase
+            .from('project_members')
+            .select('id')
+            .eq('project_id', project_id)
+            .eq('user_id', userId)
+            .maybeSingle();
+
+          if (!membership) {
+            return {
+              content: [{ type: 'text' as const, text: 'Error: unauthorized access to this project\'s members.' }],
+              isError: true,
+            };
+          }
+        }
+
         const { data, error } = await supabase
           .from('project_members')
           .select('*')
@@ -421,6 +506,14 @@ export function registerProjectTools(server: McpServer): void {
         if (projectError || !project) {
           return {
             content: [{ type: 'text', text: `Project not found: ${project_id}` }],
+            isError: true,
+          };
+        }
+
+        // Owner-only check
+        if (project.owner_id !== userId) {
+          return {
+            content: [{ type: 'text' as const, text: 'Error: only the project owner can delete this project.' }],
             isError: true,
           };
         }

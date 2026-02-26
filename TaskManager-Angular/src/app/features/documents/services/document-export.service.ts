@@ -147,15 +147,21 @@ export class DocumentExportService {
         return value
           ? '<span class="db-checkbox checked">&#9745;</span>'
           : '<span class="db-checkbox">&#9744;</span>';
-      case 'url':
-        return `<a href="${this.escapeHtml(String(value))}">${this.escapeHtml(String(value))}</a>`;
+      case 'url': {
+        const urlStr = String(value);
+        const normalizedUrl = urlStr.toLowerCase().trim();
+        if (/^https?:\/\//i.test(normalizedUrl) || /^mailto:/i.test(normalizedUrl)) {
+          return `<a href="${this.escapeHtml(urlStr)}">${this.escapeHtml(urlStr)}</a>`;
+        }
+        return this.escapeHtml(urlStr);
+      }
       default:
         return this.escapeHtml(String(value));
     }
   }
 
   private resolveChoiceColor(color: string): string {
-    if (color?.startsWith('#')) return color;
+    if (color && /^#[0-9a-fA-F]{3,8}$/.test(color)) return color;
     const colorMap: Record<string, string> = {
       'bg-gray-100': '#f3f4f6', 'bg-gray-200': '#e5e7eb', 'bg-gray-300': '#d1d5db',
       'bg-red-200': '#fecaca', 'bg-red-300': '#fca5a5',
@@ -319,7 +325,7 @@ export class DocumentExportService {
         : '';
 
       const richHtml = formattedContent
-        ? `<div class="mm-node-rich">${formattedContent}</div>`
+        ? `<div class="mm-node-rich">${this.sanitizeHtml(formattedContent)}</div>`
         : '';
 
       const children = data.nodes.filter(n => n.parentId === node.id);
@@ -426,6 +432,49 @@ export class DocumentExportService {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  /**
+   * Sanitize HTML by preserving safe tags (bold, italic, links, etc.)
+   * while removing dangerous elements (script, iframe, etc.) and event handlers.
+   * Used for TipTap rich content that contains intentional formatting.
+   */
+  private sanitizeHtml(html: string): string {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+
+    // Remove dangerous elements
+    doc.querySelectorAll('script, iframe, object, embed, form, svg, math, base, meta, link, style, template, noscript, applet').forEach(el => el.remove());
+
+    // Clean attributes on all elements
+    doc.querySelectorAll('*').forEach(el => {
+      Array.from(el.attributes).forEach(attr => {
+        // Remove event handlers (onclick, onload, etc.)
+        if (attr.name.startsWith('on')) {
+          el.removeAttribute(attr.name);
+        }
+        // Remove CSS expressions (IE-specific XSS vector)
+        if (attr.name === 'style') {
+          const lower = attr.value.toLowerCase();
+          if (lower.includes('expression') || lower.includes('behavior') || lower.includes('-moz-binding')) {
+            el.removeAttribute(attr.name);
+          }
+        }
+      });
+
+      // Sanitize URL-bearing attributes on ALL elements (not just A tags)
+      const urlAttrs = ['href', 'src', 'action', 'formaction', 'data', 'poster'];
+      urlAttrs.forEach(attrName => {
+        const val = el.getAttribute(attrName);
+        if (val) {
+          const normalized = val.toLowerCase().trim();
+          if (normalized.startsWith('javascript:') || normalized.startsWith('vbscript:') || normalized.startsWith('data:text/html')) {
+            el.removeAttribute(attrName);
+          }
+        }
+      });
+    });
+
+    return doc.body.innerHTML;
   }
 
   // =====================================================================
