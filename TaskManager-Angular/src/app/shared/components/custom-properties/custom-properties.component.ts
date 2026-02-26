@@ -17,7 +17,7 @@ export interface CustomProperty {
   id: string;
   name: string;
   type: PropertyType;
-  value: any;
+  value: string | number | boolean | string[] | null;
   options?: string[]; // For select/multiselect types
   required?: boolean;
   placeholder?: string;
@@ -79,8 +79,8 @@ export class CustomPropertiesComponent implements ControlValueAccessor {
     { value: 'email', label: 'Email', icon: 'email' }
   ];
 
-  private onChange: (value: CustomProperty[]) => void = () => {};
-  private onTouched: () => void = () => {};
+  private onChange: (value: CustomProperty[]) => void = () => { /* noop */ };
+  private onTouched: () => void = () => { /* noop */ };
 
   // ControlValueAccessor implementation
   writeValue(value: CustomProperty[]): void {
@@ -131,7 +131,7 @@ export class CustomPropertiesComponent implements ControlValueAccessor {
     this.isAddingProperty.set(false);
   }
 
-  private getDefaultValue(type: PropertyType): any {
+  private getDefaultValue(type: PropertyType): string | number | boolean | string[] | null {
     switch (type) {
       case 'checkbox': return false;
       case 'number': return null;
@@ -141,7 +141,7 @@ export class CustomPropertiesComponent implements ControlValueAccessor {
     }
   }
 
-  updatePropertyValue(property: CustomProperty, value: any) {
+  updatePropertyValue(property: CustomProperty, value: string | number | boolean | string[] | null) {
     this.properties.update(props =>
       props.map(p => p.id === property.id ? { ...p, value } : p)
     );
@@ -163,7 +163,7 @@ export class CustomPropertiesComponent implements ControlValueAccessor {
     return this.propertyTypes.find(t => t.value === type)?.icon || 'label';
   }
 
-  trackByProperty(index: number, property: CustomProperty): string {
+  trackByProperty(_index: number, property: CustomProperty): string {
     return property.id;
   }
 
@@ -185,7 +185,7 @@ export class CustomPropertiesComponent implements ControlValueAccessor {
   }
 
   onMultiselectChange(property: CustomProperty, option: string, checked: boolean) {
-    const currentValue = property.value || [];
+    const currentValue = (Array.isArray(property.value) ? property.value : []) as string[];
     const newValue = checked
       ? [...currentValue, option]
       : currentValue.filter((v: string) => v !== option);

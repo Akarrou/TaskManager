@@ -1,4 +1,4 @@
-import { Component, input, output, signal, inject } from '@angular/core';
+import { Component, input, output, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -36,7 +36,7 @@ interface UploadProgress {
   templateUrl: './file-upload.component.html',
   styleUrls: ['./file-upload.component.scss']
 })
-export class FileUploadComponent {
+export class FileUploadComponent implements OnInit {
   private supabaseService = inject(SupabaseService);
 
   taskId = input<string>();
@@ -54,7 +54,7 @@ export class FileUploadComponent {
   uploadedFiles = signal<FileAttachment[]>([]);
 
   // File type icons mapping
-  private fileIcons: { [key: string]: string } = {
+  private readonly fileIcons: Record<string, string> = {
     'application/pdf': 'picture_as_pdf',
     'image/png': 'image',
     'image/jpeg': 'image',
@@ -153,7 +153,7 @@ export class FileUploadComponent {
 
     try {
       // Upload to Supabase Storage
-      const { data, error } = await this.supabaseService.client
+      const { data: _data, error } = await this.supabaseService.client
         .storage
         .from('task-attachments')
         .upload(fileName, uploadItem.file, {
@@ -211,11 +211,12 @@ export class FileUploadComponent {
         );
       }, 1500);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur upload:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors du téléchargement';
       this.updateUploadProgress(uploadItem.file, {
         status: 'error',
-        error: error.message || 'Erreur lors du téléchargement'
+        error: errorMessage
       });
     }
   }

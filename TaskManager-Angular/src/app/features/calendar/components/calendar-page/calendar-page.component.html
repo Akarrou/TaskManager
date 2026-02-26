@@ -100,7 +100,7 @@
                 }
               </ul>
             </div>
-            <div class="project-filter__overlay" (click)="closeProjectDropdown()"></div>
+            <div class="project-filter__overlay" tabindex="0" (click)="closeProjectDropdown()" (keydown.enter)="closeProjectDropdown()"></div>
           }
         </div>
 
@@ -150,7 +150,7 @@
                aria-label="Détail de l'événement">
           <app-event-detail-panel
             [event]="selectedEvent()!"
-            (close)="closeDetailPanel()"
+            (closePanel)="closeDetailPanel()"
             (edit)="onEditEvent($event)"
             (updated)="onEventUpdated($event)"
             (deleted)="onEventDeleted($event)"

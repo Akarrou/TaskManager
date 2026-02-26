@@ -247,7 +247,7 @@ export const DEFAULT_MINDMAP_CONFIG: MindmapConfig = {
  * Create default mind map data with a root node
  */
 export function createDefaultMindmapData(
-  rootLabel: string = 'Idee centrale'
+  rootLabel = 'Idee centrale'
 ): MindmapData {
   const rootId = crypto.randomUUID();
   return {

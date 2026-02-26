@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 
-import { IStat, DocumentsStats } from './general-dashboard.model';
+
 import { FabStore } from '../../core/stores/fab.store';
 import { DashboardStatsStore } from '../../core/stores/dashboard-stats.store';
 

@@ -6,7 +6,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { DocumentTabGroup, UpdateDocumentTabGroup } from '../../models/document-tabs.model';
+import { DocumentTabGroup } from '../../models/document-tabs.model';
 
 export interface GroupEditDialogData {
   group?: DocumentTabGroup;

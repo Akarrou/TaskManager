@@ -338,7 +338,7 @@ export const DocumentTabsStore = signalStore(
               });
               snackBar.open('Onglet créé', 'Fermer', { duration: 2000 });
             }),
-            catchError((error: Error) => {
+            catchError((_error: Error) => {
               snackBar.open('Erreur lors de la création de l\'onglet', 'Fermer', { duration: 5000 });
               return of(null);
             })
@@ -359,7 +359,7 @@ export const DocumentTabsStore = signalStore(
                 tabs: store.tabs().map((t) => (t.id === tabId ? updatedTab : t)),
               });
             }),
-            catchError((error: Error) => {
+            catchError((_error: Error) => {
               snackBar.open('Erreur lors de la mise à jour de l\'onglet', 'Fermer', { duration: 5000 });
               return of(null);
             })
@@ -390,7 +390,7 @@ export const DocumentTabsStore = signalStore(
               });
               snackBar.open('Onglet supprimé', 'Fermer', { duration: 2000 });
             }),
-            catchError((error: Error) => {
+            catchError((_error: Error) => {
               snackBar.open('Erreur lors de la suppression de l\'onglet', 'Fermer', { duration: 5000 });
               return of(null);
             })
@@ -417,7 +417,7 @@ export const DocumentTabsStore = signalStore(
             tap((updatedTabs) => {
               patchState(store, { tabs: updatedTabs });
             }),
-            catchError((error: Error) => {
+            catchError((_error: Error) => {
               // Reload on error to restore correct state
               const projectId = store.currentProjectId();
               if (projectId) {
@@ -477,7 +477,7 @@ export const DocumentTabsStore = signalStore(
               });
               snackBar.open('Groupe créé', 'Fermer', { duration: 2000 });
             }),
-            catchError((error: Error) => {
+            catchError((_error: Error) => {
               snackBar.open('Erreur lors de la création du groupe', 'Fermer', { duration: 5000 });
               return of(null);
             })
@@ -506,7 +506,7 @@ export const DocumentTabsStore = signalStore(
               });
               snackBar.open('Groupe créé', 'Fermer', { duration: 2000 });
             }),
-            catchError((error: Error) => {
+            catchError((_error: Error) => {
               snackBar.open('Erreur lors de la création du groupe', 'Fermer', { duration: 5000 });
               return of(null);
             })
@@ -529,7 +529,7 @@ export const DocumentTabsStore = signalStore(
                 ),
               });
             }),
-            catchError((error: Error) => {
+            catchError((_error: Error) => {
               snackBar.open('Erreur lors de la mise à jour du groupe', 'Fermer', { duration: 5000 });
               return of(null);
             })
@@ -556,7 +556,7 @@ export const DocumentTabsStore = signalStore(
               });
               snackBar.open('Groupe supprimé', 'Fermer', { duration: 2000 });
             }),
-            catchError((error: Error) => {
+            catchError((_error: Error) => {
               snackBar.open('Erreur lors de la suppression du groupe', 'Fermer', { duration: 5000 });
               return of(null);
             })
@@ -674,7 +674,7 @@ export const DocumentTabsStore = signalStore(
               });
               snackBar.open('Section créée', 'Fermer', { duration: 2000 });
             }),
-            catchError((error: Error) => {
+            catchError((_error: Error) => {
               snackBar.open('Erreur lors de la création de la section', 'Fermer', { duration: 5000 });
               return of(null);
             })
@@ -697,7 +697,7 @@ export const DocumentTabsStore = signalStore(
                 ),
               });
             }),
-            catchError((error: Error) => {
+            catchError((_error: Error) => {
               snackBar.open('Erreur lors de la mise à jour de la section', 'Fermer', { duration: 5000 });
               return of(null);
             })
@@ -724,7 +724,7 @@ export const DocumentTabsStore = signalStore(
               });
               snackBar.open('Section supprimée', 'Fermer', { duration: 2000 });
             }),
-            catchError((error: Error) => {
+            catchError((_error: Error) => {
               snackBar.open('Erreur lors de la suppression de la section', 'Fermer', { duration: 5000 });
               return of(null);
             })
@@ -811,7 +811,7 @@ export const DocumentTabsStore = signalStore(
                   : [...items, newItem],
               });
             }),
-            catchError((error: Error) => {
+            catchError((_error: Error) => {
               snackBar.open('Erreur lors de l\'ajout du document', 'Fermer', { duration: 5000 });
               return of(null);
             })
@@ -844,7 +844,7 @@ export const DocumentTabsStore = signalStore(
                 ),
               });
             }),
-            catchError((error: Error) => {
+            catchError((_error: Error) => {
               // Reload on error
               const projectId = store.currentProjectId();
               if (projectId) {

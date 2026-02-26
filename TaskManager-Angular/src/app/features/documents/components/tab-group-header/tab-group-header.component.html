@@ -5,7 +5,7 @@
   [style.--group-color]="group.color">
 
   <!-- Group Header -->
-  <div class="group-header" (click)="onToggleCollapse()" cdkDragHandle>
+  <div class="group-header" tabindex="0" (click)="onToggleCollapse()" (keydown.enter)="onToggleCollapse()" cdkDragHandle>
     <button mat-icon-button class="collapse-btn" [matTooltip]="group.is_collapsed ? 'Déplier' : 'Replier'">
       <mat-icon>{{ group.is_collapsed ? 'chevron_right' : 'expand_more' }}</mat-icon>
     </button>
@@ -65,9 +65,11 @@
 
           <div
             class="tab-item"
+            tabindex="0"
             [class.selected]="isTabSelected(tab.id)"
             [style.--tab-color]="tab.color"
-            (click)="onTabClick(tab.id, $event)">
+            (click)="onTabClick(tab.id, $event)"
+            (keydown.enter)="onTabClick(tab.id, $event)">
 
             <mat-icon class="tab-icon" [style.color]="isTabSelected(tab.id) ? tab.color : null">
               {{ tab.icon }}

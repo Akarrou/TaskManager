@@ -134,8 +134,8 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   @Input() databaseId!: string;
   @Input() documentId!: string;
   @Input() config!: DatabaseConfig;
-  @Input() storageMode: 'supabase' = 'supabase';
-  @Input() defaultPageSize: number = 5;
+  @Input() storageMode = 'supabase' as const;
+  @Input() defaultPageSize = 5;
   @Input() onDataChange?: (attrs: DatabaseNodeAttributes) => void;
   @Input() initialSearchQuery?: string;
   @Input() set linkedDatabase(value: boolean) {
@@ -424,7 +424,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
           this.totalCount.set(totalCount);
           this.isLoading.set(false);
         },
-        error: (err: any) => {
+        error: (err: unknown) => {
           console.error('Failed to load rows:', err);
           this.error.set('Erreur lors du chargement des données');
           this.isLoading.set(false);
@@ -711,12 +711,12 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
               .getDatabaseMetadata(this.databaseId)
               .pipe(takeUntil(this.destroy$))
               .subscribe({
-                next: (metadata: any) => {
+                next: (metadata: { config: DatabaseConfig }) => {
                   this.databaseConfig.set(metadata.config);
                   this.syncToTipTap();
                   this.loadViewConfig();
                 },
-                error: () => {},
+                error: () => { /* noop */ },
               });
           },
           error: (err) => {
@@ -1217,7 +1217,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
   /**
    * Handle cell click (for future inline editing enhancements)
    */
-  onCellClick(rowId: string, columnId: string, event: Event): void {
+  onCellClick(_rowId: string, _columnId: string, _event: Event): void {
     // Placeholder for future click handling
     // Could be used for more complex editing UI
   }
@@ -1911,7 +1911,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
     this.databaseConfig.update(config => {
       // Find or create the view entry
       let viewIndex = config.views.findIndex(v => v.type === currentViewType);
-      let views = [...config.views];
+      const views = [...config.views];
 
       if (viewIndex === -1) {
         // Create new view entry
@@ -1939,7 +1939,7 @@ export class DocumentDatabaseTableComponent implements OnInit, OnDestroy {
           updatedViewConfig.sortOrder = sort.order;
         } else {
           // Remove sort properties if no sort is active
-          const { sortBy, sortOrder, ...rest } = updatedViewConfig;
+          const { sortBy: _sortBy, sortOrder: _sortOrder, ...rest } = updatedViewConfig;
           updatedViewConfig = rest;
         }
       }

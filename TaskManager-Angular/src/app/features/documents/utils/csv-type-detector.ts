@@ -255,7 +255,7 @@ export class CsvTypeDetector {
    */
   private static isUrl(values: string[]): number {
     const regex =
-      /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/i;
+      /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/i;
     return values.filter(v => regex.test(v)).length / values.length;
   }
 

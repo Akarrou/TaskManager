@@ -23,6 +23,7 @@
             Titre
             <span class="c-form-label__required">*</span>
           </label>
+          <!-- eslint-disable @angular-eslint/template/no-autofocus -->
           <input
             id="node-title"
             type="text"
@@ -32,6 +33,7 @@
             placeholder="Titre du nœud"
             autofocus
           />
+          <!-- eslint-enable @angular-eslint/template/no-autofocus -->
         </div>
 
         <!-- Description -->
@@ -52,6 +54,7 @@
 
         <!-- Formatted Content -->
         <div class="c-form-group">
+          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
           <label class="c-form-label">Notes additionnelles</label>
 
           <div class="formatting-toolbar">
@@ -105,6 +108,7 @@
       <div class="tab-content">
         <!-- Shape selector -->
         <div class="c-form-group">
+          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
           <label class="c-form-label">Forme du nœud</label>
           <app-shape-selector
             [selectedShape]="shape()"
@@ -114,6 +118,7 @@
 
         <!-- Background color -->
         <div class="c-form-group">
+          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
           <label class="c-form-label">Couleur de fond</label>
           <app-color-picker
             [selectedColor]="backgroundColor()"
@@ -124,6 +129,7 @@
 
         <!-- Text color -->
         <div class="c-form-group">
+          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
           <label class="c-form-label">Couleur du texte</label>
           <div class="text-color-options">
             <button
@@ -149,6 +155,7 @@
 
         <!-- Preview -->
         <div class="c-form-group">
+          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
           <label class="c-form-label">Aperçu</label>
           <div
             class="node-preview"

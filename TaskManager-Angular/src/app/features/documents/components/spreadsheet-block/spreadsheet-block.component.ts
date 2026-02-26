@@ -47,7 +47,6 @@ import {
   SpreadsheetCellValue,
   CellErrorType,
   CellFormat,
-  NumberFormatPattern,
   normalizeRange,
   DEFAULT_BORDER_STYLE,
 } from '../../models/spreadsheet.model';
@@ -105,7 +104,7 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
   @Input() spreadsheetId = '';
   @Input() documentId = '';
   @Input() config: SpreadsheetConfig = createDefaultSpreadsheetConfig();
-  @Input() storageMode: 'supabase' = 'supabase';
+  @Input() storageMode = 'supabase' as const;
   @Input() onDataChange?: (attrs: SpreadsheetNodeAttributes) => void;
 
   // =====================================================================
@@ -289,24 +288,24 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
     update: SpreadsheetCellUpdate;
   }[]>();
 
-  private pendingUpdates: Map<string, {
+  private pendingUpdates = new Map<string, {
     sheetId: string;
     row: number;
     col: number;
     update: SpreadsheetCellUpdate;
-  }> = new Map();
+  }>();
 
   // Track cells that need recalculation (dirty cells)
   private dirtyCells = new Set<string>();
   private recalculationScheduled = false;
 
   // Lazy loading state - tracks loaded cell ranges
-  private loadedRanges = signal<Array<{
+  private loadedRanges = signal<{
     rowStart: number;
     rowEnd: number;
     colStart: number;
     colEnd: number;
-  }>>([]);
+  }[]>([]);
   private isLazyLoading = signal(false);
   private pendingLazyLoad: { rowStart: number; rowEnd: number; colStart: number; colEnd: number } | null = null;
   private readonly LAZY_LOAD_BUFFER = 20; // Buffer around viewport for preloading
@@ -500,7 +499,7 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
     }
 
     // Convert dirty cells to array format
-    const cellsToRecalculate: Array<{ sheetId: string; row: number; col: number }> = [];
+    const cellsToRecalculate: { sheetId: string; row: number; col: number }[] = [];
     this.dirtyCells.forEach(key => {
       const [sheetId, rowStr, colStr] = key.split(':');
       cellsToRecalculate.push({
@@ -625,7 +624,7 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
     row: number,
     col: number,
     cellsMap: Map<string, SpreadsheetCell>,
-    visited: Set<string> = new Set()
+    visited = new Set<string>()
   ): void {
     // Prevent infinite recursion
     const currentKey = getCellKey({ row, col, sheet: sheetId });
@@ -760,12 +759,12 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
   /**
    * Save cells to database
    */
-  private saveCells(updates: Array<{
+  private saveCells(updates: {
     sheetId: string;
     row: number;
     col: number;
     update: SpreadsheetCellUpdate;
-  }>) {
+  }[]) {
     if (updates.length === 0) return;
 
     this.isSaving.set(true);
@@ -1070,7 +1069,7 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
   /**
    * Handle cell click (for backward compatibility and simple clicks)
    */
-  onCellClick(row: number, col: number, event?: MouseEvent) {
+  onCellClick(_row: number, _col: number, _event?: MouseEvent) {
     // This is now handled by onCellMouseDown, but keep for double-click handling
     // The click event fires after mousedown/mouseup, so we only update formula bar
     this.updateFormulaBar();
@@ -1643,7 +1642,7 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
       const existingCell = newCells.get(key);
       const existingFormat = existingCell?.format || {};
 
-      let newFormat: CellFormat = { ...existingFormat };
+      const newFormat: CellFormat = { ...existingFormat };
 
       const border = { ...DEFAULT_BORDER_STYLE };
 
@@ -1950,10 +1949,10 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
    * Get all visible merged cells for overlay rendering
    * Returns an array of merged cell info for cells that are visible in the current viewport
    */
-  getVisibleMergedCells(): Array<{ key: string; row: number; col: number }> {
+  getVisibleMergedCells(): { key: string; row: number; col: number }[] {
     const sheetId = this.activeSheetId();
     const cells = this.cells();
-    const mergedCells: Array<{ key: string; row: number; col: number }> = [];
+    const mergedCells: { key: string; row: number; col: number }[] = [];
 
     // Get visible range with some buffer
     const rowStart = Math.max(0, this.visibleRowStart() - 10);
@@ -2298,7 +2297,7 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
 
       // Try parsing common date formats
       // Format: DD/MM/YYYY or DD-MM-YYYY
-      const frDateMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+      const frDateMatch = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
       if (frDateMatch) {
         const [, day, month, year] = frDateMatch;
         const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -2326,7 +2325,7 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
       }
 
       // Format: DD/MM/YYYY HH:MM or DD/MM/YYYY HH:MM:SS
-      const frDateTimeMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+      const frDateTimeMatch = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
       if (frDateTimeMatch) {
         const [, day, month, year, hour, minute, second] = frDateTimeMatch;
         const date = new Date(
@@ -3194,7 +3193,7 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
         this.formulaEngine.loadCells(sheetId, mergedCells);
 
         // Recalculate formulas for newly loaded cells
-        const cellsToRecalc: Array<{ sheetId: string; row: number; col: number }> = [];
+        const cellsToRecalc: { sheetId: string; row: number; col: number }[] = [];
         newCells.forEach((cell) => {
           if (cell.formula) {
             cellsToRecalc.push({ sheetId, row: cell.row, col: cell.col });
@@ -3233,17 +3232,17 @@ export class SpreadsheetBlockComponent implements OnInit, OnDestroy, AfterViewCh
   /**
    * Merge overlapping ranges for efficient tracking
    */
-  private mergeRanges(ranges: Array<{
+  private mergeRanges(ranges: {
     rowStart: number;
     rowEnd: number;
     colStart: number;
     colEnd: number;
-  }>): Array<{
+  }[]): {
     rowStart: number;
     rowEnd: number;
     colStart: number;
     colEnd: number;
-  }> {
+  }[] {
     if (ranges.length <= 1) return ranges;
 
     // Sort by rowStart, then colStart

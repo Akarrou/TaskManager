@@ -237,7 +237,7 @@ export class SpreadsheetRendererDirective implements OnInit, OnDestroy {
 
     try {
       // Get position at the start of the DOM element
-      let pos = view.posAtDOM(element, 0);
+      const pos = view.posAtDOM(element, 0);
 
       // For block nodes, posAtDOM might return the position inside the node
       const $pos = state.doc.resolve(pos);

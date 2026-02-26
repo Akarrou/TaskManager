@@ -32,7 +32,7 @@ export class DateRangeFormatPipe implements PipeTransform {
    * @param includeTime - Whether to include time in the output
    * @returns Formatted string like "1 avr. 2026 → 30 avr. 2026" or "1 avr. 10:00 → 30 avr. 18:00"
    */
-  transform(value: DateRangeValue | null | undefined, includeTime: boolean = false): string {
+  transform(value: DateRangeValue | null | undefined, includeTime = false): string {
     if (!value) {
       return '';
     }

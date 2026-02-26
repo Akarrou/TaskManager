@@ -1,6 +1,6 @@
 @if (isOpen) {
   <!-- Backdrop -->
-  <div class="panel-backdrop" (click)="onClose()"></div>
+  <div class="panel-backdrop" tabindex="0" (click)="onClose()" (keydown.enter)="onClose()"></div>
 
   <!-- Panel -->
   <div class="comment-panel">

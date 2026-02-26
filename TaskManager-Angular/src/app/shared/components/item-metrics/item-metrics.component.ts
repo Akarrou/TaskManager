@@ -192,7 +192,7 @@ export class ItemMetricsComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   // T012 - Configuration graphiques Chart.js
-  progressChartType: 'doughnut' = 'doughnut';
+  progressChartType = 'doughnut' as const;
   progressChartData: ChartData<'doughnut'> = {
     labels: ['Terminé', 'En cours', 'En révision', 'En attente'],
     datasets: [{
@@ -211,7 +211,7 @@ export class ItemMetricsComponent implements OnInit, OnDestroy, OnChanges {
     }
   };
 
-  velocityChartType: 'line' = 'line';
+  velocityChartType = 'line' as const;
   velocityChartData: ChartData<'line'> = {
     labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
     datasets: [{

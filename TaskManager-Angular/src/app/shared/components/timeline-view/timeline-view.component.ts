@@ -132,7 +132,7 @@ export class TimelineViewComponent {
   timelineTasks = computed<TimelineTask[]>(() => {
     const taskList = this.tasks();
     const start = this.timelineStart();
-    const end = this.timelineEnd();
+    const _end = this.timelineEnd();
     const totalDays = this.timelineDays().length;
 
     return taskList
@@ -252,7 +252,7 @@ export class TimelineViewComponent {
     return task.id ?? index.toString();
   }
 
-  trackByDate(index: number, date: Date): number {
+  trackByDate(_index: number, date: Date): number {
     return date.getTime();
   }
 }

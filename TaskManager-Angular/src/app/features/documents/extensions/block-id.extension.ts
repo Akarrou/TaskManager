@@ -89,8 +89,8 @@ const blockIdAssignmentKey = new PluginKey('blockIdAssignment');
 const commentDecorationsKey = new PluginKey('commentDecorations');
 
 // Store for comment data (accessible from outside)
-let currentBlocksWithComments: Set<string> = new Set();
-let currentBlockCommentCounts: Map<string, number> = new Map();
+let currentBlocksWithComments = new Set<string>();
+let currentBlockCommentCounts = new Map<string, number>();
 
 /**
  * BlockId Extension
@@ -271,7 +271,7 @@ export const BlockIdExtension = Extension.create<BlockIdOptions>({
 
           // Track seen IDs to detect duplicates (from paste)
           const seenIds = new Set<string>();
-          const positions: Array<{ pos: number; node: PMNode }> = [];
+          const positions: { pos: number; node: PMNode }[] = [];
 
           newState.doc.descendants((node: PMNode, pos: number) => {
             if (blockTypeSet.has(node.type.name)) {

@@ -651,7 +651,7 @@ export class DocumentTabsService {
    */
   reorderDocuments(
     tabId: string,
-    sectionId: string | null,
+    _sectionId: string | null,
     documentIds: string[]
   ): Observable<DocumentTabItem[]> {
     const updates = documentIds.map((docId, index) =>

@@ -330,7 +330,7 @@ export class DatabaseFiltersComponent {
   /**
    * Mettre à jour la valeur du filtre en cours d'édition
    */
-  onValueChange(value: any): void {
+  onValueChange(value: string | number | boolean): void {
     this.editingFilter.update((filter) => ({
       ...filter,
       value,

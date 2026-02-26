@@ -1,9 +1,9 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { mergeApplicationConfig } from '@angular/core';
+import { mergeApplicationConfig, Provider, EnvironmentProviders } from '@angular/core';
 import { AppComponent } from './app/app.component';
 import { config } from './app/app.config.server';
 
-const bootstrap = async (options?: any) => {
+const bootstrap = async (options?: { providers?: (Provider | EnvironmentProviders)[] }) => {
 
   const finalConfig = options 
     ? mergeApplicationConfig(config, { providers: options.providers || [] })

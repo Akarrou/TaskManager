@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { CdkDropList, CdkDrag, CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
+import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { MatMenuModule } from '@angular/material/menu';
 
 import { KanbanItem } from '../../../core/models/task.model';
@@ -40,7 +40,7 @@ export class KanbanColumnComponent {
   @Output() itemDrop = new EventEmitter<CdkDragDrop<KanbanItem[]>>();
   @Output() itemClick = new EventEmitter<KanbanItem>();
 
-  constructor() { }
+  // noop
 
   onToggleCollapse(): void {
     this.column.isCollapsed = !this.column.isCollapsed;
@@ -67,7 +67,7 @@ export class KanbanColumnComponent {
     }
   }
 
-  trackItem(index: number, item: KanbanItem): string | number {
+  trackItem(_index: number, item: KanbanItem): string | number {
     return item.id;
   }
 

@@ -79,14 +79,14 @@ export class EventDatabaseService {
   private cacheExpiry = 5 * 60 * 1000; // 5 minutes
 
   // Required columns that must exist on event databases
-  private readonly REQUIRED_EVENT_COLUMNS: Array<{
+  private readonly REQUIRED_EVENT_COLUMNS: {
     name: string;
     type: ColumnType;
     visible: boolean;
     readonly: boolean;
     width: number;
     color: PropertyColor;
-  }> = [
+  }[] = [
     { name: 'Google Meet', type: 'url', visible: true, readonly: true, width: 250, color: 'green' },
     { name: 'Color', type: 'text', visible: false, readonly: true, width: 120, color: 'gray' },
     { name: 'Attendees', type: 'json', visible: false, readonly: true, width: 250, color: 'blue' },

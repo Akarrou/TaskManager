@@ -7,11 +7,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import {
   CdkDragDrop,
-  CdkDrag,
-  CdkDragHandle,
-  CdkDragPreview,
-  CdkDragPlaceholder,
-  CdkDropList,
   DragDropModule,
 } from '@angular/cdk/drag-drop';
 import { DocumentSection, UpdateDocumentSection, DocumentTabItem } from '../../models/document-tabs.model';
@@ -41,13 +36,13 @@ export class DocumentSectionCardComponent {
 
   @Input({ required: true }) section!: DocumentSection;
   @Input() items: DocumentTabItem[] = [];
-  @Input() documents: Map<string, Document> = new Map();
-  @Input() storageFiles: Map<string, DocumentStorageFile[]> = new Map();
-  @Input() databases: Map<string, DocumentDatabase[]> = new Map();
+  @Input() documents = new Map<string, Document>();
+  @Input() storageFiles = new Map<string, DocumentStorageFile[]>();
+  @Input() databases = new Map<string, DocumentDatabase[]>();
   @Input() dropListId = '';
   @Input() connectedDropListIds: string[] = [];
   @Input() availableDocuments: Document[] = [];
-  @Input() tabDocumentIds: Set<string> = new Set();
+  @Input() tabDocumentIds = new Set<string>();
 
   @Output() titleChange = new EventEmitter<string>();
   @Output() sectionUpdate = new EventEmitter<UpdateDocumentSection>();
@@ -57,7 +52,7 @@ export class DocumentSectionCardComponent {
   @Output() documentDelete = new EventEmitter<{ event: Event; documentId: string }>();
   @Output() documentUnpin = new EventEmitter<{ event: Event; documentId: string }>();
   @Output() databaseClick = new EventEmitter<string>();
-  @Output() drop = new EventEmitter<CdkDragDrop<DocumentTabItem[]>>();
+  @Output() dropItem = new EventEmitter<CdkDragDrop<DocumentTabItem[]>>();
   @Output() documentAdd = new EventEmitter<string>();
 
   get itemCount(): number {
@@ -100,10 +95,10 @@ export class DocumentSectionCardComponent {
   }
 
   onDrop(event: CdkDragDrop<DocumentTabItem[]>): void {
-    this.drop.emit(event);
+    this.dropItem.emit(event);
   }
 
-  trackItem(index: number, item: DocumentTabItem): string {
+  trackItem(_index: number, item: DocumentTabItem): string {
     return item.id;
   }
 

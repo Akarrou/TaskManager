@@ -378,7 +378,7 @@ export class DatabaseTimelineView implements OnChanges {
     const granularity = this.effectiveGranularity();
 
     // Get interval and format based on granularity
-    const { interval, format, getNextDate } = this.getGranularityConfig(granularity);
+    const { format, getNextDate } = this.getGranularityConfig(granularity);
 
     const markers: { x: number; label: string }[] = [];
 
@@ -485,22 +485,24 @@ export class DatabaseTimelineView implements OnChanges {
       case 'day':
         aligned.setHours(0, 0, 0, 0);
         break;
-      case 'week':
+      case 'week': {
         // Align to Monday
         const dayOfWeek = aligned.getDay();
         const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
         aligned.setDate(aligned.getDate() + diff);
         aligned.setHours(0, 0, 0, 0);
         break;
+      }
       case 'month':
         aligned.setDate(1);
         aligned.setHours(0, 0, 0, 0);
         break;
-      case 'quarter':
+      case 'quarter': {
         const quarterMonth = Math.floor(aligned.getMonth() / 3) * 3;
         aligned.setMonth(quarterMonth, 1);
         aligned.setHours(0, 0, 0, 0);
         break;
+      }
       case 'year':
         aligned.setMonth(0, 1);
         aligned.setHours(0, 0, 0, 0);

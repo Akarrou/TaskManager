@@ -789,7 +789,7 @@ export function createTaskDatabaseTemplateColumns(): DatabaseColumn[] {
  * @param name - Optional custom name for the task database
  * @returns Complete database configuration with task-specific columns and views
  */
-export function createTaskDatabaseConfig(name: string = 'Task Database'): DatabaseConfigExtended {
+export function createTaskDatabaseConfig(name = 'Task Database'): DatabaseConfigExtended {
   // Generate fresh columns with unique IDs for each new database
   const columns = createTaskDatabaseTemplateColumns();
   const statusColumnId = columns.find(col => col.name === 'Status')?.id;
@@ -987,10 +987,10 @@ export function createEventDatabaseTemplateColumns(): DatabaseColumn[] {
  * @param name - Optional custom name for the event database
  * @returns Complete database configuration with event-specific columns and views
  */
-export function createEventDatabaseConfig(name: string = 'Event Database'): DatabaseConfigExtended {
+export function createEventDatabaseConfig(name = 'Event Database'): DatabaseConfigExtended {
   const columns = createEventDatabaseTemplateColumns();
   const startDateColumnId = columns.find(col => col.name === 'Start Date')?.id;
-  const endDateColumnId = columns.find(col => col.name === 'End Date')?.id;
+  const _endDateColumnId = columns.find(col => col.name === 'End Date')?.id;
 
   return {
     name,

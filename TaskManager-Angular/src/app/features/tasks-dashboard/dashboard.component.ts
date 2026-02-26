@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, signal, computed, viewChild, afterNextRender } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -221,7 +221,7 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
       try {
         const parsed = JSON.parse(savedFilters);
         this.currentSearchFilters.set(parsed);
-      } catch (e) { /* Ignorer si parsing échoue */ }
+      } catch (_e) { /* Ignorer si parsing échoue */ }
     }
   }
 
@@ -305,6 +305,7 @@ export class TasksDashboardComponent implements OnInit, OnDestroy {
   }
 
   async debugTasks() {
+    // noop
   }
 
   navigateToNewTaskForm() {

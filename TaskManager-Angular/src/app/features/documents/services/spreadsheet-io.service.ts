@@ -78,7 +78,7 @@ export class SpreadsheetIOService {
   downloadExcel(
     config: SpreadsheetConfig,
     cellsMap: Map<string, SpreadsheetCell>,
-    fileName: string = 'spreadsheet.xlsx',
+    fileName = 'spreadsheet.xlsx',
     options: ExportOptions = { target: 'xlsx' }
   ): void {
     const blob = this.exportToExcel(config, cellsMap, options);
@@ -108,7 +108,7 @@ export class SpreadsheetIOService {
     sheetId: string,
     cellsMap: Map<string, SpreadsheetCell>,
     config: SpreadsheetConfig,
-    fileName: string = 'sheet.csv'
+    fileName = 'sheet.csv'
   ): void {
     const csv = this.exportToCSV(sheetId, cellsMap, config);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });

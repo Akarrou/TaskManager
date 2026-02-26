@@ -265,7 +265,7 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
       const { view, state } = this.editor;
 
       // Get position at the start of the DOM element
-      let pos = view.posAtDOM(element, 0);
+      const pos = view.posAtDOM(element, 0);
 
       // For block nodes, posAtDOM might return the position inside the node
       // We need to find the position just before the node
@@ -291,7 +291,7 @@ export class DatabaseTableRendererDirective implements OnInit, OnDestroy {
 
       console.warn('Could not find databaseTable node at position', pos);
       return pos; // Return the position anyway, let the delete command handle it
-    } catch (error) {
+    } catch (_error) {
       return null;
     }
   }

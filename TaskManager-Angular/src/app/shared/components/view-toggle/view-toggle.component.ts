@@ -1,4 +1,4 @@
-import { Component, signal, output, input } from '@angular/core';
+import { Component, signal, output, input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -102,7 +102,7 @@ export interface ViewOption {
     }
   `]
 })
-export class ViewToggleComponent {
+export class ViewToggleComponent implements OnInit {
   initialView = input<ViewMode>('table');
   currentView = signal<ViewMode>('table');
   viewChange = output<ViewMode>();

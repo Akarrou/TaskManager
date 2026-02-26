@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ElementRef, OnInit, OnDestroy, NgZone } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ElementRef, OnInit, OnDestroy, NgZone, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -52,6 +52,9 @@ export class AccordionSettingsPopoverComponent implements OnInit, OnDestroy {
   selectedIconColor = '#3b82f6';
   selectedTitleColor = '#1f2937';
 
+  private elementRef = inject(ElementRef);
+  private ngZone = inject(NgZone);
+
   private active = false;
   private onDocumentMouseDown = (event: MouseEvent) => {
     if (!this.active) return;
@@ -59,11 +62,6 @@ export class AccordionSettingsPopoverComponent implements OnInit, OnDestroy {
       this.ngZone.run(() => this.closePopover.emit());
     }
   };
-
-  constructor(
-    private elementRef: ElementRef,
-    private ngZone: NgZone,
-  ) {}
 
   ngOnInit() {
     this.selectedIcon = this.currentIcon;

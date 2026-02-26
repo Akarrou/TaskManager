@@ -10,7 +10,7 @@ export interface StorageFileObject {
   updated_at?: string;
   created_at?: string;
   last_accessed_at?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -125,7 +125,7 @@ export class StorageService {
   async getSignedUrl(
     bucket: string,
     path: string,
-    expiresIn: number = 3600
+    expiresIn = 3600
   ): Promise<string> {
     try {
       const { data, error } = await this.supabase.client.storage
@@ -202,7 +202,7 @@ export class StorageService {
    */
   async listFiles(
     bucket: string,
-    folder: string = '',
+    folder = '',
     options: {
       limit?: number;
       offset?: number;

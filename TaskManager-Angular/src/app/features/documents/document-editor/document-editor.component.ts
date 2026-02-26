@@ -1,10 +1,9 @@
-import { Component, OnDestroy, OnInit, inject, signal, computed, ViewEncapsulation, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal, computed, ViewEncapsulation, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Editor, JSONContent } from '@tiptap/core';
 import { EditorView } from '@tiptap/pm/view';
-import { TextSelection } from '@tiptap/pm/state';
 import StarterKit from '@tiptap/starter-kit';
 import { Placeholder } from '@tiptap/extension-placeholder';
 import { EnhancedImage } from '../extensions/enhanced-image.extension';
@@ -30,7 +29,7 @@ import { DocumentState, DocumentSnapshot, createSnapshot, hasChanges } from '../
 import { Columns, Column } from '../extensions/columns.extension';
 import { AccordionGroup, AccordionItem, AccordionTitle, AccordionContent } from '../extensions/accordion.extension';
 import { AccordionSettingsPopoverComponent, AccordionSettings } from '../components/accordion-settings-popover/accordion-settings-popover.component';
-import { DatabaseRow, DatabaseColumn, DocumentDatabase, CellValue, createTaskDatabaseConfig, PROPERTY_COLORS, PropertyColor, getDefaultColumnColor, LinkedItem } from '../models/database.model';
+import { DatabaseRow, DatabaseColumn, DocumentDatabase, CellValue, createTaskDatabaseConfig, PROPERTY_COLORS, getDefaultColumnColor, LinkedItem } from '../models/database.model';
 import { FontSize } from '../extensions/font-size.extension';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { FontFamily } from '@tiptap/extension-font-family';
@@ -49,7 +48,6 @@ import { ExternalLinkDialogComponent, ExternalLinkDialogData, ExternalLinkDialog
 import { DocumentUploadDialogComponent, DocumentUploadDialogData, DocumentUploadDialogResult } from '../components/document-upload-dialog/document-upload-dialog.component';
 import { TaskMention, TaskMentionAttributes } from '../extensions/task-mention.extension';
 import { TaskSearchResult, TaskMentionData } from '../models/document-task-relation.model';
-import { DocumentTasksSectionComponent } from '../components/document-tasks-section/document-tasks-section';
 import { TaskSectionExtension } from '../extensions/task-section.extension';
 import { TaskSectionRendererDirective } from '../directives/task-section-renderer.directive';
 import { DatabaseTableExtension } from '../extensions/database-table.extension';
@@ -60,7 +58,7 @@ import { StorageService } from '../../../core/services/storage.service';
 import { DocumentStore } from '../store/document.store';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { DeleteChildDocumentDialogComponent, DeleteChildDocumentDialogData } from '../components/delete-child-document-dialog/delete-child-document-dialog.component';
-import { BlockIdExtension, extractBlockIdsFromContent, setCommentBadgeClickHandler } from '../extensions/block-id.extension';
+import { BlockIdExtension, setCommentBadgeClickHandler } from '../extensions/block-id.extension';
 import { BlockComment, BlockCommentsMap } from '../models/block-comment.model';
 import { BlockCommentStore } from '../store/block-comment.store';
 import { AuthService } from '../../../core/services/auth';
@@ -349,7 +347,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
         },
         // Enable native drag & drop for blocks
         handleDOMEvents: {
-          mousedown: (view: EditorView, event: MouseEvent) => {
+          mousedown: (_view: EditorView, event: MouseEvent) => {
             const target = event.target as HTMLElement;
             if (target.classList.contains('drag-handle') || target.closest('.drag-handle')) {
               this.isDragging.set(true);
@@ -357,7 +355,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
             }
             return false;
           },
-          dragstart: (view: EditorView, event: DragEvent) => {
+          dragstart: (_view: EditorView, _event: DragEvent) => {
             this.isDragging.set(true);
             this.bubbleMenuDisabled.set(true);
             this.showBubbleMenu.set(false);
@@ -376,7 +374,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
             }, 150);
             return false;
           },
-          drop: (view: EditorView) => {
+          drop: (_view: EditorView) => {
             this.showBubbleMenu.set(false);
             setTimeout(() => {
               this.bubbleMenuDisabled.set(false);
@@ -1351,7 +1349,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     );
   }
 
-  handleKeyDown(view: EditorView, event: KeyboardEvent): boolean {
+  handleKeyDown(_view: EditorView, event: KeyboardEvent): boolean {
     if (this.showSlashMenu()) {
       // Arrow Up
       if (event.key === 'ArrowUp') {
@@ -1919,7 +1917,7 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
 
           // Step 3: Save immediately to persist the databaseId
           this.saveDocumentImmediate().pipe(take(1)).subscribe({
-            next: () => { },
+            next: () => { /* noop */ },
             error: (err) => {
               console.error('❌ Failed to save document after database creation:', err);
             }
@@ -2041,9 +2039,10 @@ export class DocumentEditorComponent implements OnInit, OnDestroy {
     }
 
     switch (column.type) {
-      case 'select':
+      case 'select': {
         const choice = column.options?.choices?.find(c => c.id === value);
         return choice?.label || String(value);
+      }
       case 'checkbox':
         return value ? 'Oui' : 'Non';
       case 'multi-select':

@@ -34,12 +34,14 @@ export const EnhancedImage = Image.extend({
 
       setImageAlignment:
         (alignment: 'left' | 'center' | 'right') =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ({ commands }: { commands: any }) => {
           return commands.updateAttributes('image', { alignment });
         },
 
       setImageCaption:
         (caption: string) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ({ commands }: { commands: any }) => {
           return commands.updateAttributes('image', { caption });
         },

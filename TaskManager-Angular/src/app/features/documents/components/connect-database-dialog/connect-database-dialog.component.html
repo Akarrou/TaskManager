@@ -33,7 +33,9 @@
         <div
           class="database-item"
           [class.selected]="isSelected(db)"
-          (click)="onSelectDatabase(db)">
+          tabindex="0"
+          (click)="onSelectDatabase(db)"
+          (keydown.enter)="onSelectDatabase(db)">
           <div class="database-icon">
             <mat-icon>table_chart</mat-icon>
           </div>

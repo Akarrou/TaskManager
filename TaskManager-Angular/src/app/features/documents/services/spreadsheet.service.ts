@@ -260,7 +260,7 @@ export class SpreadsheetService {
           }),
         );
       }),
-      map(({ error }: { error: any }) => {
+      map(({ error }: { error: unknown }) => {
         if (error) throw error;
         return true;
       }),
@@ -376,12 +376,12 @@ export class SpreadsheetService {
    */
   batchUpdateCells(
     spreadsheetId: string,
-    cells: Array<{
+    cells: {
       sheetId: string;
       row: number;
       col: number;
       update: SpreadsheetCellUpdate;
-    }>
+    }[]
   ): Observable<boolean> {
     const cellsData = cells.map(cell => ({
       sheet_id: cell.sheetId,
@@ -627,7 +627,7 @@ export class SpreadsheetService {
     rowEnd: number,
     colStart: number,
     colEnd: number,
-    buffer: number = 10
+    buffer = 10
   ): Observable<Map<string, SpreadsheetCell>> {
     // Expand range with buffer for smooth scrolling
     const bufferedRange = {
@@ -684,12 +684,12 @@ export class SpreadsheetService {
    */
   updateComputedValues(
     spreadsheetId: string,
-    computedValues: Array<{
+    computedValues: {
       sheetId: string;
       row: number;
       col: number;
       value: SpreadsheetCellValue;
-    }>
+    }[]
   ): Observable<boolean> {
     return this.getSpreadsheetMetadata(spreadsheetId).pipe(
       switchMap(metadata => {

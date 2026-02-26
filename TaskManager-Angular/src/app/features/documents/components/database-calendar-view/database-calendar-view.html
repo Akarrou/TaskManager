@@ -118,7 +118,9 @@
               <div
                 class="calendar-event"
                 [style.background-color]="getEventColor(row)"
+                tabindex="0"
                 (click)="onRowClick(row.id)"
+                (keydown.enter)="onRowClick(row.id)"
                 [matTooltip]="getRowTitle(row)">
                 {{ getRowTitle(row) }}
               </div>

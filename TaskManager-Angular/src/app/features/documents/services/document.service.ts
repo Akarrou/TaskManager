@@ -446,17 +446,17 @@ export class DocumentService {
   extractDatabaseIds(content: JSONContent): string[] {
     const databaseIds: string[] = [];
 
-    const traverse = (node: any) => {
+    const traverse = (node: JSONContent) => {
       if (!node) return;
 
       // Si c'est un noeud database avec un databaseId
-      if (node.type === 'database' && node.attrs?.databaseId) {
-        databaseIds.push(node.attrs.databaseId);
+      if (node.type === 'database' && node.attrs?.['databaseId']) {
+        databaseIds.push(node.attrs['databaseId'] as string);
       }
 
       // Parcourir récursivement les enfants
       if (node.content && Array.isArray(node.content)) {
-        node.content.forEach((child: any) => traverse(child));
+        node.content.forEach((child: JSONContent) => traverse(child));
       }
     };
 
@@ -610,7 +610,7 @@ export class DocumentService {
   /**
    * Search tasks by title
    */
-  searchTasks(query: string, projectId?: string, limit: number = 10): Observable<TaskSearchResult[]> {
+  searchTasks(query: string, projectId?: string, limit = 10): Observable<TaskSearchResult[]> {
     let request = this.client
       .from('tasks')
       .select('id, title, task_number, type, status, priority, project_id')
@@ -768,7 +768,7 @@ export class DocumentService {
   /**
    * Search tasks for a document, filtered by the document's project
    */
-  searchTasksForDocument(documentId: string, query: string, limit: number = 10): Observable<TaskSearchResult[]> {
+  searchTasksForDocument(documentId: string, query: string, limit = 10): Observable<TaskSearchResult[]> {
     // First get the document to find its project_id
     return this.getDocument(documentId).pipe(
       switchMap(doc => {

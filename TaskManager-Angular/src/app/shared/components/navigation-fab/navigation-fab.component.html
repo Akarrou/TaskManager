@@ -63,9 +63,11 @@
   </div>
 
   <!-- Overlay pour fermer le FAB en cliquant ailleurs -->
-  <div class="fab-overlay" 
+  <div class="fab-overlay"
        *ngIf="isOpen()"
-       (click)="closeFab()">
+       (click)="closeFab()"
+       (keydown.enter)="closeFab()"
+       tabindex="0">
   </div>
 </div>
 

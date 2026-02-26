@@ -230,8 +230,10 @@
                           @for (fn of formulaSuggestions(); track fn.name; let i = $index) {
                             <div
                               class="autocomplete-item"
+                              tabindex="0"
                               [class.selected]="i === selectedSuggestionIndex()"
                               (click)="selectFormulaSuggestion(fn)"
+                              (keydown.enter)="selectFormulaSuggestion(fn)"
                               (mouseenter)="selectedSuggestionIndex.set(i)"
                             >
                               <span class="fn-name">{{ fn.name }}</span>

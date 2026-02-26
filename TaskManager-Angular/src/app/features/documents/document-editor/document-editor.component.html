@@ -120,7 +120,9 @@
   <!-- Editor Content -->
   <div
     class="editor-wrapper"
+    tabindex="0"
     (click)="focusEditor($event); onEditorClick($event)"
+    (keydown.enter)="focusEditor($event)"
     appTaskSectionRenderer
     appDatabaseTableRenderer
     appMindmapRenderer
@@ -168,7 +170,9 @@
   @if (propertiesPanelOpen() && isDatabaseRowDocument()) {
     <div
       class="properties-backdrop"
+      tabindex="0"
       (click)="togglePropertiesPanel()"
+      (keydown.enter)="togglePropertiesPanel()"
     ></div>
   }
 
@@ -299,7 +303,7 @@
     [documentId]="documentState().id"
     [blockId]="selectedBlockId()"
     [currentUserId]="currentUserId()"
-    (close)="closeCommentPanel()"
+    (closePanel)="closeCommentPanel()"
     (commentAdded)="onCommentAdded($event)"
     (commentUpdated)="onCommentUpdated($event)"
     (commentDeleted)="onCommentDeleted($event)"

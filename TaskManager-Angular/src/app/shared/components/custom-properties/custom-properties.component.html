@@ -145,7 +145,7 @@
                     <label class="multiselect-option">
                       <input
                         type="checkbox"
-                        [checked]="property.value?.includes(option)"
+                        [checked]="$any(property.value)?.includes(option)"
                         (change)="onMultiselectChange(property, option, $any($event.target).checked)" />
                       {{ option }}
                     </label>

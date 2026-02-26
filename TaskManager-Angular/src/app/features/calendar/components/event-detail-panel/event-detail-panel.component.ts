@@ -37,7 +37,7 @@ export class EventDetailPanelComponent {
     this.eventSignal.set(value);
   }
 
-  @Output() close = new EventEmitter<void>();
+  @Output() closePanel = new EventEmitter<void>();
   @Output() edit = new EventEmitter<EventEntry>();
   @Output() deleted = new EventEmitter<{ databaseId: string; rowId: string }>();
   @Output() updated = new EventEmitter<{ databaseId: string; eventId: string; updates: Partial<EventEntry> }>();
@@ -79,7 +79,7 @@ export class EventDetailPanelComponent {
   });
 
   onClose(): void {
-    this.close.emit();
+    this.closePanel.emit();
   }
 
   onEdit(): void {

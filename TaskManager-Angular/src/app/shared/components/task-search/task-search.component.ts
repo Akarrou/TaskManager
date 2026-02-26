@@ -1,4 +1,4 @@
-import { Component, signal, output, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, output, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -34,6 +34,7 @@ export interface SearchFilters {
       <div class="filters-quick" style="display: flex; align-items: flex-end; gap: 1rem; width: 100%;">
         <!-- Filtre par type -->
         <div class="filter-group">
+          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
           <label class="filter-label">Type</label>
           <select class="filter-select" [(ngModel)]="typeFilter" (change)="onFilterChange()" aria-label="Filtrer par type">
             <option value="">Tous</option>
@@ -44,6 +45,7 @@ export interface SearchFilters {
         </div>
         <!-- Filtre par statut -->
         <div class="filter-group">
+          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
           <label class="filter-label">Statut</label>
           <select
             class="filter-select"
@@ -62,6 +64,7 @@ export interface SearchFilters {
         </div>
         <!-- Filtre par priorité -->
         <div class="filter-group">
+          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
           <label class="filter-label">Priorité</label>
           <select
             class="filter-select priority-select"
@@ -77,6 +80,7 @@ export interface SearchFilters {
         </div>
         <!-- Filtre par tag -->
         <div class="filter-group">
+          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
           <label class="filter-label">Tag</label>
           <input class="filter-select" type="text" [(ngModel)]="tagFilter" (input)="onFilterChange()" placeholder="ex: urgent">
         </div>

@@ -47,6 +47,8 @@
               [attr.aria-selected]="isSelected(result)"
               [class.is-selected]="isSelected(result)"
               (click)="selectResult(result)"
+              (keydown.enter)="selectResult(result)"
+              tabindex="0"
             >
               <div class="spotlight-result-icon icon-document">
                 <mat-icon>{{ result.icon }}</mat-icon>
@@ -72,6 +74,8 @@
               [attr.aria-selected]="isSelected(result)"
               [class.is-selected]="isSelected(result)"
               (click)="selectResult(result)"
+              (keydown.enter)="selectResult(result)"
+              tabindex="0"
             >
               <div class="spotlight-result-icon icon-task">
                 <mat-icon>{{ result.icon }}</mat-icon>
@@ -97,6 +101,8 @@
               [attr.aria-selected]="isSelected(result)"
               [class.is-selected]="isSelected(result)"
               (click)="selectResult(result)"
+              (keydown.enter)="selectResult(result)"
+              tabindex="0"
             >
               <div class="spotlight-result-icon icon-event">
                 <mat-icon>{{ result.icon }}</mat-icon>

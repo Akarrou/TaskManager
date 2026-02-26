@@ -55,7 +55,7 @@ export interface FormulaParseResult {
 })
 export class FormulaEngineService {
   private hfInstance: HF | null = null;
-  private sheetMapping: Map<string, number> = new Map(); // sheetId -> HF sheet index
+  private sheetMapping = new Map<string, number>(); // sheetId -> HF sheet index
 
   /**
    * Default HyperFormula configuration
@@ -299,7 +299,7 @@ export class FormulaEngineService {
    */
   batchSetCellValues(
     sheetId: string,
-    updates: Array<{ row: number; col: number; value: SpreadsheetCellValue | string }>
+    updates: { row: number; col: number; value: SpreadsheetCellValue | string }[]
   ): void {
     if (!this.hfInstance) {
       this.initialize();
@@ -323,7 +323,7 @@ export class FormulaEngineService {
   /**
    * Parse a formula and extract cell references
    */
-  parseFormula(formula: string, sheetId: string): FormulaParseResult {
+  parseFormula(formula: string, _sheetId: string): FormulaParseResult {
     if (!formula.startsWith('=')) {
       return { isValid: false, error: 'Formula must start with =', references: [], ranges: [] };
     }
@@ -452,7 +452,7 @@ export class FormulaEngineService {
     }
 
     // Convert cells map to updates array
-    const updates: Array<{ row: number; col: number; value: SpreadsheetCellValue | string }> = [];
+    const updates: { row: number; col: number; value: SpreadsheetCellValue | string }[] = [];
 
     cells.forEach((cell) => {
       // Only load cells for this sheet
@@ -502,7 +502,7 @@ export class FormulaEngineService {
    * Recalculate only specific cells (optimized for dirty cell recalculation)
    * Returns computed values for the specified cells and their dependents
    */
-  recalculateCells(cells: Array<{ sheetId: string; row: number; col: number }>): Map<string, SpreadsheetCellValue> {
+  recalculateCells(cells: { sheetId: string; row: number; col: number }[]): Map<string, SpreadsheetCellValue> {
     const results = new Map<string, SpreadsheetCellValue>();
 
     if (!this.hfInstance || cells.length === 0) return results;
@@ -548,7 +548,7 @@ export class FormulaEngineService {
     row: number,
     col: number,
     collected: Set<string>,
-    visited: Set<string> = new Set()
+    visited = new Set<string>()
   ): void {
     const key = getCellKey({ row, col, sheet: sheetId });
 
@@ -573,7 +573,7 @@ export class FormulaEngineService {
    * Get the topological order for recalculating a set of cells
    * This ensures cells are calculated in the correct order (dependencies first)
    */
-  getTopologicalOrder(cells: Array<{ sheetId: string; row: number; col: number }>): Array<{ sheetId: string; row: number; col: number }> {
+  getTopologicalOrder(cells: { sheetId: string; row: number; col: number }[]): { sheetId: string; row: number; col: number }[] {
     if (!this.hfInstance || cells.length === 0) return [];
 
     // Build dependency graph
@@ -605,7 +605,7 @@ export class FormulaEngineService {
     });
 
     // Kahn's algorithm for topological sort
-    const result: Array<{ sheetId: string; row: number; col: number }> = [];
+    const result: { sheetId: string; row: number; col: number }[] = [];
     const queue: string[] = [];
 
     // Start with cells that have no dependencies

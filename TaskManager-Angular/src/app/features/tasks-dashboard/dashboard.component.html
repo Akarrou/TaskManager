@@ -80,6 +80,8 @@
                         class="task-number-copy"
                         [class.task-number-copy--clickable]="entry.task_number"
                         (click)="copyTaskNumber(entry.task_number)"
+                        (keydown.enter)="copyTaskNumber(entry.task_number)"
+                        tabindex="0"
                         [matTooltip]="entry.task_number ? 'Cliquer pour copier' : ''"
                         matTooltipPosition="above">
                         {{ entry.task_number || '-' }}

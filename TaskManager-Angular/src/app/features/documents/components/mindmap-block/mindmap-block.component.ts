@@ -30,10 +30,10 @@ import contextMenus from 'cytoscape-context-menus';
 import navigator from 'cytoscape-navigator';
 
 // Type for Cytoscape stylesheet
-type CytoscapeStylesheet = {
+interface CytoscapeStylesheet {
   selector: string;
   style: Record<string, unknown>;
-};
+}
 import { Subject, debounceTime, takeUntil } from 'rxjs';
 import {
   MindmapData,
@@ -42,7 +42,6 @@ import {
   MindmapTheme,
   MindmapNodeShape,
   StickyNote,
-  StickyNoteColor,
   createDefaultMindmapData,
   createDefaultStickyNote,
   getNodeColorByDepth,
@@ -276,9 +275,6 @@ export class MindmapBlockComponent
   }
 
   private setupContextMenu() {
-    // Store reference to component for use in callbacks
-    const component = this;
-
     this.cm = this.cy.contextMenus({
       evtType: 'cxttap',
       menuItems: [
@@ -287,11 +283,11 @@ export class MindmapBlockComponent
           content: 'Ajouter un enfant',
           tooltipText: 'Ajouter un noeud enfant',
           selector: 'node',
-          onClickFunction: function(event: cytoscape.EventObject) {
+          onClickFunction: (event: cytoscape.EventObject) => {
             const node = event.target as cytoscape.NodeSingular;
             const nodeId = node.id();
-            component.ngZone.run(() => {
-              component.addChildNode(nodeId);
+            this.ngZone.run(() => {
+              this.addChildNode(nodeId);
             });
           },
         },
@@ -300,11 +296,11 @@ export class MindmapBlockComponent
           content: 'Modifier',
           tooltipText: 'Modifier le contenu et le style',
           selector: 'node',
-          onClickFunction: function(event: cytoscape.EventObject) {
+          onClickFunction: (event: cytoscape.EventObject) => {
             const node = event.target as cytoscape.NodeSingular;
             const nodeId = node.id();
-            component.ngZone.run(() => {
-              component.openNodeEditor(nodeId);
+            this.ngZone.run(() => {
+              this.openNodeEditor(nodeId);
             });
           },
         },
@@ -313,12 +309,12 @@ export class MindmapBlockComponent
           content: 'Replier',
           tooltipText: 'Replier les enfants',
           selector: 'node',
-          onClickFunction: function(event: cytoscape.EventObject) {
+          onClickFunction: (event: cytoscape.EventObject) => {
             const node = event.target as cytoscape.NodeSingular;
             const nodeId = node.id();
-            component.ngZone.run(() => {
-              if (component.canCollapseNode(nodeId)) {
-                component.collapseNode(nodeId);
+            this.ngZone.run(() => {
+              if (this.canCollapseNode(nodeId)) {
+                this.collapseNode(nodeId);
               }
             });
           },
@@ -328,12 +324,12 @@ export class MindmapBlockComponent
           content: 'Déplier',
           tooltipText: 'Déplier les enfants',
           selector: 'node',
-          onClickFunction: function(event: cytoscape.EventObject) {
+          onClickFunction: (event: cytoscape.EventObject) => {
             const node = event.target as cytoscape.NodeSingular;
             const nodeId = node.id();
-            component.ngZone.run(() => {
-              if (component.canExpandNode(nodeId)) {
-                component.expandNode(nodeId);
+            this.ngZone.run(() => {
+              if (this.canExpandNode(nodeId)) {
+                this.expandNode(nodeId);
               }
             });
           },
@@ -343,13 +339,13 @@ export class MindmapBlockComponent
           content: 'Supprimer',
           tooltipText: 'Supprimer le noeud et ses enfants',
           selector: 'node',
-          onClickFunction: function(event: cytoscape.EventObject) {
+          onClickFunction: (event: cytoscape.EventObject) => {
             const node = event.target as cytoscape.NodeSingular;
             const nodeId = node.id();
-            const data = component.mindmapData();
+            const data = this.mindmapData();
             if (nodeId !== data.rootId) {
-              component.ngZone.run(() => {
-                component.deleteNode(nodeId);
+              this.ngZone.run(() => {
+                this.deleteNode(nodeId);
               });
             }
           },
@@ -359,12 +355,12 @@ export class MindmapBlockComponent
           content: 'Ajouter un frère',
           tooltipText: 'Ajouter un noeud au même niveau',
           selector: 'node',
-          onClickFunction: function(event: cytoscape.EventObject) {
+          onClickFunction: (event: cytoscape.EventObject) => {
             const node = event.target as cytoscape.NodeSingular;
             const parentId = node.data('parentNodeId');
             if (parentId) {
-              component.ngZone.run(() => {
-                component.addChildNode(parentId);
+              this.ngZone.run(() => {
+                this.addChildNode(parentId);
               });
             }
           },

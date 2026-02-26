@@ -235,11 +235,7 @@ export class ItemHeaderComponent {
   }
 
   // Estimation et temps
-  get hasTimeTracking(): boolean {
-    return false;
-  }
+  readonly hasTimeTracking = false;
 
-  get timeTrackingProgress(): number {
-    return 0;
-  }
+  readonly timeTrackingProgress = 0;
 }

@@ -39,9 +39,11 @@
               @if (getDocumentForItem(item); as doc) {
                 <div
                   class="unsectioned-doc-card"
+                  tabindex="0"
                   cdkDrag
                   [cdkDragData]="item"
-                  (click)="onDocumentClick(doc.id)">
+                  (click)="onDocumentClick(doc.id)"
+                  (keydown.enter)="onDocumentClick(doc.id)">
 
                   <!-- Drag Preview -->
                   <div *cdkDragPreview class="document-drag-preview">
@@ -136,7 +138,7 @@
             (documentDelete)="onDocumentDelete($event)"
             (documentUnpin)="onDocumentUnpin($event)"
             (databaseClick)="databaseClick.emit($event)"
-            (drop)="onDrop($event, section.id)"
+            (dropItem)="onDrop($event, section.id)"
             (documentAdd)="onDocumentAddToSection(section.id, $event)">
           </app-document-section-card>
         </div>

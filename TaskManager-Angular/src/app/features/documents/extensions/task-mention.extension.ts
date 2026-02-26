@@ -129,13 +129,16 @@ export const TaskMention = Node.create<TaskMentionOptions>({
     return {
       insertTaskMention:
         (attrs: TaskMentionAttributes) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ({ commands }: { commands: any }) => {
           return commands.insertContent({ type: this.name, attrs });
         },
       updateTaskMention:
         (taskId: string, attrs: Partial<TaskMentionAttributes>) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ({ tr, state }: { tr: any; state: any }) => {
           let found = false;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           state.doc.descendants((node: any, pos: number) => {
             if (node.type.name === this.name && node.attrs.taskId === taskId) {
               tr.setNodeMarkup(pos, undefined, { ...node.attrs, ...attrs });
@@ -152,7 +155,7 @@ export const TaskMention = Node.create<TaskMentionOptions>({
       new Plugin({
         key: new PluginKey('taskMentionClick'),
         props: {
-          handleClick: (view, pos, event) => {
+          handleClick: (_view, _pos, event) => {
             const target = event.target as HTMLElement;
             const taskMentionNode = target.closest('.task-mention-node');
             if (taskMentionNode && this.options.onTaskClick) {

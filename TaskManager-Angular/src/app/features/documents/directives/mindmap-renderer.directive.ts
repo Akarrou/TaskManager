@@ -13,7 +13,6 @@ import { Editor } from '@tiptap/core';
 import { MindmapBlockComponent } from '../components/mindmap-block/mindmap-block.component';
 import {
   MindmapData,
-  MindmapNodeAttributes,
   createDefaultMindmapData,
 } from '../models/mindmap.model';
 
@@ -263,7 +262,7 @@ export class MindmapRendererDirective implements OnInit, OnDestroy {
     const { view, state } = this.editor;
 
     try {
-      let pos = view.posAtDOM(element, 0);
+      const pos = view.posAtDOM(element, 0);
       const $pos = state.doc.resolve(pos);
 
       if ($pos.parent.type.name === 'mindmap') {

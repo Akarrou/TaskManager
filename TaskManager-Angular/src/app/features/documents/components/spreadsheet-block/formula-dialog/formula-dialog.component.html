@@ -11,6 +11,7 @@
   <div class="dialog-content">
     <!-- Search -->
     <div class="search-section">
+      <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
       <label class="section-label">Rechercher une fonction :</label>
       <mat-form-field appearance="outline" class="search-field">
         <mat-icon matPrefix>search</mat-icon>
@@ -30,6 +31,7 @@
 
     <!-- Category Filter -->
     <div class="category-section">
+      <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
       <label class="section-label">Catégorie :</label>
       <mat-form-field appearance="outline" class="category-field">
         <mat-select
@@ -45,13 +47,16 @@
 
     <!-- Function List -->
     <div class="function-list-section">
+      <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
       <label class="section-label">Sélectionner une fonction :</label>
       <div class="function-list">
         @for (fn of filteredFunctions(); track fn.name) {
           <div
             class="function-item"
+            tabindex="0"
             [class.selected]="selectedFunction()?.name === fn.name"
             (click)="selectFunction(fn)"
+            (keydown.enter)="selectFunction(fn)"
             (dblclick)="onFunctionDoubleClick(fn)"
           >
             <span class="fn-name">{{ fn.name }}</span>

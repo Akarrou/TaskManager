@@ -35,7 +35,7 @@
             (input)="tempDatabaseName.set($any($event.target).value)"
             (blur)="onSaveDatabaseName()"
             (keydown)="onNameInputKeydown($event)"
-            autofocus />
+            />
         } @else {
           <button
             type="button"
@@ -92,7 +92,7 @@
         </button>
 
         <mat-menu #columnVisibilityMenu="matMenu">
-          <div class="column-visibility-menu" (click)="$event.stopPropagation()">
+          <div class="column-visibility-menu" tabindex="0" role="menu" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()">
             <div class="menu-header">
               <span>Colonnes visibles</span>
             </div>
@@ -245,7 +245,7 @@
               </mat-paginator>
 
               <!-- Data Table -->
-              <div class="table-wrapper" (keydown)="onTableKeydown($event)">
+              <div class="table-wrapper" tabindex="0" (keydown)="onTableKeydown($event)">
                 <table class="data-table">
                   <thead>
                     <tr>
@@ -321,8 +321,10 @@
                           </div>
                           <!-- Resize handle -->
                           <div class="resize-handle"
+                               tabindex="0"
                                (mousedown)="startColumnResize($event, column.id)"
-                               (click)="$event.stopPropagation()">
+                               (click)="$event.stopPropagation()"
+                               (keydown.enter)="$event.stopPropagation()">
                           </div>
                         </th>
                       }

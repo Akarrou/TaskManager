@@ -38,7 +38,7 @@ export class CommentThreadPanelComponent implements OnChanges {
   @Input() documentId: string | null = null;
   @Input() blockId: string | null = null;
   @Input() currentUserId: string | null = null;
-  @Output() close = new EventEmitter<void>();
+  @Output() closePanel = new EventEmitter<void>();
   @Output() commentAdded = new EventEmitter<BlockComment>();
   @Output() commentUpdated = new EventEmitter<BlockComment>();
   @Output() commentDeleted = new EventEmitter<string>();
@@ -75,7 +75,7 @@ export class CommentThreadPanelComponent implements OnChanges {
   }
 
   onClose(): void {
-    this.close.emit();
+    this.closePanel.emit();
   }
 
   submitComment(): void {

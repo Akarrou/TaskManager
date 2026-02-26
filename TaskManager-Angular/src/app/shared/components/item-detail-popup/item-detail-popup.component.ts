@@ -32,7 +32,7 @@ export class ItemDetailPopupComponent {
   @Input() showProgress = true;
   @Input() tasks: (Task | ISubtask)[] = [];
 
-  @Output() close = new EventEmitter<void>();
+  @Output() closePopup = new EventEmitter<void>();
   @Output() edit = new EventEmitter<KanbanItem>();
   @Output() addTask = new EventEmitter<KanbanItem>();
   @Output() navigateToKanban = new EventEmitter<KanbanItem>();
@@ -151,26 +151,26 @@ export class ItemDetailPopupComponent {
   }
 
   onOverlayClick(): void {
-    this.close.emit();
+    this.closePopup.emit();
   }
 
   onClose(): void {
-    this.close.emit();
+    this.closePopup.emit();
   }
 
   onEdit(): void {
     this.edit.emit(this.item);
-    this.close.emit();
+    this.closePopup.emit();
   }
 
   onAddTask(): void {
     this.addTask.emit(this.item);
-    this.close.emit();
+    this.closePopup.emit();
   }
 
   onNavigateToKanban(): void {
     this.router.navigate(['/features', this.item.id, 'tasks-kanban']);
-    this.close.emit();
+    this.closePopup.emit();
   }
 
   formatDate(dateString: string | undefined): string {

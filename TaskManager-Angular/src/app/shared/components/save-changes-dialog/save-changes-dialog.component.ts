@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -16,10 +16,8 @@ export interface SaveChangesDialogData {
   templateUrl: './save-changes-dialog.component.html',
 })
 export class SaveChangesDialogComponent {
-  constructor(
-    public dialogRef: MatDialogRef<SaveChangesDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: SaveChangesDialogData
-  ) {}
+  dialogRef = inject(MatDialogRef<SaveChangesDialogComponent>);
+  data = inject<SaveChangesDialogData>(MAT_DIALOG_DATA);
 
   onSave() {
     this.dialogRef.close('save');

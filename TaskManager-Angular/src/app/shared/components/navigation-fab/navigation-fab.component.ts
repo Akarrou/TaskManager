@@ -313,13 +313,13 @@ export class NavigationFabComponent implements OnInit {
     this.isOpen.set(false);
   }
 
-  public addAction(action: NavigationAction) {
+  public addAction(_action: NavigationAction) {
     // Note: customActions est maintenant un input signal (read-only)
     // Cette méthode est conservée pour compatibilité mais ne fait rien
     console.warn('addAction() is deprecated - use customActions input instead');
   }
 
-  public removeAction(actionId: string) {
+  public removeAction(_actionId: string) {
     // Note: customActions est maintenant un input signal (read-only)
     // Cette méthode est conservée pour compatibilité mais ne fait rien
     console.warn('removeAction() is deprecated - use customActions input instead');

@@ -6,6 +6,7 @@
 <mat-dialog-content class="dialog-content">
     <mat-form-field appearance="outline" class="search-field">
       <mat-label>Rechercher une tâche</mat-label>
+      <!-- eslint-disable @angular-eslint/template/no-autofocus -->
       <input
         matInput
         [value]="searchQuery()"
@@ -13,6 +14,7 @@
         autofocus
         placeholder="Tapez au moins 2 caractères..."
       />
+      <!-- eslint-enable @angular-eslint/template/no-autofocus -->
       <mat-icon matPrefix>search</mat-icon>
     </mat-form-field>
 
@@ -37,8 +39,10 @@
           @for (task of searchResults(); track task.id) {
             <div
               class="task-result-item"
+              tabindex="0"
               [class.selected]="selectedTask()?.id === task.id"
               (click)="selectTask(task)"
+              (keydown.enter)="selectTask(task)"
             >
               <div class="task-info">
                 <span class="task-type-badge task-type-{{ task.type }}">

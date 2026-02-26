@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { NavigationAction, NavigationContext } from './navigation-fab.component';
 
@@ -6,7 +6,7 @@ import { NavigationAction, NavigationContext } from './navigation-fab.component'
   providedIn: 'root'
 })
 export class NavigationFabService {
-  constructor(private router: Router) {}
+  private router = inject(Router);
 
   /**
    * Génère des actions de navigation communes selon le contexte de la page

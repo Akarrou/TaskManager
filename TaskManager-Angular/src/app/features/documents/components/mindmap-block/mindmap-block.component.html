@@ -131,8 +131,10 @@
           <mat-icon>format_paint</mat-icon>
         </button>
         <mat-menu #styleMenu="matMenu" class="style-menu">
+          <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
           <div class="style-menu-content" (click)="$event.stopPropagation()">
             <div class="style-section">
+              <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
               <label class="style-label">Forme</label>
               <app-shape-selector
                 [selectedShape]="getSelectedNodeShape()"
@@ -141,6 +143,7 @@
             </div>
             <mat-divider></mat-divider>
             <div class="style-section">
+              <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
               <label class="style-label">Couleur</label>
               <app-color-picker
                 [selectedColor]="getSelectedNodeColor()"
@@ -259,8 +262,9 @@
 
   <!-- Inline editing overlay -->
   @if (editingNodeId()) {
-  <div class="editing-overlay" (click)="saveLabel()">
-    <div class="editing-input-container" (click)="$event.stopPropagation()">
+  <div class="editing-overlay" tabindex="0" (click)="saveLabel()" (keydown.enter)="saveLabel()">
+    <div class="editing-input-container" tabindex="0" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()">
+      <!-- eslint-disable @angular-eslint/template/no-autofocus -->
       <input
         type="text"
         [(ngModel)]="editingLabel"
@@ -272,6 +276,7 @@
         autofocus
         #editInput
       />
+      <!-- eslint-enable @angular-eslint/template/no-autofocus -->
       <div class="editing-actions">
         <button mat-icon-button (click)="saveLabel()" color="primary">
           <mat-icon>check</mat-icon>

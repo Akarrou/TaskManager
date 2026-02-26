@@ -36,9 +36,7 @@ export interface UpdateBlockCommentRequest {
 /**
  * Grouped comments by block for efficient rendering
  */
-export interface BlockCommentsMap {
-  [blockId: string]: BlockComment[];
-}
+export type BlockCommentsMap = Record<string, BlockComment[]>;
 
 /**
  * Summary of comments for a block (used for indicators)

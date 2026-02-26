@@ -513,7 +513,7 @@ export const AccordionTitle = Node.create({
 
           return true;
         },
-        destroy: () => {},
+        destroy: () => { /* noop */ },
       };
     };
   },

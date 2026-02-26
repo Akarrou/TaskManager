@@ -4,6 +4,8 @@
   (dragleave)="onDragLeave($event)"
   (drop)="onDrop($event)"
   (click)="fileInput.click()"
+  (keydown.enter)="fileInput.click()"
+  tabindex="0"
 >
   <!-- Input file caché -->
   <input

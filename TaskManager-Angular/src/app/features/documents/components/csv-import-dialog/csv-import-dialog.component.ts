@@ -14,7 +14,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import Papa from 'papaparse';
 
 import { DatabaseService } from '../../services/database.service';
@@ -25,7 +25,7 @@ import {
   CsvImportPreview,
   DetectedColumn,
 } from '../../models/csv-import.model';
-import { ColumnType, SelectChoice, DatabaseColumn, DateRangeValue } from '../../models/database.model';
+import { ColumnType, SelectChoice, DatabaseColumn, DateRangeValue, CellValue } from '../../models/database.model';
 
 /**
  * Dialog pour importer des données CSV dans une base de données
@@ -115,7 +115,7 @@ export class CsvImportDialogComponent {
   MAX_ROWS = 10000;
 
   // Debug helper
-  typeof = (val: any) => typeof val;
+  typeof = (val: unknown) => typeof val;
 
   /**
    * Navigation methods for stepper
@@ -363,7 +363,7 @@ export class CsvImportDialogComponent {
       // Étape 1: Récupérer metadata et supprimer colonnes existantes
       this.importStatus.set('Suppression des colonnes par défaut...');
 
-      const metadata = await new Promise<any>((resolve, reject) => {
+      const metadata = await new Promise<{ config?: { columns?: DatabaseColumn[] } }>((resolve, reject) => {
         this.databaseService.getDatabaseMetadata(this.databaseId).subscribe({
           next: meta => resolve(meta),
           error: err => reject(err),
@@ -374,7 +374,7 @@ export class CsvImportDialogComponent {
 
       // Supprimer séquentiellement chaque colonne existante
       for (const col of existingColumns) {
-        await new Promise<void>((resolve, reject) => {
+        await new Promise<void>((resolve) => {
           this.databaseService
             .deleteColumn({ databaseId: this.databaseId, columnId: col.id })
             .subscribe({
@@ -429,15 +429,14 @@ export class CsvImportDialogComponent {
       this.importProgress.set(30);
 
       // Étape 3: Préparer les lignes
-      const headers = data[0];
       const rows = data.slice(1);
 
       const formattedRows = rows.map(row => {
-        const cells: Record<string, any> = {};
+        const cells: Record<string, CellValue> = {};
         row.forEach((value, index) => {
           const col = columns[index];
           if (col) {
-            const columnId = (createdColumns as any)[index].id;
+            const columnId = createdColumns[index].id;
             cells[columnId] = this.formatCellValue(value, col.type, col.options);
           }
         });
@@ -473,8 +472,8 @@ export class CsvImportDialogComponent {
       this.importProgress.set(100);
       this.importStatus.set('Import terminé !');
       this.importResult.set(result);
-    } catch (error: any) {
-      alert('Erreur lors de l\'import: ' + error.message);
+    } catch (error: unknown) {
+      alert('Erreur lors de l\'import: ' + (error instanceof Error ? error.message : String(error)));
       this.isImporting.set(false);
     }
   }
@@ -486,21 +485,24 @@ export class CsvImportDialogComponent {
     value: string,
     type: ColumnType,
     options?: { choices?: SelectChoice[] }
-  ): any {
+  ): string | number | boolean | string[] | DateRangeValue | null {
     if (!value || value.trim() === '') return null;
 
     switch (type) {
-      case 'number':
+      case 'number': {
         const num = parseFloat(value.replace(/,/g, '.'));
         return isNaN(num) ? null : num;
-      case 'checkbox':
+      }
+      case 'checkbox': {
         const lower = value.toLowerCase().trim();
         return ['true', '1', 'yes', 'oui', 'vrai', 'x'].includes(lower);
-      case 'date':
+      }
+      case 'date': {
         // Retourner en format ISO
         const date = new Date(value);
         return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
-      case 'select':
+      }
+      case 'select': {
         // Mapper le label CSV vers le choice.id
         if (!options?.choices) return null;
         const trimmedValue = value.trim();
@@ -508,7 +510,8 @@ export class CsvImportDialogComponent {
           c => c.label.toLowerCase() === trimmedValue.toLowerCase()
         );
         return choice ? choice.id : null;
-      case 'multi-select':
+      }
+      case 'multi-select': {
         // Détecter délimiteur et split, puis mapper vers choice.id
         if (!options?.choices) return null;
         const delimiters = [',', ';', '|'];
@@ -531,15 +534,16 @@ export class CsvImportDialogComponent {
         // Mapper chaque label vers son choice.id
         const choiceIds = labels
           .map(label => {
-            const choice = options.choices!.find(
+            const matchedChoice = options.choices!.find(
               c => c.label.toLowerCase() === label.toLowerCase()
             );
-            return choice ? choice.id : null;
+            return matchedChoice ? matchedChoice.id : null;
           })
           .filter(id => id !== null);
 
         return choiceIds.length > 0 ? choiceIds : null;
-      case 'date-range':
+      }
+      case 'date-range': {
         // Parse date range from CSV (e.g., "1 avr. 2026 → 30 avr. 2026")
         const parsed = CsvTypeDetector.parseDateRange(value);
         if (!parsed.startDate && !parsed.endDate) return null;
@@ -547,6 +551,7 @@ export class CsvImportDialogComponent {
           startDate: parsed.startDate,
           endDate: parsed.endDate,
         } as DateRangeValue;
+      }
       default:
         return value;
     }

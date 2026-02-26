@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -72,11 +72,9 @@ export class ColumnEditorDialogComponent implements OnInit {
   // Choices for select/multi-select (editable)
   choices = signal<SelectChoice[]>([]);
 
-  constructor(
-    private fb: FormBuilder,
-    public dialogRef: MatDialogRef<ColumnEditorDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: ColumnEditorDialogData
-  ) {}
+  private fb = inject(FormBuilder);
+  dialogRef = inject(MatDialogRef<ColumnEditorDialogComponent>);
+  data = inject<ColumnEditorDialogData>(MAT_DIALOG_DATA);
 
   ngOnInit() {
     this.isEditMode.set(this.data.mode === 'edit');

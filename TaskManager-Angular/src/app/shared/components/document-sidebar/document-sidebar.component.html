@@ -18,7 +18,7 @@
 
 <!-- Overlay backdrop: visible only in overlay (hover) mode -->
 @if (isOverlay()) {
-  <div class="sidebar-backdrop" (click)="onBackdropClick()"></div>
+  <div class="sidebar-backdrop" (click)="onBackdropClick()" (keydown.enter)="onBackdropClick()" tabindex="0"></div>
 }
 
 <!-- Sidebar panel -->
@@ -86,7 +86,7 @@
           <span>Épinglés</span>
         </div>
         @for (doc of pinnedDocuments(); track doc.id) {
-          <div class="sidebar-doc-item pinned" (click)="onDocumentClick(doc.id)">
+          <div class="sidebar-doc-item pinned" (click)="onDocumentClick(doc.id)" (keydown.enter)="onDocumentClick(doc.id)" tabindex="0">
             <mat-icon class="doc-icon">description</mat-icon>
             <span class="doc-title">{{ doc.title || 'Sans titre' }}</span>
             <button
@@ -107,7 +107,7 @@
     @for (tab of allTabs(); track tab.id) {
       <div class="sidebar-tab">
         <!-- Tab header -->
-        <div class="sidebar-tab-header" (click)="toggleExpand(tab.id)">
+        <div class="sidebar-tab-header" (click)="toggleExpand(tab.id)" (keydown.enter)="toggleExpand(tab.id)" tabindex="0">
           <mat-icon class="expand-icon">{{ isExpanded(tab.id) ? 'expand_more' : 'chevron_right' }}</mat-icon>
           <mat-icon class="tab-icon" [style.color]="tab.color">{{ tab.icon || 'folder' }}</mat-icon>
           <span class="tab-name">{{ tab.name }}</span>
@@ -117,7 +117,7 @@
           <div class="tab-content">
             <!-- Unsectioned documents -->
             @for (item of tab.unsectionedItems; track item.id) {
-              <div class="sidebar-doc-item indent-1" (click)="onDocumentClick(item.document_id)">
+              <div class="sidebar-doc-item indent-1" (click)="onDocumentClick(item.document_id)" (keydown.enter)="onDocumentClick(item.document_id)" tabindex="0">
                 <mat-icon class="doc-icon">description</mat-icon>
                 <span class="doc-title">{{ documentTitles()[item.document_id] || 'Sans titre' }}</span>
                 <button
@@ -134,7 +134,7 @@
 
             <!-- Sections -->
             @for (section of tab.sections; track section.id) {
-              <div class="sidebar-section-header indent-1" (click)="toggleExpand(section.id)">
+              <div class="sidebar-section-header indent-1" (click)="toggleExpand(section.id)" (keydown.enter)="toggleExpand(section.id)" tabindex="0">
                 <mat-icon class="expand-icon small">{{ isExpanded(section.id) ? 'expand_more' : 'chevron_right' }}</mat-icon>
                 <mat-icon class="section-header-icon" [style.color]="section.color">{{ section.icon || 'folder_open' }}</mat-icon>
                 <span class="section-name">{{ section.title }}</span>
@@ -143,7 +143,7 @@
 
               @if (isExpanded(section.id)) {
                 @for (item of section.items; track item.id) {
-                  <div class="sidebar-doc-item indent-2" (click)="onDocumentClick(item.document_id)">
+                  <div class="sidebar-doc-item indent-2" (click)="onDocumentClick(item.document_id)" (keydown.enter)="onDocumentClick(item.document_id)" tabindex="0">
                     <mat-icon class="doc-icon">description</mat-icon>
                     <span class="doc-title">{{ documentTitles()[item.document_id] || 'Sans titre' }}</span>
                     <button

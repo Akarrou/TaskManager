@@ -38,8 +38,8 @@ export class LoginComponent {
       } else {
         this.router.navigate(['/dashboard']);
       }
-    } catch (err: any) {
-      this.error.set(err.message || 'Une erreur inattendue est survenue.');
+    } catch (err: unknown) {
+      this.error.set(err instanceof Error ? err.message : 'Une erreur inattendue est survenue.');
     } finally {
       this.loading.set(false);
     }
@@ -68,8 +68,8 @@ export class LoginComponent {
            this.router.navigate(['/dashboard']);
         }
       }
-    } catch (err: any) {
-      this.error.set(err.message || 'Erreur lors de l\'inscription.');
+    } catch (err: unknown) {
+      this.error.set(err instanceof Error ? err.message : 'Erreur lors de l\'inscription.');
     } finally {
       this.loading.set(false);
     }

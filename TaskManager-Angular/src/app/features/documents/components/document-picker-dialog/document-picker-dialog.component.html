@@ -5,6 +5,7 @@
 
 <mat-dialog-content class="picker-content">
   <div class="picker-search-group">
+    <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
     <label class="picker-search-label">Rechercher</label>
     <div class="picker-search-wrapper">
       <mat-icon class="picker-search-icon">search</mat-icon>
@@ -49,8 +50,10 @@
           @for (result of searchResults()!.documents; track result.id) {
             <div
               class="picker-result-item"
+              tabindex="0"
               [class.is-selected]="isResultSelected(result)"
               (click)="selectResult(result)"
+              (keydown.enter)="selectResult(result)"
             >
               <div class="picker-result-icon icon-document">
                 <mat-icon>{{ result.icon }}</mat-icon>
@@ -74,8 +77,10 @@
           @for (result of searchResults()!.tasks; track result.id) {
             <div
               class="picker-result-item"
+              tabindex="0"
               [class.is-selected]="isResultSelected(result)"
               (click)="selectResult(result)"
+              (keydown.enter)="selectResult(result)"
             >
               <div class="picker-result-icon icon-task">
                 <mat-icon>{{ result.icon }}</mat-icon>
@@ -99,8 +104,10 @@
           @for (result of searchResults()!.events; track result.id) {
             <div
               class="picker-result-item"
+              tabindex="0"
               [class.is-selected]="isResultSelected(result)"
               (click)="selectResult(result)"
+              (keydown.enter)="selectResult(result)"
             >
               <div class="picker-result-icon icon-event">
                 <mat-icon>{{ result.icon }}</mat-icon>
@@ -135,8 +142,10 @@
         @for (doc of filteredDocuments(); track doc.id) {
           <div
             class="picker-result-item"
+            tabindex="0"
             [class.is-selected]="selectedDocument()?.id === doc.id"
             (click)="selectDocument(doc)"
+            (keydown.enter)="selectDocument(doc)"
           >
             <div class="picker-result-icon icon-document">
               <mat-icon>description</mat-icon>

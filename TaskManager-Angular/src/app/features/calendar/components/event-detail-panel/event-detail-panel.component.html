@@ -167,7 +167,9 @@
                   [class.linked-item-card--task]="item.type === 'task'"
                   [class.linked-item-card--document]="item.type === 'document'"
                   [class.linked-item-card--database]="item.type === 'database'"
-                  (click)="onLinkedItemClick(item)">
+                  tabindex="0"
+                  (click)="onLinkedItemClick(item)"
+                  (keydown.enter)="onLinkedItemClick(item)">
                   <div class="linked-item-card__content">
                     @switch (item.type) {
                       @case ('task') {

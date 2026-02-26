@@ -53,8 +53,8 @@ export class LinkedItemsPickerComponent implements ControlValueAccessor, OnInit,
   searchControl = new FormControl<string>('', { nonNullable: true });
 
   private destroy$ = new Subject<void>();
-  private onChange: (value: LinkedItem[]) => void = () => {};
-  private onTouched: () => void = () => {};
+  private onChange: (value: LinkedItem[]) => void = () => { /* noop */ };
+  private onTouched: () => void = () => { /* noop */ };
 
   readonly tabs: { value: LinkedItemTab; label: string }[] = [
     { value: 'all', label: 'Tous' },

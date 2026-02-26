@@ -128,7 +128,7 @@ export const SpreadsheetStore = signalStore(
       )
     ),
 
-    batchUpdateCells: rxMethod<{ spreadsheetId: string; updates: Array<{ sheetId: string; row: number; col: number; update: SpreadsheetCellUpdate }> }>(
+    batchUpdateCells: rxMethod<{ spreadsheetId: string; updates: { sheetId: string; row: number; col: number; update: SpreadsheetCellUpdate }[] }>(
       pipe(
         tap(() => patchState(store, { saving: true, error: null })),
         concatMap(({ spreadsheetId, updates }) =>
@@ -289,7 +289,7 @@ export const SpreadsheetStore = signalStore(
     },
 
     /** Update computed values (returns Observable) */
-    updateComputedValues(spreadsheetId: string, computedValues: Array<{ sheetId: string; row: number; col: number; value: SpreadsheetCellValue }>) {
+    updateComputedValues(spreadsheetId: string, computedValues: { sheetId: string; row: number; col: number; value: SpreadsheetCellValue }[]) {
       return spreadsheetService.updateComputedValues(spreadsheetId, computedValues);
     },
   })),

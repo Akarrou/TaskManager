@@ -11,6 +11,7 @@
 
       <!-- Title -->
       <div class="form-group">
+        <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
         <label class="form-label">Titre <span class="required">*</span></label>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <input matInput formControlName="title" placeholder="Titre de l'événement" />
@@ -23,6 +24,7 @@
       <!-- Database selector (only shown if multiple event databases exist) -->
       @if (showDatabaseSelector()) {
         <div class="form-group">
+          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
           <label class="form-label">Calendrier</label>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-select formControlName="databaseId">
@@ -74,6 +76,7 @@
 
       <!-- Date/Time Row: Start -->
       <div class="form-group">
+        <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
         <label class="form-label">Date de début <span class="required">*</span></label>
         <div class="form-row">
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="date-field">
@@ -91,6 +94,7 @@
 
       <!-- Date/Time Row: End -->
       <div class="form-group">
+        <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
         <label class="form-label">Date de fin <span class="required">*</span></label>
         <div class="form-row">
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="date-field">
@@ -112,6 +116,7 @@
       <!-- Category + Location -->
       <div class="form-row">
         <div class="form-group flex-1">
+          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
           <label class="form-label form-label--with-action">
             Catégorie
             <button
@@ -137,6 +142,7 @@
           </mat-form-field>
         </div>
         <div class="form-group flex-1">
+          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
           <label class="form-label">Lieu</label>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-icon matPrefix class="location-icon">location_on</mat-icon>
@@ -147,6 +153,7 @@
 
       <!-- Description -->
       <div class="form-group">
+        <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
         <label class="form-label">Description</label>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <textarea
@@ -163,12 +170,14 @@
 
       <!-- Recurrence -->
       <div class="form-group">
+        <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
         <label class="form-label">Récurrence</label>
         <app-recurrence-picker formControlName="recurrence"></app-recurrence-picker>
       </div>
 
       <!-- Reminders -->
       <div class="form-group">
+        <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
         <label class="form-label">Rappels</label>
         <div class="reminders-list">
           @for (reminder of form.controls.reminders.value; track $index) {

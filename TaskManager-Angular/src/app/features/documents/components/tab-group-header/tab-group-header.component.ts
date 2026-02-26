@@ -33,7 +33,7 @@ export class TabGroupHeaderComponent {
   @Input({ required: true }) group!: DocumentTabGroup;
   @Input() tabs: DocumentTab[] = [];
   @Input() selectedTabId: string | null = null;
-  @Input() tabItemCounts: Map<string, number> = new Map();
+  @Input() tabItemCounts = new Map<string, number>();
   @Input() connectedDropListIds: string[] = [];
 
   @Output() toggleCollapse = new EventEmitter<void>();
@@ -108,7 +108,7 @@ export class TabGroupHeaderComponent {
     return this.getTabItemCount(tabId) === 0;
   }
 
-  trackTab(index: number, tab: DocumentTab): string {
+  trackTab(_index: number, tab: DocumentTab): string {
     return tab.id;
   }
 
@@ -122,7 +122,7 @@ export class TabGroupHeaderComponent {
     event.preventDefault();
   }
 
-  onDragLeave(event: DragEvent): void {
+  onDragLeave(_event: DragEvent): void {
     this.isDragOver = false;
   }
 

@@ -14,11 +14,11 @@ export interface CsvImportConfig {
  */
 export interface CsvImportPreview {
   headers: string[];
-  detectedTypes: Array<{
+  detectedTypes: {
     type: ColumnType;
     confidence: number;
     options?: { choices?: SelectChoice[] };
-  }>;
+  }[];
   sampleData: string[][];
   totalRows: number;
   warnings: string[];

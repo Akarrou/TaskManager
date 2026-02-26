@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { DocumentEditorComponent } from './document-editor/document-editor.component';
 
 export const DOCUMENT_ROUTES: Routes = [
   {

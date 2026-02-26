@@ -246,7 +246,7 @@ export function parseDate(value: string | null | undefined): string | null {
   const trimmed = value.trim();
 
   // Try various date formats
-  const formats = [
+  const _formats = [
     // ISO format
     /^(\d{4})-(\d{2})-(\d{2})$/,
     // European format DD/MM/YYYY
@@ -264,7 +264,7 @@ export function parseDate(value: string | null | undefined): string | null {
   }
 
   // European format DD/MM/YYYY or DD-MM-YYYY
-  const euMatch = trimmed.match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+  const euMatch = trimmed.match(/^(\d{2})[/-](\d{2})[/-](\d{4})/);
   if (euMatch) {
     const day = euMatch[1];
     const month = euMatch[2];

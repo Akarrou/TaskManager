@@ -22,7 +22,7 @@
     </button>
 
     <mat-menu #colorMenu="matMenu" class="color-menu" xPosition="after" yPosition="below">
-      <div class="color-grid" (click)="$event.stopPropagation()">
+      <div class="color-grid" tabindex="0" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()">
         @for (color of colors; track color) {
           <button
             type="button"
@@ -51,7 +51,7 @@
   </div>
 
   <!-- Content -->
-  <div class="sticky-note__content" (click)="startEditing()">
+  <div class="sticky-note__content" tabindex="0" (click)="startEditing()" (keydown.enter)="startEditing()">
     @if (editing()) {
       <textarea
         #textarea

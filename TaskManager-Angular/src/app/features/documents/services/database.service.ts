@@ -20,7 +20,6 @@ import {
   QueryRowsParams,
   COLUMN_TYPE_TO_PG_TYPE,
   Filter,
-  SortOrder,
   ColumnType,
   SelectChoice,
   findNameColumn,
@@ -59,20 +58,21 @@ export class DatabaseService {
         p_database_id: databaseId
       })
     ).pipe(
-      map(({ data, error }: { data: any; error: any }) => {
+      map(({ data, error }: { data: unknown; error: unknown }) => {
         if (error) {
           console.error('[ensureTableExists] Erreur RPC:', error);
           throw error;
         }
 
-        if (!data?.success) {
-          console.error('[ensureTableExists] Échec:', data?.error);
-          throw new Error(data?.error || 'Échec de la création de table');
+        const result = data as Record<string, unknown> | null;
+        if (!result?.['success']) {
+          console.error('[ensureTableExists] Échec:', result?.['error']);
+          throw new Error((result?.['error'] as string) || 'Échec de la création de table');
         }
 
         return true;
       }),
-      catchError((err: any) => {
+      catchError((err: Error) => {
         console.error('[ensureTableExists] Erreur:', err);
         return throwError(() => new Error(`Impossible de créer la table: ${err.message}`));
       })
@@ -166,7 +166,7 @@ export class DatabaseService {
         if (response.error) throw response.error;
         if (!response.data) {
           // Throw error with PGRST116 code for compatibility with existing error handling
-          const error: any = new Error(`Database not found: ${databaseId}`);
+          const error: Error & { code?: string } = new Error(`Database not found: ${databaseId}`);
           error.code = 'PGRST116';
           throw error;
         }
@@ -276,14 +276,14 @@ export class DatabaseService {
         .delete()
         .eq('database_id', databaseId)
     ).pipe(
-      map(({ error }: { error: any }) => {
+      map(({ error }: { error: unknown }) => {
         if (error) {
           console.error('[deleteLinkedDocuments] Erreur:', error);
           throw error;
         }
         return true;
       }),
-      catchError((err: any) => {
+      catchError((err: Error) => {
         console.error('[deleteLinkedDocuments] Erreur lors de la suppression:', err);
         return throwError(() => new Error(`Impossible de supprimer les documents liés: ${err.message}`));
       })
@@ -303,22 +303,23 @@ export class DatabaseService {
             p_database_id: databaseId
           })
         ).pipe(
-          map(({ data, error }: { data: any; error: any }) => {
+          map(({ data, error }: { data: unknown; error: unknown }) => {
             if (error) {
               console.error('[deleteDatabase] Erreur RPC:', error);
               throw error;
             }
 
-            if (!data?.success) {
-              console.error('[deleteDatabase] Échec suppression:', data?.error);
-              throw new Error(data?.error || 'Échec de la suppression');
+            const result = data as Record<string, unknown> | null;
+            if (!result?.['success']) {
+              console.error('[deleteDatabase] Échec suppression:', result?.['error']);
+              throw new Error((result?.['error'] as string) || 'Échec de la suppression');
             }
 
             return true;
           })
         )
       ),
-      catchError((err: any) => {
+      catchError((err: Error) => {
         console.error('[deleteDatabase] Erreur lors de la suppression:', err);
         return throwError(() => new Error(`Impossible de supprimer la base: ${err.message}`));
       })
@@ -339,14 +340,14 @@ export class DatabaseService {
         .select()
         .single()
     ).pipe(
-      map(({ data, error }: { data: any; error: any }) => {
+      map(({ data, error }: { data: unknown; error: unknown }) => {
         if (error) {
           console.error('[softDeleteDatabase] Error:', error);
           throw error;
         }
         return data as DocumentDatabase;
       }),
-      catchError((err: any) => {
+      catchError((err: Error) => {
         console.error('[softDeleteDatabase] Error:', err);
         return throwError(() => new Error(`Failed to soft delete database: ${err.message}`));
       })
@@ -376,7 +377,7 @@ export class DatabaseService {
         if (error) throw error;
         return true;
       }),
-      catchError((err: any) => {
+      catchError((err: Error) => {
         console.error('[restoreDatabase] Error:', err);
         return throwError(() => err);
       })
@@ -442,11 +443,11 @@ export class DatabaseService {
           }),
         );
       }),
-      map(({ error }: { error: any }) => {
+      map(({ error }: { error: unknown }) => {
         if (error) throw error;
         return true;
       }),
-      catchError((err: any) => {
+      catchError((err: Error) => {
         console.error('[restoreDatabaseToDocument] Error:', err);
         return throwError(() => err);
       }),
@@ -1005,7 +1006,7 @@ export class DatabaseService {
             column_type: columnType,
           })
         ).pipe(
-          map((response: any) => {
+          map((response: { data: unknown; error: unknown }) => {
             if (response.error) {
               console.error('[addColumn] RPC Error:', response.error);
               throw response.error;
@@ -1067,8 +1068,9 @@ export class DatabaseService {
           .select(columnName)
           .limit(0) // Don't fetch any rows, just check if column exists
       ).pipe(
-        map((response: any) => {
-          if (response.error?.code === 'PGRST204') {
+        map((response) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if ((response.error as any)?.code === 'PGRST204') {
             // Column not found in schema cache, throw to trigger retry
             throw new Error('Column not in schema cache yet');
           }
@@ -1080,7 +1082,7 @@ export class DatabaseService {
     }).pipe(
       retryWhen(errors =>
         errors.pipe(
-          mergeMap((error, index) => {
+          mergeMap((_error, index) => {
             if (index >= maxRetries) {
               console.warn(`[waitForColumnInSchema] Max retries reached for column ${columnName}`);
               return of(true); // Give up but don't fail the whole operation
@@ -1229,6 +1231,7 @@ export class DatabaseService {
   /**
    * Apply a filter to a Supabase query
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase dynamic table query builder requires method chaining
   private applyFilter(query: any, filter: Filter): any {
     const columnName = `col_${filter.columnId.replace(/-/g, '_')}`;
 
@@ -1283,12 +1286,12 @@ export class DatabaseService {
    */
   createColumnsFromCsv(
     databaseId: string,
-    columns: Array<{
+    columns: {
       name: string;
       type: ColumnType;
       options?: { choices?: SelectChoice[] };
       isNameColumn?: boolean;
-    }>
+    }[]
   ): Observable<DatabaseColumn[]> {
     const createdColumns: DatabaseColumn[] = [];
 
@@ -1314,7 +1317,7 @@ export class DatabaseService {
         map(() => {
           return column;
         }),
-        catchError((err: any) => {
+        catchError((err: Error) => {
           console.error(`[createColumnsFromCsv] Column ${index + 1} failed:`, err);
           throw err; // Re-throw pour propager l'erreur
         })
@@ -1327,7 +1330,7 @@ export class DatabaseService {
       map((cols: DatabaseColumn[]) => {
         return cols;
       }),
-      catchError((err: any) => {
+      catchError((err: Error) => {
         console.error('[createColumnsFromCsv] Column creation failed:', err);
         return throwError(() => new Error(`Impossible de créer la colonne: ${err.message}`));
       })
@@ -1340,7 +1343,7 @@ export class DatabaseService {
    */
   importRowsFromCsv(
     databaseId: string,
-    rows: Array<Record<string, CellValue>>,
+    rows: Record<string, CellValue>[],
     onProgress?: (current: number, total: number) => void
   ): Observable<CsvImportResult> {
     const BATCH_SIZE = 100;
@@ -1356,30 +1359,32 @@ export class DatabaseService {
           p_rows: batch.map(row => JSON.stringify({ cells: row })),
         })
       ).pipe(
-        map(({ data, error }: { data: any; error: any }) => {
+        map(({ data, error }: { data: unknown; error: unknown }) => {
           if (error) {
             console.error('[CSV Import] RPC Error:', error);
             throw error;
           }
 
+          const result = data as Record<string, unknown> | null;
           // Incrémenter compteur et notifier progression
-          const batchImported = data?.inserted_count || batch.length;
+          const batchImported = (result?.['inserted_count'] as number) || batch.length;
           imported += batchImported;
           onProgress?.(imported, rows.length);
 
           // Collecter erreurs du batch
-          if (data?.errors && Array.isArray(data.errors)) {
-            data.errors.forEach((err: any) => {
+          const resultErrors = result?.['errors'];
+          if (resultErrors && Array.isArray(resultErrors)) {
+            resultErrors.forEach((err: Record<string, unknown>) => {
               errors.push({
-                row: batchIndex * BATCH_SIZE + (err.row || 0),
-                message: err.message || 'Erreur inconnue',
+                row: batchIndex * BATCH_SIZE + ((err['row'] as number) || 0),
+                message: (err['message'] as string) || 'Erreur inconnue',
               });
             });
           }
 
-          return data;
+          return result;
         }),
-        catchError((err: any) => {
+        catchError((err: Error) => {
           // En cas d'erreur totale du batch, marquer toutes les lignes comme échouées
           batch.forEach((_, i) => {
             errors.push({
@@ -1420,7 +1425,7 @@ export class DatabaseService {
    */
   importTaskRowsWithDocuments(
     databaseId: string,
-    rows: Array<Record<string, CellValue>>,
+    rows: Record<string, CellValue>[],
     projectId: string | undefined,
     onProgress?: (current: number, total: number) => void
   ): Observable<CsvImportResult> {
@@ -1540,7 +1545,7 @@ export class DatabaseService {
    */
   importRowsWithDocuments(
     databaseId: string,
-    rows: Array<Record<string, CellValue>>,
+    rows: Record<string, CellValue>[],
     projectId?: string,
     onProgress?: (current: number, total: number) => void
   ): Observable<CsvImportResult> {
@@ -1668,7 +1673,7 @@ export class DatabaseService {
           value: newTitle,
         });
       }),
-      catchError(error => {
+      catchError(_error => {
         return of(false);
       })
     );

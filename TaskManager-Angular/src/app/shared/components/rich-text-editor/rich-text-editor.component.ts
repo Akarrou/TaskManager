@@ -1,4 +1,4 @@
-import { Component, input, output, signal, forwardRef, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
+import { Component, input, signal, forwardRef, OnInit, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -77,8 +77,8 @@ export class RichTextEditorComponent implements ControlValueAccessor, OnInit {
     { icon: 'horizontal_rule', label: 'Ligne horizontale', action: 'hr', blockPrefix: '---\n', tooltip: 'Ligne horizontale' },
   ];
 
-  private onChange: (value: string) => void = () => {};
-  private onTouched: () => void = () => {};
+  private onChange: (value: string) => void = () => { /* noop */ };
+  private onTouched: () => void = () => { /* noop */ };
 
   ngOnInit() {
     this.updatePreview();

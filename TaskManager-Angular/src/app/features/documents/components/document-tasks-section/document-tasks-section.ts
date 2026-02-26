@@ -99,7 +99,7 @@ export class DocumentTasksSectionComponent implements OnDestroy {
     }
   }
 
-  onTaskDelete(taskId: string) {
+  onTaskDelete(_taskId: string) {
     // TODO: Implement task deletion
   }
 

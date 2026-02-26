@@ -1,7 +1,9 @@
 <div
   class="document-card"
   [style.--section-color]="sectionColor"
-  (click)="onCardClick()">
+  tabindex="0"
+  (click)="onCardClick()"
+  (keydown.enter)="onCardClick()">
 
   <!-- Drag Preview -->
   @if (item) {

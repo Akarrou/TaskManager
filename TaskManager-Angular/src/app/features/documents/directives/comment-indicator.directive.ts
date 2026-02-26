@@ -28,7 +28,7 @@ export class CommentIndicatorDirective implements AfterViewInit, OnDestroy {
 
   private el = inject(ElementRef);
   private renderer = inject(Renderer2);
-  private indicatorElements: Map<string, HTMLElement> = new Map();
+  private indicatorElements = new Map<string, HTMLElement>();
   private viewInitialized = false;
 
   constructor() {

@@ -137,7 +137,7 @@ export class CalendarViewComponent {
     return `priority-${priority}`;
   }
 
-  trackByDate(index: number, day: CalendarDay): number {
+  trackByDate(_index: number, day: CalendarDay): number {
     return day.date.getTime();
   }
 

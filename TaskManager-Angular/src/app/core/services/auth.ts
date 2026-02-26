@@ -21,16 +21,18 @@ export class AuthService implements OnDestroy {
     try {
       const { data: { session }, error } = await this.supabaseService.auth.getSession();
       if (error) {
+        // Authentication check - silently ignore session retrieval errors
       } else {
         this.currentSession.set(session);
         this.currentUser.set(session?.user ?? null);
       }
-    } catch (e) {
+    } catch {
+      // Authentication check - silently ignore errors
     }
 
     // Écouter les changements d'état d'authentification
     const { data: authListener } = this.supabaseService.auth.onAuthStateChange(
-      (event: AuthChangeEvent, session: Session | null) => {
+      (_event: AuthChangeEvent, session: Session | null) => {
         this.currentSession.set(session);
         this.currentUser.set(session?.user ?? null);
       }
@@ -39,6 +41,7 @@ export class AuthService implements OnDestroy {
     if (authListener && authListener.subscription) {
         this.authStateSubscription = authListener.subscription;
     } else {
+      // Auth listener not available - silently ignore
     }
   }
 

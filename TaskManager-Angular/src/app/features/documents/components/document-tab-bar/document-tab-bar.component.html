@@ -83,6 +83,7 @@
           <!-- Tab with document drop zone -->
           <div
             class="tab-item"
+            tabindex="0"
             [class.selected]="isSelected(tab.id)"
             [class.drag-over]="dragOverTabId === tab.id"
             [class.drag-target]="draggedTab && draggedTab.id !== tab.id"
@@ -93,7 +94,8 @@
             (cdkDropListDropped)="onDocumentDropOnTab($event, tab.id)"
             (cdkDropListEntered)="onDragEnterTab(tab.id)"
             (cdkDropListExited)="onDragLeaveTab()"
-            (click)="onTabClick(tab.id)">
+            (click)="onTabClick(tab.id)"
+            (keydown.enter)="onTabClick(tab.id)">
 
             <!-- Tab Content -->
             <div class="tab-content">

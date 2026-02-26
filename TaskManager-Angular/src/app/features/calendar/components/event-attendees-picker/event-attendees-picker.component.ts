@@ -33,7 +33,7 @@ import { EventAttendee } from '../../models/attendee.model';
 import { getInitials, getRsvpIcon, getRsvpLabel } from '../../../../shared/utils/attendee.utils';
 import { UserService } from '../../../../core/services/user.service';
 import { SupabaseService } from '../../../../core/services/supabase';
-import { GoogleCalendarApiService, GoogleContact } from '../../../google-calendar/services/google-calendar-api.service';
+import { GoogleCalendarApiService } from '../../../google-calendar/services/google-calendar-api.service';
 import { GoogleCalendarAuthService } from '../../../google-calendar/services/google-calendar-auth.service';
 
 interface UserSuggestion {
@@ -86,8 +86,8 @@ export class EventAttendeesPickerComponent implements ControlValueAccessor, OnIn
   private allUsers: UserSuggestion[] = [];
   private usersLoaded = false;
   private destroy$ = new Subject<void>();
-  private onChange: (value: EventAttendee[]) => void = () => {};
-  private onTouched: () => void = () => {};
+  private onChange: (value: EventAttendee[]) => void = () => { /* noop */ };
+  private onTouched: () => void = () => { /* noop */ };
 
   ngOnInit(): void {
     this.loadUsers();

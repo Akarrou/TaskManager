@@ -1,4 +1,4 @@
-import { Component, signal, effect, inject, input } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface ToastMessage {
@@ -294,7 +294,7 @@ export class ToastComponent {
     this.visibleToasts.set([]);
   }
 
-  trackByToastId(index: number, toast: ToastMessage): string {
+  trackByToastId(_index: number, toast: ToastMessage): string {
     return toast.id;
   }
 }

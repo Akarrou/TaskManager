@@ -189,7 +189,7 @@ export const DatabaseStore = signalStore(
         concatMap((request) =>
           databaseService.updateColumn(request).pipe(
             tapResponse({
-              next: () => {},
+              next: () => { /* noop */ },
               error: (error: Error) => {
                 patchState(store, { error: error.message });
               },
@@ -204,7 +204,7 @@ export const DatabaseStore = signalStore(
         concatMap((request) =>
           databaseService.deleteColumn(request).pipe(
             tapResponse({
-              next: () => {},
+              next: () => { /* noop */ },
               error: (error: Error) => {
                 patchState(store, { error: error.message });
                 snackBar.open('Erreur lors de la suppression de la colonne', 'Fermer', { duration: 3000 });

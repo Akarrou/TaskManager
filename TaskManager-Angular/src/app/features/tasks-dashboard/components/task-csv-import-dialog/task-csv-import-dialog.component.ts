@@ -480,10 +480,9 @@ export class TaskCsvImportDialogComponent {
 
     this.importStatus.set('Préparation de l\'import...');
 
-    const headers = data[0];
+    const _headers = data[0];
     const rows = data.slice(1);
     const errors: TaskCsvImportError[] = [];
-    let importedCount = 0;
 
     try {
       // Step 1: Create new columns if needed
@@ -692,9 +691,10 @@ export class TaskCsvImportDialogComponent {
         return parseNumber(value);
       case 'date':
         return parseDate(value);
-      case 'checkbox':
+      case 'checkbox': {
         const lower = value.toLowerCase().trim();
         return ['true', '1', 'yes', 'oui', 'vrai', 'x'].includes(lower);
+      }
       case 'select':
         // For select columns, convert label to choice ID
         if (column.options?.choices) {

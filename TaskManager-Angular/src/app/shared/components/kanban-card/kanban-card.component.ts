@@ -4,7 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
@@ -260,7 +260,7 @@ export class KanbanCardComponent {
     this.router.navigate(['/features', this.item.id, 'tasks-kanban']);
   }
 
-  onTaskClick(task: Task | ISubtask): void {
+  onTaskClick(_task: Task | ISubtask): void {
     // This might need further refactoring if sub-items are also KanbanItems
   }
 
@@ -290,7 +290,7 @@ export class KanbanCardComponent {
     return `User...${assigneeId.slice(-4)}`;
   }
 
-  trackTask(index: number, task: Task | ISubtask): string {
+  trackTask(_index: number, task: Task | ISubtask): string {
     return task.id as string;
   }
 
@@ -307,7 +307,7 @@ export class KanbanCardComponent {
   /**
    * T011 - TrackBy function pour les tags
    */
-  trackTag(index: number, tag: string): string {
+  trackTag(_index: number, tag: string): string {
     return tag;
   }
 
@@ -326,7 +326,7 @@ export class KanbanCardComponent {
     this.taskDelete.emit(taskId);
   }
 
-  onDelete(taskId: string): void {
+  onDelete(_taskId: string): void {
     this.itemDelete.emit(this.item);
   }
 

@@ -1,5 +1,5 @@
-<div class="popup-overlay" (click)="onOverlayClick()">
-  <div class="popup-content" (click)="$event.stopPropagation()">
+<div class="popup-overlay" (click)="onOverlayClick()" (keydown.enter)="onOverlayClick()" tabindex="0">
+  <div class="popup-content" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()" tabindex="0">
     <!-- Fixed Header -->
     <div class="popup-header fixed-header">
       <div class="header-content">

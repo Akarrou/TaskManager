@@ -9,5 +9,5 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./logo.component.scss']
 })
 export class LogoComponent {
-  @Input() size: number = 40;
+  @Input() size = 40;
 } 

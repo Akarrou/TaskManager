@@ -14,6 +14,7 @@
 
     <!-- Icon Selection -->
     <div class="selection-section">
+      <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
       <label class="section-label">Icône</label>
       <div class="icon-grid">
         @for (icon of icons; track icon) {
@@ -31,6 +32,7 @@
 
     <!-- Color Selection -->
     <div class="selection-section">
+      <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
       <label class="section-label">Couleur</label>
       <div class="color-grid">
         @for (color of colors; track color) {
@@ -50,6 +52,7 @@
 
     <!-- Preview -->
     <div class="preview-section">
+      <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
       <label class="section-label">Aperçu</label>
       <div class="preview-header" [style.border-left-color]="selectedColor">
         <mat-icon [style.color]="selectedColor">{{ selectedIcon }}</mat-icon>

@@ -7,11 +7,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import {
   CdkDragDrop,
-  CdkDropList,
-  CdkDrag,
   CdkDragHandle,
-  CdkDragPreview,
-  CdkDragPlaceholder,
   DragDropModule,
   moveItemInArray,
   transferArrayItem,
@@ -22,7 +18,6 @@ import {
   DocumentTabItem,
   DocumentDropTarget,
   UpdateDocumentSection,
-  DocumentSection,
 } from '../../models/document-tabs.model';
 import { Document, DocumentStorageFile } from '../../services/document.service';
 import { DocumentDatabase } from '../../models/database.model';
@@ -49,12 +44,12 @@ export class DocumentTabContentComponent {
   private dialog = inject(MatDialog);
 
   @Input() tab: TabWithItems | null = null;
-  @Input() documents: Map<string, Document> = new Map();
-  @Input() storageFiles: Map<string, DocumentStorageFile[]> = new Map();
-  @Input() databases: Map<string, DocumentDatabase[]> = new Map();
+  @Input() documents = new Map<string, Document>();
+  @Input() storageFiles = new Map<string, DocumentStorageFile[]>();
+  @Input() databases = new Map<string, DocumentDatabase[]>();
   @Input() allDropListIds: string[] = [];
   @Input() availableDocuments: Document[] = [];
-  @Input() tabDocumentIds: Set<string> = new Set();
+  @Input() tabDocumentIds = new Set<string>();
 
   @Output() documentClick = new EventEmitter<string>();
   @Output() documentDelete = new EventEmitter<{ event: Event; documentId: string }>();
@@ -225,11 +220,11 @@ export class DocumentTabContentComponent {
     this.documentAddToSection.emit({ documentId, sectionId });
   }
 
-  trackSection(index: number, section: SectionWithItems): string {
+  trackSection(_index: number, section: SectionWithItems): string {
     return section.id;
   }
 
-  trackItem(index: number, item: DocumentTabItem): string {
+  trackItem(_index: number, item: DocumentTabItem): string {
     return item.id;
   }
 }

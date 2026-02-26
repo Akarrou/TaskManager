@@ -7,13 +7,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import {
   CdkDragDrop,
-  CdkDropList,
   DragDropModule,
   moveItemInArray,
 } from '@angular/cdk/drag-drop';
 import {
   DocumentTab,
-  DocumentTabGroup,
   UpdateDocumentTab,
   UpdateDocumentTabGroup,
   TabGroupWithTabs,
@@ -58,7 +56,7 @@ export class DocumentTabBarComponent {
   @Input() tabs: DocumentTab[] = []; // All tabs (for backward compatibility)
   @Input() selectedTabId: string | null = null;
   @Input() allDropListIds: string[] = [];
-  @Input() tabItemCounts: Map<string, number> = new Map();
+  @Input() tabItemCounts = new Map<string, number>();
 
   @Output() tabSelect = new EventEmitter<string>();
   @Output() tabCreate = new EventEmitter<{ name: string; icon: string; color: string }>();
@@ -147,7 +145,7 @@ export class DocumentTabBarComponent {
     }
   }
 
-  trackTab(index: number, tab: DocumentTab): string {
+  trackTab(_index: number, tab: DocumentTab): string {
     return tab.id;
   }
 
@@ -296,7 +294,7 @@ export class DocumentTabBarComponent {
     // Reset visual feedback
   }
 
-  trackGroup(index: number, group: TabGroupWithTabs): string {
+  trackGroup(_index: number, group: TabGroupWithTabs): string {
     return group.id;
   }
 

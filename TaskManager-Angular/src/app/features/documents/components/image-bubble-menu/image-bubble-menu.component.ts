@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Editor } from '@tiptap/core';
+import { NodeSelection } from '@tiptap/pm/state';
 import { MatDialog } from '@angular/material/dialog';
 import { ImageInsertDialogComponent, ImageInsertDialogData, ImageInsertDialogResult } from '../image-insert-dialog/image-insert-dialog.component';
 
@@ -57,14 +58,14 @@ export class ImageBubbleMenuComponent implements OnInit, OnDestroy {
     const { selection } = state;
 
     // Vérifier si le noeud sélectionné est une image
-    const node = (selection as any).node;
+    const node = selection instanceof NodeSelection ? selection.node : null;
     const isImage = node && node.type.name === 'image';
 
-    this.isVisible.set(isImage);
+    this.isVisible.set(!!isImage);
 
     if (isImage && node.attrs) {
       // Mettre à jour l'alignement actuel
-      this.currentAlignment.set(node.attrs.alignment || 'center');
+      this.currentAlignment.set(node.attrs['alignment'] || 'center');
 
       // Calculer la position du menu
       this.calculatePosition();
@@ -77,15 +78,13 @@ export class ImageBubbleMenuComponent implements OnInit, OnDestroy {
     const { selection } = state;
 
     // Trouver l'élément DOM de l'image
-    const node = (selection as any).node;
-    if (!node) return;
+    if (!(selection instanceof NodeSelection)) return;
 
     const pos = selection.from;
     const dom = view.nodeDOM(pos) as HTMLElement;
 
     if (dom) {
       const rect = dom.getBoundingClientRect();
-      const editorRect = view.dom.getBoundingClientRect();
 
       // Positionner le menu au-dessus de l'image, centré horizontalement
       this.position.set({
@@ -107,14 +106,14 @@ export class ImageBubbleMenuComponent implements OnInit, OnDestroy {
 
     const { state, view } = this.editor;
     const { selection } = state;
-    const node = (selection as any).node;
 
-    if (!node || node.type.name !== 'image') {
+    if (!(selection instanceof NodeSelection) || selection.node.type.name !== 'image') {
       return;
     }
 
     // Mettre à jour l'attribut de l'image
     const { from } = selection;
+    const node = selection.node;
     const transaction = state.tr.setNodeMarkup(from, undefined, {
       ...node.attrs,
       alignment,
@@ -145,19 +144,19 @@ export class ImageBubbleMenuComponent implements OnInit, OnDestroy {
 
     const { state } = this.editor;
     const { selection } = state;
-    const node = (selection as any).node;
 
-    if (node && node.type.name === 'image') {
+    if (selection instanceof NodeSelection && selection.node.type.name === 'image') {
+      const node = selection.node;
       const dialogRef = this.dialog.open(ImageInsertDialogComponent, {
         width: '700px',
         maxWidth: '90vw',
         maxHeight: '90vh',
         data: {
           mode: 'edit',
-          currentSrc: node.attrs.src,
-          currentAlt: node.attrs.alt,
-          currentAlignment: node.attrs.alignment || 'center',
-          currentCaption: node.attrs.caption || '',
+          currentSrc: node.attrs['src'],
+          currentAlt: node.attrs['alt'],
+          currentAlignment: node.attrs['alignment'] || 'center',
+          currentCaption: node.attrs['caption'] || '',
         } as ImageInsertDialogData,
       });
 

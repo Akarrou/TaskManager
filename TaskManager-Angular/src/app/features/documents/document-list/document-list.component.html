@@ -112,7 +112,9 @@
                   @for (doc of documents(); track doc.id) {
                     <div
                       class="c-document-card"
-                      (click)="openDocument(doc.id)">
+                      tabindex="0"
+                      (click)="openDocument(doc.id)"
+                      (keydown.enter)="openDocument(doc.id)">
                       <div class="c-document-card__header">
                         <div class="c-document-card__icon">
                           <mat-icon>description</mat-icon>
@@ -217,7 +219,9 @@
                 class="sidebar-document-card"
                 cdkDrag
                 [cdkDragData]="{ document_id: doc.id, isUnorganized: true }"
-                (click)="openDocument(doc.id)">
+                tabindex="0"
+                (click)="openDocument(doc.id)"
+                (keydown.enter)="openDocument(doc.id)">
 
                 <!-- Drag Preview -->
                 <div *cdkDragPreview class="document-drag-preview">

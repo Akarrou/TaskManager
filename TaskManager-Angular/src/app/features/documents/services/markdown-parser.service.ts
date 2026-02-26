@@ -124,7 +124,7 @@ export class MarkdownParserService {
   /**
    * Validate file type and size
    */
-  validateFile(file: File, maxSizeMB: number = 10): { valid: boolean; error?: string } {
+  validateFile(file: File, maxSizeMB = 10): { valid: boolean; error?: string } {
     // Check file extension
     if (!file.name.toLowerCase().endsWith('.md')) {
       return {

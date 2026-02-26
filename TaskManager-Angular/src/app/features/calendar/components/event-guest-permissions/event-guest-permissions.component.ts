@@ -9,7 +9,6 @@ import {
   ControlValueAccessor,
   NG_VALUE_ACCESSOR,
   ReactiveFormsModule,
-  FormControl,
 } from '@angular/forms';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
@@ -40,8 +39,8 @@ export class EventGuestPermissionsComponent implements ControlValueAccessor {
   protected permissions = signal<EventGuestPermissions>({ ...DEFAULT_GUEST_PERMISSIONS });
   protected isDisabled = signal(false);
 
-  private onChange: (value: EventGuestPermissions) => void = () => {};
-  private onTouched: () => void = () => {};
+  private onChange: (value: EventGuestPermissions) => void = () => { /* noop */ };
+  private onTouched: () => void = () => { /* noop */ };
 
   // ControlValueAccessor
 

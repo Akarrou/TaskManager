@@ -1,7 +1,7 @@
 import { Node, mergeAttributes } from '@tiptap/core';
 
 export interface TaskSectionOptions {
-  HTMLAttributes: Record<string, any>;
+  HTMLAttributes: Record<string, unknown>;
 }
 
 declare module '@tiptap/core' {
@@ -78,6 +78,7 @@ export const TaskSectionExtension = Node.create<TaskSectionOptions>({
         () =>
         ({ commands, editor }) => {
           // Get document ID from editor state or options
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const documentId = (editor.options as any).documentId || '';
 
           return commands.insertContent({

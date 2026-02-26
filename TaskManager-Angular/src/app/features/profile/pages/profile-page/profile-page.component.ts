@@ -56,7 +56,7 @@ export class ProfilePageComponent implements OnInit {
     this.profileLoading.set(true);
     this.success.set(null);
 
-    const { success, error } = await this.profileStore.updateProfile({
+    const { success: _success, error } = await this.profileStore.updateProfile({
       full_name: this.fullName()
     });
 
@@ -93,7 +93,7 @@ export class ProfilePageComponent implements OnInit {
 
     this.passwordLoading.set(true);
 
-    const { success, error } = await this.profileStore.changePassword(this.newPassword());
+    const { success: _success2, error } = await this.profileStore.changePassword(this.newPassword());
 
     if (error) {
       this.passwordError.set(error);

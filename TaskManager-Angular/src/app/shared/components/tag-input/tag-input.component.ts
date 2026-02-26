@@ -1,4 +1,4 @@
-import { Component, signal, computed, input, output, ElementRef, ViewChild, effect } from '@angular/core';
+import { Component, signal, input, output, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -281,7 +281,7 @@ export class TagInputComponent {
     return this.selectedTags();
   }
 
-  trackByTag(index: number, tag: string): string {
+  trackByTag(_index: number, tag: string): string {
     return tag;
   }
 } 

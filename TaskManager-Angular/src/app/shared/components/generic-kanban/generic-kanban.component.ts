@@ -2,19 +2,17 @@ import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from 
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { DragDropModule, CdkDropListGroup, CdkDragDrop } from '@angular/cdk/drag-drop';
+import { DragDropModule, CdkDragDrop } from '@angular/cdk/drag-drop';
 import { KanbanColumnComponent } from '../kanban-column/kanban-column.component';
 import { KanbanItem } from '../../../core/models/task.model';
 import { KanbanColumn } from '../../models/kanban.model';
-import { NgIf, NgFor } from '@angular/common';
 import { Task } from '../../../core/models/task.model';
 
 @Component({
   selector: 'app-generic-kanban',
   standalone: true,
   imports: [
-    NgIf,
-    NgFor,
+    CommonModule,
     DragDropModule,
     MatIconModule,
     MatButtonModule,
@@ -25,10 +23,10 @@ import { Task } from '../../../core/models/task.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GenericKanbanComponent {
-  @Input() title: string = 'Kanban Board';
+  @Input() title = 'Kanban Board';
   @Input() items: KanbanItem[] = [];
   @Input() columns: KanbanColumn[] = [];
-  @Input() loading: boolean = false;
+  @Input() loading = false;
   @Input() error: string | null = null;
 
   @Output() itemDropped = new EventEmitter<{ item: KanbanItem; newStatus: Task['status'] }>();
@@ -36,8 +34,8 @@ export class GenericKanbanComponent {
   @Output() itemDeleted = new EventEmitter<KanbanItem>();
   @Output() retryLoad = new EventEmitter<void>();
 
-  get itemsByColumn(): { [key: string]: KanbanItem[] } {
-    const grouped: { [key: string]: KanbanItem[] } = {};
+  get itemsByColumn(): Record<string, KanbanItem[]> {
+    const grouped: Record<string, KanbanItem[]> = {};
     if (this.items && this.columns) {
       this.columns.forEach(col => grouped[col.id] = []);
       this.items.forEach(item => {
@@ -63,11 +61,11 @@ export class GenericKanbanComponent {
     this.itemDeleted.emit(item);
   }
 
-  trackColumn(index: number, column: KanbanColumn): string {
+  trackColumn(_index: number, column: KanbanColumn): string {
     return column.id;
   }
 
-  trackItem(index: number, item: KanbanItem): string | number {
+  trackItem(_index: number, item: KanbanItem): string | number {
     return item.id;
   }
 }

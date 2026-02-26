@@ -1,5 +1,3 @@
-import { Document } from '../services/document.service';
-
 /**
  * Document Tab Group - A collapsible container for organizing tabs (like Chrome/Brave)
  */

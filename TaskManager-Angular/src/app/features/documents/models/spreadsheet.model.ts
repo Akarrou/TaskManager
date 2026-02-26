@@ -328,7 +328,7 @@ export interface SpreadsheetConfig {
 /**
  * Default spreadsheet configuration
  */
-export function createDefaultSpreadsheetConfig(name: string = 'Feuille de calcul'): SpreadsheetConfig {
+export function createDefaultSpreadsheetConfig(name = 'Feuille de calcul'): SpreadsheetConfig {
   const defaultSheetId = crypto.randomUUID();
   return {
     name,
@@ -482,12 +482,12 @@ export interface CreateSpreadsheetResponse {
  */
 export interface BatchUpdateCellsRequest {
   spreadsheetId: string;
-  cells: Array<{
+  cells: {
     sheetId: string;
     row: number;
     col: number;
     update: SpreadsheetCellUpdate;
-  }>;
+  }[];
 }
 
 /**

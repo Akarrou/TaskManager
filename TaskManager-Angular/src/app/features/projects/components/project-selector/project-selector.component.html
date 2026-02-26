@@ -33,6 +33,6 @@
     </div>
 
     <!-- Overlay pour fermer le dropdown -->
-    <div class="c-overlay" *ngIf="isOpen()" (click)="closeDropdown()"></div>
+    <div class="c-overlay" *ngIf="isOpen()" (click)="closeDropdown()" tabindex="0" (keydown.enter)="closeDropdown()"></div>
   </ng-container>
 </div>

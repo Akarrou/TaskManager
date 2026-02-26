@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, signal, computed, OnChanges, SimpleChanges, HostListener, ElementRef } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal, computed, OnChanges, SimpleChanges, HostListener, ElementRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface SlashCommand {
@@ -29,7 +29,7 @@ export class SlashMenuComponent implements OnChanges {
 
   filterTextSignal = signal<string>('');
 
-  constructor(private elementRef: ElementRef) {}
+  private elementRef = inject(ElementRef);
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['filterText']) {

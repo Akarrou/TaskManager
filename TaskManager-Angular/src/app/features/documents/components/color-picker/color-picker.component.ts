@@ -26,8 +26,8 @@ import { NODE_PRESET_COLORS } from '../../models/mindmap.model';
 export class ColorPickerComponent {
   private elementRef = inject(ElementRef);
 
-  @Input() selectedColor: string = '#3b82f6';
-  @Input() presetColors: string[] = NODE_PRESET_COLORS;
+  @Input() selectedColor = '#3b82f6';
+  @Input() presetColors = NODE_PRESET_COLORS;
   @Input() showTrigger = true;
   @Output() colorChange = new EventEmitter<string>();
 

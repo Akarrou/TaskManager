@@ -49,7 +49,7 @@ function cleanEmptyTextNodes(node: JSONContent): JSONContent {
 
   // If this is a text node with empty content, mark it for removal
   if (node.type === 'text' && (!node.text || node.text.trim().length === 0)) {
-    return null as any; // Will be filtered out
+    return null as unknown as JSONContent; // Will be filtered out
   }
 
   // If node has content array, recursively clean it

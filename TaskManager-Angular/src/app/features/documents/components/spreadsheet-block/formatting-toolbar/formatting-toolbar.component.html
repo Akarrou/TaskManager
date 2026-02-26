@@ -85,7 +85,7 @@
     <div class="color-indicator" [style.background-color]="currentTextColor"></div>
   </button>
   <mat-menu #textColorMenu="matMenu" class="color-picker-menu">
-    <div class="color-grid" (click)="$event.stopPropagation()">
+    <div class="color-grid" tabindex="0" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()">
       @for (color of colors; track color) {
         <button
           class="color-swatch"
@@ -93,6 +93,7 @@
           [class.selected]="color === currentTextColor"
           (click)="setTextColor(color)"
           [matTooltip]="color"
+          [attr.aria-label]="'Couleur texte ' + color"
         ></button>
       }
     </div>
@@ -109,7 +110,7 @@
     <div class="color-indicator" [style.background-color]="currentBackgroundColor"></div>
   </button>
   <mat-menu #bgColorMenu="matMenu" class="color-picker-menu">
-    <div class="color-grid" (click)="$event.stopPropagation()">
+    <div class="color-grid" tabindex="0" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()">
       <button
         class="color-swatch no-color"
         (click)="setBackgroundColor('transparent')"
@@ -124,6 +125,7 @@
           [class.selected]="color === currentBackgroundColor"
           (click)="setBackgroundColor(color)"
           [matTooltip]="color"
+          [attr.aria-label]="'Couleur fond ' + color"
         ></button>
       }
     </div>
@@ -181,7 +183,7 @@
 
   <!-- Border Color Submenu -->
   <mat-menu #borderColorMenu="matMenu" class="color-picker-menu">
-    <div class="color-grid" (click)="$event.stopPropagation()">
+    <div class="color-grid" tabindex="0" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()">
       @for (color of borderColors; track color) {
         <button
           class="color-swatch"
@@ -189,6 +191,7 @@
           [class.selected]="color === currentBorderColor"
           (click)="setBorderColor(color)"
           [matTooltip]="color"
+          [attr.aria-label]="'Couleur bordure ' + color"
         ></button>
       }
     </div>

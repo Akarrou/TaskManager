@@ -11,7 +11,6 @@ import {
   ControlValueAccessor,
   NG_VALUE_ACCESSOR,
   ReactiveFormsModule,
-  FormControl,
 } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
@@ -91,8 +90,8 @@ const REVERSE_FREQUENCY_MAP: Record<number, FrequencyOption> = {
 })
 export class RecurrencePickerComponent implements ControlValueAccessor {
   // ControlValueAccessor callbacks
-  private onChange: (value: string) => void = () => {};
-  private onTouched: () => void = () => {};
+  private onChange: (value: string) => void = () => { /* noop */ };
+  private onTouched: () => void = () => { /* noop */ };
 
   // State signals
   readonly enabled = signal(false);

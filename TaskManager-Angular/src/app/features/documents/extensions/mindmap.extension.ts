@@ -205,7 +205,7 @@ export const MindmapExtension = Node.create<MindmapOptions>({
    * This is crucial for keeping the Angular component alive when data changes
    */
   addNodeView() {
-    return ({ node, getPos, editor }): NodeView => {
+    return ({ node, getPos: _getPos, editor: _editor }): NodeView => {
       // Create the DOM element
       const dom = document.createElement('div');
       dom.setAttribute('data-type', 'mindmap');
