@@ -123,37 +123,50 @@ jobs:
       - name: Prepare VPS (first deploy)
         run: |
           ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            # Check Docker is installed
+            if ! command -v docker &>/dev/null; then
+              echo '::error::Docker is not installed on the VPS. Please install Docker first.'
+              exit 1
+            fi
+
+            # Check Docker Compose v2 plugin
+            if ! docker compose version &>/dev/null; then
+              echo '::error::Docker Compose v2 plugin is not installed. Please install it first.'
+              exit 1
+            fi
+
             # Install rsync if missing
             if ! command -v rsync &>/dev/null; then
               echo 'Installing rsync...'
               sudo apt-get update -qq && sudo apt-get install -y -qq rsync
             fi
 
-            # Create directory structure
-            mkdir -p ${{ env.VPS_PATH }}/{dist/TaskManager-Angular/browser,OBS/{scripts,backups,supabase-self-hosted/volumes/functions},supabase/migrations,mcp-server}
+            # Install envsubst (gettext-base) if missing
+            if ! command -v envsubst &>/dev/null; then
+              echo 'Installing envsubst...'
+              sudo apt-get update -qq && sudo apt-get install -y -qq gettext-base
+            fi
+
+            # Create full directory structure
+            mkdir -p ${{ env.VPS_PATH }}/dist/TaskManager-Angular/browser \
+                     ${{ env.VPS_PATH }}/OBS/scripts \
+                     ${{ env.VPS_PATH }}/OBS/backups \
+                     ${{ env.VPS_PATH }}/OBS/supabase-self-hosted/volumes/functions \
+                     ${{ env.VPS_PATH }}/OBS/supabase-self-hosted/volumes/db \
+                     ${{ env.VPS_PATH }}/OBS/supabase-self-hosted/volumes/api \
+                     ${{ env.VPS_PATH }}/OBS/supabase-self-hosted/volumes/logs \
+                     ${{ env.VPS_PATH }}/OBS/supabase-self-hosted/volumes/pooler \
+                     ${{ env.VPS_PATH }}/supabase/migrations \
+                     ${{ env.VPS_PATH }}/mcp-server
           "
+
+      # =====================================================================
+      # SYNC FILES
+      # =====================================================================
 
       - name: Write .env.production to VPS
         run: |
           scp /tmp/.env.production ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.VPS_PATH }}/OBS/.env.production
-
-      - name: Generate Caddyfile on VPS
-        run: |
-          ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
-            cd ${{ env.VPS_PATH }}/OBS && \
-            if [ -f scripts/generate-caddyfile.sh ]; then
-              chmod +x scripts/generate-caddyfile.sh && \
-              ./scripts/generate-caddyfile.sh
-            fi
-          "
-
-      - name: Pre-deploy backup
-        run: |
-          ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
-            cd ${{ env.VPS_PATH }}/OBS && \
-            mkdir -p backups && \
-            docker exec supabase-db pg_dumpall -U postgres > backups/predeploy_\$(date +%Y%m%d_%H%M%S).sql 2>/dev/null || echo 'No existing database to backup (first deploy?)'
-          "
 
       - name: Sync Angular build
         run: |
@@ -167,12 +180,12 @@ jobs:
             TaskManager-Angular/supabase/ \
             ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.VPS_PATH }}/supabase/
 
-      - name: Sync Edge Functions
+      - name: Sync Supabase self-hosted volumes
         run: |
           rsync -avz --delete \
             --exclude='.DS_Store' \
-            TaskManager-Angular/OBS/supabase-self-hosted/volumes/functions/ \
-            ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.VPS_PATH }}/OBS/supabase-self-hosted/volumes/functions/
+            TaskManager-Angular/OBS/supabase-self-hosted/ \
+            ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.VPS_PATH }}/OBS/supabase-self-hosted/
 
       - name: Sync OBS config files
         run: |
@@ -195,6 +208,67 @@ jobs:
             mcp-server/ \
             ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.VPS_PATH }}/mcp-server/
 
+      # =====================================================================
+      # GENERATE CONFIG & BACKUP
+      # =====================================================================
+
+      - name: Generate Caddyfile on VPS
+        run: |
+          ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            cd ${{ env.VPS_PATH }}/OBS && \
+            if [ -f scripts/generate-caddyfile.sh ]; then
+              chmod +x scripts/generate-caddyfile.sh && \
+              ./scripts/generate-caddyfile.sh
+            fi
+          "
+
+      - name: Pre-deploy backup
+        run: |
+          ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            if docker ps --format '{{.Names}}' 2>/dev/null | grep -q supabase-db; then
+              echo 'Backing up existing database...'
+              cd ${{ env.VPS_PATH }}/OBS && \
+              mkdir -p backups && \
+              docker exec supabase-db pg_dumpall -U postgres > backups/predeploy_\$(date +%Y%m%d_%H%M%S).sql
+            else
+              echo 'No running database found (first deploy?) — skipping backup'
+            fi
+          "
+
+      # =====================================================================
+      # BUILD & START SERVICES
+      # =====================================================================
+
+      - name: Build application image
+        run: |
+          ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            cd ${{ env.VPS_PATH }} && \
+            docker build --no-cache -f OBS/Dockerfile.production -t taskmanager-app .
+          "
+
+      - name: Start services
+        run: |
+          ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            cd ${{ env.VPS_PATH }}/OBS && \
+            docker compose --env-file .env.production --profile production up -d --no-build
+          "
+
+      - name: Wait for database to be healthy
+        run: |
+          ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            echo 'Waiting for database...'
+            for i in \$(seq 1 30); do
+              if docker exec supabase-db pg_isready -U postgres &>/dev/null; then
+                echo 'Database is ready'
+                exit 0
+              fi
+              echo \"Attempt \$i/30 — waiting 5s...\"
+              sleep 5
+            done
+            echo '::error::Database did not become healthy in 150s'
+            exit 1
+          "
+
       - name: Apply pending migrations
         run: |
           ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
@@ -211,17 +285,18 @@ jobs:
                 PENDING=\$((PENDING + 1))
               fi
             done && \
-            echo \"Applied \$PENDING migration(s)\"
+            echo \"Applied \$PENDING migration(s)\" && \
+            if [ \$PENDING -gt 0 ]; then
+              echo 'Reloading PostgREST schema cache...'
+              docker kill -s SIGUSR1 supabase-rest 2>/dev/null || true
+            fi
           "
 
-      - name: Rebuild and restart services
+      - name: Reload Caddy
         run: |
           ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
-            cd ${{ env.VPS_PATH }} && \
-            docker build --no-cache -f OBS/Dockerfile.production -t taskmanager-app . && \
-            cd OBS && \
-            docker compose --env-file .env.production --profile production up -d --no-build && \
-            docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
+            cd ${{ env.VPS_PATH }}/OBS && \
+            docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || echo 'Caddy reload skipped (not running or first deploy)'
           "
 
       - name: Build and restart MCP server
@@ -230,6 +305,10 @@ jobs:
             cd ${{ env.VPS_PATH }}/OBS && \
             docker compose --env-file .env.production --profile mcp up -d --build mcp-server 2>/dev/null || echo 'MCP server profile not active, skipping'
           "
+
+      # =====================================================================
+      # VERIFICATION
+      # =====================================================================
 
       - name: Health check
         run: |
