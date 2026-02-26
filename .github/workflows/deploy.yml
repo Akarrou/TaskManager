@@ -182,7 +182,7 @@ jobs:
 
       - name: Sync Supabase self-hosted volumes
         run: |
-          rsync -avz --delete \
+          rsync -avz \
             --exclude='.DS_Store' \
             TaskManager-Angular/OBS/supabase-self-hosted/ \
             ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.VPS_PATH }}/OBS/supabase-self-hosted/
