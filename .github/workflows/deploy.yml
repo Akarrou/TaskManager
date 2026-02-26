@@ -1,0 +1,232 @@
+name: Deploy
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: |
+            TaskManager-Angular/pnpm-lock.yaml
+            mcp-server/pnpm-lock.yaml
+
+      - name: Install & Build Angular
+        run: pnpm install --frozen-lockfile && pnpm run build
+        working-directory: TaskManager-Angular
+
+      - name: Install & Build MCP server
+        run: pnpm install --frozen-lockfile && pnpm run build
+        working-directory: mcp-server
+
+      - name: Upload Angular build
+        uses: actions/upload-artifact@v4
+        with:
+          name: angular-dist
+          path: TaskManager-Angular/dist/
+          retention-days: 1
+
+      - name: Upload MCP server build
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-server-dist
+          path: mcp-server/dist/
+          retention-days: 1
+
+  deploy:
+    name: Deploy to VPS
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Angular build
+        uses: actions/download-artifact@v4
+        with:
+          name: angular-dist
+          path: TaskManager-Angular/dist/
+
+      - name: Download MCP server build
+        uses: actions/download-artifact@v4
+        with:
+          name: mcp-server-dist
+          path: mcp-server/dist/
+
+      # Write ENV_PRODUCTION to a local file and extract VPS connection info
+      - name: Parse deployment config
+        run: |
+          cat > /tmp/.env.production << 'ENVEOF'
+          ${{ secrets.ENV_PRODUCTION }}
+          ENVEOF
+
+          # Extract VPS connection variables from the env file
+          extract_var() {
+            grep "^$1=" /tmp/.env.production | head -1 | cut -d'=' -f2- | tr -d '"' | tr -d "'" | xargs
+          }
+
+          VPS_USER=$(extract_var DEPLOY_VPS_USER)
+          VPS_HOST=$(extract_var DEPLOY_VPS_HOST)
+          VPS_PATH=$(extract_var DEPLOY_VPS_PATH)
+
+          # Validate required variables
+          if [ -z "$VPS_HOST" ]; then
+            echo "::error::DEPLOY_VPS_HOST is missing from ENV_PRODUCTION secret"
+            exit 1
+          fi
+
+          # Export for subsequent steps
+          echo "VPS_USER=${VPS_USER:-ubuntu}" >> "$GITHUB_ENV"
+          echo "VPS_HOST=${VPS_HOST}" >> "$GITHUB_ENV"
+          echo "VPS_PATH=${VPS_PATH:-~/taskmanager}" >> "$GITHUB_ENV"
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Add VPS to known hosts
+        run: ssh-keyscan -H ${{ env.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Write .env.production to VPS
+        run: |
+          ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "mkdir -p ${{ env.VPS_PATH }}/OBS"
+          scp /tmp/.env.production ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.VPS_PATH }}/OBS/.env.production
+
+      - name: Generate Caddyfile on VPS
+        run: |
+          ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            cd ${{ env.VPS_PATH }}/OBS && \
+            if [ -f scripts/generate-caddyfile.sh ]; then
+              chmod +x scripts/generate-caddyfile.sh && \
+              ./scripts/generate-caddyfile.sh
+            fi
+          "
+
+      - name: Pre-deploy backup
+        run: |
+          ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            cd ${{ env.VPS_PATH }}/OBS && \
+            mkdir -p backups && \
+            docker exec supabase-db pg_dumpall -U postgres > backups/predeploy_\$(date +%Y%m%d_%H%M%S).sql 2>/dev/null || echo 'No existing database to backup (first deploy?)'
+          "
+
+      - name: Sync Angular build
+        run: |
+          rsync -avz --delete \
+            TaskManager-Angular/dist/TaskManager-Angular/browser/ \
+            ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.VPS_PATH }}/dist/TaskManager-Angular/browser/
+
+      - name: Sync Supabase migrations
+        run: |
+          rsync -avz --delete \
+            TaskManager-Angular/supabase/ \
+            ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.VPS_PATH }}/supabase/
+
+      - name: Sync Edge Functions
+        run: |
+          rsync -avz --delete \
+            --exclude='.DS_Store' \
+            TaskManager-Angular/OBS/supabase-self-hosted/volumes/functions/ \
+            ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.VPS_PATH }}/OBS/supabase-self-hosted/volumes/functions/
+
+      - name: Sync OBS config files
+        run: |
+          rsync -avz \
+            TaskManager-Angular/OBS/docker-compose.yml \
+            TaskManager-Angular/OBS/Dockerfile \
+            TaskManager-Angular/OBS/Dockerfile.production \
+            TaskManager-Angular/OBS/nginx.conf \
+            TaskManager-Angular/OBS/Caddyfile.template \
+            ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.VPS_PATH }}/OBS/
+          rsync -avz --delete \
+            TaskManager-Angular/OBS/scripts/ \
+            ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.VPS_PATH }}/OBS/scripts/
+
+      - name: Sync MCP server
+        run: |
+          rsync -avz --delete \
+            --exclude='node_modules' \
+            --exclude='.env' \
+            mcp-server/ \
+            ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.VPS_PATH }}/mcp-server/
+
+      - name: Apply pending migrations
+        run: |
+          ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            cd ${{ env.VPS_PATH }}/OBS && \
+            APPLIED=\$(docker exec supabase-db psql -U postgres -d postgres -t -c \"SELECT version FROM public.schema_migrations ORDER BY version;\" 2>/dev/null | tr -d ' ') && \
+            PENDING=0 && \
+            for f in ${{ env.VPS_PATH }}/supabase/migrations/*.sql; do
+              [ -f \"\$f\" ] || continue
+              VERSION=\$(basename \"\$f\" | sed 's/_.*//')
+              if ! echo \"\$APPLIED\" | grep -q \"^\$VERSION\$\"; then
+                echo \"Applying: \$(basename \$f)\"
+                docker exec -i supabase-db psql -U postgres -d postgres < \"\$f\"
+                docker exec supabase-db psql -U postgres -d postgres -c \"INSERT INTO public.schema_migrations (version, name, applied_at, applied_by) VALUES ('\$VERSION', '\$(basename \$f)', NOW(), 'postgres');\"
+                PENDING=\$((PENDING + 1))
+              fi
+            done && \
+            echo \"Applied \$PENDING migration(s)\"
+          "
+
+      - name: Rebuild and restart services
+        run: |
+          ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            cd ${{ env.VPS_PATH }} && \
+            docker build --no-cache -f OBS/Dockerfile.production -t taskmanager-app . && \
+            cd OBS && \
+            docker compose --env-file .env.production --profile production up -d --no-build && \
+            docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
+          "
+
+      - name: Build and restart MCP server
+        run: |
+          ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            cd ${{ env.VPS_PATH }}/OBS && \
+            docker compose --env-file .env.production --profile mcp up -d --build mcp-server 2>/dev/null || echo 'MCP server profile not active, skipping'
+          "
+
+      - name: Health check
+        run: |
+          ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            cd ${{ env.VPS_PATH }}/OBS && \
+            echo '--- Service Status ---' && \
+            docker compose --env-file .env.production --profile production ps --format 'table {{.Name}}\t{{.Status}}'
+          "
+
+      - name: Cleanup
+        if: always()
+        run: rm -f /tmp/.env.production

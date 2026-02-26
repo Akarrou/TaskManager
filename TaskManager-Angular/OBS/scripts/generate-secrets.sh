@@ -69,6 +69,8 @@ LOGFLARE_PUBLIC=$(generate_long_secret)
 LOGFLARE_PRIVATE=$(generate_long_secret)
 POOLER_TENANT_ID=$(generate_uuid)
 DASHBOARD_PASSWORD=$(generate_secret)
+TOKEN_ENCRYPTION_KEY=$(openssl rand -hex 32)
+MCP_AUTH_PASSWORD=$(generate_secret)
 
 echo "🔑 Generating JWT tokens..."
 
@@ -206,6 +208,34 @@ IMGPROXY_ENABLE_WEBP_DETECTION=true
 FUNCTIONS_VERIFY_JWT=true
 
 # ===================================================================
+# GOOGLE CALENDAR INTEGRATION (Optional)
+# ===================================================================
+
+# GOOGLE_CLIENT_ID=
+# GOOGLE_CLIENT_SECRET=
+# GOOGLE_REDIRECT_URI=$SITE_URL/profile/google-callback
+TOKEN_ENCRYPTION_KEY=$TOKEN_ENCRYPTION_KEY
+ALLOWED_ORIGIN=$SITE_URL
+
+# ===================================================================
+# MCP SERVER (Optional - Claude AI Integration)
+# ===================================================================
+
+MCP_HTTP_PORT=3100
+MCP_AUTH_ENABLED=true
+MCP_AUTH_USERNAME=admin
+MCP_AUTH_PASSWORD=$MCP_AUTH_PASSWORD
+MCP_APP_URL=$SITE_URL
+
+# ===================================================================
+# INITIAL USER (Optional - for first setup)
+# ===================================================================
+
+SEED_USER_EMAIL=admin@example.com
+SEED_USER_PASSWORD=changeme123
+SEED_USER_NAME=Admin User
+
+# ===================================================================
 # ANALYTICS (Logflare)
 # ===================================================================
 
@@ -225,6 +255,25 @@ OPENAI_API_KEY=
 # ===================================================================
 
 DOCKER_SOCKET_LOCATION=/var/run/docker.sock
+
+# ===================================================================
+# DOMAIN CONFIGURATION (Production with SSL via Caddy)
+# ===================================================================
+
+APP_DOMAIN=kodo.example.com
+API_DOMAIN=api.example.com
+STUDIO_DOMAIN=supabase.example.com
+MCP_DOMAIN=mcp.example.com
+CADDY_BASIC_AUTH_USERNAME=admin
+CADDY_BASIC_AUTH_HASH=
+
+# ===================================================================
+# DEPLOYMENT
+# ===================================================================
+
+DEPLOY_VPS_USER=ubuntu
+DEPLOY_VPS_HOST=
+DEPLOY_VPS_PATH=~/taskmanager
 EOF
 
 echo "✅ Environment file created: $ENV_FILE"
@@ -235,6 +284,8 @@ echo "   - JWT Secret: ✓ Generated"
 echo "   - ANON_KEY: ✓ Generated"
 echo "   - SERVICE_ROLE_KEY: ✓ Generated"
 echo "   - Dashboard Password: ✓ Generated"
+echo "   - TOKEN_ENCRYPTION_KEY: ✓ Generated"
+echo "   - MCP_AUTH_PASSWORD: ✓ Generated"
 echo "   - All encryption keys: ✓ Generated"
 echo ""
 echo "🔒 IMPORTANT SECURITY NOTES:"
@@ -247,9 +298,13 @@ if [ "$1" == "--production" ]; then
     echo "⚠️  PRODUCTION CHECKLIST:"
     echo "   [ ] Update SUPABASE_PUBLIC_URL with your domain/IP"
     echo "   [ ] Update SITE_URL with your domain/IP"
+    echo "   [ ] Update APP_DOMAIN, API_DOMAIN, STUDIO_DOMAIN, MCP_DOMAIN"
+    echo "   [ ] Update DEPLOY_VPS_HOST with your VPS IP/hostname"
     echo "   [ ] Configure SMTP settings for email"
     echo "   [ ] Set ENABLE_EMAIL_AUTOCONFIRM=false"
+    echo "   [ ] Configure Google OAuth (optional)"
     echo "   [ ] Review all security settings"
+    echo "   [ ] Run 'make caddy' to generate Caddyfile"
     echo ""
 fi
 

@@ -43,3 +43,6 @@ Thumbs.db
 # Old backups
 *.old.md
 *.bak
+
+# Generated Caddyfile (use Caddyfile.template)
+Caddyfile

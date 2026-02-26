@@ -1,0 +1,64 @@
+# ===================================================================
+# TaskManager - Caddy Configuration Template
+# ===================================================================
+# Generate the final Caddyfile with: ./scripts/generate-caddyfile.sh
+# Placeholders: ${APP_DOMAIN}, ${API_DOMAIN}, ${STUDIO_DOMAIN}, ${MCP_DOMAIN}
+# ===================================================================
+
+# Application Frontend
+${APP_DOMAIN} {
+    header {
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://${API_DOMAIN} wss://${API_DOMAIN} https://accounts.google.com https://oauth2.googleapis.com; frame-src 'self' https://accounts.google.com"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        X-XSS-Protection "0"
+    }
+    reverse_proxy app:4010
+}
+
+# Supabase API (for requests from the app)
+${API_DOMAIN} {
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        X-XSS-Protection "0"
+    }
+    reverse_proxy kong:8000
+}
+
+# Supabase Studio (Admin Dashboard) - Protected by Basic Auth
+${STUDIO_DOMAIN} {
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        X-XSS-Protection "0"
+    }
+    basicauth {
+        ${CADDY_BASIC_AUTH_USERNAME} ${CADDY_BASIC_AUTH_HASH}
+    }
+    reverse_proxy studio:3000
+}
+
+# MCP Server - API for Claude Code
+${MCP_DOMAIN} {
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        X-XSS-Protection "0"
+    }
+    reverse_proxy mcp-server:3100 {
+        flush_interval -1
+    }
+}

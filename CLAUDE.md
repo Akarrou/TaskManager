@@ -4,8 +4,10 @@
 
 - **pnpm obligatoire** (pas npm/yarn) : `pnpm install`, `pnpm ng serve`, `pnpm ng build`
 - Node 22.16.0 via NVM : `nvm use` avant toute commande
-- MCP Server : `cd mcp-server && npm run build` (TypeScript compilation)
+- MCP Server : `cd mcp-server && pnpm run build` (TypeScript compilation)
 - Migrations Supabase : `TaskManager-Angular/supabase/migrations/`
+- **Makefile** racine : `make setup`, `make dev`, `make seed`, `make deploy`, `make caddy`, etc.
+- CI/CD : `.github/workflows/ci.yml` (lint+build) + `.github/workflows/deploy.yml` (deploy on tags)
 
 ## Stack
 

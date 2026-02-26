@@ -15,9 +15,9 @@ echo ""
 
 # Configuration
 DB_CONTAINER="supabase-db"
-DEFAULT_EMAIL="valettejerome31@gmail.com"
-DEFAULT_PASSWORD="Hyna.321"
-DEFAULT_NAME="Jérôme Valette"
+DEFAULT_EMAIL="${SEED_USER_EMAIL:-admin@example.com}"
+DEFAULT_PASSWORD="${SEED_USER_PASSWORD:-changeme123}"
+DEFAULT_NAME="${SEED_USER_NAME:-Admin User}"
 
 # Check if container is running
 echo "🔍 Checking database container..."

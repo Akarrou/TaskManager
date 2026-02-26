@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-build:
+    name: Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: |
+            TaskManager-Angular/pnpm-lock.yaml
+            mcp-server/pnpm-lock.yaml
+
+      # Angular
+      - name: Install Angular dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: TaskManager-Angular
+
+      - name: Lint Angular
+        run: pnpm run lint
+        working-directory: TaskManager-Angular
+
+      - name: Build Angular
+        run: pnpm run build
+        working-directory: TaskManager-Angular
+
+      - name: Upload Angular build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: angular-build
+          path: TaskManager-Angular/dist/
+          retention-days: 7
+
+      # MCP Server
+      - name: Install MCP server dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: mcp-server
+
+      - name: Build MCP server
+        run: pnpm run build
+        working-directory: mcp-server
+
+      - name: Upload MCP server build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-server-build
+          path: mcp-server/dist/
+          retention-days: 7

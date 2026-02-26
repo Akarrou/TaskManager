@@ -39,6 +39,7 @@ This deployment system provides:
 | **rest** | PostgREST API | - |
 | **realtime** | WebSocket server | - |
 | **storage** | File storage API | - |
+| **mcp-server** | Claude AI MCP Server | 3100 |
 | **analytics** | Logflare analytics | 4000 |
 | **+ 6 more** | Supporting services | - |
 
@@ -70,6 +71,17 @@ This deployment system provides:
 ## 🚀 Quick Start
 
 ### Local Development (5 minutes)
+
+Using the Makefile (from the project root):
+
+```bash
+make setup    # Generate secrets (.env.local)
+make dev      # Start all services
+make seed     # Create default user
+# Open http://localhost:4010
+```
+
+Or manually:
 
 ```bash
 # 1. Navigate to deployment directory
@@ -404,5 +416,66 @@ docker system df
 
 ---
 
-**Version**: 1.0.0
-**Last Updated**: December 2024
+## 🔌 MCP Server (Claude AI Integration)
+
+The MCP server is integrated as a Docker Compose service with profiles `mcp` and `production`.
+
+```bash
+# Start MCP server alongside the stack
+docker compose --profile mcp up -d mcp-server
+
+# Or via Makefile
+make mcp
+
+# Health check
+curl http://localhost:3100/health
+```
+
+The MCP server connects to Supabase via the internal Docker network (`kong:8000`) and exposes 83+ tools for Claude to interact with your Kodo instance.
+
+See `mcp-server/README.md` for detailed configuration.
+
+---
+
+## 🌐 Caddyfile (SSL/Domains)
+
+For production deployments with custom domains:
+
+1. Set domain variables in `.env.production`:
+   ```
+   APP_DOMAIN=kodo.yourdomain.com
+   API_DOMAIN=api.yourdomain.com
+   STUDIO_DOMAIN=supabase.yourdomain.com
+   MCP_DOMAIN=mcp.yourdomain.com
+   ```
+
+2. Generate the Caddyfile:
+   ```bash
+   make caddy
+   # or: ./scripts/generate-caddyfile.sh
+   ```
+
+3. The Caddyfile is auto-loaded by the `caddy` Docker service. Only the `Caddyfile.template` is version-controlled.
+
+---
+
+## 🚀 CI/CD (GitHub Actions)
+
+Two workflows are provided in `.github/workflows/`:
+
+- **`ci.yml`**: Runs lint + build on every push to `main`/`develop` and on PRs
+- **`deploy.yml`**: Deploys to VPS on `v*` tags or via manual dispatch
+
+### Required GitHub Secrets (only 2)
+
+| Secret | Description |
+|--------|-------------|
+| `VPS_SSH_KEY` | SSH private key for VPS access |
+| `ENV_PRODUCTION` | Full contents of `.env.production` |
+
+`ENV_PRODUCTION` contains everything: app secrets (JWT, passwords, domains...) **and** VPS connection info (`DEPLOY_VPS_HOST`, `DEPLOY_VPS_USER`, `DEPLOY_VPS_PATH`). Generate it locally with `make setup-prod`, customize it, then paste its contents into the GitHub secret. The deploy workflow writes it to the VPS and extracts the connection info automatically.
+
+---
+
+**Version**: 2.0.0
+**Last Updated**: February 2026

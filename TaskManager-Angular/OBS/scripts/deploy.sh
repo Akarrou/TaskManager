@@ -10,10 +10,19 @@
 
 set -e
 
+# Load environment variables for deployment config
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+OBS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+if [ -f "$OBS_DIR/.env.production" ]; then
+    set -a; source "$OBS_DIR/.env.production"; set +a
+elif [ -f "$OBS_DIR/.env.local" ]; then
+    set -a; source "$OBS_DIR/.env.local"; set +a
+fi
+
 # Configuration
-VPS_USER="ubuntu"
-VPS_HOST="51.178.52.150"
-VPS_PATH="~/taskmanager"
+VPS_USER="${DEPLOY_VPS_USER:-ubuntu}"
+VPS_HOST="${DEPLOY_VPS_HOST:?ERROR: DEPLOY_VPS_HOST is required. Set it in .env.production or export it.}"
+VPS_PATH="${DEPLOY_VPS_PATH:-~/taskmanager}"
 LOCAL_PROJECT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 MCP_SERVER_DIR="$(cd "$(dirname "$0")/../../../mcp-server" && pwd)"
 
@@ -76,7 +85,11 @@ echo ""
 echo -e "${YELLOW}📦 Step 1/7: Building Angular application...${NC}"
 cd "$LOCAL_PROJECT_DIR"
 source ~/.nvm/nvm.sh 2>/dev/null || true
-nvm use 24 2>/dev/null || true
+if [ -f "$LOCAL_PROJECT_DIR/.nvmrc" ]; then
+    nvm use 2>/dev/null || true
+else
+    nvm use 22 2>/dev/null || true
+fi
 pnpm run build
 echo -e "${GREEN}✅ Angular build completed${NC}"
 echo ""
@@ -130,14 +143,6 @@ rsync -avz \
 rsync -avz --delete \
     "$LOCAL_PROJECT_DIR/OBS/scripts/" \
     "$VPS_USER@$VPS_HOST:$VPS_PATH/OBS/scripts/"
-
-# Sync MCP server
-echo "   Syncing MCP server..."
-rsync -avz --delete \
-    --exclude='node_modules' \
-    --exclude='.env' \
-    "$MCP_SERVER_DIR/" \
-    "$VPS_USER@$VPS_HOST:/opt/mcp-server/"
 
 echo -e "${GREEN}✅ Files synced${NC}"
 echo ""
@@ -202,18 +207,22 @@ echo "   Reloading Caddy config..."
 ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH/OBS && docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true"
 echo -e "${GREEN}   ✅ Caddy config reloaded${NC}"
 
-# Step 6: MCP server
+# Step 6: MCP server (Docker)
 echo ""
 echo -e "${YELLOW}🔌 Step 6/7: Deploying MCP server...${NC}"
 
-# Install MCP server dependencies and restart
-echo "   Installing MCP server dependencies..."
-ssh "$VPS_USER@$VPS_HOST" "cd /opt/mcp-server && pnpm install --prod --frozen-lockfile"
-echo "   Setting APP_URL for production..."
-ssh "$VPS_USER@$VPS_HOST" "cd /opt/mcp-server && grep -q '^APP_URL=' .env 2>/dev/null && sed -i 's|^APP_URL=.*|APP_URL=https://kodo.logicfractals.fr|' .env || echo 'APP_URL=https://kodo.logicfractals.fr' >> .env"
-echo "   Restarting MCP server..."
-ssh "$VPS_USER@$VPS_HOST" "sudo systemctl restart mcp-server && sleep 2 && sudo systemctl is-active mcp-server"
-echo -e "${GREEN}   ✅ MCP server restarted${NC}"
+# Sync MCP server source for Docker build
+echo "   Syncing MCP server..."
+rsync -avz --delete \
+    --exclude='node_modules' \
+    --exclude='.env' \
+    "$MCP_SERVER_DIR/" \
+    "$VPS_USER@$VPS_HOST:$VPS_PATH/mcp-server/"
+
+# Build and restart MCP server via Docker Compose
+echo "   Rebuilding MCP server Docker image..."
+ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH/OBS && docker compose --profile mcp up -d --build mcp-server 2>/dev/null || echo 'MCP profile not enabled, skipping'"
+echo -e "${GREEN}   ✅ MCP server deployed${NC}"
 
 # Step 7: Health check
 echo ""
@@ -241,8 +250,14 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
-echo "Application:     https://kodo.logicfractals.fr"
-echo "Supabase API:    https://api.logicfractals.fr"
-echo "Supabase Studio: https://supabase.logicfractals.fr"
-echo "MCP Server:      https://mcp.logicfractals.fr"
+if [ -n "${APP_DOMAIN:-}" ] && [ "$APP_DOMAIN" != "kodo.example.com" ]; then
+    echo "Application:     https://${APP_DOMAIN}"
+    echo "Supabase API:    https://${API_DOMAIN:-api.${APP_DOMAIN#*.}}"
+    echo "Supabase Studio: https://${STUDIO_DOMAIN:-supabase.${APP_DOMAIN#*.}}"
+    echo "MCP Server:      https://${MCP_DOMAIN:-mcp.${APP_DOMAIN#*.}}"
+else
+    echo "Application:     http://$VPS_HOST:${APP_PORT:-4010}"
+    echo "Supabase API:    http://$VPS_HOST:${KONG_HTTP_PORT:-8000}"
+    echo "Supabase Studio: http://$VPS_HOST:${STUDIO_PORT:-3000}"
+fi
 echo ""

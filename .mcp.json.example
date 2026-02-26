@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "kodo": {
+      "type": "http",
+      "url": "https://mcp.example.com/mcp",
+      "headers": {
+        "Authorization": "Basic <base64-encoded-username:password>"
+      }
+    }
+  }
+}
