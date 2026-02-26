@@ -239,11 +239,13 @@ jobs:
       # BUILD & START SERVICES
       # =====================================================================
 
-      - name: Build application image
+      - name: Build Docker images
         run: |
           ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
             cd ${{ env.VPS_PATH }} && \
-            docker build --no-cache -f OBS/Dockerfile.production -t taskmanager-app .
+            docker build --no-cache -f OBS/Dockerfile.production -t taskmanager-app . && \
+            cd ${{ env.VPS_PATH }}/OBS && \
+            docker compose --env-file .env.production build mcp-server
           "
 
       - name: Start services
@@ -297,13 +299,6 @@ jobs:
           ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
             cd ${{ env.VPS_PATH }}/OBS && \
             docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || echo 'Caddy reload skipped (not running or first deploy)'
-          "
-
-      - name: Build and restart MCP server
-        run: |
-          ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
-            cd ${{ env.VPS_PATH }}/OBS && \
-            docker compose --env-file .env.production --profile mcp up -d --build mcp-server 2>/dev/null || echo 'MCP server profile not active, skipping'
           "
 
       # =====================================================================
