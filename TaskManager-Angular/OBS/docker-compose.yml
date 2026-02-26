@@ -384,9 +384,9 @@ services:
       SUPABASE_DB_URL: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-postgres}
       VERIFY_JWT: "${FUNCTIONS_VERIFY_JWT:-true}"
       # Google Calendar OAuth
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
       ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-http://localhost:4010}
     command: ["start", "--main-service", "/home/deno/functions/main"]
@@ -571,7 +571,7 @@ services:
     container_name: kodo-mcp-server
     profiles: ["mcp", "production"]
     build:
-      context: ../../mcp-server
+      context: ../mcp-server
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:

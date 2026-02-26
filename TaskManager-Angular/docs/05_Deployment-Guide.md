@@ -1,36 +1,57 @@
 # 5. Guide de Déploiement
 
-## 🚢 Processus de Déploiement avec Docker
+Ce guide couvre le déploiement complet (Angular + Supabase self-hosted) via Docker Compose.
 
-Le projet inclut un `Dockerfile` dans le dossier `OBS/` qui permet de construire une image Docker de l'application Angular pour la production.
+Pour la documentation détaillée, voir [`OBS/README.md`](../OBS/README.md).
 
-### Construction de l'image Docker
+## Quick Start
 
-1.  Placez-vous à la racine du projet (`TaskManager-Angular`).
-2.  Exécutez la commande de build Docker :
-    ```bash
-    docker build . -f OBS/Dockerfile -t taskmanager-angular
-    ```
-
-### Lancement du conteneur
-
-Une fois l'image construite, vous pouvez lancer un conteneur :
+### Développement local
 
 ```bash
-docker run -d -p 80:80 taskmanager-angular
+make setup    # Génère .env.local avec des secrets aléatoires
+make dev      # Démarre les 16+ services Docker
+make seed     # Crée l'utilisateur par défaut
+# Ouvrir http://localhost:4010
 ```
 
-L'application sera alors accessible sur le port 80 de votre machine hôte.
-
-## 🔧 Variables d'Environnement
-
-Pour que l'application en production puisse se connecter à Supabase, les variables d'environnement doivent être fournies au moment du build de l'image Docker. Le `Dockerfile` s'attend à recevoir les arguments `SUPABASE_URL` et `SUPABASE_KEY`.
-
-Vous pouvez les passer lors du build :
+### Production (VPS)
 
 ```bash
-docker build . -f OBS/Dockerfile \
-  --build-arg SUPABASE_URL=VOTRE_URL_SUPABASE \
-  --build-arg SUPABASE_KEY=VOTRE_CLE_SUPABASE \
-  -t taskmanager-angular
+# Génère .env.production — l'IP est spécifiée une seule fois
+make setup-prod   # ou: ./OBS/scripts/generate-secrets.sh --production <IP>
+
+# Éditer OBS/.env.production si besoin (SMTP, domaines)
+make caddy        # Génère le Caddyfile depuis le template
+make prod         # Démarre le stack production
 ```
+
+### Redéploiement
+
+```bash
+# Via CI/CD (recommandé) — push un tag
+git tag v1.2.0 && git push origin v1.2.0
+
+# Via script local
+make deploy       # ou: ./OBS/scripts/deploy.sh
+```
+
+## Variables d'Environnement
+
+Toute la configuration est dans `.env.local` (dev) ou `.env.production` (prod), générée automatiquement par `generate-secrets.sh`. Les variables d'environnement sont injectées au runtime dans le conteneur Angular via un entrypoint Docker — pas de rebuild nécessaire pour changer l'URL Supabase.
+
+Voir `OBS/.env.example` pour la liste complète avec documentation.
+
+## Ports et Sécurité
+
+| Port | Service | Accès recommandé |
+|------|---------|-------------------|
+| 4010 | Application Angular | Public |
+| 8000 | API Supabase (Kong) | Public |
+| 3000 | Supabase Studio | Admin uniquement |
+| 3100 | MCP Server | Admin uniquement |
+| 5432 | PostgreSQL | Jamais exposé |
+
+Avec des domaines personnalisés et Caddy, seuls les ports 80 et 443 sont nécessaires.
+
+Voir [`OBS/README.md`](../OBS/README.md) pour les recommandations UFW et sécurité détaillées.

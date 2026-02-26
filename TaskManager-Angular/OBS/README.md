@@ -204,21 +204,7 @@ docker compose up -d app
 
 ## 🌐 VPS Production Deployment
 
-### Automated Deployment
-
-```bash
-./scripts/deploy-vps.sh
-```
-
-The script will:
-1. ✅ Check prerequisites
-2. 🔐 Generate production secrets
-3. ⚙️ Prompt for VPS configuration
-4. 🔄 Build and start all services
-5. 🏥 Perform health checks
-6. 📋 Display access information
-
-### Manual Deployment
+### First-Time Setup
 
 #### 1. Prepare VPS
 
@@ -227,51 +213,191 @@ The script will:
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 sudo usermod -aG docker $USER
-# Logout and login
+# Logout and login to apply group changes
 ```
 
 #### 2. Generate Production Secrets
 
+All URLs are automatically derived from the VPS IP — you only specify it once:
+
 ```bash
+./scripts/generate-secrets.sh --production 203.0.113.50
+```
+
+Or pass it via environment variable:
+
+```bash
+export DEPLOY_VPS_HOST=203.0.113.50
 ./scripts/generate-secrets.sh --production
 ```
 
-#### 3. Configure Environment
+If omitted, the script will prompt you interactively.
+
+This generates `.env.production` with:
+- All cryptographic secrets (JWT, passwords, encryption keys)
+- All URLs pre-filled (`SUPABASE_PUBLIC_URL`, `SITE_URL`, etc.)
+- `DEPLOY_VPS_HOST` set for CI/CD and deploy scripts
+
+#### 3. Configure SMTP (optional but recommended)
 
 Edit `.env.production`:
 
 ```bash
-# Update these for your VPS
-SUPABASE_PUBLIC_URL=http://YOUR_VPS_IP:8000
-SITE_URL=http://YOUR_VPS_IP:4010
-
-# For domain with SSL:
-# SUPABASE_PUBLIC_URL=https://api.yourdomain.com
-# SITE_URL=https://yourdomain.com
-
-# Configure SMTP
 SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
+SMTP_SENDER_NAME=Kodo
 ```
 
-#### 4. Start Services
+Without SMTP, set `ENABLE_EMAIL_AUTOCONFIRM=true` to skip email verification.
+
+#### 4. Configure Custom Domains (optional)
+
+For SSL with Let's Encrypt via Caddy, edit `.env.production`:
+
+```bash
+APP_DOMAIN=kodo.yourdomain.com
+API_DOMAIN=api.yourdomain.com
+STUDIO_DOMAIN=supabase.yourdomain.com
+MCP_DOMAIN=mcp.yourdomain.com
+```
+
+Then generate the Caddyfile:
+
+```bash
+./scripts/generate-caddyfile.sh
+```
+
+If no custom domain is configured, the script generates an IP-based Caddyfile (no SSL).
+
+#### 5. Start Services
 
 ```bash
 docker compose --env-file .env.production --profile production up -d
 ```
 
-#### 5. Configure Firewall
+#### 6. Create Initial User
 
 ```bash
-sudo ufw allow 22/tcp      # SSH
-sudo ufw allow 80/tcp      # HTTP
-sudo ufw allow 443/tcp     # HTTPS
-sudo ufw allow 4010/tcp    # App
-sudo ufw allow 8000/tcp    # API
-sudo ufw allow 3000/tcp    # Studio
+./scripts/seed-user.sh
+```
+
+### Redeploying (Updating an Existing Instance)
+
+#### Via CI/CD (recommended)
+
+Push a version tag to trigger automatic deployment:
+
+```bash
+git tag v1.2.0
+git push origin v1.2.0
+```
+
+Or trigger manually from the GitHub Actions tab (`workflow_dispatch`).
+
+The CI/CD pipeline handles: build, file sync, pre-deploy backup, Docker image rebuild, migration application, and service restart — all with zero manual intervention.
+
+#### Via deploy.sh (from local machine)
+
+```bash
+./scripts/deploy.sh
+```
+
+The script reads `DEPLOY_VPS_HOST` from `.env.production` and:
+
+1. Creates a pre-deploy database backup on the VPS
+2. Builds Angular app and MCP server locally
+3. Syncs all files via rsync (build, migrations, edge functions, configs)
+4. Applies pending database migrations
+5. Rebuilds Docker images and restarts services
+6. Reloads Caddy configuration (zero-downtime)
+7. Runs health checks
+
+#### Manual Update
+
+```bash
+# SSH to VPS
+ssh ubuntu@your-vps-ip
+
+# Pull latest code / sync files
+cd ~/taskmanager
+
+# Rebuild app image
+docker build --no-cache -f OBS/Dockerfile.production -t taskmanager-app .
+
+# Restart services
+cd OBS
+docker compose --env-file .env.production --profile production up -d --no-build
+
+# Apply new migrations if any
+docker exec -i supabase-db psql -U postgres -d postgres < ../supabase/migrations/NEW_MIGRATION.sql
+```
+
+### Firewall & Port Configuration
+
+#### Required Ports
+
+| Port | Service | Access | Notes |
+|------|---------|--------|-------|
+| **22** | SSH | Admin only | Restrict to your IP if possible |
+| **80** | HTTP | Public | Caddy (redirects to HTTPS if domains configured) |
+| **443** | HTTPS | Public | Caddy (SSL termination) |
+
+#### Without Custom Domains (IP-based access)
+
+| Port | Service | Access | Notes |
+|------|---------|--------|-------|
+| **4010** | Angular App | Public | Main application |
+| **8000** | Kong API Gateway | Public | Supabase API (required by the app) |
+| **3000** | Supabase Studio | **Admin only** | Database admin panel — restrict access |
+| **3100** | MCP Server | **Admin only** | Claude AI integration — restrict access |
+
+#### With Custom Domains (Caddy handles routing)
+
+When using domains, Caddy listens on ports 80/443 and reverse-proxies to internal services. **No other ports need to be exposed publicly.**
+
+#### UFW Configuration
+
+**IP-based (no domains):**
+
+```bash
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow 22/tcp comment 'SSH'
+sudo ufw allow 4010/tcp comment 'Kodo App'
+sudo ufw allow 8000/tcp comment 'Supabase API'
+# Only if you need remote access to Studio/MCP:
+# sudo ufw allow from YOUR_ADMIN_IP to any port 3000 proto tcp comment 'Studio (admin only)'
+# sudo ufw allow from YOUR_ADMIN_IP to any port 3100 proto tcp comment 'MCP (admin only)'
 sudo ufw enable
 ```
+
+**Domain-based (Caddy SSL):**
+
+```bash
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow 22/tcp comment 'SSH'
+sudo ufw allow 80/tcp comment 'HTTP (Caddy redirect)'
+sudo ufw allow 443/tcp comment 'HTTPS (Caddy SSL)'
+sudo ufw enable
+```
+
+#### Security Recommendations
+
+- **Never expose port 5432** (PostgreSQL) to the internet — it is internal to Docker
+- **Restrict Studio (3000)** to admin IPs only — it has full database access
+- **Restrict MCP Server (3100)** to trusted IPs — it uses service role credentials
+- **Use SSH key authentication** — disable password-based SSH login
+- **Keep Docker updated** — `sudo apt update && sudo apt upgrade`
+- **Set up fail2ban** for SSH brute-force protection:
+  ```bash
+  sudo apt install fail2ban
+  sudo systemctl enable fail2ban
+  ```
+- **Change default seed credentials** after first login
+- **Configure SMTP** and set `ENABLE_EMAIL_AUTOCONFIRM=false` in production
 
 ---
 

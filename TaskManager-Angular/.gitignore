@@ -44,3 +44,6 @@ supabase/functions/.env
 # System files
 .DS_Store
 Thumbs.db
+
+# Symlink to mcp-server (for Docker Compose local dev)
+/mcp-server
