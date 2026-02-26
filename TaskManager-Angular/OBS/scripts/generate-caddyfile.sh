@@ -14,22 +14,36 @@ OBS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 TEMPLATE="$OBS_DIR/Caddyfile.template"
 OUTPUT="$OBS_DIR/Caddyfile"
 
-# Source environment variables
+# Load environment variables safely (handles values with spaces, comments, etc.)
+load_env() {
+    local file="$1"
+    while IFS= read -r line || [ -n "$line" ]; do
+        # Skip comments and empty lines
+        [[ "$line" =~ ^[[:space:]]*# ]] && continue
+        [[ -z "${line// }" ]] && continue
+        # Extract key=value, strip surrounding quotes from value
+        if [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*) ]]; then
+            local key="${BASH_REMATCH[1]}"
+            local val="${BASH_REMATCH[2]}"
+            # Remove surrounding quotes if present
+            val="${val%\"}"
+            val="${val#\"}"
+            val="${val%\'}"
+            val="${val#\'}"
+            export "$key=$val"
+        fi
+    done < "$file"
+}
+
 if [ -f "$OBS_DIR/.env.production" ]; then
-    set -a
-    source "$OBS_DIR/.env.production"
-    set +a
-    echo "📄 Loaded variables from .env.production"
+    load_env "$OBS_DIR/.env.production"
+    echo "Loaded variables from .env.production"
 elif [ -f "$OBS_DIR/.env.local" ]; then
-    set -a
-    source "$OBS_DIR/.env.local"
-    set +a
-    echo "📄 Loaded variables from .env.local"
+    load_env "$OBS_DIR/.env.local"
+    echo "Loaded variables from .env.local"
 elif [ -f "$OBS_DIR/.env" ]; then
-    set -a
-    source "$OBS_DIR/.env"
-    set +a
-    echo "📄 Loaded variables from .env"
+    load_env "$OBS_DIR/.env"
+    echo "Loaded variables from .env"
 fi
 
 # Check required variables

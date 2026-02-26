@@ -14,16 +14,28 @@ set -e
 # Determine output file based on argument
 if [ "$1" == "--production" ]; then
     ENV_FILE=".env.production"
-    SUPABASE_URL="http://YOUR_VPS_IP:8000"
-    SITE_URL="http://YOUR_VPS_IP:4010"
     EMAIL_AUTOCONFIRM="false"
-    echo "🏭 Generating PRODUCTION environment file..."
+
+    # Get VPS host: from argument, env var, or interactive prompt
+    VPS_HOST="${2:-${DEPLOY_VPS_HOST:-}}"
+    if [ -z "$VPS_HOST" ]; then
+        read -p "Enter your VPS IP or hostname: " VPS_HOST
+        if [ -z "$VPS_HOST" ]; then
+            echo "ERROR: VPS host is required for production."
+            exit 1
+        fi
+    fi
+
+    SUPABASE_URL="http://$VPS_HOST:8000"
+    SITE_URL="http://$VPS_HOST:4010"
+    echo "Generating PRODUCTION environment file for $VPS_HOST..."
 else
     ENV_FILE=".env.local"
+    VPS_HOST="localhost"
     SUPABASE_URL="http://localhost:8000"
     SITE_URL="http://localhost:4010"
     EMAIL_AUTOCONFIRM="true"
-    echo "🛠️  Generating LOCAL DEVELOPMENT environment file..."
+    echo "Generating LOCAL DEVELOPMENT environment file..."
 fi
 
 # Check if output file already exists
@@ -272,7 +284,7 @@ CADDY_BASIC_AUTH_HASH=
 # ===================================================================
 
 DEPLOY_VPS_USER=ubuntu
-DEPLOY_VPS_HOST=
+DEPLOY_VPS_HOST=$VPS_HOST
 DEPLOY_VPS_PATH=~/taskmanager
 EOF
 
@@ -296,12 +308,8 @@ echo ""
 
 if [ "$1" == "--production" ]; then
     echo "⚠️  PRODUCTION CHECKLIST:"
-    echo "   [ ] Update SUPABASE_PUBLIC_URL with your domain/IP"
-    echo "   [ ] Update SITE_URL with your domain/IP"
-    echo "   [ ] Update APP_DOMAIN, API_DOMAIN, STUDIO_DOMAIN, MCP_DOMAIN"
-    echo "   [ ] Update DEPLOY_VPS_HOST with your VPS IP/hostname"
+    echo "   [ ] Update APP_DOMAIN, API_DOMAIN, STUDIO_DOMAIN, MCP_DOMAIN (for SSL)"
     echo "   [ ] Configure SMTP settings for email"
-    echo "   [ ] Set ENABLE_EMAIL_AUTOCONFIRM=false"
     echo "   [ ] Configure Google OAuth (optional)"
     echo "   [ ] Review all security settings"
     echo "   [ ] Run 'make caddy' to generate Caddyfile"

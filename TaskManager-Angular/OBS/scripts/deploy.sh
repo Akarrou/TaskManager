@@ -10,13 +10,29 @@
 
 set -e
 
-# Load environment variables for deployment config
+# Load environment variables safely (handles values with spaces)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 OBS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+load_env() {
+    local file="$1"
+    while IFS= read -r line || [ -n "$line" ]; do
+        [[ "$line" =~ ^[[:space:]]*# ]] && continue
+        [[ -z "${line// }" ]] && continue
+        if [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*) ]]; then
+            local key="${BASH_REMATCH[1]}"
+            local val="${BASH_REMATCH[2]}"
+            val="${val%\"}"; val="${val#\"}"
+            val="${val%\'}"; val="${val#\'}"
+            export "$key=$val"
+        fi
+    done < "$file"
+}
+
 if [ -f "$OBS_DIR/.env.production" ]; then
-    set -a; source "$OBS_DIR/.env.production"; set +a
+    load_env "$OBS_DIR/.env.production"
 elif [ -f "$OBS_DIR/.env.local" ]; then
-    set -a; source "$OBS_DIR/.env.local"; set +a
+    load_env "$OBS_DIR/.env.local"
 fi
 
 # Configuration
