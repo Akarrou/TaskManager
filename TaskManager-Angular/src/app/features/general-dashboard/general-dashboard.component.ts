@@ -1,10 +1,10 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
-
+import { Router, ActivatedRoute } from '@angular/router';
 
 import { FabStore } from '../../core/stores/fab.store';
 import { DashboardStatsStore } from '../../core/stores/dashboard-stats.store';
+import { TourService } from '../tour/services/tour.service';
 
 @Component({
   selector: 'app-general-dashboard',
@@ -15,8 +15,10 @@ import { DashboardStatsStore } from '../../core/stores/dashboard-stats.store';
 })
 export class GeneralDashboardComponent implements OnInit, OnDestroy {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private fabStore = inject(FabStore);
   private dashboardStatsStore = inject(DashboardStatsStore);
+  private tourService = inject(TourService);
   private pageId = crypto.randomUUID();
 
   loading = signal(true);
@@ -81,6 +83,13 @@ export class GeneralDashboardComponent implements OnInit, OnDestroy {
 
     // Le computed signal `stats` ci-dessus se mettra à jour automatiquement
     this.loading.set(false);
+
+    // Launch tour if redirected from onboarding
+    if (this.route.snapshot.queryParamMap.get('tour') === 'start') {
+      this.tourService.startAppTour();
+      // Clean up query param
+      this.router.navigate([], { queryParams: {}, replaceUrl: true });
+    }
   }
 
   ngOnDestroy(): void {

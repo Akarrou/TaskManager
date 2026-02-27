@@ -84,7 +84,7 @@ BEGIN
     '{\"provider\": \"email\", \"providers\": [\"email\"]}',
     '{\"full_name\": \"$DEFAULT_NAME\"}',
     'authenticated', 'authenticated',
-    '', '', '', '', '', '', '', '', '',
+    '', '', '', '', '', NULL, '', '', '',
     0, false, false
   );
 

@@ -5,6 +5,7 @@ import { AuthService } from '../../../core/services/auth';
 import { LogoComponent } from '../logo/logo.component';
 import { ProjectSelectorComponent } from '../../../features/projects/components/project-selector/project-selector.component';
 import { TrashStore } from '../../../features/trash/store/trash.store';
+import { TourService } from '../../../features/tour/services/tour.service';
 
 @Component({
   selector: 'app-header-nav',
@@ -17,6 +18,7 @@ export class HeaderNavComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
   private trashStore = inject(TrashStore);
+  private tourService = inject(TourService);
 
   currentUser = this.authService.currentUser;
   trashCount = this.trashStore.trashCount;
@@ -43,7 +45,12 @@ export class HeaderNavComponent {
   }
 
   private checkLoginRoute(url: string): void {
-    this.isLoginPage.set(url.includes('/login'));
+    this.isLoginPage.set(url.includes('/login') || url.includes('/onboarding'));
+  }
+
+  startTour(): void {
+    this.closeProfileMenu();
+    this.tourService.startAppTour();
   }
 
   setActiveRoute(route: string) {

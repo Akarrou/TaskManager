@@ -1,0 +1,329 @@
+@use '../../../../styles/variables' as v;
+
+:host {
+  display: block;
+}
+
+.onboarding-layout {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, v.$background-color-page 0%, #eef2ff 100%);
+  padding: v.$space-4;
+}
+
+.onboarding-container {
+  width: 100%;
+  max-width: 740px;
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-8;
+}
+
+// Header
+.onboarding-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: fadeInDown 0.5s ease;
+
+  app-logo {
+    margin-bottom: v.$space-6;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+  }
+}
+
+.onboarding-title {
+  font-size: v.$font-size-3xl;
+  font-weight: 800;
+  color: v.$text-color-darkest;
+  margin: 0 0 v.$space-2 0;
+  letter-spacing: -0.025em;
+}
+
+.onboarding-subtitle {
+  font-size: v.$font-size-lg;
+  color: v.$text-color-light;
+  margin: 0;
+}
+
+// Error banner
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: v.$space-3;
+  padding: v.$space-3 v.$space-4;
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: v.$border-radius-lg;
+  color: #ef4444;
+  font-size: v.$font-size-sm;
+  animation: fadeIn 0.3s ease;
+
+  .material-icons-outlined {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+}
+
+// Cards grid
+.cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: v.$space-6;
+  animation: fadeInUp 0.5s ease 0.15s both;
+
+  @media (max-width: v.$breakpoint-md) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.onboarding-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: v.$border-radius-xl;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  padding: v.$space-8;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, v.$primary-color-light, v.$primary-color);
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15), 0 10px 15px -5px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.card-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: v.$border-radius-xl;
+  background: linear-gradient(135deg, v.$primary-color-lightest, #c7d2fe);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto v.$space-5;
+
+  .material-icons-outlined {
+    font-size: 32px;
+    color: v.$primary-color;
+  }
+
+  &--secondary {
+    background: linear-gradient(135deg, #f0fdf4, #bbf7d0);
+
+    .material-icons-outlined {
+      color: v.$success-color;
+    }
+  }
+}
+
+.card-title {
+  font-size: v.$font-size-lg;
+  font-weight: 700;
+  color: v.$text-color-darkest;
+  margin: 0 0 v.$space-3 0;
+}
+
+.card-description {
+  font-size: v.$font-size-sm;
+  color: v.$text-color-light;
+  margin: 0 0 v.$space-6 0;
+  line-height: 1.6;
+}
+
+.card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: v.$space-2;
+  padding: v.$space-3 v.$space-5;
+  border-radius: v.$border-radius-lg;
+  font-weight: 600;
+  font-size: v.$font-size-sm;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+
+  .material-icons-outlined {
+    font-size: 18px;
+  }
+
+  &--primary {
+    background: v.$primary-color;
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(v.$primary-color, 0.2);
+
+    &:hover {
+      background: v.$primary-color-dark;
+    }
+  }
+
+  &--secondary {
+    background: white;
+    border-color: v.$border-color-medium;
+    color: v.$text-color-dark;
+
+    &:hover {
+      background: v.$background-color-hover;
+    }
+  }
+}
+
+// Form card
+.form-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: v.$border-radius-xl;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  padding: v.$space-8;
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
+  overflow: hidden;
+  animation: fadeInUp 0.3s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, v.$primary-color-light, v.$primary-color);
+  }
+}
+
+.form-card-title {
+  font-size: v.$font-size-xl;
+  font-weight: 700;
+  color: v.$text-color-darkest;
+  margin: 0 0 v.$space-6 0;
+  text-align: center;
+}
+
+// Seeding card
+.seeding-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: v.$border-radius-xl;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  padding: v.$space-10;
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
+  overflow: hidden;
+  animation: fadeIn 0.3s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, v.$primary-color-light, v.$primary-color);
+  }
+}
+
+.seeding-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid v.$primary-color-lightest;
+  border-radius: 50%;
+  border-top-color: v.$primary-color;
+  animation: spinner 0.8s linear infinite;
+  margin: 0 auto v.$space-6;
+}
+
+.seeding-message {
+  font-size: v.$font-size-base;
+  font-weight: 600;
+  color: v.$text-color-dark;
+  margin: 0 0 v.$space-4 0;
+}
+
+.seeding-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: v.$background-color-hover;
+  border-radius: v.$border-radius-full;
+  overflow: hidden;
+  margin-bottom: v.$space-3;
+}
+
+.seeding-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, v.$primary-color-light, v.$primary-color);
+  border-radius: v.$border-radius-full;
+  transition: width 0.4s ease;
+}
+
+.seeding-step {
+  font-size: v.$font-size-xs;
+  color: v.$text-color-light;
+  margin: 0;
+}
+
+// Footer
+.onboarding-footer {
+  text-align: center;
+  animation: fadeIn 0.5s ease 0.3s both;
+
+  p {
+    font-size: v.$font-size-xs;
+    color: v.$text-color-light;
+    margin: 0;
+  }
+}
+
+// Animations
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes spinner {
+  to { transform: rotate(360deg); }
+}

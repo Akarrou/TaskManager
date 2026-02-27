@@ -1,0 +1,125 @@
+@use '../../../../styles/variables' as v;
+
+.onboarding-form {
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-5;
+  animation: fadeIn 0.3s ease;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-2;
+}
+
+.form-label {
+  font-size: v.$font-size-sm;
+  font-weight: 600;
+  color: v.$text-color-dark;
+}
+
+.form-required {
+  color: v.$error-color;
+  margin-left: 2px;
+}
+
+.form-input {
+  width: 100%;
+  padding: v.$space-3 v.$space-4;
+  background: white;
+  border: 1px solid v.$border-color-medium;
+  border-radius: v.$border-radius-lg;
+  font-size: v.$font-size-sm;
+  font-family: v.$font-family-sans;
+  color: v.$text-color-dark;
+  transition: all 0.2s ease;
+
+  &::placeholder {
+    color: v.$text-color-light;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: v.$primary-color;
+    box-shadow: 0 0 0 4px rgba(v.$primary-color, 0.1);
+  }
+
+  &--error {
+    border-color: v.$error-color;
+
+    &:focus {
+      box-shadow: 0 0 0 4px rgba(v.$error-color, 0.1);
+    }
+  }
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-error {
+  font-size: v.$font-size-xs;
+  color: v.$error-color;
+}
+
+.form-actions {
+  display: flex;
+  gap: v.$space-3;
+  justify-content: flex-end;
+  margin-top: v.$space-2;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: v.$space-2;
+  padding: v.$space-3 v.$space-5;
+  border-radius: v.$border-radius-lg;
+  font-weight: 600;
+  font-size: v.$font-size-sm;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+
+  .material-icons-outlined {
+    font-size: 18px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: v.$primary-color;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: v.$primary-color-dark;
+      transform: translateY(-1px);
+    }
+  }
+
+  &--secondary {
+    background: white;
+    border-color: v.$border-color-medium;
+    color: v.$text-color-dark;
+
+    &:hover {
+      background: v.$background-color-hover;
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

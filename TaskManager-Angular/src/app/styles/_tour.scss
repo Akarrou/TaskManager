@@ -1,0 +1,105 @@
+@use './variables' as v;
+
+// Driver.js custom popover styles for Kōdo
+.kodo-tour-popover {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  border-radius: v.$border-radius-xl !important;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.2), 0 10px 15px -5px rgba(0, 0, 0, 0.1) !important;
+  padding: 0 !important;
+  overflow: hidden;
+  max-width: 340px !important;
+
+  // Accent line top
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, v.$primary-color-light, v.$primary-color);
+    z-index: 1;
+  }
+
+  .driver-popover-title {
+    font-family: v.$font-family-sans;
+    font-size: v.$font-size-base;
+    font-weight: 700;
+    color: v.$text-color-darkest;
+    padding: v.$space-5 v.$space-5 0;
+    margin: 0;
+  }
+
+  .driver-popover-description {
+    font-family: v.$font-family-sans;
+    font-size: v.$font-size-sm;
+    color: v.$text-color-light;
+    line-height: 1.6;
+    padding: v.$space-2 v.$space-5 v.$space-4;
+    margin: 0;
+  }
+
+  .driver-popover-progress-text {
+    font-family: v.$font-family-sans;
+    font-size: v.$font-size-xs;
+    color: v.$text-color-light;
+  }
+
+  .driver-popover-footer {
+    padding: v.$space-3 v.$space-5;
+    border-top: 1px solid v.$border-color-light;
+  }
+
+  .driver-popover-navigation-btns {
+    gap: v.$space-2;
+  }
+
+  .driver-popover-prev-btn,
+  .driver-popover-next-btn {
+    font-family: v.$font-family-sans;
+    font-size: v.$font-size-sm;
+    font-weight: 600;
+    border-radius: v.$border-radius-md;
+    padding: v.$space-2 v.$space-4;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .driver-popover-prev-btn {
+    background: white;
+    color: v.$text-color-dark;
+    border: 1px solid v.$border-color-medium;
+
+    &:hover {
+      background: v.$background-color-hover;
+    }
+  }
+
+  .driver-popover-next-btn {
+    background: v.$primary-color;
+    color: white;
+
+    &:hover {
+      background: v.$primary-color-dark;
+    }
+  }
+
+  // Close button
+  .driver-popover-close-btn {
+    color: v.$text-color-light;
+    top: v.$space-3;
+    right: v.$space-3;
+
+    &:hover {
+      color: v.$text-color-dark;
+    }
+  }
+
+  // Arrow
+  .driver-popover-arrow {
+    border-color: rgba(255, 255, 255, 0.95);
+  }
+}

@@ -300,6 +300,34 @@ docker compose --env-file .env.production --profile production up -d --no-build
 docker exec -i supabase-db psql -U postgres -d postgres < ../supabase/migrations/NEW_MIGRATION.sql
 ```
 
+### DNS Configuration
+
+Before deploying, create **4 DNS records** (type A, TTL 0 or 300) pointing to your VPS IP address.
+
+If your domain is `kodo.monsite.com`, the base domain is `monsite.com` :
+
+| Type | TTL | Name | Value | Service |
+|------|-----|------|-------|---------|
+| A | 0 | `kodo.monsite.com` | `VPS_IP` | Application (frontend Angular) |
+| A | 0 | `api.monsite.com` | `VPS_IP` | Supabase API (Kong gateway) |
+| A | 0 | `supabase.monsite.com` | `VPS_IP` | Supabase Studio (admin dashboard) |
+| A | 0 | `mcp.monsite.com` | `VPS_IP` | MCP Server (Claude AI integration) |
+
+Or use a single **wildcard** record to cover all subdomains:
+
+| Type | TTL | Name | Value |
+|------|-----|------|-------|
+| A | 0 | `*.monsite.com` | `VPS_IP` |
+
+> **Important**: All 4 records must resolve **before** the first deployment. Caddy needs all domains to be reachable to provision SSL certificates via Let's Encrypt.
+>
+> If Caddy has already started without DNS (certificates failed), restart it after propagation:
+> ```bash
+> docker compose restart caddy
+> ```
+>
+> Verify propagation with: `nslookup api.monsite.com 8.8.8.8`
+
 ### Firewall & Port Configuration
 
 #### Required Ports

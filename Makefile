@@ -80,7 +80,14 @@ rebuild: ## Rebuild and restart the Angular app
 
 .PHONY: seed
 seed: ## Create the default user
-	@cd $(OBS_DIR) && ./scripts/seed-user.sh
+	@cd $(OBS_DIR) && \
+	if [ -f .env.production ]; then \
+		export $$(grep -E '^SEED_USER_' .env.production | xargs) && ./scripts/seed-user.sh; \
+	elif [ -f .env.local ]; then \
+		export $$(grep -E '^SEED_USER_' .env.local | xargs) && ./scripts/seed-user.sh; \
+	else \
+		./scripts/seed-user.sh; \
+	fi
 
 # ===================================================================
 # Production

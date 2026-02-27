@@ -1,0 +1,48 @@
+<form [formGroup]="form" (ngSubmit)="onSubmit()" class="onboarding-form">
+  <div class="form-group">
+    <label for="project-name" class="form-label">
+      Nom du projet
+      <span class="form-required">*</span>
+    </label>
+    <input
+      id="project-name"
+      type="text"
+      formControlName="name"
+      class="form-input"
+      [class.form-input--error]="form.get('name')?.invalid && form.get('name')?.touched"
+      placeholder="Ex: Mon premier projet">
+    @if (form.get('name')?.invalid && form.get('name')?.touched) {
+      <div class="form-error">
+        @if (form.get('name')?.errors?.['required']) {
+          <span>Le nom est requis.</span>
+        }
+        @if (form.get('name')?.errors?.['minlength']) {
+          <span>Le nom doit contenir au moins 3 caractères.</span>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="form-group">
+    <label for="project-description" class="form-label">
+      Description
+    </label>
+    <textarea
+      id="project-description"
+      formControlName="description"
+      rows="3"
+      class="form-input form-textarea"
+      placeholder="Décrivez l'objectif de ce projet..."></textarea>
+  </div>
+
+  <div class="form-actions">
+    <button type="button" class="btn btn--secondary" (click)="onCancel()">
+      <span class="material-icons-outlined">arrow_back</span>
+      Retour
+    </button>
+    <button type="submit" class="btn btn--primary" [disabled]="form.invalid">
+      <span class="material-icons-outlined">add</span>
+      Créer le projet
+    </button>
+  </div>
+</form>

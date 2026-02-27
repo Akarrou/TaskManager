@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, publicGuard } from './core/guards/auth.guards';
+import { onboardingGuard, requireNoProjectsGuard } from './core/guards/onboarding.guard';
 
 export const routes: Routes = [
   {
@@ -14,8 +15,14 @@ export const routes: Routes = [
     title: 'Connexion - Kōdo'
   },
   {
+    path: 'onboarding',
+    canActivate: [authGuard, requireNoProjectsGuard],
+    loadComponent: () => import('./features/onboarding/components/onboarding-page/onboarding-page.component').then(m => m.OnboardingPageComponent),
+    title: 'Bienvenue - Kōdo'
+  },
+  {
     path: 'dashboard',
-    canActivate: [authGuard],
+    canActivate: [authGuard, onboardingGuard],
     children: [
       {
         path: '',
@@ -31,37 +38,37 @@ export const routes: Routes = [
   },
   {
     path: 'projects',
-    canActivate: [authGuard],
+    canActivate: [authGuard, onboardingGuard],
     loadComponent: () => import('./features/projects/components/project-list/project-list.component').then(m => m.ProjectListComponent),
     title: 'Mes Projets - Kōdo'
   },
   {
     path: 'documents',
-    canActivate: [authGuard],
+    canActivate: [authGuard, onboardingGuard],
     loadChildren: () => import('./features/documents/documents.routes').then(m => m.DOCUMENT_ROUTES),
     title: 'Documents - Kōdo'
   },
   {
     path: 'bdd/:id',
-    canActivate: [authGuard],
+    canActivate: [authGuard, onboardingGuard],
     loadComponent: () => import('./features/documents/database-view/database-view.component').then(m => m.DatabaseViewComponent),
     title: 'Base de données - Kōdo'
   },
   {
     path: 'projects/new',
-    canActivate: [authGuard],
+    canActivate: [authGuard, onboardingGuard],
     loadComponent: () => import('./features/projects/components/project-form/project-form.component').then(m => m.ProjectFormComponent),
     title: 'Nouveau Projet - Kōdo'
   },
   {
     path: 'projects/:id/edit',
-    canActivate: [authGuard],
+    canActivate: [authGuard, onboardingGuard],
     loadComponent: () => import('./features/projects/components/project-form/project-form.component').then(m => m.ProjectFormComponent),
     title: 'Modifier le Projet - Kōdo'
   },
   {
     path: 'calendar',
-    canActivate: [authGuard],
+    canActivate: [authGuard, onboardingGuard],
     loadComponent: () => import('./features/calendar/components/calendar-page/calendar-page.component').then(m => m.CalendarPageComponent),
     title: 'Calendrier - Kōdo'
   },

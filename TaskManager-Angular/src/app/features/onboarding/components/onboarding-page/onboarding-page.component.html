@@ -1,0 +1,87 @@
+<div class="onboarding-layout">
+  <div class="onboarding-container">
+    <!-- Header -->
+    <div class="onboarding-header">
+      <app-logo [size]="64"></app-logo>
+      <h1 class="onboarding-title">Bienvenue sur Kōdo !</h1>
+      <p class="onboarding-subtitle">Commencez par créer votre premier projet</p>
+    </div>
+
+    <!-- Error message -->
+    @if (store.error()) {
+      <div class="error-banner">
+        <span class="material-icons-outlined">error_outline</span>
+        <span>{{ store.error() }}</span>
+      </div>
+    }
+
+    <!-- Welcome step: two cards -->
+    @if (store.step() === 'welcome') {
+      <div class="cards-grid">
+        <!-- Demo project card -->
+        <div class="onboarding-card" (click)="onCreateDemo()">
+          <div class="card-icon">
+            <span class="material-icons-outlined">science</span>
+          </div>
+          <h2 class="card-title">Explorer avec un projet démo</h2>
+          <p class="card-description">
+            Découvrez Kōdo avec un projet pré-rempli contenant des tâches, documents et événements.
+          </p>
+          <button class="card-btn card-btn--primary" type="button">
+            <span class="material-icons-outlined">rocket_launch</span>
+            Créer le projet démo
+          </button>
+        </div>
+
+        <!-- Custom project card -->
+        <div class="onboarding-card" (click)="onShowCreateForm()">
+          <div class="card-icon card-icon--secondary">
+            <span class="material-icons-outlined">add_circle_outline</span>
+          </div>
+          <h2 class="card-title">Créer mon propre projet</h2>
+          <p class="card-description">
+            Partez de zéro et créez un projet personnalisé selon vos besoins.
+          </p>
+          <button class="card-btn card-btn--secondary" type="button">
+            <span class="material-icons-outlined">arrow_forward</span>
+            Commencer
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Create form step -->
+    @if (store.step() === 'create-form') {
+      <div class="form-card">
+        <h2 class="form-card-title">Créer un nouveau projet</h2>
+        <app-onboarding-create-form
+          (submitted)="onCreateCustomProject($event)"
+          (cancelled)="onBackToWelcome()" />
+      </div>
+    }
+
+    <!-- Seeding step -->
+    @if (store.step() === 'seeding') {
+      <div class="seeding-card">
+        <div class="seeding-spinner"></div>
+        @if (store.seedProgress(); as progress) {
+          <p class="seeding-message">{{ progress.message }}</p>
+          <div class="seeding-progress-bar">
+            <div
+              class="seeding-progress-fill"
+              [style.width.%]="(progress.step / progress.totalSteps) * 100">
+            </div>
+          </div>
+          <p class="seeding-step">Étape {{ progress.step }} / {{ progress.totalSteps }}</p>
+        } @else {
+          <p class="seeding-message">Préparation...</p>
+        }
+      </div>
+    }
+
+    <!-- Footer -->
+    <div class="onboarding-footer">
+      <p>Kōdo &mdash; Organisez, planifiez, collaborez.</p>
+    </div>
+  </div>
+</div>

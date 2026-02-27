@@ -6,9 +6,13 @@
 @use "app/styles/mixins" as m;
 @use "app/styles/forms" as f;
 @use "app/styles/dialogs" as d;
+@use "app/styles/tour";
 
 // Import Google Fonts after @use rules.
 @import url("https://fonts.googleapis.com/icon?family=Material+Icons+Outlined");
+
+// Driver.js base styles
+@import "driver.js/dist/driver.css";
 
 /* Importing the Angular Material theme */
 @import "@angular/material/prebuilt-themes/indigo-pink.css";
