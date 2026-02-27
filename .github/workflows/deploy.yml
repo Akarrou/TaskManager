@@ -298,6 +298,15 @@ jobs:
             fi
           "
 
+      - name: Seed initial user (first deploy only)
+        run: |
+          ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            cd ${{ env.VPS_PATH }}/OBS && \
+            export \$(grep -E '^SEED_USER_' .env.production | xargs) && \
+            chmod +x scripts/seed-user.sh && \
+            bash scripts/seed-user.sh
+          "
+
       - name: Reload Caddy
         run: |
           ssh ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
