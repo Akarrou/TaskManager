@@ -147,17 +147,18 @@ jobs:
               sudo apt-get update -qq && sudo apt-get install -y -qq gettext-base
             fi
 
-            # Create full directory structure
-            mkdir -p ${{ env.VPS_PATH }}/dist/TaskManager-Angular/browser \
-                     ${{ env.VPS_PATH }}/OBS/scripts \
-                     ${{ env.VPS_PATH }}/OBS/backups \
-                     ${{ env.VPS_PATH }}/OBS/supabase-self-hosted/volumes/functions \
-                     ${{ env.VPS_PATH }}/OBS/supabase-self-hosted/volumes/db \
-                     ${{ env.VPS_PATH }}/OBS/supabase-self-hosted/volumes/api \
-                     ${{ env.VPS_PATH }}/OBS/supabase-self-hosted/volumes/logs \
-                     ${{ env.VPS_PATH }}/OBS/supabase-self-hosted/volumes/pooler \
-                     ${{ env.VPS_PATH }}/supabase/migrations \
-                     ${{ env.VPS_PATH }}/mcp-server
+            # Create full directory structure (sudo needed: Docker may have created volumes/ as root)
+            sudo mkdir -p ${{ env.VPS_PATH }}/dist/TaskManager-Angular/browser \
+                          ${{ env.VPS_PATH }}/OBS/scripts \
+                          ${{ env.VPS_PATH }}/OBS/backups \
+                          ${{ env.VPS_PATH }}/OBS/supabase-self-hosted/volumes/functions \
+                          ${{ env.VPS_PATH }}/OBS/supabase-self-hosted/volumes/db \
+                          ${{ env.VPS_PATH }}/OBS/supabase-self-hosted/volumes/api \
+                          ${{ env.VPS_PATH }}/OBS/supabase-self-hosted/volumes/logs \
+                          ${{ env.VPS_PATH }}/OBS/supabase-self-hosted/volumes/pooler \
+                          ${{ env.VPS_PATH }}/supabase/migrations \
+                          ${{ env.VPS_PATH }}/mcp-server
+            sudo chown -R ${{ env.VPS_USER }}:${{ env.VPS_USER }} ${{ env.VPS_PATH }}
           "
 
       # =====================================================================
