@@ -132,12 +132,15 @@ rsync -avz --delete \
     "$LOCAL_PROJECT_DIR/supabase/" \
     "$VPS_USER@$VPS_HOST:$VPS_PATH/supabase/"
 
-# Sync Edge Functions
-echo "   Syncing Edge Functions..."
-rsync -avz --delete \
+# Sync Supabase self-hosted volumes (config files only, not DB data)
+echo "   Syncing Supabase self-hosted volumes..."
+rsync -avz \
     --exclude='.DS_Store' \
-    "$LOCAL_PROJECT_DIR/OBS/supabase-self-hosted/volumes/functions/" \
-    "$VPS_USER@$VPS_HOST:$VPS_PATH/OBS/supabase-self-hosted/volumes/functions/"
+    --exclude='db/data/' \
+    --exclude='db/init/' \
+    --rsync-path='sudo rsync' \
+    "$LOCAL_PROJECT_DIR/OBS/supabase-self-hosted/" \
+    "$VPS_USER@$VPS_HOST:$VPS_PATH/OBS/supabase-self-hosted/"
 
 # Sync OBS config files (docker-compose, scripts, Caddyfile, Dockerfile)
 echo "   Syncing OBS config files..."
@@ -266,14 +269,8 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
-if [ -n "${APP_DOMAIN:-}" ] && [ "$APP_DOMAIN" != "kodo.example.com" ]; then
-    echo "Application:     https://${APP_DOMAIN}"
-    echo "Supabase API:    https://${API_DOMAIN:-api.${APP_DOMAIN#*.}}"
-    echo "Supabase Studio: https://${STUDIO_DOMAIN:-supabase.${APP_DOMAIN#*.}}"
-    echo "MCP Server:      https://${MCP_DOMAIN:-mcp.${APP_DOMAIN#*.}}"
-else
-    echo "Application:     http://$VPS_HOST:${APP_PORT:-4010}"
-    echo "Supabase API:    http://$VPS_HOST:${KONG_HTTP_PORT:-8000}"
-    echo "Supabase Studio: http://$VPS_HOST:${STUDIO_PORT:-3000}"
-fi
+echo "Application:     https://${APP_DOMAIN}"
+echo "Supabase API:    https://${API_DOMAIN:-api.${APP_DOMAIN#*.}}"
+echo "Supabase Studio: https://${STUDIO_DOMAIN:-supabase.${APP_DOMAIN#*.}}"
+echo "MCP Server:      https://${MCP_DOMAIN:-mcp.${APP_DOMAIN#*.}}"
 echo ""

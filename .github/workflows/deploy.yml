@@ -184,6 +184,8 @@ jobs:
         run: |
           rsync -avz \
             --exclude='.DS_Store' \
+            --exclude='db/data/' \
+            --exclude='db/init/' \
             --rsync-path='sudo rsync' \
             TaskManager-Angular/OBS/supabase-self-hosted/ \
             ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.VPS_PATH }}/OBS/supabase-self-hosted/

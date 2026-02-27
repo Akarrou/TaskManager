@@ -1,14 +1,14 @@
 # ===================================================================
-# TaskManager - Caddy Configuration
+# TaskManager - Caddy Configuration Template
 # ===================================================================
-# Automatic HTTPS with Let's Encrypt
-# Caddy gère automatiquement les certificats SSL
+# Generate the final Caddyfile with: ./scripts/generate-caddyfile.sh
+# Placeholders: kodo.test.logicfractals.fr, api.test.logicfractals.fr, supabase.test.logicfractals.fr, mcp.test.logicfractals.fr
 # ===================================================================
 
 # Application Frontend
-kodo.logicfractals.fr {
+kodo.test.logicfractals.fr {
     header {
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.logicfractals.fr wss://api.logicfractals.fr https://accounts.google.com https://oauth2.googleapis.com; frame-src 'self' https://accounts.google.com"
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.test.logicfractals.fr wss://api.test.logicfractals.fr https://accounts.google.com https://oauth2.googleapis.com; frame-src 'self' https://accounts.google.com"
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
@@ -19,8 +19,8 @@ kodo.logicfractals.fr {
     reverse_proxy app:4010
 }
 
-# Supabase API (pour les requêtes depuis l'app)
-api.logicfractals.fr {
+# Supabase API (for requests from the app)
+api.test.logicfractals.fr {
     header {
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
@@ -32,8 +32,8 @@ api.logicfractals.fr {
     reverse_proxy kong:8000
 }
 
-# Supabase Studio (Admin Dashboard) - Protégé par Basic Auth
-supabase.logicfractals.fr {
+# Supabase Studio (Admin Dashboard) - Protected by Basic Auth
+supabase.test.logicfractals.fr {
     header {
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
@@ -43,13 +43,13 @@ supabase.logicfractals.fr {
         X-XSS-Protection "0"
     }
     basicauth {
-        admin $2a$14$scqGDjAzIA8kXPszxFKfUulBa9hZG73QqJ/QvlN6pFK0EHZZIM9G6
+        admin $2a$14$V87RDIcZsAJepVfdkBYz5.1/qJgjpDQqvP7o/Svc6woRFAOX5HIDy
     }
     reverse_proxy studio:3000
 }
 
-# MCP Server - API pour Claude Code
-mcp.logicfractals.fr {
+# MCP Server - API for Claude Code
+mcp.test.logicfractals.fr {
     header {
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
@@ -58,7 +58,7 @@ mcp.logicfractals.fr {
         Permissions-Policy "camera=(), microphone=(), geolocation=()"
         X-XSS-Protection "0"
     }
-    reverse_proxy 172.17.0.1:3100 {
+    reverse_proxy mcp-server:3100 {
         flush_interval -1
     }
 }

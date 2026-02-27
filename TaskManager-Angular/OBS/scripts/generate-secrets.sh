@@ -1,63 +1,31 @@
 #!/bin/bash
 
 # ===================================================================
-# TaskManager - Secret Generation Script
+# Kōdo Task Manager — Script de configuration
 # ===================================================================
-# Generates cryptographically secure secrets for Supabase
-# Usage:
-#   ./generate-secrets.sh              # Generate .env.local
-#   ./generate-secrets.sh --production # Generate .env.production
+# Génère tous les fichiers de configuration de manière interactive :
+#   - .env.local ou .env.production (secrets + config)
+#   - Caddyfile (reverse proxy, généré en production)
+#
+# Usage :
+#   ./generate-secrets.sh              # Développement local (non-interactif)
+#   ./generate-secrets.sh --production # Production (configuration interactive)
 # ===================================================================
 
 set -e
 
-# Determine output file based on argument
-if [ "$1" == "--production" ]; then
-    ENV_FILE=".env.production"
-    EMAIL_AUTOCONFIRM="false"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+OBS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-    # Get VPS host: from argument, env var, or interactive prompt
-    VPS_HOST="${2:-${DEPLOY_VPS_HOST:-}}"
-    if [ -z "$VPS_HOST" ]; then
-        read -p "Enter your VPS IP or hostname: " VPS_HOST
-        if [ -z "$VPS_HOST" ]; then
-            echo "ERROR: VPS host is required for production."
-            exit 1
-        fi
-    fi
+# ===================================================================
+# Fonctions utilitaires
+# ===================================================================
 
-    SUPABASE_URL="http://$VPS_HOST:8000"
-    SITE_URL="http://$VPS_HOST:4010"
-    echo "Generating PRODUCTION environment file for $VPS_HOST..."
-else
-    ENV_FILE=".env.local"
-    VPS_HOST="localhost"
-    SUPABASE_URL="http://localhost:8000"
-    SITE_URL="http://localhost:4010"
-    EMAIL_AUTOCONFIRM="true"
-    echo "Generating LOCAL DEVELOPMENT environment file..."
-fi
-
-# Check if output file already exists
-if [ -f "$ENV_FILE" ]; then
-    echo "⚠️  Warning: $ENV_FILE already exists!"
-    read -p "Do you want to overwrite it? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "❌ Aborted. Existing file not modified."
-        exit 1
-    fi
-fi
-
-echo "🔐 Generating cryptographic secrets..."
-
-# Helper functions
 generate_secret() {
     openssl rand -base64 32 | tr -d "=+/" | cut -c1-32
 }
 
 generate_long_secret() {
-    # Use hex encoding for URL-safe secrets (no special characters like / + =)
     openssl rand -hex 64 | cut -c1-88
 }
 
@@ -69,10 +37,202 @@ generate_uuid() {
     fi
 }
 
-# Generate JWT Secret (base64, 64 chars minimum)
-JWT_SECRET=$(generate_long_secret)
+# Prompt avec valeur par défaut : ask "Question" "défaut"
+ask() {
+    local prompt="$1"
+    local default="$2"
+    local result
 
-# Generate other secrets
+    if [ -n "$default" ]; then
+        read -p "  $prompt [$default]: " result
+        echo "${result:-$default}"
+    else
+        read -p "  $prompt: " result
+        echo "$result"
+    fi
+}
+
+# Prompt Oui/Non : ask_yn "Question" "y" => retourne 0 (oui) ou 1 (non)
+ask_yn() {
+    local prompt="$1"
+    local default="${2:-n}"
+    local hint="o/N"
+    [ "$default" = "y" ] && hint="O/n"
+
+    read -p "  $prompt ($hint): " -n 1 -r
+    echo
+    if [ "$default" = "y" ]; then
+        [[ ! $REPLY =~ ^[Nn]$ ]]
+    else
+        [[ $REPLY =~ ^[OoYy]$ ]]
+    fi
+}
+
+# ===================================================================
+# Détection du mode
+# ===================================================================
+
+if [ "$1" == "--production" ]; then
+    IS_PRODUCTION=true
+    ENV_FILE="$OBS_DIR/.env.production"
+else
+    IS_PRODUCTION=false
+    ENV_FILE="$OBS_DIR/.env.local"
+fi
+
+# Vérifier si le fichier existe déjà
+if [ -f "$ENV_FILE" ]; then
+    echo ""
+    echo "Attention : $(basename "$ENV_FILE") existe déjà !"
+    if ! ask_yn "Écraser le fichier ?"; then
+        echo "Annulé."
+        exit 1
+    fi
+    echo ""
+fi
+
+# ===================================================================
+# DÉVELOPPEMENT LOCAL (non-interactif)
+# ===================================================================
+
+if [ "$IS_PRODUCTION" = false ]; then
+    echo ""
+    echo "=== Kōdo Task Manager — Configuration locale ==="
+    echo ""
+
+    VPS_HOST="localhost"
+    SUPABASE_URL="http://localhost:8000"
+    SITE_URL="http://localhost:4010"
+    EMAIL_AUTOCONFIRM="true"
+
+    # Valeurs par défaut pour le local
+    SMTP_HOST=""
+    SMTP_PORT="587"
+    SMTP_USER=""
+    SMTP_PASS=""
+    SMTP_ADMIN_EMAIL="admin@example.com"
+    GOOGLE_CLIENT_ID=""
+    GOOGLE_CLIENT_SECRET=""
+    GOOGLE_REDIRECT_URI=""
+    APP_DOMAIN="kodo.example.com"
+    API_DOMAIN="api.example.com"
+    STUDIO_DOMAIN="supabase.example.com"
+    MCP_DOMAIN="mcp.example.com"
+    SEED_EMAIL="admin@example.com"
+    SEED_PASSWORD="changeme123"
+    SEED_NAME="Admin User"
+    DEPLOY_USER="ubuntu"
+    DEPLOY_PATH="~/taskmanager"
+
+    echo "Génération des secrets..."
+fi
+
+# ===================================================================
+# PRODUCTION (interactif)
+# ===================================================================
+
+if [ "$IS_PRODUCTION" = true ]; then
+    echo ""
+    echo "=========================================="
+    echo "  Kōdo Task Manager — Configuration production"
+    echo "=========================================="
+    echo ""
+    echo "Ce script va générer votre fichier d'environnement"
+    echo "de production avec tous les secrets et la configuration."
+    echo ""
+
+    # --- Serveur ---
+    echo "--- Serveur ---"
+    VPS_HOST="${2:-${DEPLOY_VPS_HOST:-}}"
+    if [ -z "$VPS_HOST" ]; then
+        VPS_HOST=$(ask "Adresse IP du VPS (pour le déploiement SSH)" "")
+        if [ -z "$VPS_HOST" ]; then
+            echo "ERREUR : L'adresse IP du VPS est obligatoire."
+            exit 1
+        fi
+    else
+        echo "  VPS : $VPS_HOST"
+    fi
+    DEPLOY_USER=$(ask "Utilisateur SSH" "ubuntu")
+    DEPLOY_PATH="~/taskmanager"
+    echo ""
+
+    # --- Domaines (SSL) ---
+    echo "--- Domaines (HTTPS via Caddy + Let's Encrypt) ---"
+    APP_DOMAIN=$(ask "Domaine principal (ex: kodo.monsite.com)" "")
+
+    if [ -z "$APP_DOMAIN" ]; then
+        echo "ERREUR : Le domaine est obligatoire (HTTPS requis pour le fonctionnement de l'app)."
+        exit 1
+    fi
+
+    # Dériver automatiquement les sous-domaines
+    BASE_DOMAIN="${APP_DOMAIN#*.}"
+    API_DOMAIN="api.$BASE_DOMAIN"
+    STUDIO_DOMAIN="supabase.$BASE_DOMAIN"
+    MCP_DOMAIN="mcp.$BASE_DOMAIN"
+
+    SUPABASE_URL="https://$API_DOMAIN"
+    SITE_URL="https://$APP_DOMAIN"
+
+    echo ""
+    echo "  Sous-domaines dérivés :"
+    echo "    API:    $API_DOMAIN"
+    echo "    Studio: $STUDIO_DOMAIN"
+    echo "    MCP:    $MCP_DOMAIN"
+    echo ""
+    echo "  (Modifiable dans le .env après génération si besoin)"
+    echo ""
+
+    # --- SMTP ---
+    echo "--- Email (SMTP) ---"
+    if ask_yn "Configurer le SMTP pour la vérification par email ?"; then
+        SMTP_HOST=$(ask "Serveur SMTP" "smtp.gmail.com")
+        SMTP_PORT=$(ask "Port SMTP" "587")
+        SMTP_USER=$(ask "Utilisateur SMTP (email)" "")
+        SMTP_PASS=$(ask "Mot de passe SMTP" "")
+        SMTP_ADMIN_EMAIL=$(ask "Email administrateur" "$SMTP_USER")
+        EMAIL_AUTOCONFIRM="false"
+    else
+        SMTP_HOST=""
+        SMTP_PORT="587"
+        SMTP_USER=""
+        SMTP_PASS=""
+        SMTP_ADMIN_EMAIL="admin@example.com"
+        EMAIL_AUTOCONFIRM="true"
+        echo "  Auto-confirmation activée (pas de vérification email)."
+    fi
+    echo ""
+
+    # --- Google Calendar ---
+    echo "--- Intégration Google Calendar ---"
+    if ask_yn "Configurer la synchronisation Google Calendar ?"; then
+        GOOGLE_CLIENT_ID=$(ask "Google Client ID" "")
+        GOOGLE_CLIENT_SECRET=$(ask "Google Client Secret" "")
+        GOOGLE_REDIRECT_URI="$SITE_URL/profile/google-callback"
+        echo "  URI de redirection : $GOOGLE_REDIRECT_URI"
+    else
+        GOOGLE_CLIENT_ID=""
+        GOOGLE_CLIENT_SECRET=""
+        GOOGLE_REDIRECT_URI=""
+    fi
+    echo ""
+
+    # --- Utilisateur initial ---
+    echo "--- Utilisateur initial ---"
+    SEED_EMAIL=$(ask "Email" "admin@example.com")
+    SEED_PASSWORD=$(ask "Mot de passe" "changeme123")
+    SEED_NAME=$(ask "Nom affiché" "Admin User")
+    echo ""
+
+    echo "Génération des secrets..."
+fi
+
+# ===================================================================
+# Génération des secrets cryptographiques
+# ===================================================================
+
+JWT_SECRET=$(generate_long_secret)
 POSTGRES_PASSWORD=$(generate_long_secret)
 SECRET_KEY_BASE=$(generate_long_secret)
 VAULT_ENC_KEY=$(openssl rand -base64 32 | cut -c1-32)
@@ -84,44 +244,39 @@ DASHBOARD_PASSWORD=$(generate_secret)
 TOKEN_ENCRYPTION_KEY=$(openssl rand -hex 32)
 MCP_AUTH_PASSWORD=$(generate_secret)
 
-echo "🔑 Generating JWT tokens..."
-
-# Function to generate Supabase JWT token
+# Génération des tokens JWT
 generate_jwt() {
     local role=$1
     local secret=$2
     local iat=$(date +%s)
-    local exp=$((iat + 315360000))  # 10 years from now
+    local exp=$((iat + 315360000))  # 10 ans
 
-    # Header (HS256)
     local header='{"alg":"HS256","typ":"JWT"}'
     local header_b64=$(echo -n "$header" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
 
-    # Payload
     local payload="{\"role\":\"$role\",\"iss\":\"supabase\",\"iat\":$iat,\"exp\":$exp}"
     local payload_b64=$(echo -n "$payload" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
 
-    # Signature
     local signature=$(echo -n "$header_b64.$payload_b64" | openssl dgst -sha256 -hmac "$secret" -binary | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
 
     echo "$header_b64.$payload_b64.$signature"
 }
 
-# Generate ANON_KEY and SERVICE_ROLE_KEY
 ANON_KEY=$(generate_jwt "anon" "$JWT_SECRET")
 SERVICE_ROLE_KEY=$(generate_jwt "service_role" "$JWT_SECRET")
 
-echo "📝 Writing secrets to $ENV_FILE..."
+# ===================================================================
+# Écriture du fichier .env
+# ===================================================================
 
-# Create the .env file
 cat > "$ENV_FILE" << EOF
 # ===================================================================
-# TaskManager - Environment Configuration
-# Auto-generated on $(date)
+# Kōdo Task Manager - Configuration d'environnement
+# Généré automatiquement le $(date)
 # ===================================================================
 
 # ===================================================================
-# APPLICATION CONFIGURATION
+# CONFIGURATION APPLICATION
 # ===================================================================
 
 BUILD_ENV=production
@@ -129,7 +284,7 @@ PRODUCTION=true
 PROJECT_NAME=Kōdo Task Manager
 
 # ===================================================================
-# NETWORK & PORTS
+# RÉSEAU & PORTS
 # ===================================================================
 
 APP_PORT=4010
@@ -138,7 +293,7 @@ KONG_HTTPS_PORT=8443
 STUDIO_PORT=3000
 
 # ===================================================================
-# PUBLIC URLS
+# URLS PUBLIQUES
 # ===================================================================
 
 SUPABASE_PUBLIC_URL=$SUPABASE_URL
@@ -147,7 +302,7 @@ SITE_URL=$SITE_URL
 ADDITIONAL_REDIRECT_URLS=$SITE_URL/*
 
 # ===================================================================
-# SECURITY & SECRETS
+# SÉCURITÉ & SECRETS
 # ===================================================================
 
 POSTGRES_PASSWORD=$POSTGRES_PASSWORD
@@ -162,7 +317,7 @@ VAULT_ENC_KEY=$VAULT_ENC_KEY
 PG_META_CRYPTO_KEY=$PG_META_CRYPTO_KEY
 
 # ===================================================================
-# DATABASE CONFIGURATION
+# BASE DE DONNÉES
 # ===================================================================
 
 POSTGRES_HOST=db
@@ -171,7 +326,7 @@ POSTGRES_PORT=5432
 PGRST_DB_SCHEMAS=public,storage,graphql_public
 
 # ===================================================================
-# DATABASE POOLER
+# POOLER BASE DE DONNÉES
 # ===================================================================
 
 POOLER_PROXY_PORT_TRANSACTION=6543
@@ -181,7 +336,7 @@ POOLER_TENANT_ID=$POOLER_TENANT_ID
 POOLER_DB_POOL_SIZE=5
 
 # ===================================================================
-# AUTHENTICATION SETTINGS
+# PARAMÈTRES D'AUTHENTIFICATION
 # ===================================================================
 
 DISABLE_SIGNUP=false
@@ -192,22 +347,22 @@ ENABLE_PHONE_SIGNUP=false
 ENABLE_PHONE_AUTOCONFIRM=false
 
 # ===================================================================
-# EMAIL CONFIGURATION (SMTP)
+# CONFIGURATION EMAIL (SMTP)
 # ===================================================================
 
-SMTP_ADMIN_EMAIL=admin@example.com
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_USER=
-SMTP_PASS=
-SMTP_SENDER_NAME=TaskManager
+SMTP_ADMIN_EMAIL=$SMTP_ADMIN_EMAIL
+SMTP_HOST=$SMTP_HOST
+SMTP_PORT=$SMTP_PORT
+SMTP_USER=$SMTP_USER
+SMTP_PASS=$SMTP_PASS
+SMTP_SENDER_NAME=Kodo
 MAILER_URLPATHS_INVITE=/auth/v1/verify
 MAILER_URLPATHS_CONFIRMATION=/auth/v1/verify
 MAILER_URLPATHS_RECOVERY=/auth/v1/verify
 MAILER_URLPATHS_EMAIL_CHANGE=/auth/v1/verify
 
 # ===================================================================
-# STORAGE CONFIGURATION
+# STOCKAGE
 # ===================================================================
 
 STORAGE_BACKEND=file
@@ -220,17 +375,17 @@ IMGPROXY_ENABLE_WEBP_DETECTION=true
 FUNCTIONS_VERIFY_JWT=true
 
 # ===================================================================
-# GOOGLE CALENDAR INTEGRATION (Optional)
+# INTÉGRATION GOOGLE CALENDAR (Optionnel)
 # ===================================================================
 
-# GOOGLE_CLIENT_ID=
-# GOOGLE_CLIENT_SECRET=
-# GOOGLE_REDIRECT_URI=$SITE_URL/profile/google-callback
+GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
+GOOGLE_REDIRECT_URI=$GOOGLE_REDIRECT_URI
 TOKEN_ENCRYPTION_KEY=$TOKEN_ENCRYPTION_KEY
 ALLOWED_ORIGIN=$SITE_URL
 
 # ===================================================================
-# MCP SERVER (Optional - Claude AI Integration)
+# SERVEUR MCP (Optionnel — Intégration Claude AI)
 # ===================================================================
 
 MCP_HTTP_PORT=3100
@@ -240,12 +395,12 @@ MCP_AUTH_PASSWORD=$MCP_AUTH_PASSWORD
 MCP_APP_URL=$SITE_URL
 
 # ===================================================================
-# INITIAL USER (Optional - for first setup)
+# UTILISATEUR INITIAL (Optionnel — premier lancement)
 # ===================================================================
 
-SEED_USER_EMAIL=admin@example.com
-SEED_USER_PASSWORD=changeme123
-SEED_USER_NAME=Admin User
+SEED_USER_EMAIL=$SEED_EMAIL
+SEED_USER_PASSWORD=$SEED_PASSWORD
+SEED_USER_NAME=$SEED_NAME
 
 # ===================================================================
 # ANALYTICS (Logflare)
@@ -255,7 +410,7 @@ LOGFLARE_PUBLIC_ACCESS_TOKEN=$LOGFLARE_PUBLIC
 LOGFLARE_PRIVATE_ACCESS_TOKEN=$LOGFLARE_PRIVATE
 
 # ===================================================================
-# SUPABASE STUDIO SETTINGS
+# SUPABASE STUDIO
 # ===================================================================
 
 STUDIO_DEFAULT_ORGANIZATION=Default Organization
@@ -263,61 +418,74 @@ STUDIO_DEFAULT_PROJECT=TaskManager
 OPENAI_API_KEY=
 
 # ===================================================================
-# DOCKER CONFIGURATION
+# CONFIGURATION DOCKER
 # ===================================================================
 
 DOCKER_SOCKET_LOCATION=/var/run/docker.sock
 
 # ===================================================================
-# DOMAIN CONFIGURATION (Production with SSL via Caddy)
+# DOMAINES (Production avec SSL via Caddy)
 # ===================================================================
 
-APP_DOMAIN=kodo.example.com
-API_DOMAIN=api.example.com
-STUDIO_DOMAIN=supabase.example.com
-MCP_DOMAIN=mcp.example.com
+APP_DOMAIN=$APP_DOMAIN
+API_DOMAIN=$API_DOMAIN
+STUDIO_DOMAIN=$STUDIO_DOMAIN
+MCP_DOMAIN=$MCP_DOMAIN
 CADDY_BASIC_AUTH_USERNAME=admin
 CADDY_BASIC_AUTH_HASH=
 
 # ===================================================================
-# DEPLOYMENT
+# DÉPLOIEMENT
 # ===================================================================
 
-DEPLOY_VPS_USER=ubuntu
+DEPLOY_VPS_USER=$DEPLOY_USER
 DEPLOY_VPS_HOST=$VPS_HOST
-DEPLOY_VPS_PATH=~/taskmanager
+DEPLOY_VPS_PATH=$DEPLOY_PATH
 EOF
 
-echo "✅ Environment file created: $ENV_FILE"
-echo ""
-echo "📋 Summary:"
-echo "   - PostgreSQL Password: ✓ Generated"
-echo "   - JWT Secret: ✓ Generated"
-echo "   - ANON_KEY: ✓ Generated"
-echo "   - SERVICE_ROLE_KEY: ✓ Generated"
-echo "   - Dashboard Password: ✓ Generated"
-echo "   - TOKEN_ENCRYPTION_KEY: ✓ Generated"
-echo "   - MCP_AUTH_PASSWORD: ✓ Generated"
-echo "   - All encryption keys: ✓ Generated"
-echo ""
-echo "🔒 IMPORTANT SECURITY NOTES:"
-echo "   - Add $ENV_FILE to .gitignore (DO NOT commit to git!)"
-echo "   - Dashboard credentials: admin / $DASHBOARD_PASSWORD"
-echo "   - Keep SERVICE_ROLE_KEY secret (full database access!)"
-echo ""
+# ===================================================================
+# Génération du Caddyfile (production uniquement)
+# ===================================================================
 
-if [ "$1" == "--production" ]; then
-    echo "⚠️  PRODUCTION CHECKLIST:"
-    echo "   [ ] Update APP_DOMAIN, API_DOMAIN, STUDIO_DOMAIN, MCP_DOMAIN (for SSL)"
-    echo "   [ ] Configure SMTP settings for email"
-    echo "   [ ] Configure Google OAuth (optional)"
-    echo "   [ ] Review all security settings"
-    echo "   [ ] Run 'make caddy' to generate Caddyfile"
+if [ "$IS_PRODUCTION" = true ] && [ -f "$SCRIPT_DIR/generate-caddyfile.sh" ]; then
     echo ""
+    "$SCRIPT_DIR/generate-caddyfile.sh"
 fi
 
-echo "🚀 Next steps:"
-echo "   1. Review and customize $ENV_FILE if needed"
-echo "   2. Run: docker compose --profile ${1/--production/production} ${1/--production/local} up -d"
-echo "   3. Access Supabase Studio at http://localhost:3000"
+# ===================================================================
+# Résumé
+# ===================================================================
+
 echo ""
+echo "=========================================="
+echo "  Configuration terminée !"
+echo "=========================================="
+echo ""
+echo "  Fichier généré : $(basename "$ENV_FILE")"
+echo ""
+echo "  Secrets générés :"
+echo "    - Mot de passe PostgreSQL"
+echo "    - JWT secret + ANON_KEY + SERVICE_ROLE_KEY"
+echo "    - Mot de passe dashboard : $DASHBOARD_PASSWORD"
+echo "    - Toutes les clés de chiffrement"
+echo ""
+echo "  Utilisateur initial : $SEED_EMAIL / $SEED_PASSWORD"
+echo ""
+
+if [ "$IS_PRODUCTION" = true ]; then
+    echo "  Prochaines étapes :"
+    echo "    1. Vérifier $(basename "$ENV_FILE") si nécessaire"
+    echo "    2. Démarrer la stack :"
+    echo "       docker compose --env-file .env.production --profile production up -d"
+    echo "    3. Créer l'utilisateur initial :"
+    echo "       ./scripts/seed-user.sh"
+    echo ""
+else
+    echo "  Prochaines étapes :"
+    echo "    1. Démarrer la stack :"
+    echo "       docker compose --profile local up -d"
+    echo "    2. Créer l'utilisateur initial :"
+    echo "       ./scripts/seed-user.sh"
+    echo "    3. Ouvrir http://localhost:4010"
+    echo ""
+fi

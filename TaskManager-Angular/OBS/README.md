@@ -25,7 +25,7 @@ This deployment system provides:
 - **Runtime configuration**: Environment variables injected at container startup
 - **Automated secrets**: Cryptographically secure secret generation
 - **Backup & Restore**: Complete database and storage backup scripts
-- **SSL Support**: Optional Caddy reverse proxy with automatic Let's Encrypt certificates
+- **SSL Support**: Caddy reverse proxy with automatic Let's Encrypt certificates
 
 ### Services Included
 
@@ -216,68 +216,34 @@ sudo usermod -aG docker $USER
 # Logout and login to apply group changes
 ```
 
-#### 2. Generate Production Secrets
+#### 2. Run the Setup Script
 
-All URLs are automatically derived from the VPS IP — you only specify it once:
-
-```bash
-./scripts/generate-secrets.sh --production 203.0.113.50
-```
-
-Or pass it via environment variable:
+The interactive script configures everything in one step: server, domains, SMTP, Google Calendar, initial user — and generates all secrets and the Caddyfile automatically.
 
 ```bash
-export DEPLOY_VPS_HOST=203.0.113.50
 ./scripts/generate-secrets.sh --production
 ```
 
-If omitted, the script will prompt you interactively.
+The script will prompt you for:
+- **Server**: VPS IP address, SSH user
+- **Domain**: Main domain (required — HTTPS via Caddy + Let's Encrypt). Subdomains (API, Studio, MCP) are auto-derived
+- **SMTP**: Email server for verification (optional — skip to auto-confirm emails)
+- **Google Calendar**: OAuth credentials for calendar sync (optional)
+- **Initial user**: Email, password, display name
 
-This generates `.env.production` with:
-- All cryptographic secrets (JWT, passwords, encryption keys)
-- All URLs pre-filled (`SUPABASE_PUBLIC_URL`, `SITE_URL`, etc.)
-- `DEPLOY_VPS_HOST` set for CI/CD and deploy scripts
+Output:
+- `.env.production` with all secrets and configuration
+- `Caddyfile` generated from the template (for production with domains)
 
-#### 3. Configure SMTP (optional but recommended)
+For Google Calendar, you need OAuth 2.0 credentials from the [Google Cloud Console](https://console.cloud.google.com/apis/credentials) (Web application type, with the Google Calendar API enabled).
 
-Edit `.env.production`:
-
-```bash
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-SMTP_SENDER_NAME=Kodo
-```
-
-Without SMTP, set `ENABLE_EMAIL_AUTOCONFIRM=true` to skip email verification.
-
-#### 4. Configure Custom Domains (optional)
-
-For SSL with Let's Encrypt via Caddy, edit `.env.production`:
-
-```bash
-APP_DOMAIN=kodo.yourdomain.com
-API_DOMAIN=api.yourdomain.com
-STUDIO_DOMAIN=supabase.yourdomain.com
-MCP_DOMAIN=mcp.yourdomain.com
-```
-
-Then generate the Caddyfile:
-
-```bash
-./scripts/generate-caddyfile.sh
-```
-
-If no custom domain is configured, the script generates an IP-based Caddyfile (no SSL).
-
-#### 5. Start Services
+#### 3. Start Services
 
 ```bash
 docker compose --env-file .env.production --profile production up -d
 ```
 
-#### 6. Create Initial User
+#### 4. Create Initial User
 
 ```bash
 ./scripts/seed-user.sh
@@ -341,39 +307,12 @@ docker exec -i supabase-db psql -U postgres -d postgres < ../supabase/migrations
 | Port | Service | Access | Notes |
 |------|---------|--------|-------|
 | **22** | SSH | Admin only | Restrict to your IP if possible |
-| **80** | HTTP | Public | Caddy (redirects to HTTPS if domains configured) |
+| **80** | HTTP | Public | Caddy (redirects to HTTPS) |
 | **443** | HTTPS | Public | Caddy (SSL termination) |
 
-#### Without Custom Domains (IP-based access)
-
-| Port | Service | Access | Notes |
-|------|---------|--------|-------|
-| **4010** | Angular App | Public | Main application |
-| **8000** | Kong API Gateway | Public | Supabase API (required by the app) |
-| **3000** | Supabase Studio | **Admin only** | Database admin panel — restrict access |
-| **3100** | MCP Server | **Admin only** | Claude AI integration — restrict access |
-
-#### With Custom Domains (Caddy handles routing)
-
-When using domains, Caddy listens on ports 80/443 and reverse-proxies to internal services. **No other ports need to be exposed publicly.**
+Caddy listens on ports 80/443 and reverse-proxies to internal services. **No other ports need to be exposed publicly.**
 
 #### UFW Configuration
-
-**IP-based (no domains):**
-
-```bash
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-sudo ufw allow 22/tcp comment 'SSH'
-sudo ufw allow 4010/tcp comment 'Kodo App'
-sudo ufw allow 8000/tcp comment 'Supabase API'
-# Only if you need remote access to Studio/MCP:
-# sudo ufw allow from YOUR_ADMIN_IP to any port 3000 proto tcp comment 'Studio (admin only)'
-# sudo ufw allow from YOUR_ADMIN_IP to any port 3100 proto tcp comment 'MCP (admin only)'
-sudo ufw enable
-```
-
-**Domain-based (Caddy SSL):**
 
 ```bash
 sudo ufw default deny incoming
